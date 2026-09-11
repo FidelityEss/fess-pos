@@ -1,0 +1,48 @@
+{
+  "$comment": "DEMO. The smaller forms and flows, in one file for readability; in the system each is its own family and version. Options come from reason-code lists, so adding a reason is data, not code.",
+  "definitions": [
+    {
+      "spec_version": "1.0", "kind": "form", "family": "unable_to_complete", "scope": { "bank_id": null }, "version": 1,
+      "title": "Unable to complete the visit",
+      "sections": [ { "key": "reason", "title": "What happened?", "fields": [
+        { "key": "reason_code", "type": "single_select", "display": "radio", "label": "Reason", "required": true,
+          "props": { "options_source": "reason_codes:unable_to_complete" } },
+        { "key": "note", "type": "textarea", "label": "Tell us more", "props": { "min_length": 10 },
+          "required": { "==": [ { "option_meta": ["reason_code", "requires_note"] }, true ] } },
+        { "key": "evidence_photo", "type": "photo", "label": "Photo of the site",
+          "props": { "category": "unable", "min_count": 1, "max_count": 3, "require_gps": true },
+          "required": { "==": [ { "option_meta": ["reason_code", "requires_photo"] }, true ] } },
+        { "key": "safety_callout", "type": "callout", "tone": "danger",
+          "text": "Leave the area if you feel unsafe. Your safety comes first — you can add details later.",
+          "visible": { "==": [ { "var": "answers.reason_code" }, "safety_concern" ] } }
+      ] } ]
+    },
+    {
+      "spec_version": "1.0", "kind": "flow", "family": "unable_to_complete_flow", "scope": { "bank_id": null }, "version": 1,
+      "form_family": "unable_to_complete", "action": "job.unable", "outcomes": "default",
+      "steps": [ { "id": "reason", "type": "form", "sections": ["reason"] }, { "id": "submit", "type": "submit" } ]
+    },
+    {
+      "spec_version": "1.0", "kind": "form", "family": "assignment_reject", "scope": { "bank_id": null }, "version": 1,
+      "title": "Decline this job",
+      "sections": [ { "key": "reason", "title": "Why are you declining?", "fields": [
+        { "key": "reason_code", "type": "single_select", "display": "radio", "label": "Reason", "required": true,
+          "props": { "options_source": "reason_codes:assignment_reject" } },
+        { "key": "note", "type": "textarea", "label": "Anything the admin should know?",
+          "required": { "==": [ { "var": "answers.reason_code" }, "other" ] } }
+      ] } ]
+    },
+    {
+      "$comment": "A brand-new form with zero code: a definition plus the merchant_followup page in app.agent_app.v1.json.",
+      "spec_version": "1.0", "kind": "form", "family": "merchant_followup", "scope": { "bank_id": null }, "version": 1,
+      "title": "Merchant follow-up",
+      "sections": [ { "key": "followup", "title": "Follow-up", "fields": [
+        { "key": "contacted", "type": "boolean", "display": "yes_no_radio", "label": "Did you reach the merchant?", "required": true },
+        { "key": "channel", "type": "single_select", "display": "segmented", "label": "How?", "required": true,
+          "visible": { "==": [ { "var": "answers.contacted" }, true ] },
+          "options": [ { "value": "phone", "label": "Phone" }, { "value": "visit", "label": "Visit" }, { "value": "email", "label": "Email" } ] },
+        { "key": "summary", "type": "textarea", "label": "Summary", "required": true }
+      ] } ]
+    }
+  ]
+}

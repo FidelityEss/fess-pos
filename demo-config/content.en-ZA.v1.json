@@ -1,0 +1,58 @@
+{
+  "$comment": "DEMO. All wording the module shows (docs/04 §3.5). The app ships a bundled copy so first launch works offline; this server version overrides it. Banks can override individual keys. Note the app says 'leads' while the docs say 'jobs'.",
+  "spec_version": "1.0",
+  "kind": "content",
+  "family": "strings",
+  "scope": { "bank_id": null },
+  "version": 1,
+  "locale": "en-ZA",
+  "strings": {
+    "nav.home": "Home",
+    "nav.leads": "Leads",
+    "nav.done": "Done",
+    "nav.card": "My card",
+
+    "pages.active_jobs": "Active leads",
+    "pages.completed_jobs": "Completed leads",
+
+    "home.greeting": "Hello, {{agent.first_name}}",
+    "home.tile_active": "Active",
+    "home.tile_submitted": "Awaiting review",
+    "home.tile_completed_month": "Approved this month",
+    "home.tile_due_today": "Due today",
+    "home.today_title": "Your leads",
+    "home.create_lead": "Create a lead",
+
+    "jobs.empty_active": "No active leads. New ones will appear here as soon as they're assigned.",
+    "jobs.empty_completed": "Nothing completed yet.",
+    "jobs.empty_today": "Nothing scheduled — enjoy the breather.",
+
+    "labels.reference": "Reference",
+    "labels.bank": "Bank",
+    "labels.mcc": "Business category",
+    "labels.location_type": "Site type",
+    "labels.mall": "Mall / complex",
+
+    "actions.accept": "Accept",
+    "actions.reject": "Decline",
+    "actions.begin": "Begin inspection",
+    "actions.unable": "Unable to complete",
+    "actions.job_card": "Show authorisation",
+    "actions.home": "Back to home",
+    "actions.retry": "Try again",
+    "actions.back_to_job": "Back to lead",
+
+    "card.headline": "Authorised Fidelity POS agent",
+    "card.offline_note": "Works offline. The code refreshes when you're connected.",
+
+    "outcome.success.title": "Done",
+    "outcome.success.message": "Received by Fidelity.",
+    "outcome.saved.title": "Saved on this phone",
+    "outcome.saved.message": "It will send automatically when you're back online. You don't need to do it again.",
+    "outcome.failure.title": "That didn't go through",
+    "outcome.failure.message": "Nothing you captured has been lost. {{outcome.reason}}",
+    "outcome.inspection_success.title": "Inspection received",
+    "outcome.inspection_saved.title": "Inspection saved on this phone",
+    "outcome.inspection_saved.message": "{{sync.pending_count}} items will upload automatically. Keep FESS installed and connect when you can."
+  }
+}
