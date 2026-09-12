@@ -1,0 +1,24 @@
+{
+  "description": "a section that can never show",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "visible": false,
+        "fields": [
+          {
+            "key": "a",
+            "type": "text"
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "UNREACHABLE_SECTION"
+  ]
+}

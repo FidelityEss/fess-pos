@@ -1,0 +1,71 @@
+[
+  {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "assignment_reject",
+    "version": 1,
+    "scope": null,
+    "title": "Reject assignment",
+    "locale": "en-ZA",
+    "sections": [
+      {
+        "key": "reason",
+        "title": "Why can't you take this job?",
+        "fields": [
+          { "key": "reason_code", "type": "single_select", "display": "radio", "label": "Reason", "required": true,
+            "options_source": { "type": "reason_codes", "category": "assignment_reject" } },
+          { "key": "note", "type": "textarea", "label": "Note", "props": { "rows": 3, "max_length": 1000 },
+            "required": { "in": [ { "var": "answers.reason_code" }, [ "conflict", "safety", "other" ] ] } }
+        ]
+      }
+    ]
+  },
+  {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "unable_to_complete",
+    "version": 1,
+    "scope": null,
+    "title": "Unable to complete",
+    "locale": "en-ZA",
+    "sections": [
+      {
+        "key": "reason",
+        "title": "Why can't the inspection be completed?",
+        "fields": [
+          { "key": "reason_code", "type": "single_select", "display": "radio", "label": "Reason", "required": true,
+            "options_source": { "type": "reason_codes", "category": "unable_to_complete" } },
+          { "key": "note", "type": "textarea", "label": "What happened?", "props": { "rows": 3, "max_length": 2000 },
+            "required": { "in": [ { "var": "answers.reason_code" }, [ "safety_concern", "other" ] ] } },
+          { "key": "unable_photo", "type": "photo", "label": "Photo of the location", "required": true,
+            "visible": { "in": [ { "var": "answers.reason_code" }, [ "incorrect_address", "premises_not_found" ] ] },
+            "props": { "category": "unable", "min_count": 1, "max_count": 3, "require_gps": true } }
+        ]
+      }
+    ]
+  },
+  {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "geofence_override",
+    "version": 1,
+    "scope": null,
+    "title": "Location override",
+    "locale": "en-ZA",
+    "sections": [
+      {
+        "key": "override",
+        "title": "You are outside the expected location",
+        "fields": [
+          { "key": "override_info", "type": "info",
+            "text": "You can continue only with a reason, a note and a photo of the shopfront or signage. This inspection will be flagged for the reviewer." },
+          { "key": "reason_code", "type": "single_select", "display": "radio", "label": "Reason", "required": true,
+            "options_source": { "type": "reason_codes", "category": "geofence_override" } },
+          { "key": "note", "type": "textarea", "label": "Explain the difference", "required": true, "props": { "rows": 3, "min_length": 10, "max_length": 2000 } },
+          { "key": "override_photo", "type": "photo", "label": "Shopfront / signage in context", "required": true,
+            "props": { "category": "override", "min_count": 1, "max_count": 3, "require_gps": true } }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,44 @@
+{
+  "description": "requires lists spec and component versions used",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text"
+          },
+          {
+            "key": "n",
+            "type": "number"
+          },
+          {
+            "key": "g",
+            "type": "group",
+            "fields": [
+              {
+                "key": "b",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [],
+  "expected_requires": {
+    "spec": "1.0",
+    "components": {
+      "boolean": 1,
+      "group": 1,
+      "number": 1,
+      "text": 1
+    }
+  }
+}

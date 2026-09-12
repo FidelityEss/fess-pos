@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/ingest-response.schema.json",
+  "title": "POST /v1/ingest response",
+  "description": "One receipt per envelope, in order.",
+  "type": "object",
+  "properties": {
+    "receipts": {
+      "type": "array",
+      "items": {
+        "$ref": "receipt.schema.json"
+      }
+    },
+    "server_time": {
+      "$ref": "common.schema.json#/$defs/datetime"
+    },
+    "request_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "receipts",
+    "server_time"
+  ],
+  "additionalProperties": true
+}

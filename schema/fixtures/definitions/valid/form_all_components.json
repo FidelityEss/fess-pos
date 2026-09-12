@@ -1,0 +1,553 @@
+{
+  "spec_version": "1.0",
+  "kind": "form",
+  "family": "all_components",
+  "version": 1,
+  "title": "Every wave 1 and 2 component",
+  "locale": "en-ZA",
+  "sections": [
+    {
+      "key": "all",
+      "title": "All components",
+      "description": "Kitchen-sink fixture",
+      "page_break": true,
+      "fields": [
+        {
+          "key": "t_text",
+          "id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d99",
+          "type": "text",
+          "label": "Text",
+          "help_text": "Letters only",
+          "default": "Joe",
+          "reviewer_note": "Check spelling",
+          "risk_indicator": {
+            "when": {
+              "==": [
+                {
+                  "var": "answers.t_boolean"
+                },
+                true
+              ]
+            },
+            "level": "elevated",
+            "label": "Flag"
+          },
+          "export": {
+            "include": true,
+            "column_label": "Text"
+          },
+          "pdf": {
+            "include": true,
+            "layout": "compact"
+          },
+          "props": {
+            "min_length": 2,
+            "max_length": 20,
+            "pattern": "^[A-Za-z ]+$",
+            "mask": "AAAA",
+            "placeholder": "Name",
+            "keyboard": "text",
+            "capitalise": "words"
+          }
+        },
+        {
+          "key": "t_textarea",
+          "type": "textarea",
+          "display": "multi_line",
+          "label": "Notes",
+          "read_only": false,
+          "props": {
+            "rows": 4,
+            "max_length": 500
+          }
+        },
+        {
+          "key": "t_number",
+          "type": "number",
+          "display": "stepper",
+          "label": "Floor area",
+          "props": {
+            "min": 0,
+            "max": 1000,
+            "integer": true,
+            "unit": "m2",
+            "step": 1,
+            "decimals": 0
+          }
+        },
+        {
+          "key": "t_percentage",
+          "type": "percentage",
+          "display": "slider",
+          "label": "Share",
+          "props": {
+            "min": 0,
+            "max": 100,
+            "decimals": 1
+          }
+        },
+        {
+          "key": "t_phone",
+          "type": "phone",
+          "label": "Phone",
+          "props": {
+            "default_region": "ZA",
+            "allow_landline": true
+          }
+        },
+        {
+          "key": "t_currency",
+          "type": "currency",
+          "label": "Turnover",
+          "props": {
+            "min": 0,
+            "max": 100000000,
+            "currency": "ZAR"
+          }
+        },
+        {
+          "key": "t_slider",
+          "type": "slider",
+          "label": "Confidence",
+          "props": {
+            "min": 0,
+            "max": 10,
+            "step": 0.5,
+            "min_label": "Low",
+            "max_label": "High"
+          }
+        },
+        {
+          "key": "t_rating",
+          "type": "rating",
+          "display": "likert",
+          "label": "Cleanliness",
+          "props": {
+            "scale": 5,
+            "labels": [
+              "Poor",
+              "Fair",
+              "Good",
+              "Very good",
+              "Excellent"
+            ]
+          }
+        },
+        {
+          "key": "t_email",
+          "type": "email",
+          "label": "Email",
+          "props": {
+            "placeholder": "name@example.co.za"
+          }
+        },
+        {
+          "key": "t_id",
+          "type": "id_number",
+          "label": "SA ID number",
+          "props": {
+            "scheme": "za_id"
+          }
+        },
+        {
+          "key": "t_age",
+          "type": "computed",
+          "label": "Age",
+          "value": {
+            "date_diff": [
+              {
+                "var": "derived.t_id.dob"
+              },
+              {
+                "today": []
+              },
+              "years"
+            ]
+          },
+          "props": {
+            "format": "number"
+          }
+        },
+        {
+          "key": "t_reg",
+          "type": "registration_number",
+          "label": "CIPC number",
+          "props": {
+            "scheme": "cipc"
+          }
+        },
+        {
+          "key": "t_boolean",
+          "type": "boolean",
+          "display": "toggle",
+          "label": "Open?",
+          "props": {
+            "true_label": "Yes",
+            "false_label": "No"
+          }
+        },
+        {
+          "key": "t_tri",
+          "type": "tri_state",
+          "display": "radio",
+          "label": "Licence displayed?",
+          "props": {
+            "labels": {
+              "yes": "Yes",
+              "no": "No",
+              "na": "N/A"
+            }
+          }
+        },
+        {
+          "key": "t_single",
+          "type": "single_select",
+          "display": "chips",
+          "label": "Single",
+          "options": [
+            {
+              "value": "a",
+              "label": "A"
+            },
+            {
+              "value": "b",
+              "label": "B"
+            },
+            {
+              "value": "c",
+              "label": "C"
+            }
+          ],
+          "props": {
+            "allow_other": true,
+            "other_value": "other",
+            "other_label": "Other"
+          }
+        },
+        {
+          "key": "t_multi",
+          "type": "multi_select",
+          "display": "chips",
+          "label": "Multi",
+          "options": [
+            {
+              "value": "x",
+              "label": "X"
+            },
+            {
+              "value": "y",
+              "label": "Y"
+            },
+            {
+              "value": "z",
+              "label": "Z"
+            }
+          ],
+          "props": {
+            "min_select": 1,
+            "max_select": 2
+          }
+        },
+        {
+          "key": "t_lookup",
+          "type": "lookup",
+          "display": "searchable_sheet",
+          "label": "Province",
+          "props": {
+            "list": "provinces",
+            "search": true
+          }
+        },
+        {
+          "key": "t_city",
+          "type": "single_select",
+          "label": "City",
+          "options_filter": {
+            "==": [
+              {
+                "var": "option.meta.province"
+              },
+              {
+                "var": "answers.t_lookup"
+              }
+            ]
+          },
+          "options": [
+            {
+              "value": "jhb",
+              "label": "Johannesburg",
+              "meta": {
+                "province": "GP"
+              }
+            },
+            {
+              "value": "cpt",
+              "label": "Cape Town",
+              "meta": {
+                "province": "WC"
+              }
+            },
+            {
+              "value": "dbn",
+              "label": "Durban",
+              "meta": {
+                "province": "KZN"
+              }
+            }
+          ]
+        },
+        {
+          "key": "t_date",
+          "type": "date",
+          "label": "Date",
+          "props": {
+            "min": "2000-01-01",
+            "max": {
+              "today": []
+            }
+          }
+        },
+        {
+          "key": "t_time",
+          "type": "time",
+          "label": "Opens at",
+          "props": {
+            "min": "06:00",
+            "max": "22:00"
+          }
+        },
+        {
+          "key": "t_duration",
+          "type": "duration",
+          "label": "Time in business",
+          "props": {
+            "units": [
+              "months",
+              "years"
+            ]
+          }
+        },
+        {
+          "key": "t_hours",
+          "type": "business_hours",
+          "label": "Trading hours",
+          "props": {
+            "groups": [
+              "weekdays",
+              "saturday",
+              "sunday"
+            ],
+            "allow_24h": true
+          }
+        },
+        {
+          "key": "t_datetime",
+          "type": "datetime",
+          "label": "Visited at",
+          "props": {
+            "min": "2026-01-01T00:00:00+02:00"
+          }
+        },
+        {
+          "key": "t_address",
+          "type": "address",
+          "label": "Address",
+          "props": {
+            "map_pin": "optional",
+            "geocode": "off",
+            "provinces": [
+              "GP",
+              "WC",
+              "KZN"
+            ]
+          }
+        },
+        {
+          "key": "t_pin",
+          "type": "location_pin",
+          "label": "Entrance",
+          "props": {
+            "initial": "job",
+            "max_distance_from_job_m": 500
+          }
+        },
+        {
+          "key": "t_current",
+          "type": "current_location",
+          "label": "Where I am",
+          "props": {
+            "max_accuracy_m": 30,
+            "sample_seconds": 30
+          }
+        },
+        {
+          "key": "t_photo",
+          "type": "photo",
+          "display": "guided_sequence",
+          "label": "Photos",
+          "props": {
+            "category": "general",
+            "min_count": 1,
+            "max_count": 3,
+            "require_gps": true,
+            "guidance": {
+              "text": "Stand back so the signage is visible"
+            },
+            "caption": "optional",
+            "retake": "confirm"
+          }
+        },
+        {
+          "key": "t_signature",
+          "type": "signature",
+          "label": "Signature",
+          "props": {
+            "signer_name_field": "t_text",
+            "min_stroke_length": 10
+          }
+        },
+        {
+          "key": "t_declaration",
+          "type": "declaration",
+          "label": "Declaration",
+          "props": {
+            "declaration_key": "agent_declaration"
+          }
+        },
+        {
+          "key": "t_ack",
+          "type": "acknowledgement",
+          "label": "Acknowledgement",
+          "props": {
+            "text": "I confirm the merchant was present"
+          }
+        },
+        {
+          "key": "t_consent",
+          "type": "consent",
+          "label": "Consent to photographs",
+          "props": {
+            "declaration_key": "photo_consent",
+            "by_name_field": "t_text"
+          }
+        },
+        {
+          "key": "t_info",
+          "type": "info",
+          "text": "Read the guidance for {{job.reference}} carefully."
+        },
+        {
+          "key": "t_callout",
+          "type": "callout",
+          "tone": "info",
+          "text": "Note"
+        },
+        {
+          "key": "t_divider",
+          "type": "divider"
+        },
+        {
+          "key": "t_image",
+          "type": "image",
+          "asset": {
+            "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "alt": "Example shopfront"
+          },
+          "caption": "Example"
+        },
+        {
+          "key": "t_prefilled",
+          "type": "prefilled",
+          "label": "Job reference",
+          "props": {
+            "source": "job.reference"
+          }
+        },
+        {
+          "key": "t_computed",
+          "type": "computed",
+          "label": "Area plus one",
+          "value": {
+            "+": [
+              {
+                "var": "answers.t_number"
+              },
+              1
+            ]
+          },
+          "props": {
+            "format": "number"
+          }
+        },
+        {
+          "key": "t_group",
+          "type": "group",
+          "label": "Group",
+          "props": {
+            "layout": "two_column"
+          },
+          "fields": [
+            {
+              "key": "t_group_child",
+              "type": "text",
+              "label": "Inside a group"
+            }
+          ]
+        },
+        {
+          "key": "t_repeat",
+          "type": "repeatable_group",
+          "label": "Items",
+          "props": {
+            "min_items": 1,
+            "max_items": 3,
+            "item_label": "Item {{index}}",
+            "add_label": "Add item"
+          },
+          "fields": [
+            {
+              "key": "r_name",
+              "type": "text",
+              "label": "Name",
+              "required": true
+            },
+            {
+              "key": "r_count",
+              "type": "number",
+              "label": "Count"
+            }
+          ]
+        },
+        {
+          "key": "t_matrix",
+          "type": "matrix",
+          "label": "Condition",
+          "props": {
+            "rows": [
+              {
+                "key": "r1",
+                "label": "Floors"
+              },
+              {
+                "key": "r2",
+                "label": "Walls"
+              }
+            ],
+            "columns": [
+              {
+                "value": "good",
+                "label": "Good"
+              },
+              {
+                "value": "bad",
+                "label": "Bad"
+              }
+            ],
+            "cell_type": "single",
+            "required_rows": "all"
+          }
+        }
+      ]
+    }
+  ]
+}

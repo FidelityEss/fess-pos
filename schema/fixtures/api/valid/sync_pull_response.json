@@ -1,0 +1,202 @@
+{
+  "description": "one page",
+  "schema": "sync-pull-response",
+  "value": {
+    "server_time": "2026-09-10T08:31:03.5+00:00",
+    "server_epoch": "11111111-2222-4333-8444-555555555555",
+    "me": {
+      "id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d10",
+      "employee_number": "E123",
+      "first_name": "Sipho",
+      "last_name": "Dlamini",
+      "role": "pos_agent",
+      "attributes": {
+        "region": "gauteng"
+      },
+      "has_photo": true
+    },
+    "jobs": {
+      "items": [
+        {
+          "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+          "reference": "POS-2026-000123",
+          "status": "assigned",
+          "updated_at": "2026-09-10T08:00:00+00:00",
+          "bank": {
+            "id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d11",
+            "code": "ABSA",
+            "name": "Bank"
+          },
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          },
+          "location_type": "standalone",
+          "attributes": {},
+          "job_schema_version_id": null,
+          "trading_name": null
+        }
+      ],
+      "next_cursor": "2026-09-10T08:00:00+00:00|a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "has_more": false
+    },
+    "definitions": {
+      "manifest": [
+        {
+          "context_bank_id": null,
+          "kind": "form",
+          "key": "site_inspection",
+          "family_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d12",
+          "family_bank_id": null,
+          "version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d80",
+          "version": 3,
+          "spec_version": "1.0",
+          "definition_hash": "1111111111111111111111111111111111111111111111111111111111111111"
+        }
+      ],
+      "bodies": [
+        {
+          "id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d80",
+          "family_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d12",
+          "kind": "content",
+          "key": "module_copy",
+          "bank_id": null,
+          "version": 1,
+          "spec_version": "1.0",
+          "definition": {
+            "strings": {}
+          },
+          "definition_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "requires": null
+        }
+      ]
+    },
+    "lookup_lists": {
+      "manifest": [],
+      "bodies": [
+        {
+          "list_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d13",
+          "key": "provinces",
+          "bank_id": null,
+          "version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d14",
+          "version": 1,
+          "hash": "3333333333333333333333333333333333333333333333333333333333333333",
+          "items": [
+            {
+              "value": "GP",
+              "label": "Gauteng"
+            }
+          ]
+        }
+      ]
+    },
+    "declarations": {
+      "manifest": [
+        {
+          "id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d90",
+          "key": "agent_declaration",
+          "version": 1,
+          "hash": "9999999999999999999999999999999999999999999999999999999999999999"
+        }
+      ],
+      "bodies": []
+    },
+    "reason_codes": {
+      "hash": "8888888888888888888888888888888888888888888888888888888888888888",
+      "items": null
+    },
+    "reviews": {
+      "items": [
+        {
+          "id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d15",
+          "inspection_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9f01",
+          "job_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+          "attempt": 1,
+          "decision": "returned",
+          "reason_code": "photos_insufficient",
+          "note": "Blurry",
+          "decided_at": "2026-09-09T12:00:00+00:00"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "evidence": {
+      "items": [
+        {
+          "id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d01",
+          "inspection_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9f01",
+          "upload_state": "verified",
+          "replica_state": "pending",
+          "verified_at": "2026-09-10T08:52:44+00:00",
+          "sha256_server": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "envelopes": {
+      "items": [
+        {
+          "id": "0191d3c3-1009-7c1b-9f10-4b2e1c0a9e00",
+          "state": "rejected",
+          "receipt": {},
+          "resolution": null,
+          "resolved_at": null,
+          "resolution_note": null
+        }
+      ],
+      "next_cursor": null,
+      "has_more": false
+    },
+    "agent_totals": {
+      "active": 3,
+      "due_today": 1,
+      "awaiting_review": 2,
+      "completed_this_month": 14,
+      "returned": 0
+    },
+    "commands": [],
+    "session_tokens": [
+      {
+        "job_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        "token_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d70",
+        "token": "9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f",
+        "valid_from": "2026-09-09T08:00:00+00:00",
+        "valid_to": "2026-09-12T16:00:00+00:00"
+      }
+    ],
+    "job_cards": [
+      {
+        "job_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        "token": "abababababababababababababababab",
+        "valid_to": "2026-09-12T16:00:00+00:00"
+      }
+    ],
+    "agent_card": {
+      "token": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+      "valid_to": "2026-09-11T08:31:03+00:00"
+    },
+    "config": {
+      "default": {
+        "config_version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d82",
+        "values": {
+          "geofence": {
+            "sample_seconds": 60
+          }
+        }
+      },
+      "by_bank": {
+        "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d11": {
+          "config_version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d82",
+          "values": {
+            "geofence": {
+              "sample_seconds": 60
+            }
+          }
+        }
+      }
+    }
+  }
+}

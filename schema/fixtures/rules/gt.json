@@ -1,0 +1,64 @@
+{
+  "operator": ">",
+  "cases": [
+    {
+      "name": "numbers",
+      "expression": {
+        ">": [
+          3,
+          2
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "equal is not greater",
+      "expression": {
+        ">": [
+          2,
+          2
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "strings",
+      "expression": {
+        ">": [
+          "b",
+          "a"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "null is false",
+      "expression": {
+        ">": [
+          null,
+          0
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "objects are not ordered",
+      "expression": {
+        ">": [
+          {
+            "var": "o"
+          },
+          1
+        ]
+      },
+      "data": {
+        "o": {}
+      },
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

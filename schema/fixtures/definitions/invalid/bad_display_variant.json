@@ -1,0 +1,24 @@
+{
+  "description": "boolean has no slider display",
+  "expected_errors": [
+    "DEF_INVALID_VALUE"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "boolean",
+            "display": "slider"
+          }
+        ]
+      }
+    ]
+  }
+}

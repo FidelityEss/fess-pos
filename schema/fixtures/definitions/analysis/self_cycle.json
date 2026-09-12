@@ -1,0 +1,31 @@
+{
+  "description": "a computed value cannot read itself",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "computed",
+            "value": {
+              "+": [
+                {
+                  "var": "answers.a"
+                },
+                1
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "CYCLE"
+  ]
+}

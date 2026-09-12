@@ -1,0 +1,595 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/rules/expression.schema.json",
+  "title": "Rule expression (rules spec 1.0)",
+  "description": "JsonLogic-compatible, strictly typed rule expression (docs/04 §4). Structure, operator names, arity and literal-only arguments are checked here; depth (≤ 32), node count (≤ 500), regex safety and types are checked by the engines (see operators.json).",
+  "$ref": "#/$defs/expression",
+  "$defs": {
+    "expression": {
+      "anyOf": [
+        {
+          "type": [
+            "null",
+            "boolean",
+            "number",
+            "string"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        {
+          "$ref": "#/$defs/operation"
+        }
+      ]
+    },
+    "non_array_expression": {
+      "anyOf": [
+        {
+          "type": [
+            "null",
+            "boolean",
+            "number",
+            "string"
+          ]
+        },
+        {
+          "$ref": "#/$defs/operation"
+        }
+      ]
+    },
+    "operation": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 1,
+      "propertyNames": {
+        "enum": [
+          "var",
+          "and",
+          "or",
+          "!",
+          "if",
+          "==",
+          "!=",
+          "<",
+          "<=",
+          ">",
+          ">=",
+          "between",
+          "in",
+          "contains",
+          "some",
+          "all",
+          "none",
+          "count",
+          "empty",
+          "not_empty",
+          "length",
+          "starts_with",
+          "matches",
+          "lower",
+          "concat",
+          "+",
+          "-",
+          "*",
+          "/",
+          "min",
+          "max",
+          "round",
+          "abs",
+          "today",
+          "date_diff",
+          "date_add",
+          "distance_m",
+          "within_m",
+          "option_meta"
+        ]
+      },
+      "properties": {
+        "var": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "string",
+                      "maxLength": 200
+                    }
+                  ],
+                  "minItems": 1,
+                  "maxItems": 1,
+                  "items": false
+                },
+                {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    {
+                      "$ref": "#/$defs/expression"
+                    }
+                  ],
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": false
+                }
+              ]
+            }
+          ]
+        },
+        "and": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "or": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "!": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "if": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "==": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "!=": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "<": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "<=": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        ">": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        ">=": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "between": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "in": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "contains": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "some": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "all": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "none": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "count": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 2,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "empty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "not_empty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "length": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "starts_with": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "matches": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/expression"
+            },
+            {
+              "type": "string",
+              "maxLength": 256
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2,
+          "items": false
+        },
+        "lower": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "concat": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "+": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "-": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 2,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "*": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "/": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "min": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "max": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "round": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "$ref": "#/$defs/expression"
+                    }
+                  ],
+                  "minItems": 1,
+                  "maxItems": 1,
+                  "items": false
+                },
+                {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "$ref": "#/$defs/expression"
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10
+                    }
+                  ],
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": false
+                }
+              ]
+            }
+          ]
+        },
+        "abs": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/non_array_expression"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          ]
+        },
+        "today": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "date_diff": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/expression"
+            },
+            {
+              "$ref": "#/$defs/expression"
+            },
+            {
+              "enum": [
+                "days",
+                "months",
+                "years"
+              ]
+            }
+          ],
+          "minItems": 3,
+          "maxItems": 3,
+          "items": false
+        },
+        "date_add": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/expression"
+            },
+            {
+              "$ref": "#/$defs/expression"
+            },
+            {
+              "enum": [
+                "days",
+                "months",
+                "years"
+              ]
+            }
+          ],
+          "minItems": 3,
+          "maxItems": 3,
+          "items": false
+        },
+        "distance_m": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "within_m": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        },
+        "option_meta": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "string",
+              "maxLength": 500
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2,
+          "items": false
+        }
+      }
+    }
+  }
+}

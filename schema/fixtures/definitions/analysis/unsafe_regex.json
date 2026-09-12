@@ -1,0 +1,26 @@
+{
+  "description": "patterns must be RE2-safe",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text",
+            "props": {
+              "pattern": "(a+)+$"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "DEF_INVALID_REGEX"
+  ]
+}

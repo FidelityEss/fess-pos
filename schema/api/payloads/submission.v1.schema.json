@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/payloads/submission.v1.schema.json",
+  "title": "submission payload, type_version 1",
+  "description": "Sealed submission, self-sufficient (creates the inspection if inspection_started has not arrived). Carries the answers document fields (docs/04 §5) flat, the manifest (docs/12 §7), geofence, integrity, diagnostics and submission_hash (docs/07 §4 step 9; encoding in schema/api/README.md).",
+  "type": "object",
+  "properties": {
+    "inspection_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "job_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "definition_refs": {
+      "type": "object",
+      "properties": {
+        "form": {
+          "$ref": "../common.schema.json#/$defs/definition_ref"
+        },
+        "flow": {
+          "$ref": "../common.schema.json#/$defs/definition_ref"
+        },
+        "job_schema": {
+          "anyOf": [
+            {
+              "$ref": "../common.schema.json#/$defs/definition_ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "form",
+        "flow"
+      ],
+      "additionalProperties": false
+    },
+    "config_version_id": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "context_snapshot": {
+      "$ref": "../common.schema.json#/$defs/context_snapshot"
+    },
+    "answers": {
+      "$ref": "../common.schema.json#/$defs/answers"
+    },
+    "field_timings": {
+      "$ref": "../common.schema.json#/$defs/field_timings"
+    },
+    "answers_hash": {
+      "$ref": "../common.schema.json#/$defs/sha256"
+    },
+    "manifest": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "evidence_id": {
+                "$ref": "../common.schema.json#/$defs/uuid"
+              },
+              "field_key": {
+                "$ref": "../common.schema.json#/$defs/key"
+              },
+              "item_index": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "category": {
+                "$ref": "../common.schema.json#/$defs/key"
+              },
+              "sha256": {
+                "$ref": "../common.schema.json#/$defs/sha256"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "evidence_id",
+              "field_key",
+              "category",
+              "sha256",
+              "bytes"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "trace_batch_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "last_trace_at": {
+          "anyOf": [
+            {
+              "$ref": "../common.schema.json#/$defs/datetime"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "trace_batch_count",
+        "last_trace_at"
+      ],
+      "additionalProperties": false
+    },
+    "session_token_id": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "session_token": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/hex_token"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "geofence": {
+      "$ref": "../common.schema.json#/$defs/geofence_result"
+    },
+    "integrity": {
+      "$ref": "../common.schema.json#/$defs/integrity_snapshot"
+    },
+    "diagnostics": {
+      "$ref": "../common.schema.json#/$defs/diagnostics"
+    },
+    "submission_hash": {
+      "$ref": "../common.schema.json#/$defs/sha256"
+    },
+    "started_at_device": {
+      "$ref": "../common.schema.json#/$defs/datetime"
+    },
+    "submitted_at_device": {
+      "$ref": "../common.schema.json#/$defs/datetime"
+    },
+    "submitted_monotonic_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "clock_offset_ms": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "inspection_id",
+    "job_id",
+    "attempt",
+    "definition_refs",
+    "config_version_id",
+    "context_snapshot",
+    "answers",
+    "answers_hash",
+    "manifest",
+    "session_token_id",
+    "geofence",
+    "integrity",
+    "diagnostics",
+    "submission_hash",
+    "started_at_device",
+    "submitted_at_device"
+  ],
+  "additionalProperties": false
+}

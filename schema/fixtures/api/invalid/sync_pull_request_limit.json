@@ -1,0 +1,7 @@
+{
+  "description": "limit is 1-500",
+  "schema": "sync-pull-request",
+  "value": {
+    "limit": 501
+  }
+}

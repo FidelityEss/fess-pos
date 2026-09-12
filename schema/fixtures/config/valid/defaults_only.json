@@ -1,0 +1,9 @@
+{
+  "description": "no layers resolves to the defaults",
+  "layers": [],
+  "expect_values": {
+    "geofence.default_profile": "standalone",
+    "photos.jpeg_quality": 80,
+    "governance.four_eyes_global": false
+  }
+}

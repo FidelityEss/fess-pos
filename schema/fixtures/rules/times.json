@@ -1,0 +1,82 @@
+{
+  "operator": "*",
+  "cases": [
+    {
+      "name": "multiplies",
+      "expression": {
+        "*": [
+          2,
+          3
+        ]
+      },
+      "data": {},
+      "expected": 6
+    },
+    {
+      "name": "null propagates",
+      "expression": {
+        "*": [
+          2,
+          null
+        ]
+      },
+      "data": {},
+      "expected": null
+    },
+    {
+      "name": "decimals",
+      "expression": {
+        "*": [
+          1.5,
+          2
+        ]
+      },
+      "data": {},
+      "expected": 3
+    },
+    {
+      "name": "variadic",
+      "expression": {
+        "*": [
+          2,
+          3,
+          4
+        ]
+      },
+      "data": {},
+      "expected": 24
+    },
+    {
+      "name": "one argument",
+      "expression": {
+        "*": [
+          2
+        ]
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    },
+    {
+      "name": "overflow",
+      "expression": {
+        "*": [
+          1e+200,
+          1e+200
+        ]
+      },
+      "data": {},
+      "error": "RULE_NUMERIC_OVERFLOW"
+    },
+    {
+      "name": "string",
+      "expression": {
+        "*": [
+          2,
+          "3"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

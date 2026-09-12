@@ -1,0 +1,8 @@
+{
+  "description": "requests are strict",
+  "schema": "sync-pull-request",
+  "value": {
+    "cursors": {},
+    "since": "yesterday"
+  }
+}

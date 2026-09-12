@@ -1,0 +1,887 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/sync-pull-response.schema.json",
+  "title": "POST /v1/sync/pull response",
+  "description": "One page of changes (docs/08 §2). Definitions of every kind — content included — arrive as manifest + bodies; remote config is resolved per bank context with its config_version_id. Clients ignore unknown properties.",
+  "type": "object",
+  "properties": {
+    "server_time": {
+      "$ref": "common.schema.json#/$defs/datetime"
+    },
+    "server_epoch": {
+      "$ref": "common.schema.json#/$defs/uuid",
+      "description": "Changes after a restore; the device then re-sends retained envelopes (docs/12 §12)."
+    },
+    "me": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "employee_number": {
+          "type": "string"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "attributes": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "employee_number",
+        "first_name",
+        "last_name",
+        "role"
+      ],
+      "additionalProperties": true
+    },
+    "jobs": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "reference": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "pending",
+                  "scheduled",
+                  "assigned",
+                  "accepted",
+                  "in_progress",
+                  "paused",
+                  "submitted",
+                  "under_review",
+                  "returned",
+                  "approved",
+                  "rejected",
+                  "unable_to_complete",
+                  "appointment_not_secured",
+                  "cancelled",
+                  "closed"
+                ]
+              },
+              "updated_at": {
+                "$ref": "common.schema.json#/$defs/datetime"
+              },
+              "bank": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "$ref": "common.schema.json#/$defs/uuid"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "code",
+                      "name"
+                    ],
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "merchant_name": {
+                "type": "string"
+              },
+              "address": {
+                "anyOf": [
+                  {
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "location": {
+                "anyOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/point"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "location_type": {
+                "$ref": "common.schema.json#/$defs/key"
+              },
+              "scheduled_start": {
+                "anyOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/datetime"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "scheduled_end": {
+                "anyOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/datetime"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "attributes": {
+                "type": "object"
+              },
+              "job_schema_version_id": {
+                "anyOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "reference",
+              "status",
+              "updated_at"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "has_more": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "next_cursor",
+        "has_more"
+      ],
+      "additionalProperties": true
+    },
+    "definitions": {
+      "type": "object",
+      "properties": {
+        "manifest": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "key": {
+                "$ref": "common.schema.json#/$defs/key"
+              },
+              "family_id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "version_id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "spec_version": {
+                "type": "string"
+              },
+              "definition_hash": {
+                "$ref": "common.schema.json#/$defs/sha256"
+              }
+            },
+            "required": [
+              "kind",
+              "key",
+              "family_id",
+              "version_id",
+              "version",
+              "spec_version",
+              "definition_hash"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "bodies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "family_id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "key": {
+                "$ref": "common.schema.json#/$defs/key"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "spec_version": {
+                "type": "string"
+              },
+              "definition": {
+                "type": "object"
+              },
+              "definition_hash": {
+                "$ref": "common.schema.json#/$defs/sha256"
+              }
+            },
+            "required": [
+              "id",
+              "family_id",
+              "kind",
+              "key",
+              "version",
+              "spec_version",
+              "definition",
+              "definition_hash"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "manifest",
+        "bodies"
+      ],
+      "additionalProperties": true
+    },
+    "lookup_lists": {
+      "type": "object",
+      "properties": {
+        "manifest": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "list_id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "key": {
+                "$ref": "common.schema.json#/$defs/key"
+              },
+              "version_id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "hash": {
+                "$ref": "common.schema.json#/$defs/sha256"
+              }
+            },
+            "required": [
+              "list_id",
+              "key",
+              "version_id",
+              "version",
+              "hash"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "bodies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "list_id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "key": {
+                "$ref": "common.schema.json#/$defs/key"
+              },
+              "version_id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "hash": {
+                "$ref": "common.schema.json#/$defs/sha256"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "label"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            },
+            "required": [
+              "list_id",
+              "key",
+              "version_id",
+              "version",
+              "hash",
+              "items"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "manifest",
+        "bodies"
+      ],
+      "additionalProperties": true
+    },
+    "declarations": {
+      "type": "object",
+      "properties": {
+        "manifest": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "key": {
+                "$ref": "common.schema.json#/$defs/key"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "hash": {
+                "$ref": "common.schema.json#/$defs/sha256"
+              }
+            },
+            "required": [
+              "id",
+              "key",
+              "version",
+              "hash"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "bodies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "key": {
+                "$ref": "common.schema.json#/$defs/key"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "hash": {
+                "$ref": "common.schema.json#/$defs/sha256"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "key",
+              "version",
+              "hash",
+              "text"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "manifest",
+        "bodies"
+      ],
+      "additionalProperties": true
+    },
+    "reason_codes": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "items": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "common.schema.json#/$defs/uuid"
+                  },
+                  "category": {
+                    "$ref": "common.schema.json#/$defs/key"
+                  },
+                  "code": {
+                    "$ref": "common.schema.json#/$defs/key"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "requires_note": {
+                    "type": "boolean"
+                  },
+                  "requires_photo": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "category",
+                  "code",
+                  "label",
+                  "requires_note",
+                  "requires_photo"
+                ],
+                "additionalProperties": true
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "hash",
+        "items"
+      ],
+      "additionalProperties": true
+    },
+    "reviews": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "inspection_id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "job_id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "attempt": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "decision": {
+                "enum": [
+                  "approved",
+                  "returned",
+                  "rejected"
+                ]
+              },
+              "decided_at": {
+                "$ref": "common.schema.json#/$defs/datetime"
+              }
+            },
+            "required": [
+              "id",
+              "inspection_id",
+              "job_id",
+              "attempt",
+              "decision",
+              "decided_at"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "has_more": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "next_cursor",
+        "has_more"
+      ],
+      "additionalProperties": true
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "upload_state": {
+                "enum": [
+                  "pending",
+                  "uploaded",
+                  "verified",
+                  "quarantined"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "upload_state"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "has_more": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "next_cursor",
+        "has_more"
+      ],
+      "additionalProperties": true
+    },
+    "envelopes": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              },
+              "state": {
+                "enum": [
+                  "received",
+                  "committed",
+                  "duplicate",
+                  "deferred",
+                  "rejected",
+                  "conflict"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "state"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "has_more": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "next_cursor",
+        "has_more"
+      ],
+      "additionalProperties": true
+    },
+    "agent_totals": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "description": "Server-provided totals for home tiles (stats.*)."
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          "type": {
+            "enum": [
+              "resend_evidence",
+              "resend_envelopes",
+              "purge",
+              "re_sign_in",
+              "upload_logs"
+            ]
+          },
+          "params": {
+            "type": "object"
+          },
+          "issued_at": {
+            "$ref": "common.schema.json#/$defs/datetime"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "params",
+          "issued_at"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "session_tokens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          "token_id": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          "token": {
+            "$ref": "common.schema.json#/$defs/hex_token"
+          },
+          "valid_from": {
+            "$ref": "common.schema.json#/$defs/datetime"
+          },
+          "valid_to": {
+            "$ref": "common.schema.json#/$defs/datetime"
+          }
+        },
+        "required": [
+          "job_id",
+          "token_id",
+          "token",
+          "valid_from",
+          "valid_to"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "job_cards": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "token": {
+                "$ref": "common.schema.json#/$defs/hex_token"
+              },
+              "valid_to": {
+                "$ref": "common.schema.json#/$defs/datetime"
+              }
+            },
+            "required": [
+              "token",
+              "valid_to"
+            ],
+            "additionalProperties": true
+          },
+          {
+            "type": "object",
+            "properties": {
+              "job_id": {
+                "$ref": "common.schema.json#/$defs/uuid"
+              }
+            },
+            "required": [
+              "job_id"
+            ],
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "agent_card": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "token": {
+              "$ref": "common.schema.json#/$defs/hex_token"
+            },
+            "valid_to": {
+              "$ref": "common.schema.json#/$defs/datetime"
+            }
+          },
+          "required": [
+            "token",
+            "valid_to"
+          ],
+          "additionalProperties": true
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "default": {
+          "type": "object",
+          "properties": {
+            "config_version_id": {
+              "anyOf": [
+                {
+                  "$ref": "common.schema.json#/$defs/uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "values": {
+              "$ref": "../config/remote-config.schema.json"
+            }
+          },
+          "required": [
+            "config_version_id",
+            "values"
+          ],
+          "additionalProperties": true
+        },
+        "by_bank": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "config_version_id": {
+                "anyOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "values": {
+                "$ref": "../config/remote-config.schema.json"
+              }
+            },
+            "required": [
+              "config_version_id",
+              "values"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "default",
+        "by_bank"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "server_time",
+    "server_epoch",
+    "me",
+    "jobs",
+    "definitions",
+    "lookup_lists",
+    "declarations",
+    "reason_codes",
+    "reviews",
+    "evidence",
+    "envelopes",
+    "agent_totals",
+    "commands",
+    "session_tokens",
+    "job_cards",
+    "agent_card",
+    "config"
+  ],
+  "additionalProperties": true
+}

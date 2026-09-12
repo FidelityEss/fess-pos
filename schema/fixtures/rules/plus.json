@@ -1,0 +1,137 @@
+{
+  "operator": "+",
+  "cases": [
+    {
+      "name": "adds",
+      "expression": {
+        "+": [
+          1,
+          2
+        ]
+      },
+      "data": {},
+      "expected": 3
+    },
+    {
+      "name": "IEEE-754 double",
+      "expression": {
+        "+": [
+          0.1,
+          0.2
+        ]
+      },
+      "data": {},
+      "expected": 0.30000000000000004
+    },
+    {
+      "name": "skips null",
+      "expression": {
+        "+": [
+          1,
+          null,
+          2
+        ]
+      },
+      "data": {},
+      "expected": 3
+    },
+    {
+      "name": "all null yields null",
+      "expression": {
+        "+": [
+          null
+        ]
+      },
+      "data": {},
+      "expected": null
+    },
+    {
+      "name": "single",
+      "expression": {
+        "+": [
+          5
+        ]
+      },
+      "data": {},
+      "expected": 5
+    },
+    {
+      "name": "negatives",
+      "expression": {
+        "+": [
+          -1.5,
+          0.5
+        ]
+      },
+      "data": {},
+      "expected": -1
+    },
+    {
+      "name": "sugar",
+      "expression": {
+        "+": {
+          "var": "n"
+        }
+      },
+      "data": {
+        "n": 4
+      },
+      "expected": 4
+    },
+    {
+      "name": "percent sum (docs/04 §3.1)",
+      "expression": {
+        "<=": [
+          {
+            "+": [
+              {
+                "var": "answers.a"
+              },
+              {
+                "var": "answers.b"
+              }
+            ]
+          },
+          100
+        ]
+      },
+      "data": {
+        "answers": {
+          "a": 60,
+          "b": 30
+        }
+      },
+      "expected": true
+    },
+    {
+      "name": "string term",
+      "expression": {
+        "+": [
+          "1",
+          2
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "overflow",
+      "expression": {
+        "+": [
+          1e+308,
+          1e+308
+        ]
+      },
+      "data": {},
+      "error": "RULE_NUMERIC_OVERFLOW"
+    },
+    {
+      "name": "no arguments",
+      "expression": {
+        "+": []
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

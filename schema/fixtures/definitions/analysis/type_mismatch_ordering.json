@@ -1,0 +1,35 @@
+{
+  "description": "a number compared with a string",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "n",
+            "type": "number"
+          },
+          {
+            "key": "x",
+            "type": "text",
+            "visible": {
+              ">": [
+                {
+                  "var": "answers.n"
+                },
+                "5"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "TYPE_MISMATCH"
+  ]
+}

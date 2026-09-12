@@ -1,0 +1,92 @@
+{
+  "operator": "-",
+  "cases": [
+    {
+      "name": "subtracts",
+      "expression": {
+        "-": [
+          5,
+          3
+        ]
+      },
+      "data": {},
+      "expected": 2
+    },
+    {
+      "name": "negates",
+      "expression": {
+        "-": [
+          5
+        ]
+      },
+      "data": {},
+      "expected": -5
+    },
+    {
+      "name": "negating zero is zero",
+      "expression": {
+        "-": [
+          0
+        ]
+      },
+      "data": {},
+      "expected": 0
+    },
+    {
+      "name": "null left",
+      "expression": {
+        "-": [
+          null,
+          1
+        ]
+      },
+      "data": {},
+      "expected": null
+    },
+    {
+      "name": "null right",
+      "expression": {
+        "-": [
+          1,
+          null
+        ]
+      },
+      "data": {},
+      "expected": null
+    },
+    {
+      "name": "IEEE-754 double",
+      "expression": {
+        "-": [
+          0.3,
+          0.1
+        ]
+      },
+      "data": {},
+      "expected": 0.19999999999999998
+    },
+    {
+      "name": "string",
+      "expression": {
+        "-": [
+          "a",
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "three arguments",
+      "expression": {
+        "-": [
+          1,
+          2,
+          3
+        ]
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

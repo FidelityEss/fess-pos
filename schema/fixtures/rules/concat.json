@@ -1,0 +1,70 @@
+{
+  "operator": "concat",
+  "cases": [
+    {
+      "name": "joins strings",
+      "expression": {
+        "concat": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "data": {},
+      "expected": "abc"
+    },
+    {
+      "name": "null is empty",
+      "expression": {
+        "concat": [
+          "a",
+          null,
+          "b"
+        ]
+      },
+      "data": {},
+      "expected": "ab"
+    },
+    {
+      "name": "unanswered is empty",
+      "expression": {
+        "concat": [
+          {
+            "var": "x"
+          }
+        ]
+      },
+      "data": {},
+      "expected": ""
+    },
+    {
+      "name": "single",
+      "expression": {
+        "concat": [
+          "x"
+        ]
+      },
+      "data": {},
+      "expected": "x"
+    },
+    {
+      "name": "numbers are not converted",
+      "expression": {
+        "concat": [
+          1,
+          "a"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "no arguments",
+      "expression": {
+        "concat": []
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "description": "view pages point at real views",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "app",
+    "family": "a",
+    "version": 1,
+    "home": "home",
+    "pages": {
+      "home": {
+        "type": "view_page",
+        "view": "ghost"
+      }
+    }
+  },
+  "expected_errors": [
+    "MISSING_VIEW_REF"
+  ],
+  "bundle": {
+    "views": [
+      "view_home"
+    ]
+  }
+}

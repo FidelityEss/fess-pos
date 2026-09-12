@@ -1,0 +1,22 @@
+{
+  "description": "reject needs a reason_code",
+  "expected": "payload",
+  "envelope": {
+    "api_version": "1",
+    "id": "0191d3c3-1020-7c1b-9f10-4b2e1c0a9e00",
+    "type": "job_event",
+    "type_version": 1,
+    "payload_hash": "1fd1ca29b6c218f577c9c0d36b35bab51796111fb1bb044687d8b832cb49028e",
+    "device_id": "7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60",
+    "session_id": "4f2a1b3c-5d6e-4f70-8a9b-0c1d2e3f4a5b",
+    "device_seq": 18019,
+    "module_version": "1.4.2",
+    "client_type": "native",
+    "created_at_device": "2026-09-10T10:31:02.114+02:00",
+    "monotonic_ms": 5423311,
+    "payload": {
+      "job_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "action": "reject"
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "operator": "not_empty",
+  "cases": [
+    {
+      "name": "string",
+      "expression": {
+        "not_empty": [
+          "a"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "null",
+      "expression": {
+        "not_empty": [
+          null
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "empty array",
+      "expression": {
+        "not_empty": [
+          []
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "array with a zero",
+      "expression": {
+        "not_empty": [
+          [
+            0
+          ]
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "zero answer",
+      "expression": {
+        "not_empty": {
+          "var": "answers.x"
+        }
+      },
+      "data": {
+        "answers": {
+          "x": 0
+        }
+      },
+      "expected": true
+    }
+  ]
+}

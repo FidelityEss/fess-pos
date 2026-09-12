@@ -1,0 +1,141 @@
+{
+  "operator": "<",
+  "cases": [
+    {
+      "name": "numbers",
+      "expression": {
+        "<": [
+          1,
+          2
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "numbers reversed",
+      "expression": {
+        "<": [
+          2,
+          1
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "equal is not less",
+      "expression": {
+        "<": [
+          1,
+          1
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "ISO dates order as strings",
+      "expression": {
+        "<": [
+          "2026-01-01",
+          "2026-02-01"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "HH:mm times order as strings",
+      "expression": {
+        "<": [
+          "09:00",
+          "10:30"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "strings compare by UTF-16 code unit",
+      "expression": {
+        "<": [
+          "Z",
+          "a"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "null left is false",
+      "expression": {
+        "<": [
+          null,
+          1
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "null right is false",
+      "expression": {
+        "<": [
+          1,
+          null
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "negative decimals",
+      "expression": {
+        "<": [
+          -1.5,
+          -1
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "string vs number",
+      "expression": {
+        "<": [
+          "a",
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "booleans are not ordered",
+      "expression": {
+        "<": [
+          true,
+          false
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "arrays are not ordered",
+      "expression": {
+        "<": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

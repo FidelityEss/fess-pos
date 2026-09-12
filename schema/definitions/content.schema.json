@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/definitions/content.schema.json",
+  "title": "Content definition (spec 1.0)",
+  "description": "Key → string/template bundle for one locale and scope (docs/04 §3.5).",
+  "type": "object",
+  "properties": {
+    "spec_version": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/spec_version"
+    },
+    "family": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/family"
+    },
+    "version": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/version"
+    },
+    "scope": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/scope"
+    },
+    "id": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/id"
+    },
+    "title": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/title"
+    },
+    "description": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/description"
+    },
+    "locale": {
+      "$ref": "common.schema.json#/$defs/locale"
+    },
+    "requires": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/requires"
+    },
+    "kind": {
+      "const": "content"
+    },
+    "strings": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "common.schema.json#/$defs/content_key"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 5000
+      }
+    }
+  },
+  "required": [
+    "spec_version",
+    "kind",
+    "family",
+    "version",
+    "locale",
+    "strings"
+  ],
+  "additionalProperties": false
+}

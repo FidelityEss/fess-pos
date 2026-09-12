@@ -1,0 +1,119 @@
+{
+  "maps": {
+    "tile_url": null,
+    "api_key": null,
+    "prefetch_zoom": [
+      14,
+      17
+    ],
+    "wifi_only_prefetch": false
+  },
+  "observability": {
+    "sentry_dsn": null,
+    "sample_rate": 0.2
+  },
+  "geofence": {
+    "sample_seconds": 60,
+    "trace_interval_s": 20,
+    "outside_fix": {
+      "allowed": true,
+      "max_accuracy_m": 30,
+      "valid_minutes": 20
+    },
+    "override_radius_multiplier": 2,
+    "override_max_m": 500,
+    "default_profile": "standalone",
+    "profiles": {
+      "standalone": {
+        "radius_m": 75,
+        "max_accuracy_m": 30,
+        "exit_consecutive_fixes": 3,
+        "prompt_checkin_on_arrival": false
+      },
+      "residential": {
+        "radius_m": 75,
+        "max_accuracy_m": 30,
+        "exit_consecutive_fixes": 3,
+        "prompt_checkin_on_arrival": false
+      },
+      "shopping_centre": {
+        "radius_m": 250,
+        "max_accuracy_m": 75,
+        "exit_consecutive_fixes": 5,
+        "prompt_checkin_on_arrival": true
+      },
+      "office_park": {
+        "radius_m": 200,
+        "max_accuracy_m": 75,
+        "exit_consecutive_fixes": 5,
+        "prompt_checkin_on_arrival": true
+      },
+      "large_site": {
+        "radius_m": 300,
+        "max_accuracy_m": 75,
+        "exit_consecutive_fixes": 5,
+        "prompt_checkin_on_arrival": false
+      }
+    }
+  },
+  "integrity": {
+    "block_on_mock": true,
+    "block_on_root": true,
+    "attestation_max_age_h": 24
+  },
+  "photos": {
+    "max_long_edge_px": 2048,
+    "jpeg_quality": 80
+  },
+  "auth": {
+    "reverify_hours": 24,
+    "max_host_token_age_h": 696,
+    "access_token_ttl_s": 900,
+    "refresh_token_ttl_days": 30
+  },
+  "sync": {
+    "foreground_interval_s": 60,
+    "idle_interval_s": 900,
+    "retain_committed_payload_days": 30
+  },
+  "storage": {
+    "cap_mb": 500,
+    "block_new_work_at_pct": 80,
+    "tile_cache_mb": 150
+  },
+  "min_module_version": {
+    "nag": "0.0.0",
+    "new_work": "0.0.0",
+    "block_in_progress": "0.0.0"
+  },
+  "features": {
+    "repeatable_groups": true,
+    "inspection_snapshots": true
+  },
+  "client_mode": "native",
+  "pos": {
+    "enabled": true
+  },
+  "inspections": {
+    "start_enabled": true
+  },
+  "governance": {
+    "four_eyes_global": false
+  },
+  "assignment": {
+    "response_timeout_h": 24
+  },
+  "agent_card": {
+    "token_ttl_h": 24
+  },
+  "session_tokens": {
+    "window_padding_h": 24
+  },
+  "locale": {
+    "timezone": "Africa/Johannesburg"
+  },
+  "theme": {
+    "primary_color": null,
+    "font_family": null
+  }
+}

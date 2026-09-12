@@ -1,0 +1,80 @@
+{
+  "description": "reason metadata drives required and visible",
+  "form": "form_unable_to_complete",
+  "lists": {
+    "reason_codes": {
+      "unable_to_complete": [
+        {
+          "value": "business_closed",
+          "label": "Business closed",
+          "meta": {
+            "requires_note": false,
+            "requires_photo": false
+          }
+        },
+        {
+          "value": "incorrect_address",
+          "label": "Incorrect address",
+          "meta": {
+            "requires_note": true,
+            "requires_photo": true
+          }
+        },
+        {
+          "value": "other",
+          "label": "Other",
+          "meta": {
+            "requires_note": true,
+            "requires_photo": false
+          }
+        }
+      ]
+    }
+  },
+  "document": {
+    "definition_refs": {
+      "form": {
+        "version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d80",
+        "hash": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "flow": {
+        "version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d81",
+        "hash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "config_version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d82",
+    "context_snapshot": {
+      "today": "2026-09-10",
+      "job": {
+        "reference": "POS-2026-000123",
+        "merchant_name": "Joe's Spaza",
+        "location": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        },
+        "attributes": {
+          "risk_tier": "standard"
+        }
+      }
+    },
+    "answers": {
+      "reason_code": {
+        "v": "incorrect_address"
+      }
+    },
+    "answers_hash": "9f839f7aecb3ed04707b7deb2e15fbb08a85a9ba9752fab3a909434254302657"
+  },
+  "expected": {
+    "ok": false,
+    "errors": [
+      {
+        "field_key": "note",
+        "code": "REQUIRED"
+      },
+      {
+        "field_key": "photo",
+        "code": "REQUIRED"
+      }
+    ]
+  }
+}

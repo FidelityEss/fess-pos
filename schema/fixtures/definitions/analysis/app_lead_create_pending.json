@@ -1,0 +1,44 @@
+{
+  "description": "lead.create is pending D-38",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "app",
+    "family": "a",
+    "version": 1,
+    "home": "home",
+    "pages": {
+      "home": {
+        "type": "form_page",
+        "form": "f",
+        "action": "lead.create",
+        "outcomes": "default"
+      },
+      "ok": {
+        "type": "outcome_page",
+        "outcome": "success",
+        "title": "OK"
+      },
+      "saved": {
+        "type": "outcome_page",
+        "outcome": "saved",
+        "title": "Saved"
+      },
+      "failed": {
+        "type": "outcome_page",
+        "outcome": "failure",
+        "title": "Failed"
+      }
+    },
+    "outcome_sets": {
+      "default": {
+        "success": "ok",
+        "saved": "saved",
+        "failure": "failed"
+      }
+    }
+  },
+  "expected_errors": [],
+  "expected_warnings": [
+    "ACTION_PENDING_DECISION"
+  ]
+}

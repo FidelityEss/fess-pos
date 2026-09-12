@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/error.schema.json",
+  "title": "Error response",
+  "description": "Every API error (docs/DEVELOPMENT-GUIDELINES §2).",
+  "type": "object",
+  "properties": {
+    "error": {
+      "$ref": "common.schema.json#/$defs/error_detail"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "error",
+    "request_id"
+  ],
+  "additionalProperties": true
+}

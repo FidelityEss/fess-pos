@@ -1,0 +1,7 @@
+{
+  "description": "server_epoch is required",
+  "schema": "sync-pull-response",
+  "value": {
+    "server_time": "2026-09-10T08:31:03Z"
+  }
+}

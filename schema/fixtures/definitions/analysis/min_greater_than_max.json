@@ -1,0 +1,27 @@
+{
+  "description": "literal bounds must be ordered",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "n",
+            "type": "number",
+            "props": {
+              "min": 10,
+              "max": 5
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "MIN_GREATER_THAN_MAX"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/upload-grant-request.schema.json",
+  "title": "POST /v1/evidence/upload-grant request",
+  "description": "Ask for an upload target for landed evidence metadata (docs/12 §6).",
+  "type": "object",
+  "properties": {
+    "evidence_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    }
+  },
+  "required": [
+    "evidence_id"
+  ],
+  "additionalProperties": false
+}

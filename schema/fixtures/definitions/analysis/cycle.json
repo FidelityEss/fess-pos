@@ -1,0 +1,46 @@
+{
+  "description": "a and b hide each other",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text",
+            "visible": {
+              "==": [
+                {
+                  "var": "answers.b"
+                },
+                "x"
+              ]
+            }
+          },
+          {
+            "key": "b",
+            "type": "text",
+            "visible": {
+              "==": [
+                {
+                  "var": "answers.a"
+                },
+                "y"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "CYCLE"
+  ],
+  "expected_warnings": [
+    "REFERENCES_LATER_FIELD"
+  ]
+}

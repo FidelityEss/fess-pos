@@ -1,0 +1,25 @@
+{
+  "description": "every page must be reachable",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "app",
+    "family": "a",
+    "version": 1,
+    "home": "home",
+    "pages": {
+      "home": {
+        "type": "list_page",
+        "source": "jobs",
+        "item_view": "job_card"
+      },
+      "lonely": {
+        "type": "list_page",
+        "source": "jobs",
+        "item_view": "job_card"
+      }
+    }
+  },
+  "expected_errors": [
+    "ORPHAN_PAGE"
+  ]
+}

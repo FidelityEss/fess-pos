@@ -1,0 +1,21 @@
+{
+  "description": "home must be a page",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "app",
+    "family": "a",
+    "version": 1,
+    "home": "nowhere",
+    "pages": {
+      "list": {
+        "type": "list_page",
+        "source": "jobs",
+        "item_view": "job_card"
+      }
+    }
+  },
+  "expected_errors": [
+    "MISSING_PAGE_REF",
+    "ORPHAN_PAGE"
+  ]
+}

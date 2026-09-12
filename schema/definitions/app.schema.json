@@ -1,0 +1,468 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/definitions/app.schema.json",
+  "title": "App definition (spec 1.0)",
+  "description": "Home page, navigation and every page, built from the page-type catalogue (docs/04 §3.6, docs/11 §7.1). form_page and flow pages end on an outcome set mapping success/saved/failure to outcome pages (docs/04 §3.7).",
+  "type": "object",
+  "properties": {
+    "spec_version": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/spec_version"
+    },
+    "family": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/family"
+    },
+    "version": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/version"
+    },
+    "scope": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/scope"
+    },
+    "id": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/id"
+    },
+    "title": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/title"
+    },
+    "description": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/description"
+    },
+    "locale": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/locale"
+    },
+    "requires": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/requires"
+    },
+    "kind": {
+      "const": "app"
+    },
+    "home": {
+      "$ref": "common.schema.json#/$defs/key"
+    },
+    "navigation": {
+      "type": "object",
+      "properties": {
+        "style": {
+          "enum": [
+            "bottom_tabs",
+            "drawer",
+            "none"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "$ref": "common.schema.json#/$defs/template"
+              },
+              "icon": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 50
+              },
+              "page": {
+                "$ref": "common.schema.json#/$defs/key"
+              }
+            },
+            "required": [
+              "label",
+              "page"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "style",
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "pages": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "common.schema.json#/$defs/key"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/page"
+      }
+    },
+    "outcome_sets": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "common.schema.json#/$defs/key"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "$ref": "common.schema.json#/$defs/key"
+          },
+          "saved": {
+            "$ref": "common.schema.json#/$defs/key"
+          },
+          "failure": {
+            "$ref": "common.schema.json#/$defs/key"
+          }
+        },
+        "required": [
+          "success",
+          "saved",
+          "failure"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "spec_version",
+    "kind",
+    "family",
+    "version",
+    "home",
+    "pages"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "page": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "view_page",
+            "list_page",
+            "form_page",
+            "flow",
+            "outcome_page"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "view_page"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/view_page"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "list_page"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/list_page"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "form_page"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/form_page"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "flow"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/flow"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "outcome_page"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/outcome_page"
+          }
+        }
+      ]
+    },
+    "buttons": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "$ref": "common.schema.json#/$defs/template"
+          },
+          "action": {
+            "enum": [
+              "home",
+              "receipt",
+              "retry",
+              "start_flow",
+              "page",
+              "back"
+            ]
+          },
+          "target": {
+            "$ref": "common.schema.json#/$defs/target"
+          }
+        },
+        "required": [
+          "label",
+          "action"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "page_actions": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "$ref": "common.schema.json#/$defs/template"
+          },
+          "target": {
+            "$ref": "common.schema.json#/$defs/target"
+          }
+        },
+        "required": [
+          "label",
+          "target"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "view_page": {
+      "type": "object",
+      "description": "view_page@1",
+      "properties": {
+        "type": {
+          "const": "view_page"
+        },
+        "view": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "title": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "actions": {
+          "$ref": "#/$defs/page_actions"
+        }
+      },
+      "required": [
+        "type",
+        "view"
+      ],
+      "additionalProperties": false
+    },
+    "list_page": {
+      "type": "object",
+      "description": "list_page@1",
+      "properties": {
+        "type": {
+          "const": "list_page"
+        },
+        "title": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "source": {
+          "enum": [
+            "jobs",
+            "inspections",
+            "form_submissions"
+          ]
+        },
+        "filter": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "common.schema.json#/$defs/operation"
+            }
+          ]
+        },
+        "sort": {
+          "$ref": "common.schema.json#/$defs/path"
+        },
+        "sort_direction": {
+          "enum": [
+            "asc",
+            "desc"
+          ]
+        },
+        "group_by": {
+          "$ref": "common.schema.json#/$defs/path"
+        },
+        "item_view": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "on_tap": {
+          "$ref": "common.schema.json#/$defs/target"
+        },
+        "empty_content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "type",
+        "source",
+        "item_view"
+      ],
+      "additionalProperties": false
+    },
+    "form_page": {
+      "type": "object",
+      "description": "form_page@1",
+      "properties": {
+        "type": {
+          "const": "form_page"
+        },
+        "title": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "form": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "common.schema.json#/$defs/key"
+          }
+        },
+        "action": {
+          "enum": [
+            "job.accept",
+            "job.reject",
+            "job.unable",
+            "record.submit",
+            "lead.create"
+          ]
+        },
+        "subject": {
+          "enum": [
+            "job",
+            "agent",
+            "none"
+          ]
+        },
+        "outcomes": {
+          "$ref": "common.schema.json#/$defs/key"
+        }
+      },
+      "required": [
+        "type",
+        "form",
+        "action",
+        "outcomes"
+      ],
+      "additionalProperties": false
+    },
+    "flow": {
+      "type": "object",
+      "description": "flow@1",
+      "properties": {
+        "type": {
+          "const": "flow"
+        },
+        "title": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "flow": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "outcomes": {
+          "$ref": "common.schema.json#/$defs/key"
+        }
+      },
+      "required": [
+        "type",
+        "flow",
+        "outcomes"
+      ],
+      "additionalProperties": false
+    },
+    "outcome_page": {
+      "type": "object",
+      "description": "outcome_page@1",
+      "properties": {
+        "type": {
+          "const": "outcome_page"
+        },
+        "outcome": {
+          "enum": [
+            "success",
+            "saved",
+            "failure"
+          ]
+        },
+        "title": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "message": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "icon": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "buttons": {
+          "$ref": "#/$defs/buttons"
+        },
+        "auto_return_s": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60
+        }
+      },
+      "required": [
+        "type",
+        "outcome"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

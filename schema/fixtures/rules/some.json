@@ -1,0 +1,202 @@
+{
+  "operator": "some",
+  "cases": [
+    {
+      "name": "some match",
+      "expression": {
+        "some": [
+          [
+            1,
+            2,
+            3
+          ],
+          {
+            ">": [
+              {
+                "var": "current"
+              },
+              2
+            ]
+          }
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "no match",
+      "expression": {
+        "some": [
+          [
+            1,
+            2
+          ],
+          {
+            ">": [
+              {
+                "var": "current"
+              },
+              5
+            ]
+          }
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "empty array",
+      "expression": {
+        "some": [
+          [],
+          true
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "null array",
+      "expression": {
+        "some": [
+          {
+            "var": "missing"
+          },
+          true
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "predicate reads outer data",
+      "expression": {
+        "some": [
+          {
+            "var": "xs"
+          },
+          {
+            ">": [
+              {
+                "var": "current"
+              },
+              {
+                "var": "limit"
+              }
+            ]
+          }
+        ]
+      },
+      "data": {
+        "limit": 1,
+        "xs": [
+          0,
+          2
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "current_index is bound",
+      "expression": {
+        "some": [
+          [
+            "a",
+            "b"
+          ],
+          {
+            "==": [
+              {
+                "var": "current_index"
+              },
+              1
+            ]
+          }
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "object elements",
+      "expression": {
+        "some": [
+          {
+            "var": "items"
+          },
+          {
+            "==": [
+              {
+                "var": "current.kind"
+              },
+              "home"
+            ]
+          }
+        ]
+      },
+      "data": {
+        "items": [
+          {
+            "kind": "shop"
+          },
+          {
+            "kind": "home"
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "stops at the first match",
+      "expression": {
+        "some": [
+          [
+            true,
+            "x"
+          ],
+          {
+            "var": "current"
+          }
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "non-boolean predicate",
+      "expression": {
+        "some": [
+          [
+            1
+          ],
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "string collection",
+      "expression": {
+        "some": [
+          "abc",
+          true
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "missing predicate",
+      "expression": {
+        "some": [
+          [
+            1
+          ]
+        ]
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

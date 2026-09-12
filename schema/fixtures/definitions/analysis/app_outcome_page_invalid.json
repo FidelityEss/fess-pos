@@ -1,0 +1,32 @@
+{
+  "description": "outcome sets map each outcome to a matching outcome page",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "app",
+    "family": "a",
+    "version": 1,
+    "home": "home",
+    "pages": {
+      "home": {
+        "type": "form_page",
+        "form": "f",
+        "action": "record.submit",
+        "outcomes": "default"
+      },
+      "done": {
+        "type": "outcome_page",
+        "outcome": "success"
+      }
+    },
+    "outcome_sets": {
+      "default": {
+        "success": "done",
+        "saved": "done",
+        "failure": "done"
+      }
+    }
+  },
+  "expected_errors": [
+    "OUTCOME_PAGE_INVALID"
+  ]
+}

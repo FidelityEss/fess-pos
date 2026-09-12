@@ -1,0 +1,477 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/definitions/flow.schema.json",
+  "title": "Flow definition (spec 1.0)",
+  "description": "Multi-step journey (docs/04 §3.2, docs/11 §6). Steps run in order unless `next` (a step id, `flow:<family>`, `page:<key>`, or an expression yielding one) branches.",
+  "type": "object",
+  "properties": {
+    "spec_version": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/spec_version"
+    },
+    "family": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/family"
+    },
+    "version": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/version"
+    },
+    "scope": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/scope"
+    },
+    "id": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/id"
+    },
+    "title": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/title"
+    },
+    "description": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/description"
+    },
+    "locale": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/locale"
+    },
+    "requires": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/requires"
+    },
+    "kind": {
+      "const": "flow"
+    },
+    "form_family": {
+      "$ref": "common.schema.json#/$defs/key"
+    },
+    "action": {
+      "enum": [
+        "job.accept",
+        "job.reject",
+        "job.unable",
+        "inspection.submit",
+        "record.submit",
+        "lead.create"
+      ],
+      "description": "Action the submit step performs (default inspection.submit)."
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/step"
+      }
+    }
+  },
+  "required": [
+    "spec_version",
+    "kind",
+    "family",
+    "version",
+    "steps"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "step": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "job_briefing",
+            "location_check",
+            "form",
+            "summary_review",
+            "declaration",
+            "submit",
+            "receipt"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "job_briefing"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/job_briefing"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "location_check"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/location_check"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "form"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/form"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "summary_review"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/summary_review"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "declaration"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/declaration"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "submit"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/submit"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "receipt"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/receipt"
+          }
+        }
+      ]
+    },
+    "messages": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "common.schema.json#/$defs/key"
+      },
+      "additionalProperties": {
+        "$ref": "common.schema.json#/$defs/content_key"
+      }
+    },
+    "job_briefing": {
+      "type": "object",
+      "description": "job_briefing@1 — optional (may carry visible).",
+      "properties": {
+        "type": {
+          "const": "job_briefing"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "next": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^((flow|page):)?[a-z][a-z0-9_]{0,63}$"
+            },
+            {
+              "$ref": "common.schema.json#/$defs/operation"
+            }
+          ]
+        },
+        "view": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "acknowledgement_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        }
+      },
+      "required": [
+        "type",
+        "view"
+      ],
+      "additionalProperties": false
+    },
+    "location_check": {
+      "type": "object",
+      "description": "location_check@1 — integrity step: cannot be removed or made optional (docs/07 §6).",
+      "properties": {
+        "type": {
+          "const": "location_check"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "next": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^((flow|page):)?[a-z][a-z0-9_]{0,63}$"
+            },
+            {
+              "$ref": "common.schema.json#/$defs/operation"
+            }
+          ]
+        },
+        "messages": {
+          "$ref": "#/$defs/messages"
+        },
+        "checkin_prompt": {
+          "enum": [
+            "profile",
+            "always"
+          ]
+        },
+        "override_form": {
+          "$ref": "common.schema.json#/$defs/key"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "form": {
+      "type": "object",
+      "description": "form@1.",
+      "properties": {
+        "type": {
+          "const": "form"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "next": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^((flow|page):)?[a-z][a-z0-9_]{0,63}$"
+            },
+            {
+              "$ref": "common.schema.json#/$defs/operation"
+            }
+          ]
+        },
+        "form": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "common.schema.json#/$defs/key"
+          }
+        },
+        "paging": {
+          "enum": [
+            "section_per_page",
+            "single_page"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "sections"
+      ],
+      "additionalProperties": false
+    },
+    "summary_review": {
+      "type": "object",
+      "description": "summary_review@1 — optional (may carry visible).",
+      "properties": {
+        "type": {
+          "const": "summary_review"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "next": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^((flow|page):)?[a-z][a-z0-9_]{0,63}$"
+            },
+            {
+              "$ref": "common.schema.json#/$defs/operation"
+            }
+          ]
+        },
+        "show_risk_indicators": {
+          "type": "boolean"
+        },
+        "allow_jump_back": {
+          "type": "boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "declaration": {
+      "type": "object",
+      "description": "declaration@1 — integrity step: cannot be removed or made optional (docs/07 §6).",
+      "properties": {
+        "type": {
+          "const": "declaration"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "next": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^((flow|page):)?[a-z][a-z0-9_]{0,63}$"
+            },
+            {
+              "$ref": "common.schema.json#/$defs/operation"
+            }
+          ]
+        },
+        "declaration_key": {
+          "$ref": "common.schema.json#/$defs/key"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "submit": {
+      "type": "object",
+      "description": "submit@1 — integrity step: cannot be removed or made optional (docs/07 §6).",
+      "properties": {
+        "type": {
+          "const": "submit"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "next": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^((flow|page):)?[a-z][a-z0-9_]{0,63}$"
+            },
+            {
+              "$ref": "common.schema.json#/$defs/operation"
+            }
+          ]
+        },
+        "confirm_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "receipt": {
+      "type": "object",
+      "description": "receipt@1 — optional (may carry visible).",
+      "properties": {
+        "type": {
+          "const": "receipt"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "next": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^((flow|page):)?[a-z][a-z0-9_]{0,63}$"
+            },
+            {
+              "$ref": "common.schema.json#/$defs/operation"
+            }
+          ]
+        },
+        "view": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        }
+      },
+      "required": [
+        "type",
+        "view"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

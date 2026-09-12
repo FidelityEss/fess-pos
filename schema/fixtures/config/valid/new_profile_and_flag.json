@@ -1,0 +1,25 @@
+{
+  "description": "profiles and feature flags are open maps",
+  "layers": [
+    {
+      "geofence": {
+        "profiles": {
+          "cbd_tower": {
+            "radius_m": 150,
+            "max_accuracy_m": 60,
+            "exit_consecutive_fixes": 4,
+            "prompt_checkin_on_arrival": true
+          }
+        }
+      },
+      "features": {
+        "lead_creation": false
+      }
+    }
+  ],
+  "expect_values": {
+    "geofence.profiles.cbd_tower.radius_m": 150,
+    "features.lead_creation": false,
+    "features.repeatable_groups": true
+  }
+}

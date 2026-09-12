@@ -1,0 +1,4579 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/definitions/components.schema.json",
+  "title": "Component catalogue (spec 1.0, docs/11 waves 1–2)",
+  "description": "Every form component: common props (docs/11 §2) at top level, type-specific props in `props` (display components: at top level), choice options at top level. R = literal or expression (anyOf with common#/$defs/operation).",
+  "$defs": {
+    "field": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "text",
+            "textarea",
+            "number",
+            "percentage",
+            "phone",
+            "currency",
+            "slider",
+            "rating",
+            "email",
+            "id_number",
+            "registration_number",
+            "boolean",
+            "tri_state",
+            "single_select",
+            "multi_select",
+            "lookup",
+            "date",
+            "time",
+            "duration",
+            "business_hours",
+            "datetime",
+            "address",
+            "location_pin",
+            "current_location",
+            "photo",
+            "signature",
+            "declaration",
+            "acknowledgement",
+            "consent",
+            "info",
+            "callout",
+            "divider",
+            "image",
+            "prefilled",
+            "computed",
+            "group",
+            "repeatable_group",
+            "matrix"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "text"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "textarea"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/textarea"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "number"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/number"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "percentage"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/percentage"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "phone"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/phone"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "currency"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/currency"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "slider"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/slider"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "rating"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/rating"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "email"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/email"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "id_number"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/id_number"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "registration_number"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/registration_number"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "boolean"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/boolean"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "tri_state"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/tri_state"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "single_select"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/single_select"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "multi_select"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/multi_select"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "lookup"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/lookup"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "date"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/date"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "time"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/time"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "duration"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/duration"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "business_hours"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/business_hours"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "datetime"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/datetime"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "address"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/address"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "location_pin"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/location_pin"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "current_location"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/current_location"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "photo"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/photo"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "signature"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/signature"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "declaration"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/declaration"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "acknowledgement"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/acknowledgement"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "consent"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/consent"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "info"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/info"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "callout"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/callout"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "divider"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/divider"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "image"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/image"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "prefilled"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/prefilled"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "computed"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/computed"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "group"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/group"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "repeatable_group"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/repeatable_group"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "matrix"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/matrix"
+          }
+        }
+      ]
+    },
+    "attribute": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "text",
+            "textarea",
+            "number",
+            "percentage",
+            "phone",
+            "currency",
+            "slider",
+            "rating",
+            "email",
+            "id_number",
+            "registration_number",
+            "boolean",
+            "tri_state",
+            "single_select",
+            "multi_select",
+            "lookup",
+            "date",
+            "time",
+            "duration",
+            "business_hours",
+            "datetime",
+            "address",
+            "location_pin"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "text"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "textarea"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/textarea"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "number"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/number"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "percentage"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/percentage"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "phone"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/phone"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "currency"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/currency"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "slider"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/slider"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "rating"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/rating"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "email"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/email"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "id_number"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/id_number"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "registration_number"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/registration_number"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "boolean"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/boolean"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "tri_state"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/tri_state"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "single_select"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/single_select"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "multi_select"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/multi_select"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "lookup"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/lookup"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "date"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/date"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "time"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/time"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "duration"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/duration"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "business_hours"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/business_hours"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "datetime"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/datetime"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "address"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/address"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "location_pin"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/location_pin"
+          }
+        }
+      ]
+    },
+    "section": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "title": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "description": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "page_break": {
+          "type": "boolean"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/field"
+          }
+        }
+      },
+      "required": [
+        "key",
+        "fields"
+      ],
+      "additionalProperties": false
+    },
+    "option": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "meta": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "required": [
+        "value",
+        "label"
+      ],
+      "additionalProperties": false
+    },
+    "options_source": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "lookup_list"
+            },
+            "key": {
+              "$ref": "common.schema.json#/$defs/key"
+            }
+          },
+          "required": [
+            "type",
+            "key"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "reason_codes"
+            },
+            "category": {
+              "$ref": "common.schema.json#/$defs/key"
+            }
+          },
+          "required": [
+            "type",
+            "category"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "validate_rule": {
+      "type": "object",
+      "properties": {
+        "rule": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "message": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        }
+      },
+      "required": [
+        "rule",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "risk_indicator": {
+      "type": "object",
+      "properties": {
+        "when": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "level": {
+          "enum": [
+            "info",
+            "elevated",
+            "high"
+          ]
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        }
+      },
+      "required": [
+        "when",
+        "level"
+      ],
+      "additionalProperties": false
+    },
+    "export": {
+      "type": "object",
+      "properties": {
+        "include": {
+          "type": "boolean"
+        },
+        "column_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "additionalProperties": false
+    },
+    "pdf": {
+      "type": "object",
+      "properties": {
+        "include": {
+          "type": "boolean"
+        },
+        "layout": {
+          "enum": [
+            "full",
+            "compact",
+            "table"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "fallback": {
+      "type": "object",
+      "description": "Component rendered by older modules (docs/04 §8); the answer records rendered_as.",
+      "properties": {
+        "type": {
+          "enum": [
+            "text",
+            "textarea",
+            "number",
+            "percentage",
+            "phone",
+            "currency",
+            "slider",
+            "rating",
+            "email",
+            "id_number",
+            "registration_number",
+            "boolean",
+            "tri_state",
+            "single_select",
+            "multi_select",
+            "lookup",
+            "date",
+            "time",
+            "duration",
+            "business_hours",
+            "datetime",
+            "address",
+            "location_pin",
+            "current_location",
+            "photo",
+            "signature",
+            "declaration",
+            "acknowledgement",
+            "consent",
+            "info",
+            "callout",
+            "divider",
+            "image",
+            "prefilled",
+            "computed",
+            "group",
+            "repeatable_group",
+            "matrix"
+          ]
+        },
+        "display": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "props": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "guidance": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "asset": {
+          "$ref": "common.schema.json#/$defs/asset"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "tri_labels": {
+      "type": "object",
+      "properties": {
+        "yes": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "no": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "na": {
+          "$ref": "common.schema.json#/$defs/template"
+        }
+      },
+      "additionalProperties": false
+    },
+    "matrix_rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "$ref": "common.schema.json#/$defs/key"
+          },
+          "label": {
+            "$ref": "common.schema.json#/$defs/template"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "matrix_columns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "label": {
+            "$ref": "common.schema.json#/$defs/template"
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "required_rows": {
+      "anyOf": [
+        {
+          "const": "all"
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "common.schema.json#/$defs/key"
+          }
+        }
+      ]
+    },
+    "text": {
+      "type": "object",
+      "description": "text@1 (wave 1, text) — value: string.",
+      "properties": {
+        "type": {
+          "const": "text"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "display": {
+          "enum": [
+            "single_line"
+          ]
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "min_length": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "max_length": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "pattern": {
+              "$ref": "common.schema.json#/$defs/regex"
+            },
+            "mask": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "placeholder": {
+              "$ref": "common.schema.json#/$defs/template"
+            },
+            "keyboard": {
+              "enum": [
+                "text",
+                "number",
+                "phone",
+                "email",
+                "url"
+              ]
+            },
+            "capitalise": {
+              "enum": [
+                "none",
+                "words",
+                "sentences",
+                "characters"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "textarea": {
+      "type": "object",
+      "description": "textarea@1 (wave 1, text) — value: string.",
+      "properties": {
+        "type": {
+          "const": "textarea"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "display": {
+          "enum": [
+            "multi_line"
+          ]
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "min_length": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "max_length": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "pattern": {
+              "$ref": "common.schema.json#/$defs/regex"
+            },
+            "mask": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "placeholder": {
+              "$ref": "common.schema.json#/$defs/template"
+            },
+            "keyboard": {
+              "enum": [
+                "text",
+                "number",
+                "phone",
+                "email",
+                "url"
+              ]
+            },
+            "capitalise": {
+              "enum": [
+                "none",
+                "words",
+                "sentences",
+                "characters"
+              ]
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "number": {
+      "type": "object",
+      "description": "number@1 (wave 1, text) — value: number.",
+      "properties": {
+        "type": {
+          "const": "number"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "display": {
+          "enum": [
+            "plain",
+            "stepper"
+          ]
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "max": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "integer": {
+              "type": "boolean"
+            },
+            "decimals": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "unit": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20
+            },
+            "step": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "placeholder": {
+              "$ref": "common.schema.json#/$defs/template"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "percentage": {
+      "type": "object",
+      "description": "percentage@1 (wave 1, text) — value: number.",
+      "properties": {
+        "type": {
+          "const": "percentage"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "display": {
+          "enum": [
+            "plain",
+            "slider"
+          ]
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "max": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "decimals": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "phone": {
+      "type": "object",
+      "description": "phone@1 (wave 1, text) — value: string.",
+      "properties": {
+        "type": {
+          "const": "phone"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "default_region": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "pattern": "^[A-Z]{2}$"
+            },
+            "allow_landline": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "currency": {
+      "type": "object",
+      "description": "currency@1 (wave 2, text) — value: object.",
+      "properties": {
+        "type": {
+          "const": "currency"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "max": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "currency": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "pattern": "^[A-Z]{3}$"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "slider": {
+      "type": "object",
+      "description": "slider@1 (wave 2, text) — value: number.",
+      "properties": {
+        "type": {
+          "const": "slider"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "step": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "min_label": {
+              "$ref": "common.schema.json#/$defs/template"
+            },
+            "max_label": {
+              "$ref": "common.schema.json#/$defs/template"
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "props"
+      ],
+      "additionalProperties": false
+    },
+    "rating": {
+      "type": "object",
+      "description": "rating@1 (wave 2, text) — value: number.",
+      "properties": {
+        "type": {
+          "const": "rating"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "display": {
+          "enum": [
+            "stars",
+            "numbered",
+            "likert"
+          ]
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "scale": {
+              "type": "integer",
+              "minimum": 3,
+              "maximum": 10
+            },
+            "labels": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "email": {
+      "type": "object",
+      "description": "email@1 (wave 2, text) — value: string.",
+      "properties": {
+        "type": {
+          "const": "email"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "placeholder": {
+              "$ref": "common.schema.json#/$defs/template"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "id_number": {
+      "type": "object",
+      "description": "id_number@1 (wave 2, text) — value: string.",
+      "properties": {
+        "type": {
+          "const": "id_number"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "scheme": {
+              "enum": [
+                "za_id",
+                "passport",
+                "custom"
+              ]
+            },
+            "pattern": {
+              "$ref": "common.schema.json#/$defs/regex"
+            }
+          },
+          "required": [
+            "scheme"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "props"
+      ],
+      "additionalProperties": false
+    },
+    "registration_number": {
+      "type": "object",
+      "description": "registration_number@1 (wave 2, text) — value: string.",
+      "properties": {
+        "type": {
+          "const": "registration_number"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "scheme": {
+              "enum": [
+                "cipc",
+                "vat_za",
+                "custom"
+              ]
+            },
+            "pattern": {
+              "$ref": "common.schema.json#/$defs/regex"
+            }
+          },
+          "required": [
+            "scheme"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "props"
+      ],
+      "additionalProperties": false
+    },
+    "boolean": {
+      "type": "object",
+      "description": "boolean@1 (wave 1, choice) — value: boolean.",
+      "properties": {
+        "type": {
+          "const": "boolean"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "display": {
+          "enum": [
+            "yes_no_radio",
+            "toggle",
+            "checkbox"
+          ]
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "true_label": {
+              "$ref": "common.schema.json#/$defs/template"
+            },
+            "false_label": {
+              "$ref": "common.schema.json#/$defs/template"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "tri_state": {
+      "type": "object",
+      "description": "tri_state@1 (wave 1, choice) — value: string.",
+      "properties": {
+        "type": {
+          "const": "tri_state"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "display": {
+          "enum": [
+            "segmented",
+            "radio"
+          ]
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "labels": {
+              "$ref": "#/$defs/tri_labels"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "single_select": {
+      "type": "object",
+      "description": "single_select@1 (wave 1, choice) — value: string.",
+      "properties": {
+        "type": {
+          "const": "single_select"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "display": {
+          "enum": [
+            "radio",
+            "dropdown",
+            "chips",
+            "segmented",
+            "searchable_list"
+          ]
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "allow_other": {
+              "type": "boolean"
+            },
+            "other_value": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "other_label": {
+              "$ref": "common.schema.json#/$defs/template"
+            }
+          },
+          "additionalProperties": false
+        },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/option"
+          }
+        },
+        "options_source": {
+          "$ref": "#/$defs/options_source"
+        },
+        "options_filter": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "options": true
+          },
+          "required": [
+            "options"
+          ]
+        },
+        {
+          "properties": {
+            "options_source": true
+          },
+          "required": [
+            "options_source"
+          ]
+        }
+      ]
+    },
+    "multi_select": {
+      "type": "object",
+      "description": "multi_select@1 (wave 1, choice) — value: array.",
+      "properties": {
+        "type": {
+          "const": "multi_select"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "display": {
+          "enum": [
+            "checkboxes",
+            "chips"
+          ]
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "min_select": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "max_select": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "allow_other": {
+              "type": "boolean"
+            },
+            "other_value": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "other_label": {
+              "$ref": "common.schema.json#/$defs/template"
+            },
+            "exclusive_options": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/option"
+          }
+        },
+        "options_source": {
+          "$ref": "#/$defs/options_source"
+        },
+        "options_filter": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "options": true
+          },
+          "required": [
+            "options"
+          ]
+        },
+        {
+          "properties": {
+            "options_source": true
+          },
+          "required": [
+            "options_source"
+          ]
+        }
+      ]
+    },
+    "lookup": {
+      "type": "object",
+      "description": "lookup@1 (wave 2, choice) — value: string.",
+      "properties": {
+        "type": {
+          "const": "lookup"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "display": {
+          "enum": [
+            "searchable_sheet"
+          ]
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "list": {
+              "$ref": "common.schema.json#/$defs/key"
+            },
+            "search": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "list"
+          ],
+          "additionalProperties": false
+        },
+        "options_filter": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "props"
+      ],
+      "additionalProperties": false
+    },
+    "date": {
+      "type": "object",
+      "description": "date@1 (wave 1, date) — value: string.",
+      "properties": {
+        "type": {
+          "const": "date"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "anyOf": [
+                {
+                  "$ref": "common.schema.json#/$defs/date"
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "max": {
+              "anyOf": [
+                {
+                  "$ref": "common.schema.json#/$defs/date"
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "allow_unknown": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "time": {
+      "type": "object",
+      "description": "time@1 (wave 1, date) — value: string.",
+      "properties": {
+        "type": {
+          "const": "time"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "$ref": "common.schema.json#/$defs/time"
+            },
+            "max": {
+              "$ref": "common.schema.json#/$defs/time"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "duration": {
+      "type": "object",
+      "description": "duration@1 (wave 1, date) — value: object.",
+      "properties": {
+        "type": {
+          "const": "duration"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "units": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "days",
+                  "months",
+                  "years"
+                ]
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "business_hours": {
+      "type": "object",
+      "description": "business_hours@1 (wave 1, date) — value: object.",
+      "properties": {
+        "type": {
+          "const": "business_hours"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "groups": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "weekdays",
+                  "saturday",
+                  "sunday",
+                  "public_holidays"
+                ]
+              }
+            },
+            "allow_24h": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "datetime": {
+      "type": "object",
+      "description": "datetime@1 (wave 2, date) — value: string.",
+      "properties": {
+        "type": {
+          "const": "datetime"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "anyOf": [
+                {
+                  "$ref": "common.schema.json#/$defs/datetime"
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "max": {
+              "anyOf": [
+                {
+                  "$ref": "common.schema.json#/$defs/datetime"
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "address": {
+      "type": "object",
+      "description": "address@1 (wave 1, location) — value: object.",
+      "properties": {
+        "type": {
+          "const": "address"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "map_pin": {
+              "enum": [
+                "none",
+                "optional",
+                "required"
+              ]
+            },
+            "geocode": {
+              "enum": [
+                "off",
+                "when_online"
+              ]
+            },
+            "provinces": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "location_pin": {
+      "type": "object",
+      "description": "location_pin@1 (wave 1, location) — value: object.",
+      "properties": {
+        "type": {
+          "const": "location_pin"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "initial": {
+              "enum": [
+                "job",
+                "current"
+              ]
+            },
+            "max_distance_from_job_m": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "current_location": {
+      "type": "object",
+      "description": "current_location@1 (wave 2, location) — value: object.",
+      "properties": {
+        "type": {
+          "const": "current_location"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "max_accuracy_m": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "sample_seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 300
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "photo": {
+      "type": "object",
+      "description": "photo@1 (wave 1, evidence) — value: array.",
+      "properties": {
+        "type": {
+          "const": "photo"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "display": {
+          "enum": [
+            "grid",
+            "guided_sequence"
+          ]
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "min_count": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "max_count": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "category": {
+              "$ref": "common.schema.json#/$defs/key"
+            },
+            "require_gps": {
+              "type": "boolean"
+            },
+            "guidance": {
+              "$ref": "#/$defs/guidance"
+            },
+            "caption": {
+              "enum": [
+                "none",
+                "optional",
+                "required"
+              ]
+            },
+            "retake": {
+              "enum": [
+                "allowed",
+                "confirm",
+                "disallowed"
+              ]
+            }
+          },
+          "required": [
+            "category"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "props"
+      ],
+      "additionalProperties": false
+    },
+    "signature": {
+      "type": "object",
+      "description": "signature@1 (wave 1, evidence) — value: string.",
+      "properties": {
+        "type": {
+          "const": "signature"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "signer_name_field": {
+              "$ref": "common.schema.json#/$defs/key"
+            },
+            "signer_designation_field": {
+              "$ref": "common.schema.json#/$defs/key"
+            },
+            "min_stroke_length": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "declaration": {
+      "type": "object",
+      "description": "declaration@1 (wave 1, legal) — value: object.",
+      "properties": {
+        "type": {
+          "const": "declaration"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "declaration_key": {
+              "$ref": "common.schema.json#/$defs/key"
+            }
+          },
+          "required": [
+            "declaration_key"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "props"
+      ],
+      "additionalProperties": false
+    },
+    "acknowledgement": {
+      "type": "object",
+      "description": "acknowledgement@1 (wave 1, legal) — value: boolean.",
+      "properties": {
+        "type": {
+          "const": "acknowledgement"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "$ref": "common.schema.json#/$defs/template"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "props"
+      ],
+      "additionalProperties": false
+    },
+    "consent": {
+      "type": "object",
+      "description": "consent@1 (wave 2, legal) — value: object.",
+      "properties": {
+        "type": {
+          "const": "consent"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "declaration_key": {
+              "$ref": "common.schema.json#/$defs/key"
+            },
+            "by_name_field": {
+              "$ref": "common.schema.json#/$defs/key"
+            }
+          },
+          "required": [
+            "declaration_key"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "props"
+      ],
+      "additionalProperties": false
+    },
+    "info": {
+      "type": "object",
+      "description": "info@1 (wave 1) — display component; props at top level.",
+      "properties": {
+        "type": {
+          "const": "info"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "text": {
+          "$ref": "common.schema.json#/$defs/template"
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "callout": {
+      "type": "object",
+      "description": "callout@1 (wave 1) — display component; props at top level.",
+      "properties": {
+        "type": {
+          "const": "callout"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "tone": {
+          "enum": [
+            "info",
+            "warning",
+            "danger"
+          ]
+        },
+        "text": {
+          "$ref": "common.schema.json#/$defs/template"
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "tone",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "divider": {
+      "type": "object",
+      "description": "divider@1 (wave 1) — display component; props at top level.",
+      "properties": {
+        "type": {
+          "const": "divider"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "image": {
+      "type": "object",
+      "description": "image@1 (wave 2) — display component; props at top level.",
+      "properties": {
+        "type": {
+          "const": "image"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "asset": {
+          "$ref": "common.schema.json#/$defs/asset"
+        },
+        "caption": {
+          "$ref": "common.schema.json#/$defs/template"
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "asset"
+      ],
+      "additionalProperties": false
+    },
+    "prefilled": {
+      "type": "object",
+      "description": "prefilled@1 (wave 1, computed) — value: any.",
+      "properties": {
+        "type": {
+          "const": "prefilled"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "pattern": "^(job|agent)(\\.[a-z0-9_]+)+$"
+            },
+            "allow_flag_differs": {
+              "type": "boolean"
+            },
+            "differs_note": {
+              "$ref": "common.schema.json#/$defs/template"
+            }
+          },
+          "required": [
+            "source"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "props"
+      ],
+      "additionalProperties": false
+    },
+    "computed": {
+      "type": "object",
+      "description": "computed@1 (wave 2, computed) — value: any.",
+      "properties": {
+        "type": {
+          "const": "computed"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "format": {
+              "enum": [
+                "text",
+                "number",
+                "percentage",
+                "currency",
+                "date"
+              ]
+            },
+            "decimals": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "hidden": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "group": {
+      "type": "object",
+      "description": "group@1 (wave 1) — layout container; child answers are top-level keys.",
+      "properties": {
+        "type": {
+          "const": "group"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "layout": {
+              "enum": [
+                "stack",
+                "two_column"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/field"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "fields"
+      ],
+      "additionalProperties": false
+    },
+    "repeatable_group": {
+      "type": "object",
+      "description": "repeatable_group@1 (wave 2, structural) — value: array.",
+      "properties": {
+        "type": {
+          "const": "repeatable_group"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "min_items": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "max_items": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "common.schema.json#/$defs/operation"
+                }
+              ]
+            },
+            "item_label": {
+              "$ref": "common.schema.json#/$defs/template"
+            },
+            "add_label": {
+              "$ref": "common.schema.json#/$defs/template"
+            }
+          },
+          "additionalProperties": false
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/field"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "fields"
+      ],
+      "additionalProperties": false
+    },
+    "matrix": {
+      "type": "object",
+      "description": "matrix@1 (wave 2, structural) — value: object.",
+      "properties": {
+        "type": {
+          "const": "matrix"
+        },
+        "key": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/r_template"
+        },
+        "help_text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "required": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "read_only": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "value": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "default": {
+          "$ref": "common.schema.json#/$defs/expression"
+        },
+        "validate": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/validate_rule"
+          }
+        },
+        "risk_indicator": {
+          "$ref": "#/$defs/risk_indicator"
+        },
+        "reviewer_note": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "export": {
+          "$ref": "#/$defs/export"
+        },
+        "pdf": {
+          "$ref": "#/$defs/pdf"
+        },
+        "fallback": {
+          "$ref": "#/$defs/fallback"
+        },
+        "props": {
+          "type": "object",
+          "properties": {
+            "rows": {
+              "$ref": "#/$defs/matrix_rows"
+            },
+            "columns": {
+              "$ref": "#/$defs/matrix_columns"
+            },
+            "cell_type": {
+              "enum": [
+                "single",
+                "multi",
+                "text"
+              ]
+            },
+            "required_rows": {
+              "$ref": "#/$defs/required_rows"
+            }
+          },
+          "required": [
+            "rows",
+            "columns",
+            "cell_type"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "key",
+        "props"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

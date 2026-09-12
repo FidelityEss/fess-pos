@@ -1,0 +1,31 @@
+{
+  "description": "lookup lists must exist",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "l",
+            "type": "lookup",
+            "props": {
+              "list": "mcc"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "MISSING_REF"
+  ],
+  "bundle": {
+    "lookup_lists": [
+      "provinces"
+    ]
+  }
+}

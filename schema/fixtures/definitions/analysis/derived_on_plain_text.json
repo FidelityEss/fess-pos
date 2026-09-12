@@ -1,0 +1,35 @@
+{
+  "description": "derived facts exist only for za_id numbers",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "id",
+            "type": "text"
+          },
+          {
+            "key": "x",
+            "type": "text",
+            "visible": {
+              "==": [
+                {
+                  "var": "derived.id.gender"
+                },
+                "female"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "MISSING_REF"
+  ]
+}

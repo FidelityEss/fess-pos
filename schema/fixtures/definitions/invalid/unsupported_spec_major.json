@@ -1,0 +1,23 @@
+{
+  "description": "engines reject unknown majors",
+  "expected_errors": [
+    "DEF_UNSUPPORTED_SPEC_VERSION"
+  ],
+  "definition": {
+    "spec_version": "2.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text"
+          }
+        ]
+      }
+    ]
+  }
+}

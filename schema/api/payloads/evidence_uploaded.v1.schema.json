@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/payloads/evidence_uploaded.v1.schema.json",
+  "title": "evidence_uploaded payload, type_version 1",
+  "description": "Bytes uploaded to the granted path; the server enqueues verification in the same transaction (docs/12 §6).",
+  "type": "object",
+  "properties": {
+    "evidence_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "object_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "sha256": {
+      "$ref": "../common.schema.json#/$defs/sha256"
+    },
+    "bytes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "uploaded_at_device": {
+      "$ref": "../common.schema.json#/$defs/datetime"
+    }
+  },
+  "required": [
+    "evidence_id",
+    "sha256",
+    "bytes",
+    "uploaded_at_device"
+  ],
+  "additionalProperties": false
+}

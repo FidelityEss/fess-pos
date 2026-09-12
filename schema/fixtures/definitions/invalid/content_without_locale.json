@@ -1,0 +1,13 @@
+{
+  "description": "content needs a locale",
+  "expected_errors": [
+    "DEF_MISSING_PROPERTY"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "content",
+    "family": "c",
+    "version": 1,
+    "strings": {}
+  }
+}

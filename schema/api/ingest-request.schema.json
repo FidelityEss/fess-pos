@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/ingest-request.schema.json",
+  "title": "POST /v1/ingest request",
+  "description": "1–50 envelopes, ≤ 1 MB.",
+  "type": "object",
+  "properties": {
+    "envelopes": {
+      "type": "array",
+      "items": {
+        "$ref": "envelope.schema.json"
+      },
+      "minItems": 1,
+      "maxItems": 50
+    }
+  },
+  "required": [
+    "envelopes"
+  ],
+  "additionalProperties": false
+}

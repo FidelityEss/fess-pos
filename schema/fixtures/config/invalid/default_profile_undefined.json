@@ -1,0 +1,11 @@
+{
+  "description": "the default profile must exist (cross-key rule, engines only)",
+  "layers": [
+    {
+      "geofence": {
+        "default_profile": "castle"
+      }
+    }
+  ],
+  "schema_valid": true
+}

@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/payloads/sync_report.v1.schema.json",
+  "title": "sync_report payload, type_version 1",
+  "description": "Backlog, capabilities, storage, battery restriction and config version (docs/12 §9) — drives the custody dashboard.",
+  "type": "object",
+  "properties": {
+    "reported_at_device": {
+      "$ref": "../common.schema.json#/$defs/datetime"
+    },
+    "pending": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "needs_attention": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "oldest_pending_at": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/datetime"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "last_success_at": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/datetime"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "local_only",
+          "uploading",
+          "uploaded",
+          "verified_retained"
+        ]
+      },
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "free_storage_mb": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "battery_restricted": {
+      "type": "boolean"
+    },
+    "background_restricted": {
+      "type": "boolean"
+    },
+    "module_version": {
+      "$ref": "../common.schema.json#/$defs/semver"
+    },
+    "config_version_id": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "server_epoch_seen": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "clock_offset_ms": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "capabilities": {
+      "$ref": "../common.schema.json#/$defs/capability_report"
+    }
+  },
+  "required": [
+    "reported_at_device",
+    "pending",
+    "oldest_pending_at",
+    "last_success_at",
+    "free_storage_mb",
+    "battery_restricted",
+    "module_version",
+    "config_version_id",
+    "capabilities"
+  ],
+  "additionalProperties": false
+}

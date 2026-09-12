@@ -1,0 +1,42 @@
+{
+  "spec_version": "1.0",
+  "kind": "view",
+  "family": "job_card",
+  "version": 1,
+  "items": [
+    {
+      "type": "title",
+      "bind": "job.merchant_name"
+    },
+    {
+      "type": "field_value",
+      "label": "Ref",
+      "bind": "job.reference"
+    },
+    {
+      "type": "schedule_window",
+      "bind": "job.scheduled"
+    },
+    {
+      "type": "address_block",
+      "bind": "job.address",
+      "visible": {
+        "!=": [
+          {
+            "var": "job.address"
+          },
+          null
+        ]
+      }
+    },
+    {
+      "type": "field_value",
+      "label": "Branch",
+      "bind": "job.attributes.branch_code"
+    },
+    {
+      "type": "status_chip",
+      "bind": "job.status"
+    }
+  ]
+}

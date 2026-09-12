@@ -1,0 +1,27 @@
+{
+  "description": "declaration is an integrity step",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "flow",
+    "family": "f",
+    "version": 1,
+    "form_family": "t",
+    "steps": [
+      {
+        "type": "location_check"
+      },
+      {
+        "type": "form",
+        "sections": [
+          "s"
+        ]
+      },
+      {
+        "type": "submit"
+      }
+    ]
+  },
+  "expected_errors": [
+    "INTEGRITY_STEP_MISSING"
+  ]
+}

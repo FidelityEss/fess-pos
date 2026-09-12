@@ -1,0 +1,24 @@
+{
+  "description": "templates may only read existing fields",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text",
+            "label": "Photos of {{answers.nope}}"
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "MISSING_REF"
+  ]
+}

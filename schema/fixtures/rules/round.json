@@ -1,0 +1,156 @@
+{
+  "operator": "round",
+  "cases": [
+    {
+      "name": "half away from zero (positive)",
+      "expression": {
+        "round": [
+          2.5
+        ]
+      },
+      "data": {},
+      "expected": 3
+    },
+    {
+      "name": "half away from zero (negative)",
+      "expression": {
+        "round": [
+          -2.5
+        ]
+      },
+      "data": {},
+      "expected": -3
+    },
+    {
+      "name": "rounds down",
+      "expression": {
+        "round": [
+          2.4
+        ]
+      },
+      "data": {},
+      "expected": 2
+    },
+    {
+      "name": "half",
+      "expression": {
+        "round": [
+          0.5
+        ]
+      },
+      "data": {},
+      "expected": 1
+    },
+    {
+      "name": "negative to zero is 0, not -0",
+      "expression": {
+        "round": [
+          -0.4
+        ]
+      },
+      "data": {},
+      "expected": 0
+    },
+    {
+      "name": "two decimals",
+      "expression": {
+        "round": [
+          1.2345,
+          2
+        ]
+      },
+      "data": {},
+      "expected": 1.23
+    },
+    {
+      "name": "double arithmetic: 1.005 → 1 at 2 dp",
+      "expression": {
+        "round": [
+          1.005,
+          2
+        ]
+      },
+      "data": {},
+      "expected": 1
+    },
+    {
+      "name": "one decimal",
+      "expression": {
+        "round": [
+          123.456,
+          1
+        ]
+      },
+      "data": {},
+      "expected": 123.5
+    },
+    {
+      "name": "integer with 0 decimals",
+      "expression": {
+        "round": [
+          7,
+          0
+        ]
+      },
+      "data": {},
+      "expected": 7
+    },
+    {
+      "name": "null",
+      "expression": {
+        "round": [
+          null
+        ]
+      },
+      "data": {},
+      "expected": null
+    },
+    {
+      "name": "decimals above 10",
+      "expression": {
+        "round": [
+          2.5,
+          11
+        ]
+      },
+      "data": {},
+      "error": "RULE_INVALID_ARGUMENT"
+    },
+    {
+      "name": "decimals must be literal",
+      "expression": {
+        "round": [
+          2.5,
+          {
+            "var": "d"
+          }
+        ]
+      },
+      "data": {
+        "d": 1
+      },
+      "error": "RULE_INVALID_ARGUMENT"
+    },
+    {
+      "name": "fractional decimals",
+      "expression": {
+        "round": [
+          2.5,
+          1.5
+        ]
+      },
+      "data": {},
+      "error": "RULE_INVALID_ARGUMENT"
+    },
+    {
+      "name": "string",
+      "expression": {
+        "round": [
+          "2.5"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "description": "repeatable groups cannot nest",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "g",
+            "type": "repeatable_group",
+            "fields": [
+              {
+                "key": "h",
+                "type": "repeatable_group",
+                "fields": [
+                  {
+                    "key": "x",
+                    "type": "text"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "NESTED_REPEATABLE"
+  ]
+}

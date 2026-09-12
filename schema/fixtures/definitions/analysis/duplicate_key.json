@@ -1,0 +1,27 @@
+{
+  "description": "field keys are unique within a form",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text"
+          },
+          {
+            "key": "a",
+            "type": "number"
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "DUPLICATE_KEY"
+  ]
+}

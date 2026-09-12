@@ -1,0 +1,122 @@
+{
+  "description": "booleans are true/false",
+  "form": "form_site_inspection",
+  "document": {
+    "definition_refs": {
+      "form": {
+        "version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d80",
+        "hash": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "flow": {
+        "version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d81",
+        "hash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "config_version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d82",
+    "context_snapshot": {
+      "today": "2026-09-10",
+      "job": {
+        "reference": "POS-2026-000123",
+        "merchant_name": "Joe's Spaza",
+        "location": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        },
+        "attributes": {
+          "risk_tier": "standard"
+        }
+      },
+      "agent": {
+        "region": "gauteng",
+        "first_name": "Sipho"
+      },
+      "inspection": {
+        "attempt": 1,
+        "geofence": {
+          "profile": "standalone",
+          "method": "inside_fix",
+          "inside": true,
+          "override": false,
+          "relaxed": false
+        }
+      }
+    },
+    "answers": {
+      "merchant_name": {
+        "v": "Joe's Spaza",
+        "prefilled": true,
+        "flagged_differs": false
+      },
+      "trading_years": {
+        "v": 5
+      },
+      "established": {
+        "v": null,
+        "unknown": true
+      },
+      "services": {
+        "v": [
+          "retail",
+          "delivery"
+        ]
+      },
+      "delivered_at_pos_pct": {
+        "v": 30
+      },
+      "ecommerce_sales": {
+        "v": true
+      },
+      "ecommerce_pct": {
+        "v": 50
+      },
+      "premises_type": {
+        "v": "mall"
+      },
+      "operates_elsewhere": {
+        "v": "yes"
+      },
+      "risk_score": {
+        "v": 1,
+        "computed": true
+      },
+      "external_photos": {
+        "v": [
+          "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d01",
+          "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d02"
+        ]
+      },
+      "internal_photos": {
+        "v": [
+          "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d03",
+          "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d04"
+        ]
+      },
+      "interviewee_name": {
+        "v": "Thandi Mokoena"
+      },
+      "interviewee_designation": {
+        "v": "Owner"
+      },
+      "interviewee_signature": {
+        "v": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d05"
+      },
+      "agent_declaration": {
+        "v": {
+          "accepted": true,
+          "declaration_version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d90",
+          "accepted_at": "2026-09-10T10:40:00+02:00"
+        }
+      }
+    },
+    "answers_hash": "2e567890bfb5f4da6c01ae97e36039efef2df0d0ba961c2a31ad12983659071b"
+  },
+  "expected": {
+    "ok": false,
+    "errors": [
+      {
+        "field_key": "operates_elsewhere",
+        "code": "INVALID_TYPE"
+      }
+    ]
+  }
+}

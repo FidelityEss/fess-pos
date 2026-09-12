@@ -1,0 +1,200 @@
+{
+  "operator": "date_diff",
+  "cases": [
+    {
+      "name": "days",
+      "expression": {
+        "date_diff": [
+          "2026-01-01",
+          "2026-01-31",
+          "days"
+        ]
+      },
+      "data": {},
+      "expected": 30
+    },
+    {
+      "name": "negative days",
+      "expression": {
+        "date_diff": [
+          "2026-01-31",
+          "2026-01-01",
+          "days"
+        ]
+      },
+      "data": {},
+      "expected": -30
+    },
+    {
+      "name": "across a leap day",
+      "expression": {
+        "date_diff": [
+          "2024-02-28",
+          "2024-03-01",
+          "days"
+        ]
+      },
+      "data": {},
+      "expected": 2
+    },
+    {
+      "name": "years before anniversary",
+      "expression": {
+        "date_diff": [
+          "2020-05-15",
+          "2026-05-14",
+          "years"
+        ]
+      },
+      "data": {},
+      "expected": 5
+    },
+    {
+      "name": "years on anniversary",
+      "expression": {
+        "date_diff": [
+          "2020-05-15",
+          "2026-05-15",
+          "years"
+        ]
+      },
+      "data": {},
+      "expected": 6
+    },
+    {
+      "name": "month end is not a whole month",
+      "expression": {
+        "date_diff": [
+          "2026-01-31",
+          "2026-02-28",
+          "months"
+        ]
+      },
+      "data": {},
+      "expected": 0
+    },
+    {
+      "name": "whole months",
+      "expression": {
+        "date_diff": [
+          "2026-01-15",
+          "2026-03-15",
+          "months"
+        ]
+      },
+      "data": {},
+      "expected": 2
+    },
+    {
+      "name": "negative months",
+      "expression": {
+        "date_diff": [
+          "2026-03-15",
+          "2026-01-16",
+          "months"
+        ]
+      },
+      "data": {},
+      "expected": -1
+    },
+    {
+      "name": "datetime uses its written date",
+      "expression": {
+        "date_diff": [
+          "2026-09-10T23:30:00+02:00",
+          "2026-09-11",
+          "days"
+        ]
+      },
+      "data": {},
+      "expected": 1
+    },
+    {
+      "name": "age from today",
+      "expression": {
+        "date_diff": [
+          {
+            "var": "answers.dob"
+          },
+          {
+            "today": []
+          },
+          "years"
+        ]
+      },
+      "data": {
+        "answers": {
+          "dob": "1990-09-11"
+        }
+      },
+      "env": {
+        "today": "2026-09-10"
+      },
+      "expected": 35
+    },
+    {
+      "name": "null",
+      "expression": {
+        "date_diff": [
+          null,
+          "2026-01-01",
+          "days"
+        ]
+      },
+      "data": {},
+      "expected": null
+    },
+    {
+      "name": "impossible date",
+      "expression": {
+        "date_diff": [
+          "2026-02-30",
+          "2026-03-01",
+          "days"
+        ]
+      },
+      "data": {},
+      "error": "RULE_INVALID_DATE"
+    },
+    {
+      "name": "unsupported unit",
+      "expression": {
+        "date_diff": [
+          "2026-01-01",
+          "2026-01-02",
+          "weeks"
+        ]
+      },
+      "data": {},
+      "error": "RULE_INVALID_ARGUMENT"
+    },
+    {
+      "name": "unit must be literal",
+      "expression": {
+        "date_diff": [
+          "2026-01-01",
+          "2026-01-02",
+          {
+            "var": "u"
+          }
+        ]
+      },
+      "data": {
+        "u": "days"
+      },
+      "error": "RULE_INVALID_ARGUMENT"
+    },
+    {
+      "name": "number date",
+      "expression": {
+        "date_diff": [
+          20260101,
+          "2026-01-02",
+          "days"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

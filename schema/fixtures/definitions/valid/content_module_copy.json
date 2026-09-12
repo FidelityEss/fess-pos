@@ -1,0 +1,14 @@
+{
+  "spec_version": "1.0",
+  "kind": "content",
+  "family": "module_copy",
+  "version": 1,
+  "locale": "en-ZA",
+  "strings": {
+    "jobs.empty_active": "No active leads",
+    "outcome.success.title": "Submitted",
+    "outcome.saved.message": "Saved on this phone - it will send when you are back online ({{stats.pending}} waiting)",
+    "outcome.failure.message": "Nothing you captured was lost. {{error.message}}",
+    "location.outside_fence": "You appear to be outside the premises"
+  }
+}

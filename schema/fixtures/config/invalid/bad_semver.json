@@ -1,0 +1,11 @@
+{
+  "description": "minimum versions are semver",
+  "layers": [
+    {
+      "min_module_version": {
+        "new_work": "1.2"
+      }
+    }
+  ],
+  "schema_valid": false
+}

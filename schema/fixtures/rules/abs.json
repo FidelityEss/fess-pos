@@ -1,0 +1,65 @@
+{
+  "operator": "abs",
+  "cases": [
+    {
+      "name": "negative",
+      "expression": {
+        "abs": [
+          -3
+        ]
+      },
+      "data": {},
+      "expected": 3
+    },
+    {
+      "name": "positive",
+      "expression": {
+        "abs": [
+          3
+        ]
+      },
+      "data": {},
+      "expected": 3
+    },
+    {
+      "name": "zero",
+      "expression": {
+        "abs": [
+          0
+        ]
+      },
+      "data": {},
+      "expected": 0
+    },
+    {
+      "name": "fraction",
+      "expression": {
+        "abs": [
+          -0.5
+        ]
+      },
+      "data": {},
+      "expected": 0.5
+    },
+    {
+      "name": "null",
+      "expression": {
+        "abs": [
+          null
+        ]
+      },
+      "data": {},
+      "expected": null
+    },
+    {
+      "name": "string",
+      "expression": {
+        "abs": [
+          "-3"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

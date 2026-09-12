@@ -1,0 +1,105 @@
+{
+  "source": "POS vectors: structure, escapes, number text forms and I-JSON errors",
+  "cases": [
+    {
+      "name": "empty object",
+      "input_json": "{}",
+      "canonical": "{}",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "name": "empty array",
+      "input_json": "[]",
+      "canonical": "[]",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "nested sorting inside arrays",
+      "input_json": "{\"b\":[{\"z\":1,\"a\":null}],\"a\":\"x\"}",
+      "canonical": "{\"a\":\"x\",\"b\":[{\"a\":null,\"z\":1}]}",
+      "sha256": "cd46abb94645a78c7ce4802b707895cda25a3e69932ec5040b0fcb7abc663b64"
+    },
+    {
+      "name": "whitespace removed",
+      "input_json": " { \"a\" : [ 1 , 2 ] } ",
+      "canonical": "{\"a\":[1,2]}",
+      "sha256": "01530d164d479cf08e26d3b1ad9bdba927120d97e2d057a6d792db778780d720"
+    },
+    {
+      "name": "control characters",
+      "input_json": "\"\\u0000\\u001f\\b\\t\\n\\f\\r\"",
+      "canonical": "\"\\u0000\\u001f\\b\\t\\n\\f\\r\"",
+      "sha256": "510ff6f312e9f31eced23c00f710dc92c493ea183fd1346119b672ffeae66848"
+    },
+    {
+      "name": "non-ASCII is not escaped",
+      "input_json": "\"\\u00e9\\u6f22\\ud83d\\ude00\"",
+      "canonical": "\"é漢😀\"",
+      "sha256": "ad54b2b788dc3af48bbe8916989dc922cabcba031d873ab81ce8c7b9ea5173aa"
+    },
+    {
+      "name": "U+2028 and U+2029 are not escaped",
+      "input_json": "\"\\u2028\\u2029\"",
+      "canonical": "\"  \"",
+      "sha256": "e3a0e2262ac7790f4df36b522a8fbdd4ee3370d568eb15dc25c5f1775f14ed6c"
+    },
+    {
+      "name": "solidus is not escaped",
+      "input_json": "\"a\\/b\"",
+      "canonical": "\"a/b\"",
+      "sha256": "f5effa31772a3689cb116700c569f4b72d765290968f099016a899ab6c1e4ee3"
+    },
+    {
+      "name": "negative zero",
+      "input_json": "-0",
+      "canonical": "0",
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "name": "1.0 is 1",
+      "input_json": "1.0",
+      "canonical": "1",
+      "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+    },
+    {
+      "name": "exponent form",
+      "input_json": "1e2",
+      "canonical": "100",
+      "sha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306"
+    },
+    {
+      "name": "small exponent",
+      "input_json": "1e-7",
+      "canonical": "1e-7",
+      "sha256": "5b33e02f2c5103a05d32f6ba9cb058294452bfbf393967f68bb30c1bdcbbab22"
+    },
+    {
+      "name": "large integer beyond 2^53",
+      "input_json": "12345678901234567890",
+      "canonical": "12345678901234567000",
+      "sha256": "afdcd3321a2fcdb3414cb69a0c92c6bb8d74c06066d721083cc01fec664ab97f"
+    },
+    {
+      "name": "keys compare by code unit, not code point",
+      "input_json": "{\"\\ufb33\":1,\"\\ud83d\\ude00\":2}",
+      "canonical": "{\"😀\":2,\"דּ\":1}",
+      "sha256": "ec4e7d8c2963caa38dccc3d42693719ac9c6ecd783891b583d333565620ac2be"
+    },
+    {
+      "name": "answers document fragment",
+      "input_json": "{\"premises_type\":{\"v\":\"mall\"},\"merchant_name\":{\"v\":\"Joe's Spaza\",\"prefilled\":true}}",
+      "canonical": "{\"merchant_name\":{\"prefilled\":true,\"v\":\"Joe's Spaza\"},\"premises_type\":{\"v\":\"mall\"}}",
+      "sha256": "a0c7e68b4422a597b7cfa81322b8f9fdb1dcf4711f6dbc1c7a1b072a12732ffa"
+    },
+    {
+      "name": "lone high surrogate is rejected",
+      "input_json": "\"\\ud800\"",
+      "error": "JCS_LONE_SURROGATE"
+    },
+    {
+      "name": "lone low surrogate in a key is rejected",
+      "input_json": "{\"\\udc00\":1}",
+      "error": "JCS_LONE_SURROGATE"
+    }
+  ]
+}

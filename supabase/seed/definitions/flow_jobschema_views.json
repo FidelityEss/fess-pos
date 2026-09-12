@@ -1,0 +1,124 @@
+[
+  {
+    "spec_version": "1.0",
+    "kind": "flow",
+    "family": "site_inspection_flow",
+    "version": 1,
+    "scope": null,
+    "title": "Site inspection",
+    "form_family": "site_inspection",
+    "action": "inspection.submit",
+    "steps": [
+      { "id": "briefing", "type": "job_briefing", "view": "job_detail", "acknowledgement_text": "I have read the job details" },
+      { "id": "location", "type": "location_check", "checkin_prompt": "profile", "override_form": "geofence_override" },
+      { "id": "visit_business", "type": "form", "sections": [ "visit", "business" ], "paging": "section_per_page" },
+      { "id": "premises", "type": "form", "sections": [ "premises" ], "paging": "single_page" },
+      { "id": "photos", "type": "form", "sections": [ "evidence" ], "paging": "single_page" },
+      { "id": "risk_policies", "type": "form", "sections": [ "risk", "policies" ], "paging": "section_per_page" },
+      { "id": "interviewee", "type": "form", "sections": [ "interviewee", "agent" ], "paging": "section_per_page" },
+      { "id": "review", "type": "summary_review", "show_risk_indicators": true, "allow_jump_back": true },
+      { "id": "declare", "type": "declaration", "declaration_key": "agent_declaration" },
+      { "id": "submit", "type": "submit", "label": "Submit inspection", "confirm_text": "Submit this inspection? You can't change it afterwards." },
+      { "id": "receipt", "type": "receipt", "view": "receipt" }
+    ]
+  },
+  {
+    "spec_version": "1.0",
+    "kind": "job_schema",
+    "family": "job_attributes",
+    "version": 1,
+    "scope": null,
+    "title": "Job attributes (global default)",
+    "attributes": [
+      { "key": "branch_code", "type": "text", "label": "Bank branch code", "props": { "pattern": "^[0-9]{6}$" } },
+      { "key": "account_manager", "type": "text", "label": "Bank account manager" },
+      { "key": "risk_tier", "type": "single_select", "label": "Bank risk tier",
+        "options": [ { "value": "standard", "label": "Standard" }, { "value": "high", "label": "High" } ] }
+    ]
+  },
+  {
+    "spec_version": "1.0",
+    "kind": "view",
+    "family": "home",
+    "version": 1,
+    "scope": null,
+    "title": "Home",
+    "items": [
+      { "type": "greeting", "text": "Hi {{agent.first_name}}" },
+      { "type": "agent_card_summary", "on_tap": { "page": "agent_card" } },
+      { "type": "stat_row", "tiles": [
+        { "type": "stat_tile", "label": "Active", "source": "server", "stat": "stats.active", "on_tap": { "page": "active_jobs" } },
+        { "type": "stat_tile", "label": "Due today", "source": "server", "stat": "stats.due_today" },
+        { "type": "stat_tile", "label": "Awaiting review", "source": "server", "stat": "stats.awaiting_review" },
+        { "type": "stat_tile", "label": "Completed this month", "source": "server", "stat": "stats.completed_this_month" }
+      ] },
+      { "type": "section_title", "text": "Your leads" },
+      { "type": "job_list", "filter": { "in": [ { "var": "job.status" }, [ "assigned", "accepted", "in_progress", "paused", "returned" ] ] },
+        "sort": "job.scheduled_start", "sort_direction": "asc", "item_view": "job_card", "limit": 20,
+        "on_tap": { "page": "job_detail" }, "empty_content": "jobs.empty_active" },
+      { "type": "sync_status" }
+    ]
+  },
+  {
+    "spec_version": "1.0",
+    "kind": "view",
+    "family": "job_card",
+    "version": 1,
+    "scope": null,
+    "title": "Job card (list item)",
+    "items": [
+      { "type": "title", "bind": "job.merchant_name" },
+      { "type": "status_chip", "bind": "job.status" },
+      { "type": "field_value", "label": "Ref", "bind": "job.reference" },
+      { "type": "schedule_window", "bind": "job.scheduled" },
+      { "type": "address_block", "bind": "job.address" }
+    ]
+  },
+  {
+    "spec_version": "1.0",
+    "kind": "view",
+    "family": "job_detail",
+    "version": 1,
+    "scope": null,
+    "title": "Job detail",
+    "items": [
+      { "type": "title", "bind": "job.merchant_name" },
+      { "type": "status_chip", "bind": "job.status" },
+      { "type": "field_value", "label": "Reference", "bind": "job.reference" },
+      { "type": "field_value", "label": "Bank", "bind": "job.bank.name" },
+      { "type": "schedule_window", "label": "Visit window", "bind": "job.scheduled" },
+      { "type": "address_block", "label": "Address", "bind": "job.address" },
+      { "type": "map_preview", "bind": "job.location", "height": 180 },
+      { "type": "contact", "label": "On-site contact", "bind": "job.onsite_contact", "actions": [ "call" ] },
+      { "type": "field_value", "label": "Category", "bind": "job.mcc.description" },
+      { "type": "markdown", "text": "{{job.notes}}", "visible": { "!=": [ { "var": "job.notes" }, null ] } },
+      { "type": "divider" },
+      { "type": "job_card", "show_photo": true, "show_qr": true, "show_status": true }
+    ]
+  },
+  {
+    "spec_version": "1.0",
+    "kind": "view",
+    "family": "agent_card",
+    "version": 1,
+    "scope": null,
+    "title": "Agent authorisation card",
+    "items": [
+      { "type": "agent_card", "show_photo": true, "show_qr": true, "show_status": true },
+      { "type": "markdown", "text": "Show this card to the merchant. Scanning the code confirms you are an authorised Fidelity POS agent." }
+    ]
+  },
+  {
+    "spec_version": "1.0",
+    "kind": "view",
+    "family": "receipt",
+    "version": 1,
+    "scope": null,
+    "title": "Inspection receipt",
+    "items": [
+      { "type": "title", "text": "Inspection sent" },
+      { "type": "field_value", "label": "Reference", "bind": "job.reference" },
+      { "type": "evidence_status", "bind": "inspection.receipt" }
+    ]
+  }
+]

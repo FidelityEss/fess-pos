@@ -1,0 +1,25 @@
+{
+  "description": "server tiles read stats.*",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "view",
+    "family": "v",
+    "version": 1,
+    "items": [
+      {
+        "type": "stat_row",
+        "tiles": [
+          {
+            "type": "stat_tile",
+            "label": "Done",
+            "source": "server",
+            "stat": "job.count"
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "INVALID_STAT_TILE"
+  ]
+}

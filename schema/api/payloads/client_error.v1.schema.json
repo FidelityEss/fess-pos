@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/payloads/client_error.v1.schema.json",
+  "title": "client_error payload, type_version 1",
+  "description": "Parked items, recovery anomalies and local hash mismatches (docs/12 §3–4).",
+  "type": "object",
+  "properties": {
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "../common.schema.json#/$defs/error_code"
+          },
+          "kind": {
+            "enum": [
+              "parked_item",
+              "recovery_anomaly",
+              "local_hash_mismatch",
+              "wrapper_rejected",
+              "unsupported_definition",
+              "other"
+            ]
+          },
+          "about_envelope_id": {
+            "anyOf": [
+              {
+                "$ref": "../common.schema.json#/$defs/uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "detail": {
+            "type": "object"
+          },
+          "at": {
+            "$ref": "../common.schema.json#/$defs/datetime"
+          }
+        },
+        "required": [
+          "code",
+          "detail",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 50
+    }
+  },
+  "required": [
+    "errors"
+  ],
+  "additionalProperties": false
+}

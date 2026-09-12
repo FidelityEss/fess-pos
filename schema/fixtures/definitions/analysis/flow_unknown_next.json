@@ -1,0 +1,32 @@
+{
+  "description": "next must name a step",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "flow",
+    "family": "f",
+    "version": 1,
+    "form_family": "t",
+    "steps": [
+      {
+        "type": "location_check"
+      },
+      {
+        "type": "form",
+        "sections": [
+          "s"
+        ],
+        "next": "nowhere"
+      },
+      {
+        "type": "declaration"
+      },
+      {
+        "type": "submit"
+      }
+    ]
+  },
+  "expected_errors": [
+    "MISSING_STEP_REF",
+    "UNREACHABLE_STEP"
+  ]
+}

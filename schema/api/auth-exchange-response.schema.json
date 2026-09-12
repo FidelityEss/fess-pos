@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/auth-exchange-response.schema.json",
+  "title": "POST /v1/auth/exchange and /v1/auth/refresh response",
+  "description": "Access token (JWT, auth.access_token_ttl_s) + rotating opaque refresh token.",
+  "type": "object",
+  "properties": {
+    "access_token": {
+      "type": "string",
+      "minLength": 1
+    },
+    "access_expires_at": {
+      "$ref": "common.schema.json#/$defs/datetime"
+    },
+    "refresh_token": {
+      "type": "string",
+      "minLength": 20
+    },
+    "refresh_expires_at": {
+      "$ref": "common.schema.json#/$defs/datetime"
+    },
+    "session_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "scope": {
+      "enum": [
+        "full",
+        "ingest_only"
+      ]
+    },
+    "user": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "employee_number": {
+          "type": "string"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "active": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "employee_number",
+        "first_name",
+        "last_name",
+        "role",
+        "active"
+      ],
+      "additionalProperties": true
+    },
+    "server_time": {
+      "$ref": "common.schema.json#/$defs/datetime"
+    },
+    "profile_mismatch": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "access_token",
+    "access_expires_at",
+    "refresh_token",
+    "refresh_expires_at",
+    "session_id",
+    "scope",
+    "user",
+    "server_time"
+  ],
+  "additionalProperties": true
+}

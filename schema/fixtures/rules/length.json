@@ -1,0 +1,102 @@
+{
+  "operator": "length",
+  "cases": [
+    {
+      "name": "ascii",
+      "expression": {
+        "length": [
+          "abc"
+        ]
+      },
+      "data": {},
+      "expected": 3
+    },
+    {
+      "name": "code points, not UTF-16 units",
+      "expression": {
+        "length": [
+          "😀a"
+        ]
+      },
+      "data": {},
+      "expected": 2
+    },
+    {
+      "name": "precomposed accent",
+      "expression": {
+        "length": [
+          "é"
+        ]
+      },
+      "data": {},
+      "expected": 1
+    },
+    {
+      "name": "combining accent counts as two code points",
+      "expression": {
+        "length": [
+          "é"
+        ]
+      },
+      "data": {},
+      "expected": 2
+    },
+    {
+      "name": "empty string",
+      "expression": {
+        "length": [
+          ""
+        ]
+      },
+      "data": {},
+      "expected": 0
+    },
+    {
+      "name": "array",
+      "expression": {
+        "length": [
+          [
+            1,
+            2
+          ]
+        ]
+      },
+      "data": {},
+      "expected": 2
+    },
+    {
+      "name": "null is 0",
+      "expression": {
+        "length": [
+          null
+        ]
+      },
+      "data": {},
+      "expected": 0
+    },
+    {
+      "name": "number",
+      "expression": {
+        "length": [
+          5
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "object",
+      "expression": {
+        "length": [
+          {
+            "var": "o"
+          }
+        ]
+      },
+      "data": {
+        "o": {}
+      },
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

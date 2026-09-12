@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/payloads/traces_batch.v1.schema.json",
+  "title": "traces_batch payload, type_version 1",
+  "description": "≤ 500 location fixes; each fix has its own id so re-sent batches collapse (docs/12 §15).",
+  "type": "object",
+  "properties": {
+    "inspection_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "job_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "batch_seq": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "fixes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "fix_id": {
+            "$ref": "../common.schema.json#/$defs/uuid"
+          },
+          "ts_device": {
+            "$ref": "../common.schema.json#/$defs/datetime"
+          },
+          "ts_monotonic_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "gnss_ts": {
+            "anyOf": [
+              {
+                "$ref": "../common.schema.json#/$defs/datetime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lat": {
+            "$ref": "../common.schema.json#/$defs/lat"
+          },
+          "lng": {
+            "$ref": "../common.schema.json#/$defs/lng"
+          },
+          "accuracy_m": {
+            "type": "number",
+            "minimum": 0
+          },
+          "speed": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "heading": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 360
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "altitude_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_mocked": {
+            "type": "boolean"
+          },
+          "inside_fence": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event": {
+            "enum": [
+              "fix",
+              "checkin",
+              "enter",
+              "exit",
+              "pause",
+              "resume"
+            ]
+          }
+        },
+        "required": [
+          "fix_id",
+          "ts_device",
+          "ts_monotonic_ms",
+          "lat",
+          "lng",
+          "accuracy_m",
+          "is_mocked"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 500
+    }
+  },
+  "required": [
+    "inspection_id",
+    "fixes"
+  ],
+  "additionalProperties": false
+}

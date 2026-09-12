@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/auth-refresh-response.schema.json",
+  "title": "POST /v1/auth/refresh response",
+  "description": "Same shape as the exchange response.",
+  "$ref": "auth-exchange-response.schema.json"
+}

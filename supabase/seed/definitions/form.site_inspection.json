@@ -1,0 +1,154 @@
+{
+  "spec_version": "1.0",
+  "kind": "form",
+  "family": "site_inspection",
+  "version": 1,
+  "scope": null,
+  "title": "High-Risk Merchant Site Verification",
+  "locale": "en-ZA",
+  "declaration_key": "agent_declaration",
+  "sections": [
+    {
+      "key": "visit",
+      "title": "Visit",
+      "fields": [
+        { "key": "inspection_date", "type": "date", "label": "Date of inspection", "required": true, "read_only": true,
+          "value": { "today": [] } },
+        { "key": "merchant_name", "type": "prefilled", "label": "Merchant name",
+          "props": { "source": "job.merchant_name", "allow_flag_differs": true, "differs_note": "Record the name displayed at the premises" } },
+        { "key": "mcc_code", "type": "prefilled", "label": "Merchant category code", "props": { "source": "job.mcc.code" } },
+        { "key": "mcc_description", "type": "prefilled", "label": "MCC description", "props": { "source": "job.mcc.description" } },
+        { "key": "address", "type": "prefilled", "label": "Address",
+          "props": { "source": "job.address", "allow_flag_differs": true, "differs_note": "Describe how the actual address differs" } }
+      ]
+    },
+    {
+      "key": "business",
+      "title": "Business profile",
+      "fields": [
+        { "key": "registration_date", "type": "date", "label": "Date of incorporation / registration", "required": true,
+          "props": { "allow_unknown": true } },
+        { "key": "time_in_business", "type": "duration", "label": "How long has the business been trading?", "required": true,
+          "props": { "units": ["months", "years"] } },
+        { "key": "nature_of_business", "type": "textarea", "label": "Nature of business", "required": true, "props": { "rows": 3 } },
+        { "key": "contact_person", "type": "text", "label": "Business contact person", "required": true, "props": { "capitalise": "words" } },
+        { "key": "contact_number", "type": "phone", "label": "Business contact number", "required": true, "props": { "default_region": "ZA" } },
+        { "key": "business_hours", "type": "business_hours", "label": "Business hours", "required": true,
+          "props": { "groups": ["weekdays", "saturday", "sunday", "public_holidays"] } },
+        { "key": "payment_methods", "type": "multi_select", "display": "checkboxes", "label": "Payment methods accepted", "required": true,
+          "props": { "min_select": 1 },
+          "options": [
+            { "value": "pos", "label": "Card (POS terminal)" },
+            { "value": "ecommerce", "label": "E-commerce" },
+            { "value": "qr", "label": "QR code" },
+            { "value": "wallet", "label": "Mobile wallet" },
+            { "value": "eft", "label": "EFT" },
+            { "value": "cash", "label": "Cash" }
+          ] }
+      ]
+    },
+    {
+      "key": "premises",
+      "title": "Premises",
+      "fields": [
+        { "key": "premises_type", "type": "single_select", "display": "dropdown", "label": "Premises type", "required": true,
+          "options": [
+            { "value": "mall", "label": "Mall" },
+            { "value": "complex", "label": "Complex" },
+            { "value": "office", "label": "Office building" },
+            { "value": "home", "label": "Private home", "meta": { "risk": "elevated" } },
+            { "value": "other", "label": "Other" }
+          ] },
+        { "key": "premises_type_other", "type": "text", "label": "Describe the premises", "required": true,
+          "visible": { "==": [ { "var": "answers.premises_type" }, "other" ] } },
+        { "key": "property_tenure", "type": "single_select", "display": "radio", "label": "Is the property owned or leased?", "required": true,
+          "options": [ { "value": "owned", "label": "Owned" }, { "value": "leased", "label": "Leased" }, { "value": "unknown", "label": "Unknown" } ] },
+        { "key": "floor_area_m2", "type": "number", "label": "Estimated floor area", "required": true, "props": { "min": 1, "unit": "m²", "integer": true } },
+        { "key": "other_businesses", "type": "textarea", "label": "Other businesses operating at this location", "props": { "rows": 2 } },
+        { "key": "office_equipment", "type": "textarea", "label": "Visible office equipment", "required": true, "props": { "rows": 2 } },
+        { "key": "equipment_compatible", "type": "boolean", "display": "yes_no_radio", "label": "Is the equipment compatible with the business?", "required": true },
+        { "key": "home_note", "type": "callout", "tone": "warning", "text": "Private-home premises: capture at least 4 internal photographs.",
+          "visible": { "==": [ { "var": "answers.premises_type" }, "home" ] } }
+      ]
+    },
+    {
+      "key": "evidence",
+      "title": "Photographs",
+      "fields": [
+        { "key": "external_photos", "type": "photo", "display": "grid", "label": "External photographs", "required": true,
+          "props": { "category": "external", "max_count": 8, "require_gps": true,
+                     "min_count": { "if": [ { "==": [ { "var": "job.attributes.risk_tier" }, "high" ] }, 3, 2 ] } } },
+        { "key": "shopfront_photo", "type": "photo", "label": "Shopfront / unit photo showing signage and unit number", "required": true,
+          "visible": { "or": [
+            { "in": [ { "var": "inspection.geofence.profile" }, [ "shopping_centre", "office_park", "large_site" ] ] },
+            { "==": [ { "var": "inspection.geofence.method" }, "outside_fix" ] }
+          ] },
+          "props": { "category": "shopfront", "min_count": 1, "max_count": 3, "require_gps": true } },
+        { "key": "internal_photos", "type": "photo", "display": "grid", "label": "Internal photographs", "required": true,
+          "props": { "category": "internal", "max_count": 8, "require_gps": true,
+                     "min_count": { "if": [ { "==": [ { "var": "answers.premises_type" }, "home" ] }, 4, 2 ] } } }
+      ]
+    },
+    {
+      "key": "risk",
+      "title": "Risk indicators",
+      "fields": [
+        { "key": "inventory_sufficient", "type": "boolean", "display": "yes_no_radio", "label": "Is the inventory sufficient for the business?", "required": true,
+          "risk_indicator": { "when": { "==": [ { "var": "answers.inventory_sufficient" }, false ] }, "level": "elevated", "label": "Insufficient inventory" } },
+        { "key": "appears_legitimate", "type": "boolean", "display": "yes_no_radio", "label": "Does the business appear legitimate?", "required": true,
+          "risk_indicator": { "when": { "==": [ { "var": "answers.appears_legitimate" }, false ] }, "level": "high", "label": "Business may not be legitimate" } },
+        { "key": "customers_present", "type": "boolean", "display": "yes_no_radio", "label": "Were customers present?", "required": true,
+          "risk_indicator": { "when": { "==": [ { "var": "answers.customers_present" }, false ] }, "level": "info", "label": "No customers present" } },
+        { "key": "other_bank_evidence", "type": "boolean", "display": "yes_no_radio", "label": "Is there evidence of acquiring by other banks?", "required": true,
+          "risk_indicator": { "when": { "==": [ { "var": "answers.other_bank_evidence" }, true ] }, "level": "info", "label": "Other acquirers present" } },
+        { "key": "other_bank_evidence_which", "type": "text", "label": "Which banks?", "required": true,
+          "visible": { "==": [ { "var": "answers.other_bank_evidence" }, true ] } },
+        { "key": "goods_delivered_at_pos", "type": "boolean", "display": "yes_no_radio", "label": "Are goods delivered at the point of sale?", "required": true },
+        { "key": "delivered_at_pos_pct", "type": "percentage", "label": "Share of sales delivered at the point of sale", "required": true,
+          "visible": { "==": [ { "var": "answers.goods_delivered_at_pos" }, true ] } },
+        { "key": "ecommerce_sales", "type": "boolean", "display": "yes_no_radio", "label": "Does the business make e-commerce sales?", "required": true },
+        { "key": "ecommerce_pct", "type": "percentage", "label": "E-commerce share of sales", "required": true,
+          "visible": { "==": [ { "var": "answers.ecommerce_sales" }, true ] },
+          "validate": [
+            { "rule": { "or": [
+                { "==": [ { "var": "answers.delivered_at_pos_pct" }, null ] },
+                { "<=": [ { "+": [ { "var": "answers.ecommerce_pct" }, { "var": "answers.delivered_at_pos_pct" } ] }, 100 ] }
+              ] },
+              "message": "E-commerce and point-of-sale delivery percentages cannot exceed 100% together." }
+          ] }
+      ]
+    },
+    {
+      "key": "policies",
+      "title": "Policies",
+      "fields": [
+        { "key": "refund_policy", "type": "textarea", "label": "Return / refund policy", "required": true, "props": { "rows": 2 } },
+        { "key": "delivery_policy", "type": "single_select", "display": "radio", "label": "Does the business have a delivery policy?", "required": true,
+          "options": [ { "value": "no", "label": "No" }, { "value": "yes", "label": "Yes" } ] },
+        { "key": "delivery_days", "type": "number", "label": "Delivery period (days)", "required": true,
+          "visible": { "==": [ { "var": "answers.delivery_policy" }, "yes" ] }, "props": { "min": 0, "max": 365, "integer": true } },
+        { "key": "data_security", "type": "textarea", "label": "Data security — how terminals, cards and slips are handled", "required": true, "props": { "rows": 3 } }
+      ]
+    },
+    {
+      "key": "interviewee",
+      "title": "Interviewee",
+      "fields": [
+        { "key": "interviewee_name", "type": "text", "label": "Interviewee name", "required": true, "props": { "capitalise": "words" } },
+        { "key": "interviewee_designation", "type": "text", "label": "Interviewee designation", "required": true },
+        { "key": "merchant_certification", "type": "consent", "label": "Merchant certification", "required": true,
+          "props": { "declaration_key": "merchant_certification", "by_name_field": "interviewee_name" } },
+        { "key": "interviewee_signature", "type": "signature", "label": "Interviewee signature", "required": true,
+          "props": { "signer_name_field": "interviewee_name", "signer_designation_field": "interviewee_designation" } }
+      ]
+    },
+    {
+      "key": "agent",
+      "title": "Agent declaration",
+      "fields": [
+        { "key": "agent_declaration", "type": "declaration", "label": "Agent declaration", "required": true,
+          "props": { "declaration_key": "agent_declaration" } }
+      ]
+    }
+  ]
+}

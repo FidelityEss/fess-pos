@@ -1,0 +1,23 @@
+{
+  "description": "computed needs a value rule",
+  "expected_errors": [
+    "DEF_MISSING_PROPERTY"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "c",
+            "type": "computed"
+          }
+        ]
+      }
+    ]
+  }
+}

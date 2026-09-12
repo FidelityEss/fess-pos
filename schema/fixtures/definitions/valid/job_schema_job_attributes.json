@@ -1,0 +1,45 @@
+{
+  "spec_version": "1.0",
+  "kind": "job_schema",
+  "family": "job_attributes",
+  "scope": {
+    "bank_id": "5b1f0f7e-3c1d-4a8b-9e2f-6a7b8c9d0e1f"
+  },
+  "version": 1,
+  "attributes": [
+    {
+      "key": "branch_code",
+      "type": "text",
+      "label": "Bank branch code",
+      "required": true,
+      "props": {
+        "pattern": "^[0-9]{6}$"
+      }
+    },
+    {
+      "key": "risk_tier",
+      "type": "single_select",
+      "label": "Bank risk tier",
+      "options": [
+        {
+          "value": "standard",
+          "label": "Standard"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    {
+      "key": "account_manager",
+      "type": "text",
+      "label": "Account manager"
+    },
+    {
+      "key": "onboarding_date",
+      "type": "date",
+      "label": "Onboarding date"
+    }
+  ]
+}

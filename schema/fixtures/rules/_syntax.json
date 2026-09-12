@@ -1,0 +1,170 @@
+{
+  "topic": "syntax",
+  "cases": [
+    {
+      "name": "number literal",
+      "expression": 5,
+      "data": {},
+      "expected": 5
+    },
+    {
+      "name": "string literal",
+      "expression": "x",
+      "data": {},
+      "expected": "x"
+    },
+    {
+      "name": "null literal",
+      "expression": null,
+      "data": {},
+      "expected": null
+    },
+    {
+      "name": "boolean literal",
+      "expression": true,
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "array elements are evaluated",
+      "expression": [
+        1,
+        {
+          "var": "a"
+        }
+      ],
+      "data": {
+        "a": 2
+      },
+      "expected": [
+        1,
+        2
+      ]
+    },
+    {
+      "name": "two keys",
+      "expression": {
+        "var": "a",
+        "x": 1
+      },
+      "data": {},
+      "error": "RULE_MALFORMED"
+    },
+    {
+      "name": "empty object",
+      "expression": {},
+      "data": {},
+      "error": "RULE_MALFORMED"
+    },
+    {
+      "name": "unknown operator",
+      "expression": {
+        "foo": [
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNKNOWN_OPERATOR"
+    },
+    {
+      "name": "JsonLogic cat is not an operator (use concat)",
+      "expression": {
+        "cat": [
+          "a"
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNKNOWN_OPERATOR"
+    },
+    {
+      "name": "JsonLogic merge is not an operator",
+      "expression": {
+        "merge": [
+          [
+            1
+          ]
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNKNOWN_OPERATOR"
+    },
+    {
+      "name": "JsonLogic substr is not an operator",
+      "expression": {
+        "substr": [
+          "abc",
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNKNOWN_OPERATOR"
+    },
+    {
+      "name": "JsonLogic missing is not an operator",
+      "expression": {
+        "missing": [
+          "a"
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNKNOWN_OPERATOR"
+    },
+    {
+      "name": "modulo is not an operator",
+      "expression": {
+        "%": [
+          5,
+          2
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNKNOWN_OPERATOR"
+    },
+    {
+      "name": "=== is not an operator (== is already strict)",
+      "expression": {
+        "===": [
+          1,
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNKNOWN_OPERATOR"
+    },
+    {
+      "name": "!! is not an operator",
+      "expression": {
+        "!!": [
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNKNOWN_OPERATOR"
+    },
+    {
+      "name": "nested unknown operator",
+      "expression": {
+        "and": [
+          {
+            "foo": 1
+          }
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNKNOWN_OPERATOR"
+    },
+    {
+      "name": "the whole tree is checked before evaluation",
+      "expression": {
+        "and": [
+          false,
+          {
+            "foo": 1
+          }
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNKNOWN_OPERATOR"
+    }
+  ]
+}

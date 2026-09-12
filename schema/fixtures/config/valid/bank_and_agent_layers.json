@@ -1,0 +1,28 @@
+{
+  "description": "most specific layer wins, objects merge key by key",
+  "layers": [
+    {
+      "geofence": {
+        "profiles": {
+          "standalone": {
+            "radius_m": 60,
+            "max_accuracy_m": 25,
+            "exit_consecutive_fixes": 3,
+            "prompt_checkin_on_arrival": false
+          }
+        }
+      }
+    },
+    {
+      "geofence": {
+        "sample_seconds": 90
+      }
+    }
+  ],
+  "expect_values": {
+    "geofence.sample_seconds": 90,
+    "geofence.profiles.standalone.radius_m": 60,
+    "geofence.profiles.shopping_centre.radius_m": 250,
+    "geofence.outside_fix.max_accuracy_m": 30
+  }
+}

@@ -1,0 +1,208 @@
+{
+  "operator": "distance_m",
+  "cases": [
+    {
+      "name": "same point",
+      "expression": {
+        "distance_m": [
+          {
+            "var": "a"
+          },
+          {
+            "var": "a"
+          }
+        ]
+      },
+      "data": {
+        "a": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        }
+      },
+      "expected": 0
+    },
+    {
+      "name": "0.001° of latitude",
+      "expression": {
+        "distance_m": [
+          {
+            "var": "a"
+          },
+          {
+            "var": "b"
+          }
+        ]
+      },
+      "data": {
+        "a": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        },
+        "b": {
+          "lat": -26.1031,
+          "lng": 28.0473
+        }
+      },
+      "expected": 111.195
+    },
+    {
+      "name": "extra keys are ignored",
+      "expression": {
+        "distance_m": [
+          {
+            "var": "a"
+          },
+          {
+            "var": "b"
+          }
+        ]
+      },
+      "data": {
+        "a": {
+          "lat": -26.1041,
+          "lng": 28.0473,
+          "source": "map_pin"
+        },
+        "b": {
+          "lat": -26.1031,
+          "lng": 28.0473
+        }
+      },
+      "expected": 111.195
+    },
+    {
+      "name": "0.001° of longitude",
+      "expression": {
+        "distance_m": [
+          {
+            "var": "a"
+          },
+          {
+            "var": "b"
+          }
+        ]
+      },
+      "data": {
+        "a": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        },
+        "b": {
+          "lat": -26.1041,
+          "lng": 28.0483
+        }
+      },
+      "expected": 99.853
+    },
+    {
+      "name": "Johannesburg to Cape Town",
+      "expression": {
+        "distance_m": [
+          {
+            "var": "a"
+          },
+          {
+            "var": "b"
+          }
+        ]
+      },
+      "data": {
+        "a": {
+          "lat": -26.2041,
+          "lng": 28.0473
+        },
+        "b": {
+          "lat": -33.9249,
+          "lng": 18.4241
+        }
+      },
+      "expected": 1261577.318
+    },
+    {
+      "name": "null point",
+      "expression": {
+        "distance_m": [
+          {
+            "var": "a"
+          },
+          {
+            "var": "missing"
+          }
+        ]
+      },
+      "data": {
+        "a": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        }
+      },
+      "expected": null
+    },
+    {
+      "name": "latitude out of range",
+      "expression": {
+        "distance_m": [
+          {
+            "var": "a"
+          },
+          {
+            "var": "b"
+          }
+        ]
+      },
+      "data": {
+        "a": {
+          "lat": 95,
+          "lng": 0
+        },
+        "b": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        }
+      },
+      "error": "RULE_INVALID_POINT"
+    },
+    {
+      "name": "string point",
+      "expression": {
+        "distance_m": [
+          "x",
+          {
+            "var": "b"
+          }
+        ]
+      },
+      "data": {
+        "b": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        }
+      },
+      "error": "RULE_INVALID_POINT"
+    },
+    {
+      "name": "string coordinate",
+      "expression": {
+        "distance_m": [
+          {
+            "var": "a"
+          },
+          {
+            "var": "b"
+          }
+        ]
+      },
+      "data": {
+        "a": {
+          "lat": "1",
+          "lng": 2
+        },
+        "b": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        }
+      },
+      "error": "RULE_INVALID_POINT"
+    }
+  ]
+}

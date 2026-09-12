@@ -1,0 +1,197 @@
+{
+  "form": "form_all_components",
+  "lists": {
+    "lookup_lists": {
+      "provinces": [
+        {
+          "value": "GP",
+          "label": "Gauteng"
+        },
+        {
+          "value": "WC",
+          "label": "Western Cape"
+        },
+        {
+          "value": "KZN",
+          "label": "KwaZulu-Natal"
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "name": "cascading select filters by province",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          }
+        }
+      },
+      "steps": [
+        {
+          "set": {
+            "t_lookup": "WC"
+          },
+          "expect": {
+            "options": {
+              "t_city": [
+                "cpt"
+              ]
+            }
+          }
+        },
+        {
+          "set": {
+            "t_lookup": "GP"
+          },
+          "expect": {
+            "options": {
+              "t_city": [
+                "jhb"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "no province, no cities",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          }
+        }
+      },
+      "expect": {
+        "options": {
+          "t_city": []
+        }
+      }
+    },
+    {
+      "name": "za_id derived date of birth drives a computed age",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          }
+        }
+      },
+      "steps": [
+        {
+          "set": {
+            "t_id": "8001015009087"
+          }
+        }
+      ],
+      "expect": {
+        "values": {
+          "t_age": 46
+        }
+      }
+    },
+    {
+      "name": "computed value follows its dependency",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          }
+        }
+      },
+      "steps": [
+        {
+          "set": {
+            "t_number": 41
+          }
+        }
+      ],
+      "expect": {
+        "values": {
+          "t_computed": 42
+        }
+      }
+    },
+    {
+      "name": "prefilled from the job",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          }
+        }
+      },
+      "expect": {
+        "values": {
+          "t_prefilled": "POS-2026-000123"
+        },
+        "read_only": {
+          "t_prefilled": true
+        }
+      }
+    },
+    {
+      "name": "templates render context values",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          }
+        }
+      },
+      "expect": {
+        "labels": {
+          "t_text": "Text"
+        }
+      }
+    },
+    {
+      "name": "date max resolves to today",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          }
+        }
+      },
+      "expect": {
+        "props": {
+          "t_date": {
+            "min": "2000-01-01",
+            "max": "2026-09-10"
+          }
+        }
+      }
+    }
+  ]
+}

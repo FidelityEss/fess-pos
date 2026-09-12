@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/payloads/inspection_snapshot.v1.schema.json",
+  "title": "inspection_snapshot payload, type_version 1",
+  "description": "Periodic in-progress answers (SHOULD); last-writer-wins by device_seq.",
+  "type": "object",
+  "properties": {
+    "inspection_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "job_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "answers": {
+      "$ref": "../common.schema.json#/$defs/answers"
+    },
+    "field_timings": {
+      "$ref": "../common.schema.json#/$defs/field_timings"
+    },
+    "current_step": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "snapshot_at_device": {
+      "$ref": "../common.schema.json#/$defs/datetime"
+    }
+  },
+  "required": [
+    "inspection_id",
+    "job_id",
+    "answers",
+    "snapshot_at_device"
+  ],
+  "additionalProperties": false
+}

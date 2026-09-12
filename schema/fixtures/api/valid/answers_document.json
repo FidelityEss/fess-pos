@@ -1,0 +1,51 @@
+{
+  "description": "docs/04 section 5",
+  "schema": "answers-document",
+  "value": {
+    "definition_refs": {
+      "form": {
+        "version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d80",
+        "hash": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "flow": {
+        "version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d81",
+        "hash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "config_version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d82",
+    "context_snapshot": {
+      "today": "2026-09-10",
+      "job": {
+        "reference": "POS-2026-000123",
+        "merchant_name": "Joe's Spaza",
+        "location": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        }
+      },
+      "agent": {
+        "region": "gauteng"
+      },
+      "inspection": {
+        "attempt": 1,
+        "geofence": {
+          "profile": "standalone",
+          "method": "inside_fix",
+          "inside": true,
+          "override": false,
+          "relaxed": false
+        }
+      }
+    },
+    "answers": {
+      "premises_type": {
+        "v": "mall"
+      },
+      "merchant_name": {
+        "v": "Joe's Spaza",
+        "prefilled": true
+      }
+    },
+    "answers_hash": "a0c7e68b4422a597b7cfa81322b8f9fdb1dcf4711f6dbc1c7a1b072a12732ffa"
+  }
+}

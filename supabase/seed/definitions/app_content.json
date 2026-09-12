@@ -1,0 +1,90 @@
+[
+  {
+    "spec_version": "1.0",
+    "kind": "app",
+    "family": "agent_app",
+    "version": 1,
+    "scope": null,
+    "title": "POS agent app",
+    "home": "home",
+    "navigation": { "style": "bottom_tabs", "items": [
+      { "label": "Home", "icon": "home", "page": "home" },
+      { "label": "Leads", "icon": "list", "page": "active_jobs" },
+      { "label": "Card", "icon": "badge", "page": "agent_card" }
+    ] },
+    "pages": {
+      "home": { "type": "view_page", "view": "home" },
+      "active_jobs": { "type": "list_page", "title": "Active leads", "source": "jobs",
+        "filter": { "in": [ { "var": "job.status" }, [ "assigned", "accepted", "in_progress", "paused", "returned" ] ] },
+        "sort": "job.scheduled_start", "sort_direction": "asc", "item_view": "job_card",
+        "on_tap": { "page": "job_detail" }, "empty_content": "jobs.empty_active" },
+      "job_detail": { "type": "view_page", "view": "job_detail", "actions": [
+        { "label": "Start inspection", "target": { "page": "inspection" } },
+        { "label": "Can't take this job", "target": { "page": "reject_job" } },
+        { "label": "Unable to complete", "target": { "page": "unable_job" } }
+      ] },
+      "agent_card": { "type": "view_page", "view": "agent_card", "title": "My authorisation card" },
+      "inspection": { "type": "flow", "title": "Site inspection", "flow": "site_inspection_flow", "outcomes": "default" },
+      "reject_job": { "type": "form_page", "title": "Reject job", "form": "assignment_reject", "action": "job.reject",
+        "subject": "job", "outcomes": "default" },
+      "unable_job": { "type": "form_page", "title": "Unable to complete", "form": "unable_to_complete", "action": "job.unable",
+        "subject": "job", "outcomes": "default" },
+      "outcome_success": { "type": "outcome_page", "outcome": "success", "title": "Received by the server",
+        "message": "Thank you — the server has confirmed it.", "icon": "check_circle",
+        "buttons": [ { "label": "Back to home", "action": "home" }, { "label": "View receipt", "action": "receipt" } ] },
+      "outcome_saved": { "type": "outcome_page", "outcome": "saved", "title": "Saved on this phone",
+        "message": "It will send automatically when you're back online. You don't need to do anything else.", "icon": "cloud_upload",
+        "buttons": [ { "label": "Back to home", "action": "home" } ] },
+      "outcome_failure": { "type": "outcome_page", "outcome": "failure", "title": "This couldn't be completed",
+        "message": "Nothing you captured has been lost. Check the message below and try again, or contact your administrator.", "icon": "error",
+        "buttons": [ { "label": "Try again", "action": "retry" }, { "label": "Back to home", "action": "home" } ] }
+    },
+    "outcome_sets": {
+      "default": { "success": "outcome_success", "saved": "outcome_saved", "failure": "outcome_failure" }
+    }
+  },
+  {
+    "spec_version": "1.0",
+    "kind": "content",
+    "family": "core",
+    "version": 1,
+    "scope": null,
+    "title": "Core copy (en-ZA)",
+    "locale": "en-ZA",
+    "strings": {
+      "jobs.empty_active": "No active leads. New assignments appear here.",
+      "sync.synced": "Synced",
+      "sync.pending": "{{count}} items waiting to upload",
+      "sync.needs_attention": "Needs attention",
+      "receipt.received": "Received by server ✓ {{time}} · {{verified}}/{{expected}} photos verified",
+      "receipt.uploading": "Received · {{remaining}} photos still uploading",
+      "receipt.saved": "Saved on this phone · {{count}} items waiting — connect to the internet",
+      "location.outside_fence": "You're outside the expected location for this merchant.",
+      "location.sampling": "Getting an accurate location… accuracy {{accuracy}} m",
+      "location.checkin_prompt": "Record your location outside the premises before you go in.",
+      "update.required": "Update FESS to start this inspection. Anything already captured will still upload.",
+      "notify.job_assigned.email.subject": "New POS job {{job_reference}}",
+      "notify.job_assigned.email.body": "Hi {{first_name}},\n\nYou have been assigned job {{job_reference}} ({{merchant_name}}). Open POS in FESS to accept or reject it.",
+      "notify.job_cancelled.email.subject": "POS job {{job_reference}} cancelled",
+      "notify.job_cancelled.email.body": "Hi {{first_name}},\n\nJob {{job_reference}} ({{merchant_name}}) has been cancelled. Anything you already captured will still upload.",
+      "notify.job_returned.email.subject": "POS job {{job_reference}} returned for rework",
+      "notify.job_returned.email.body": "Hi {{first_name}},\n\nJob {{job_reference}} was returned for rework: {{note}}",
+      "notify.job_rescheduled.email.subject": "POS job {{job_reference}} rescheduled",
+      "notify.job_rescheduled.email.body": "Hi {{first_name}},\n\nThe visit window for {{job_reference}} has changed. Open POS to see the new time.",
+      "notify.job_rejected_by_agent.email.subject": "{{job_reference}} rejected by the agent",
+      "notify.job_rejected_by_agent.email.body": "The assigned agent rejected {{job_reference}} (reason: {{reason_code}}). It is back in SCHEDULED for re-allocation.",
+      "notify.assignment_expired.email.subject": "{{job_reference}}: no response from the agent",
+      "notify.assignment_expired.email.body": "The agent did not respond to {{job_reference}} in time. It is back in SCHEDULED for re-allocation.",
+      "notify.integrity_failed.email.subject": "Integrity failure on {{job_reference}}",
+      "notify.integrity_failed.email.body": "Evidence for {{job_reference}} failed verification. Open the review screen for details.",
+      "verify.page_title": "POS agent verification",
+      "verify.valid_heading": "Authorised POS agent",
+      "verify.valid_body": "This person is currently authorised to carry out merchant site verifications.",
+      "verify.job_heading": "Authorised for this visit",
+      "verify.invalid_heading": "Not verified",
+      "verify.invalid_body": "This card could not be verified. Do not allow the visit to continue, and report your concern.",
+      "verify.report_concern": "Report a concern to your bank or to Fidelity Security Services.",
+      "verify.valid_until": "Valid until"
+    }
+  }
+]

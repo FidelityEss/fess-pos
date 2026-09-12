@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/payloads/form_submission.v1.schema.json",
+  "title": "form_submission payload, type_version 1",
+  "description": "Answers of a generic form page bound to record.submit (docs/04 §3.6): stored against a job, the agent, or nothing.",
+  "type": "object",
+  "properties": {
+    "form_submission_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "form_version_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "definition_hash": {
+      "$ref": "../common.schema.json#/$defs/sha256"
+    },
+    "subject_type": {
+      "enum": [
+        "job",
+        "agent",
+        "none"
+      ]
+    },
+    "subject_id": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "config_version_id": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "context_snapshot": {
+      "$ref": "../common.schema.json#/$defs/context_snapshot"
+    },
+    "answers": {
+      "$ref": "../common.schema.json#/$defs/answers"
+    },
+    "field_timings": {
+      "$ref": "../common.schema.json#/$defs/field_timings"
+    },
+    "answers_hash": {
+      "$ref": "../common.schema.json#/$defs/sha256"
+    },
+    "submitted_at_device": {
+      "$ref": "../common.schema.json#/$defs/datetime"
+    }
+  },
+  "required": [
+    "form_submission_id",
+    "form_version_id",
+    "definition_hash",
+    "subject_type",
+    "subject_id",
+    "context_snapshot",
+    "answers",
+    "answers_hash",
+    "submitted_at_device"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "subject_type": {
+            "const": "none"
+          }
+        },
+        "required": [
+          "subject_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "subject_id": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "subject_id": {
+            "$ref": "../common.schema.json#/$defs/uuid"
+          }
+        }
+      }
+    }
+  ]
+}

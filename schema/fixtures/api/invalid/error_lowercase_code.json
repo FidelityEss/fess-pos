@@ -1,0 +1,12 @@
+{
+  "description": "codes are UPPER_SNAKE",
+  "schema": "error",
+  "value": {
+    "error": {
+      "code": "internal",
+      "message": "x",
+      "retryable": true
+    },
+    "request_id": "r"
+  }
+}

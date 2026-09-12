@@ -1,0 +1,20 @@
+{
+  "description": "refused at the door: park and report",
+  "schema": "receipt",
+  "value": {
+    "id": null,
+    "state": null,
+    "durable": false,
+    "error": {
+      "code": "INVALID_ENVELOPE",
+      "retryable": false,
+      "message": "envelope wrapper failed validation",
+      "details": [
+        {
+          "path": "id",
+          "message": "Required"
+        }
+      ]
+    }
+  }
+}

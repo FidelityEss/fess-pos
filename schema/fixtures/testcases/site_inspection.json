@@ -1,0 +1,566 @@
+{
+  "form": "form_site_inspection",
+  "cases": [
+    {
+      "name": "other reveals a required description",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          },
+          "attributes": {
+            "risk_tier": "standard"
+          }
+        },
+        "agent": {
+          "region": "gauteng",
+          "first_name": "Sipho"
+        },
+        "inspection": {
+          "attempt": 1,
+          "geofence": {
+            "profile": "standalone",
+            "method": "inside_fix",
+            "inside": true,
+            "override": false,
+            "relaxed": false
+          }
+        }
+      },
+      "steps": [
+        {
+          "set": {
+            "premises_type": "other"
+          },
+          "expect": {
+            "visible": {
+              "premises_type_other": true
+            },
+            "required": {
+              "premises_type_other": true
+            }
+          }
+        },
+        {
+          "set": {
+            "premises_type": "mall"
+          },
+          "expect": {
+            "visible": {
+              "premises_type_other": false
+            },
+            "required": {
+              "premises_type_other": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "private home raises the photo minimum and the risk score",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          },
+          "attributes": {
+            "risk_tier": "standard"
+          }
+        },
+        "agent": {
+          "region": "gauteng",
+          "first_name": "Sipho"
+        },
+        "inspection": {
+          "attempt": 1,
+          "geofence": {
+            "profile": "standalone",
+            "method": "inside_fix",
+            "inside": true,
+            "override": false,
+            "relaxed": false
+          }
+        }
+      },
+      "steps": [
+        {
+          "set": {
+            "premises_type": "home"
+          }
+        }
+      ],
+      "expect": {
+        "props": {
+          "internal_photos": {
+            "min_count": 4
+          }
+        },
+        "values": {
+          "risk_score": 3
+        },
+        "visible": {
+          "home_note": true
+        },
+        "read_only": {
+          "risk_score": true
+        }
+      }
+    },
+    {
+      "name": "online sales reveal the e-commerce share",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          },
+          "attributes": {
+            "risk_tier": "standard"
+          }
+        },
+        "agent": {
+          "region": "gauteng",
+          "first_name": "Sipho"
+        },
+        "inspection": {
+          "attempt": 1,
+          "geofence": {
+            "profile": "standalone",
+            "method": "inside_fix",
+            "inside": true,
+            "override": false,
+            "relaxed": false
+          }
+        }
+      },
+      "steps": [
+        {
+          "set": {
+            "ecommerce_sales": true
+          },
+          "expect": {
+            "visible": {
+              "ecommerce_pct": true
+            }
+          }
+        },
+        {
+          "set": {
+            "ecommerce_sales": false
+          },
+          "expect": {
+            "visible": {
+              "ecommerce_pct": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "shopping centre profile requires a shopfront photo",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          },
+          "attributes": {
+            "risk_tier": "standard"
+          }
+        },
+        "agent": {
+          "region": "gauteng",
+          "first_name": "Sipho"
+        },
+        "inspection": {
+          "attempt": 1,
+          "geofence": {
+            "profile": "shopping_centre",
+            "method": "inside_fix",
+            "inside": true,
+            "override": false,
+            "relaxed": true
+          }
+        }
+      },
+      "expect": {
+        "visible": {
+          "shopfront_photo": true
+        },
+        "required": {
+          "shopfront_photo": true
+        }
+      }
+    },
+    {
+      "name": "complete mall answers are valid",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          },
+          "attributes": {
+            "risk_tier": "standard"
+          }
+        },
+        "agent": {
+          "region": "gauteng",
+          "first_name": "Sipho"
+        },
+        "inspection": {
+          "attempt": 1,
+          "geofence": {
+            "profile": "standalone",
+            "method": "inside_fix",
+            "inside": true,
+            "override": false,
+            "relaxed": false
+          }
+        }
+      },
+      "steps": [
+        {
+          "set": {
+            "trading_years": 5,
+            "services": [
+              "retail",
+              "delivery"
+            ],
+            "delivered_at_pos_pct": 30,
+            "ecommerce_sales": true,
+            "ecommerce_pct": 50,
+            "premises_type": "mall",
+            "operates_elsewhere": false,
+            "external_photos": [
+              "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d01",
+              "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d02"
+            ],
+            "internal_photos": [
+              "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d03",
+              "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d04"
+            ],
+            "interviewee_name": "Thandi Mokoena",
+            "interviewee_designation": "Owner",
+            "interviewee_signature": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d05",
+            "agent_declaration": {
+              "accepted": true,
+              "declaration_version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d90",
+              "accepted_at": "2026-09-10T10:40:00+02:00"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "valid": true,
+        "errors": [],
+        "values": {
+          "merchant_name": "Joe's Spaza",
+          "risk_score": 1
+        }
+      }
+    },
+    {
+      "name": "empty answers report every required field",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          },
+          "attributes": {
+            "risk_tier": "standard"
+          }
+        },
+        "agent": {
+          "region": "gauteng",
+          "first_name": "Sipho"
+        },
+        "inspection": {
+          "attempt": 1,
+          "geofence": {
+            "profile": "standalone",
+            "method": "inside_fix",
+            "inside": true,
+            "override": false,
+            "relaxed": false
+          }
+        }
+      },
+      "expect": {
+        "valid": false,
+        "errors": [
+          {
+            "field_key": "trading_years",
+            "code": "REQUIRED"
+          },
+          {
+            "field_key": "services",
+            "code": "REQUIRED"
+          },
+          {
+            "field_key": "delivered_at_pos_pct",
+            "code": "REQUIRED"
+          },
+          {
+            "field_key": "ecommerce_sales",
+            "code": "REQUIRED"
+          },
+          {
+            "field_key": "premises_type",
+            "code": "REQUIRED"
+          },
+          {
+            "field_key": "operates_elsewhere",
+            "code": "REQUIRED"
+          },
+          {
+            "field_key": "external_photos",
+            "code": "REQUIRED"
+          },
+          {
+            "field_key": "internal_photos",
+            "code": "REQUIRED"
+          },
+          {
+            "field_key": "interviewee_name",
+            "code": "REQUIRED"
+          },
+          {
+            "field_key": "interviewee_designation",
+            "code": "REQUIRED"
+          },
+          {
+            "field_key": "interviewee_signature",
+            "code": "REQUIRED"
+          },
+          {
+            "field_key": "agent_declaration",
+            "code": "REQUIRED"
+          }
+        ]
+      }
+    },
+    {
+      "name": "repeatable item labels and rules read item.*",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          },
+          "attributes": {
+            "risk_tier": "standard"
+          }
+        },
+        "agent": {
+          "region": "gauteng",
+          "first_name": "Sipho"
+        },
+        "inspection": {
+          "attempt": 1,
+          "geofence": {
+            "profile": "standalone",
+            "method": "inside_fix",
+            "inside": true,
+            "override": false,
+            "relaxed": false
+          }
+        }
+      },
+      "steps": [
+        {
+          "set": {
+            "other_businesses": [
+              {
+                "name": "Bob's",
+                "kind": "shop"
+              },
+              {
+                "name": "Nail bar",
+                "kind": "home"
+              }
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "labels": {
+          "other_businesses[0].photos": "Photos of Bob's"
+        },
+        "required": {
+          "other_businesses[0].photos": true,
+          "other_businesses[1].photos": false
+        }
+      }
+    },
+    {
+      "name": "percentages over 100 fail validation",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          },
+          "attributes": {
+            "risk_tier": "standard"
+          }
+        },
+        "agent": {
+          "region": "gauteng",
+          "first_name": "Sipho"
+        },
+        "inspection": {
+          "attempt": 1,
+          "geofence": {
+            "profile": "standalone",
+            "method": "inside_fix",
+            "inside": true,
+            "override": false,
+            "relaxed": false
+          }
+        }
+      },
+      "steps": [
+        {
+          "set": {
+            "trading_years": 5,
+            "services": [
+              "retail",
+              "delivery"
+            ],
+            "delivered_at_pos_pct": 30,
+            "ecommerce_sales": true,
+            "ecommerce_pct": 80,
+            "premises_type": "mall",
+            "operates_elsewhere": false,
+            "external_photos": [
+              "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d01",
+              "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d02"
+            ],
+            "internal_photos": [
+              "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d03",
+              "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d04"
+            ],
+            "interviewee_name": "Thandi Mokoena",
+            "interviewee_designation": "Owner",
+            "interviewee_signature": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d05",
+            "agent_declaration": {
+              "accepted": true,
+              "declaration_version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d90",
+              "accepted_at": "2026-09-10T10:40:00+02:00"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "errors": [
+          {
+            "field_key": "ecommerce_pct",
+            "code": "PCT_SUM_EXCEEDS_100"
+          }
+        ]
+      }
+    },
+    {
+      "name": "deliberately wrong expectation (runner must report it)",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          },
+          "attributes": {
+            "risk_tier": "standard"
+          }
+        },
+        "agent": {
+          "region": "gauteng",
+          "first_name": "Sipho"
+        },
+        "inspection": {
+          "attempt": 1,
+          "geofence": {
+            "profile": "standalone",
+            "method": "inside_fix",
+            "inside": true,
+            "override": false,
+            "relaxed": false
+          }
+        }
+      },
+      "expect": {
+        "visible": {
+          "premises_type_other": true
+        }
+      },
+      "expect_pass": false
+    },
+    {
+      "name": "unknown field in an expectation fails",
+      "context": {
+        "today": "2026-09-10",
+        "job": {
+          "reference": "POS-2026-000123",
+          "merchant_name": "Joe's Spaza",
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          },
+          "attributes": {
+            "risk_tier": "standard"
+          }
+        },
+        "agent": {
+          "region": "gauteng",
+          "first_name": "Sipho"
+        },
+        "inspection": {
+          "attempt": 1,
+          "geofence": {
+            "profile": "standalone",
+            "method": "inside_fix",
+            "inside": true,
+            "override": false,
+            "relaxed": false
+          }
+        }
+      },
+      "expect": {
+        "visible": {
+          "no_such_field": true
+        }
+      },
+      "expect_pass": false
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+# Playwright output
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Next.js / TypeScript build output (also covered by the repo root .gitignore)
+/.next/
+/.next-staging/
+/.next-qa/
+/.next-prod/
+/.next-build*/
+/out/
+*.tsbuildinfo
+
+# Local environment — never commit (commit .env.example only)
+.env.local
+.env.staging
+.env.qa
+.env.production

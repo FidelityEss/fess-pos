@@ -1,0 +1,183 @@
+{
+  "operator": "within_m",
+  "cases": [
+    {
+      "name": "within",
+      "expression": {
+        "within_m": [
+          {
+            "var": "a"
+          },
+          {
+            "var": "b"
+          },
+          200
+        ]
+      },
+      "data": {
+        "a": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        },
+        "b": {
+          "lat": -26.1031,
+          "lng": 28.0473
+        }
+      },
+      "expected": true
+    },
+    {
+      "name": "outside",
+      "expression": {
+        "within_m": [
+          {
+            "var": "a"
+          },
+          {
+            "var": "b"
+          },
+          100
+        ]
+      },
+      "data": {
+        "a": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        },
+        "b": {
+          "lat": -26.1031,
+          "lng": 28.0473
+        }
+      },
+      "expected": false
+    },
+    {
+      "name": "zero distance within zero",
+      "expression": {
+        "within_m": [
+          {
+            "var": "a"
+          },
+          {
+            "var": "a"
+          },
+          0
+        ]
+      },
+      "data": {
+        "a": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        }
+      },
+      "expected": true
+    },
+    {
+      "name": "null point",
+      "expression": {
+        "within_m": [
+          {
+            "var": "missing"
+          },
+          {
+            "var": "b"
+          },
+          100
+        ]
+      },
+      "data": {
+        "b": {
+          "lat": -26.1031,
+          "lng": 28.0473
+        }
+      },
+      "expected": false
+    },
+    {
+      "name": "null radius",
+      "expression": {
+        "within_m": [
+          {
+            "var": "a"
+          },
+          {
+            "var": "b"
+          },
+          null
+        ]
+      },
+      "data": {
+        "a": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        },
+        "b": {
+          "lat": -26.1031,
+          "lng": 28.0473
+        }
+      },
+      "expected": false
+    },
+    {
+      "name": "pin within config radius",
+      "expression": {
+        "within_m": [
+          {
+            "var": "answers.pin"
+          },
+          {
+            "var": "job.location"
+          },
+          {
+            "var": "config.geofence.override_max_m"
+          }
+        ]
+      },
+      "data": {
+        "answers": {
+          "pin": {
+            "lat": -26.1031,
+            "lng": 28.0473
+          }
+        },
+        "job": {
+          "location": {
+            "lat": -26.1041,
+            "lng": 28.0473
+          }
+        },
+        "config": {
+          "geofence": {
+            "override_max_m": 500
+          }
+        }
+      },
+      "expected": true
+    },
+    {
+      "name": "string radius",
+      "expression": {
+        "within_m": [
+          {
+            "var": "a"
+          },
+          {
+            "var": "b"
+          },
+          "100"
+        ]
+      },
+      "data": {
+        "a": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        },
+        "b": {
+          "lat": -26.1031,
+          "lng": 28.0473
+        }
+      },
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

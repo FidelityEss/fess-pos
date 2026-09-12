@@ -1,0 +1,11 @@
+{
+  "description": "photo quality is bounded",
+  "layers": [
+    {
+      "photos": {
+        "jpeg_quality": 20
+      }
+    }
+  ],
+  "schema_valid": false
+}

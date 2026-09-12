@@ -1,0 +1,148 @@
+{
+  "operator": "if",
+  "cases": [
+    {
+      "name": "then branch",
+      "expression": {
+        "if": [
+          true,
+          "a",
+          "b"
+        ]
+      },
+      "data": {},
+      "expected": "a"
+    },
+    {
+      "name": "else branch",
+      "expression": {
+        "if": [
+          false,
+          "a",
+          "b"
+        ]
+      },
+      "data": {},
+      "expected": "b"
+    },
+    {
+      "name": "no else yields null",
+      "expression": {
+        "if": [
+          false,
+          "a"
+        ]
+      },
+      "data": {},
+      "expected": null
+    },
+    {
+      "name": "second condition",
+      "expression": {
+        "if": [
+          false,
+          1,
+          true,
+          2,
+          3
+        ]
+      },
+      "data": {},
+      "expected": 2
+    },
+    {
+      "name": "falls to final else",
+      "expression": {
+        "if": [
+          false,
+          1,
+          false,
+          2,
+          3
+        ]
+      },
+      "data": {},
+      "expected": 3
+    },
+    {
+      "name": "null condition counts as false",
+      "expression": {
+        "if": [
+          {
+            "var": "x"
+          },
+          "a",
+          "b"
+        ]
+      },
+      "data": {},
+      "expected": "b"
+    },
+    {
+      "name": "untaken branches are not evaluated",
+      "expression": {
+        "if": [
+          true,
+          1,
+          {
+            "==": [
+              {
+                "+": [
+                  "a"
+                ]
+              },
+              1
+            ]
+          }
+        ]
+      },
+      "data": {},
+      "expected": 1
+    },
+    {
+      "name": "photo minimum by premises type (docs/04 §3.1)",
+      "expression": {
+        "if": [
+          {
+            "==": [
+              {
+                "var": "answers.premises_type"
+              },
+              "home"
+            ]
+          },
+          4,
+          2
+        ]
+      },
+      "data": {
+        "answers": {
+          "premises_type": "home"
+        }
+      },
+      "expected": 4
+    },
+    {
+      "name": "non-boolean condition",
+      "expression": {
+        "if": [
+          "yes",
+          "a",
+          "b"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "one argument",
+      "expression": {
+        "if": [
+          true
+        ]
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

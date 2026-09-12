@@ -1,0 +1,23 @@
+{
+  "name": "fess-pos",
+  "private": true,
+  "description": "FESS POS verification module, POS API (Supabase) and admin panel — monorepo",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:test": "supabase test db",
+    "functions:serve": "supabase functions serve --env-file supabase/functions/.env.local",
+    "functions:check": "cd supabase/functions/api && deno check --node-modules-dir=none index.ts && cd ../workers && deno check --node-modules-dir=none index.ts",
+    "engine:vendor": "node tools/vendor-engine.mjs",
+    "functions:test": "deno test --allow-all supabase/functions",
+    "engine:test": "pnpm --filter @fess-pos/engine test",
+    "admin:dev": "pnpm --filter fess-pos-admin dev",
+    "admin:build": "pnpm --filter fess-pos-admin build",
+    "seed:scenarios": "pnpm --filter @fess-pos/tools scenarios"
+  },
+  "workspaces": ["apps/*", "packages/fess_pos_engine_ts", "tools"]
+}

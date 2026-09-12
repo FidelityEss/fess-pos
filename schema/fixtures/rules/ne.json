@@ -1,0 +1,53 @@
+{
+  "operator": "!=",
+  "cases": [
+    {
+      "name": "different numbers",
+      "expression": {
+        "!=": [
+          1,
+          2
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "no coercion",
+      "expression": {
+        "!=": [
+          1,
+          "1"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "null vs null",
+      "expression": {
+        "!=": [
+          null,
+          null
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "equal strings",
+      "expression": {
+        "!=": [
+          {
+            "var": "a"
+          },
+          "x"
+        ]
+      },
+      "data": {
+        "a": "x"
+      },
+      "expected": false
+    }
+  ]
+}

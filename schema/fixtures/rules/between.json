@@ -1,0 +1,124 @@
+{
+  "operator": "between",
+  "cases": [
+    {
+      "name": "inside",
+      "expression": {
+        "between": [
+          5,
+          1,
+          10
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "inclusive low",
+      "expression": {
+        "between": [
+          1,
+          1,
+          10
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "inclusive high",
+      "expression": {
+        "between": [
+          10,
+          1,
+          10
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "above",
+      "expression": {
+        "between": [
+          11,
+          1,
+          10
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "below",
+      "expression": {
+        "between": [
+          0,
+          1,
+          10
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "ISO dates",
+      "expression": {
+        "between": [
+          "2026-06-15",
+          "2026-01-01",
+          "2026-12-31"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "null value is false",
+      "expression": {
+        "between": [
+          null,
+          1,
+          10
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "null bound is false",
+      "expression": {
+        "between": [
+          5,
+          null,
+          10
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "mixed types",
+      "expression": {
+        "between": [
+          5,
+          "1",
+          10
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "two arguments",
+      "expression": {
+        "between": [
+          5,
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

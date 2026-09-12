@@ -1,0 +1,26 @@
+{
+  "description": "unknown type-specific prop",
+  "expected_errors": [
+    "DEF_UNKNOWN_PROPERTY"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text",
+            "props": {
+              "min_count": 2
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

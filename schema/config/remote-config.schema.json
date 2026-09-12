@@ -1,0 +1,671 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/config/remote-config.schema.json",
+  "title": "Remote config (docs/13 §5)",
+  "description": "Typed, bounded remote config. The same schema validates each layer (global → bank → agent → device; every key optional) and the resolved document. Per key: default, bounds, x-integrity-relevant (four-eyes + diff highlighting), x-host-overridable, x-client-safe (only client-safe values leave the server). Changing a bound is a code-reviewed schema change, never an admin action (docs/07 §6). Cross-key rule checked by the engines: geofence.default_profile must name a defined profile.",
+  "type": "object",
+  "properties": {
+    "maps": {
+      "type": "object",
+      "properties": {
+        "tile_url": {
+          "description": "Tile URL template ({z}/{x}/{y}); delivered by config so keys rotate without a release.",
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "api_key": {
+          "description": "Client-safe (publishable) map provider key.",
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "prefetch_zoom": {
+          "description": "Zoom range prefetched per job bounding box.",
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            },
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2,
+          "items": false,
+          "default": [
+            14,
+            17
+          ],
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "wifi_only_prefetch": {
+          "description": "Prefetch tiles on Wi-Fi only.",
+          "type": "boolean",
+          "default": false,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "observability": {
+      "type": "object",
+      "properties": {
+        "sentry_dsn": {
+          "description": "Module Sentry DSN (client-safe).",
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "sample_rate": {
+          "description": "Sentry trace sample rate.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.2,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "geofence": {
+      "type": "object",
+      "properties": {
+        "sample_seconds": {
+          "description": "Location check sampling window (docs/07 §7.1).",
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 180,
+          "default": 60,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "trace_interval_s": {
+          "description": "Fix interval during an inspection (docs/07 §7.8).",
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 120,
+          "default": 20,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "outside_fix": {
+          "type": "object",
+          "properties": {
+            "allowed": {
+              "description": "No GPS lock inside → a fix immediately outside counts (D-09).",
+              "type": "boolean",
+              "default": true,
+              "x-integrity-relevant": true,
+              "x-host-overridable": false,
+              "x-client-safe": true
+            },
+            "max_accuracy_m": {
+              "description": "Accuracy an outside fix must meet.",
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 100,
+              "default": 30,
+              "x-integrity-relevant": true,
+              "x-host-overridable": false,
+              "x-client-safe": true
+            },
+            "valid_minutes": {
+              "description": "How recent the outside fix must be.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 120,
+              "default": 20,
+              "x-integrity-relevant": true,
+              "x-host-overridable": false,
+              "x-client-safe": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "override_radius_multiplier": {
+          "description": "Override allowed within this × the profile radius.",
+          "type": "number",
+          "minimum": 1,
+          "maximum": 3,
+          "default": 2,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "override_max_m": {
+          "description": "Absolute cap on the override distance.",
+          "type": "integer",
+          "minimum": 25,
+          "maximum": 500,
+          "default": 500,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "default_profile": {
+          "description": "Profile used when a job has none (strictest).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "default": "standalone",
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "profiles": {
+          "description": "Location profiles by location type (docs/07 §7).",
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/geofence_profile"
+          },
+          "default": {
+            "standalone": {
+              "radius_m": 75,
+              "max_accuracy_m": 30,
+              "exit_consecutive_fixes": 3,
+              "prompt_checkin_on_arrival": false
+            },
+            "residential": {
+              "radius_m": 75,
+              "max_accuracy_m": 30,
+              "exit_consecutive_fixes": 3,
+              "prompt_checkin_on_arrival": false
+            },
+            "shopping_centre": {
+              "radius_m": 250,
+              "max_accuracy_m": 75,
+              "exit_consecutive_fixes": 5,
+              "prompt_checkin_on_arrival": true
+            },
+            "office_park": {
+              "radius_m": 200,
+              "max_accuracy_m": 75,
+              "exit_consecutive_fixes": 5,
+              "prompt_checkin_on_arrival": true
+            },
+            "large_site": {
+              "radius_m": 300,
+              "max_accuracy_m": 75,
+              "exit_consecutive_fixes": 5,
+              "prompt_checkin_on_arrival": false
+            }
+          },
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "integrity": {
+      "type": "object",
+      "properties": {
+        "block_on_mock": {
+          "description": "Block beginning an inspection when mock location is active.",
+          "type": "boolean",
+          "default": true,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "block_on_root": {
+          "description": "Block on root / jailbreak / hooking (per bank).",
+          "type": "boolean",
+          "default": true,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "attestation_max_age_h": {
+          "description": "Max age of a cached attestation verdict.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 168,
+          "default": 24,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "photos": {
+      "type": "object",
+      "properties": {
+        "max_long_edge_px": {
+          "description": "Canonical image long edge.",
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 4096,
+          "default": 2048,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "jpeg_quality": {
+          "description": "Canonical image JPEG quality.",
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 95,
+          "default": 80,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "auth": {
+      "type": "object",
+      "properties": {
+        "reverify_hours": {
+          "description": "Re-run the host-token exchange at most this often (docs/07 §2).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 168,
+          "default": 24,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "max_host_token_age_h": {
+          "description": "Refuse host tokens older than this (mirrors FESS tokenTime).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2160,
+          "default": 696,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "access_token_ttl_s": {
+          "description": "POS access token lifetime.",
+          "type": "integer",
+          "minimum": 300,
+          "maximum": 3600,
+          "default": 900,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "refresh_token_ttl_days": {
+          "description": "POS refresh token lifetime.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90,
+          "default": 30,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "sync": {
+      "type": "object",
+      "properties": {
+        "foreground_interval_s": {
+          "description": "Foreground sync interval while the outbox is non-empty.",
+          "type": "integer",
+          "minimum": 15,
+          "maximum": 600,
+          "default": 60,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "idle_interval_s": {
+          "description": "Sync interval otherwise.",
+          "type": "integer",
+          "minimum": 900,
+          "maximum": 86400,
+          "default": 900,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "retain_committed_payload_days": {
+          "description": "Committed payloads kept for restore-epoch re-send (docs/12 §12).",
+          "type": "integer",
+          "minimum": 7,
+          "maximum": 365,
+          "default": 30,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "storage": {
+      "type": "object",
+      "properties": {
+        "cap_mb": {
+          "description": "Total module storage cap.",
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 4096,
+          "default": 500,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "block_new_work_at_pct": {
+          "description": "Block new inspections at this share of the cap.",
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 95,
+          "default": 80,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "tile_cache_mb": {
+          "description": "Map tile cache cap.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1024,
+          "default": 150,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "min_module_version": {
+      "type": "object",
+      "properties": {
+        "nag": {
+          "description": "Soft update banner below this version.",
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "default": "0.0.0",
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "new_work": {
+          "description": "Hard gate on starting inspections / accepting jobs; never on uploads.",
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "default": "0.0.0",
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        },
+        "block_in_progress": {
+          "description": "Emergency gate on completing started work (data-corrupting bugs only); uploads continue.",
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "default": "0.0.0",
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "features": {
+      "description": "Optional feature flags (features.<x>); never affect uploads.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,63}$"
+      },
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "default": {
+        "repeatable_groups": true,
+        "inspection_snapshots": true
+      },
+      "x-integrity-relevant": false,
+      "x-host-overridable": false,
+      "x-client-safe": true
+    },
+    "client_mode": {
+      "description": "Route agents to the web client (later).",
+      "enum": [
+        "native",
+        "web"
+      ],
+      "default": "native",
+      "x-integrity-relevant": true,
+      "x-host-overridable": false,
+      "x-client-safe": true
+    },
+    "pos": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Kill switch: hide the host entry point. Never stops background uploads.",
+          "type": "boolean",
+          "default": true,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "inspections": {
+      "type": "object",
+      "properties": {
+        "start_enabled": {
+          "description": "Kill switch: no new inspections; in-progress ones finish.",
+          "type": "boolean",
+          "default": true,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "governance": {
+      "type": "object",
+      "properties": {
+        "four_eyes_global": {
+          "description": "Four-eyes approval for global definitions and config (D-31).",
+          "type": "boolean",
+          "default": false,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "assignment": {
+      "type": "object",
+      "properties": {
+        "response_timeout_h": {
+          "description": "Assignment expires without a response after this (D-18).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 168,
+          "default": 24,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "agent_card": {
+      "type": "object",
+      "properties": {
+        "token_ttl_h": {
+          "description": "Agent authorisation-card QR token lifetime (docs/07 §10).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 72,
+          "default": 24,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "session_tokens": {
+      "type": "object",
+      "properties": {
+        "window_padding_h": {
+          "description": "Session token validity padding around the visit window (docs/07 §3).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 72,
+          "default": 24,
+          "x-integrity-relevant": true,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "locale": {
+      "type": "object",
+      "properties": {
+        "timezone": {
+          "description": "IANA time zone for day boundaries (home tiles).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "pattern": "^[A-Za-z_]+(/[A-Za-z0-9_+-]+)*$",
+          "default": "Africa/Johannesburg",
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "theme": {
+      "type": "object",
+      "properties": {
+        "primary_color": {
+          "description": "Brand colour (#RRGGBB); host may override.",
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "x-integrity-relevant": false,
+          "x-host-overridable": true,
+          "x-client-safe": true
+        },
+        "font_family": {
+          "description": "Font family; host may override.",
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "x-integrity-relevant": false,
+          "x-host-overridable": true,
+          "x-client-safe": true
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "geofence_profile": {
+      "type": "object",
+      "properties": {
+        "radius_m": {
+          "type": "integer",
+          "minimum": 25,
+          "maximum": 500
+        },
+        "max_accuracy_m": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 150
+        },
+        "exit_consecutive_fixes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "prompt_checkin_on_arrival": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "radius_m",
+        "max_accuracy_m",
+        "exit_consecutive_fixes",
+        "prompt_checkin_on_arrival"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

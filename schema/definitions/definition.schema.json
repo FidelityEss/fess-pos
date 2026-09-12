@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/definitions/definition.schema.json",
+  "title": "Any definition (dispatch on kind)",
+  "type": "object",
+  "required": [
+    "kind"
+  ],
+  "properties": {
+    "kind": {
+      "enum": [
+        "form",
+        "flow",
+        "job_schema",
+        "view",
+        "content",
+        "app"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "form"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "$ref": "form.schema.json"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "flow"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "$ref": "flow.schema.json"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "job_schema"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "$ref": "job_schema.schema.json"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "view"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "$ref": "view.schema.json"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "content"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "$ref": "content.schema.json"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "app"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "$ref": "app.schema.json"
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "description": "evidence_uploaded v1",
+  "envelope": {
+    "api_version": "1",
+    "id": "0191d3c3-1009-7c1b-9f10-4b2e1c0a9e00",
+    "type": "evidence_uploaded",
+    "type_version": 1,
+    "payload_hash": "fccd6c7ccd977f2d4b942e99c36f102470907fd9f2ba154ecd7673f2a34b9e59",
+    "device_id": "7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60",
+    "session_id": "4f2a1b3c-5d6e-4f70-8a9b-0c1d2e3f4a5b",
+    "device_seq": 18008,
+    "module_version": "1.4.2",
+    "client_type": "native",
+    "created_at_device": "2026-09-10T10:31:02.114+02:00",
+    "monotonic_ms": 5423311,
+    "payload": {
+      "evidence_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d01",
+      "object_key": "bank/x/job/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/inspection/0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9f01/0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d01.jpg",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "bytes": 412331,
+      "uploaded_at_device": "2026-09-10T10:52:40+02:00"
+    }
+  }
+}

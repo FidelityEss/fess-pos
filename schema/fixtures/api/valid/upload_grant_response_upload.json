@@ -1,0 +1,20 @@
+{
+  "description": "upload target",
+  "schema": "upload-grant-response",
+  "value": {
+    "state": "upload",
+    "evidence_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d01",
+    "bucket": "evidence",
+    "path": "bank/x/job/y/inspection/z/e.jpg",
+    "content_type": "image/jpeg",
+    "signed_url": "https://example.invalid/upload",
+    "token": "t",
+    "expires_in_s": 7200,
+    "resumable": {
+      "endpoint": "https://example.invalid/resumable",
+      "headers": {
+        "x-signature": "t"
+      }
+    }
+  }
+}

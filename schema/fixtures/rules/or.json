@@ -1,0 +1,76 @@
+{
+  "operator": "or",
+  "cases": [
+    {
+      "name": "one true",
+      "expression": {
+        "or": [
+          false,
+          true
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "all false",
+      "expression": {
+        "or": [
+          false,
+          false
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "null counts as false",
+      "expression": {
+        "or": [
+          null,
+          false
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "short-circuits before a type error",
+      "expression": {
+        "or": [
+          true,
+          {
+            "==": [
+              {
+                "+": [
+                  "a"
+                ]
+              },
+              1
+            ]
+          }
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "non-boolean operand",
+      "expression": {
+        "or": [
+          "yes"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "no arguments",
+      "expression": {
+        "or": []
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

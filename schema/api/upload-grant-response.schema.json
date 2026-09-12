@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/upload-grant-response.schema.json",
+  "title": "POST /v1/evidence/upload-grant response",
+  "description": "state upload → signed (and resumable) target on a server-derived path; already_* → skip the upload.",
+  "type": "object",
+  "properties": {
+    "state": {
+      "enum": [
+        "upload",
+        "already_uploaded",
+        "already_verified",
+        "quarantined"
+      ]
+    },
+    "evidence_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "bucket": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "content_type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "signed_url": {
+      "type": "string"
+    },
+    "token": {
+      "type": "string"
+    },
+    "expires_in_s": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "resumable": {
+      "type": "object",
+      "properties": {
+        "endpoint": {
+          "type": "string"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "endpoint",
+        "headers"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "state",
+    "evidence_id"
+  ],
+  "additionalProperties": true,
+  "if": {
+    "properties": {
+      "state": {
+        "const": "upload"
+      }
+    },
+    "required": [
+      "state"
+    ]
+  },
+  "then": {
+    "properties": {
+      "bucket": true,
+      "path": true,
+      "signed_url": true,
+      "token": true,
+      "expires_in_s": true
+    },
+    "required": [
+      "bucket",
+      "path",
+      "signed_url",
+      "token",
+      "expires_in_s"
+    ]
+  }
+}

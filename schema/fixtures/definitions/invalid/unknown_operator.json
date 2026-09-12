@@ -1,0 +1,28 @@
+{
+  "description": "visible uses an operator not in the spec",
+  "expected_errors": [
+    "DEF_INVALID_EXPRESSION"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text",
+            "visible": {
+              "foo": [
+                1
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

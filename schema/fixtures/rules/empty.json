@@ -1,0 +1,98 @@
+{
+  "operator": "empty",
+  "cases": [
+    {
+      "name": "null",
+      "expression": {
+        "empty": [
+          null
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "empty string",
+      "expression": {
+        "empty": [
+          ""
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "empty array",
+      "expression": {
+        "empty": [
+          []
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "zero is not empty",
+      "expression": {
+        "empty": [
+          0
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "false is not empty",
+      "expression": {
+        "empty": [
+          false
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "whitespace is not empty",
+      "expression": {
+        "empty": [
+          " "
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "unanswered",
+      "expression": {
+        "empty": {
+          "var": "missing"
+        }
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "empty object is not empty",
+      "expression": {
+        "empty": {
+          "var": "o"
+        }
+      },
+      "data": {
+        "o": {}
+      },
+      "expected": false
+    },
+    {
+      "name": "two arguments",
+      "expression": {
+        "empty": [
+          1,
+          2
+        ]
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

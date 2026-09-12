@@ -1,0 +1,41 @@
+{
+  "description": "cursors, cache and capabilities",
+  "schema": "sync-pull-request",
+  "value": {
+    "cursors": {
+      "jobs": "2026-09-10T08:00:00+00:00|a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "reviews": ""
+    },
+    "have": {
+      "definition_version_ids": [
+        "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d80"
+      ],
+      "pinned_version_ids": [
+        "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d81"
+      ],
+      "lookup_version_ids": [],
+      "declaration_ids": [
+        "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d90"
+      ],
+      "reason_codes_hash": "8888888888888888888888888888888888888888888888888888888888888888",
+      "session_token_job_ids": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ],
+      "job_card_job_ids": [],
+      "agent_card_valid": true
+    },
+    "capabilities": {
+      "module_version": "1.4.2",
+      "spec_versions": [
+        "1.0"
+      ],
+      "components": {
+        "text": 1
+      },
+      "page_types": {
+        "view_page": 1
+      }
+    },
+    "limit": 200
+  }
+}

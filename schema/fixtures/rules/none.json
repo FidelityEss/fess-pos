@@ -1,0 +1,80 @@
+{
+  "operator": "none",
+  "cases": [
+    {
+      "name": "none match",
+      "expression": {
+        "none": [
+          [
+            1,
+            2
+          ],
+          {
+            ">": [
+              {
+                "var": "current"
+              },
+              5
+            ]
+          }
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "one matches",
+      "expression": {
+        "none": [
+          [
+            1,
+            6
+          ],
+          {
+            ">": [
+              {
+                "var": "current"
+              },
+              5
+            ]
+          }
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "empty array is true",
+      "expression": {
+        "none": [
+          [],
+          true
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "null array is true",
+      "expression": {
+        "none": [
+          null,
+          true
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "string collection",
+      "expression": {
+        "none": [
+          "x",
+          true
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

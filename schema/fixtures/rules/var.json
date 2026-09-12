@@ -1,0 +1,220 @@
+{
+  "operator": "var",
+  "cases": [
+    {
+      "name": "reads a dotted path",
+      "expression": {
+        "var": "answers.a"
+      },
+      "data": {
+        "answers": {
+          "a": 1
+        }
+      },
+      "expected": 1
+    },
+    {
+      "name": "array form with one argument",
+      "expression": {
+        "var": [
+          "answers.a"
+        ]
+      },
+      "data": {
+        "answers": {
+          "a": "x"
+        }
+      },
+      "expected": "x"
+    },
+    {
+      "name": "missing path yields null",
+      "expression": {
+        "var": "answers.nope"
+      },
+      "data": {
+        "answers": {}
+      },
+      "expected": null
+    },
+    {
+      "name": "missing intermediate yields null",
+      "expression": {
+        "var": "job.attributes.risk"
+      },
+      "data": {
+        "job": null
+      },
+      "expected": null
+    },
+    {
+      "name": "default when missing",
+      "expression": {
+        "var": [
+          "answers.b",
+          5
+        ]
+      },
+      "data": {
+        "answers": {}
+      },
+      "expected": 5
+    },
+    {
+      "name": "default when null",
+      "expression": {
+        "var": [
+          "answers.b",
+          5
+        ]
+      },
+      "data": {
+        "answers": {
+          "b": null
+        }
+      },
+      "expected": 5
+    },
+    {
+      "name": "default may be an expression",
+      "expression": {
+        "var": [
+          "answers.b",
+          {
+            "var": "answers.c"
+          }
+        ]
+      },
+      "data": {
+        "answers": {
+          "c": 7
+        }
+      },
+      "expected": 7
+    },
+    {
+      "name": "false is not replaced by the default",
+      "expression": {
+        "var": [
+          "answers.b",
+          true
+        ]
+      },
+      "data": {
+        "answers": {
+          "b": false
+        }
+      },
+      "expected": false
+    },
+    {
+      "name": "numeric segments index arrays",
+      "expression": {
+        "var": "items.1.name"
+      },
+      "data": {
+        "items": [
+          {
+            "name": "x"
+          },
+          {
+            "name": "y"
+          }
+        ]
+      },
+      "expected": "y"
+    },
+    {
+      "name": "out-of-range index yields null",
+      "expression": {
+        "var": "items.5"
+      },
+      "data": {
+        "items": [
+          1
+        ]
+      },
+      "expected": null
+    },
+    {
+      "name": "empty path returns the whole data",
+      "expression": {
+        "var": ""
+      },
+      "data": {
+        "a": 1
+      },
+      "expected": {
+        "a": 1
+      }
+    },
+    {
+      "name": "only own properties are read",
+      "expression": {
+        "var": "answers.constructor"
+      },
+      "data": {
+        "answers": {}
+      },
+      "expected": null
+    },
+    {
+      "name": "objects are returned whole",
+      "expression": {
+        "var": "answers.addr"
+      },
+      "data": {
+        "answers": {
+          "addr": {
+            "city": "Durban"
+          }
+        }
+      },
+      "expected": {
+        "city": "Durban"
+      }
+    },
+    {
+      "name": "path must be a literal string",
+      "expression": {
+        "var": [
+          {
+            "var": "p"
+          }
+        ]
+      },
+      "data": {
+        "p": "a"
+      },
+      "error": "RULE_INVALID_ARGUMENT"
+    },
+    {
+      "name": "a number path is not allowed",
+      "expression": {
+        "var": 1
+      },
+      "data": {},
+      "error": "RULE_INVALID_ARGUMENT"
+    },
+    {
+      "name": "no arguments",
+      "expression": {
+        "var": []
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    },
+    {
+      "name": "too many arguments",
+      "expression": {
+        "var": [
+          "a",
+          1,
+          2
+        ]
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

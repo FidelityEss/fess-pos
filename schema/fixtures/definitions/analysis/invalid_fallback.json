@@ -1,0 +1,26 @@
+{
+  "description": "evidence cannot stand in for an address",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "address",
+            "fallback": {
+              "type": "photo"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "INVALID_FALLBACK"
+  ]
+}

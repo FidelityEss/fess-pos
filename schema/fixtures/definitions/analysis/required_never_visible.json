@@ -1,0 +1,25 @@
+{
+  "description": "required but hidden forever",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text",
+            "visible": false,
+            "required": true
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "REQUIRED_NEVER_VISIBLE"
+  ]
+}

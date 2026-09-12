@@ -1,0 +1,17 @@
+{
+  "description": "applied",
+  "schema": "receipt",
+  "value": {
+    "id": "0191d3c3-1019-7c1b-9f10-4b2e1c0a9e00",
+    "state": "committed",
+    "durable": true,
+    "stored_hash": "ea07d49e77452c5708757dadbfc21dccf63bd8c96659f4f4ac38b140c372473e",
+    "server_received_at": "2026-09-10T08:31:03.201345+00:00",
+    "committed_at": "2026-09-10T08:31:03.402113+00:00",
+    "result": {
+      "verdict": "applied",
+      "job_status": "accepted"
+    },
+    "error": null
+  }
+}

@@ -1,0 +1,184 @@
+{
+  "operator": "in",
+  "cases": [
+    {
+      "name": "in array",
+      "expression": {
+        "in": [
+          "a",
+          [
+            "a",
+            "b"
+          ]
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "not in array",
+      "expression": {
+        "in": [
+          "c",
+          [
+            "a",
+            "b"
+          ]
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "strict element equality",
+      "expression": {
+        "in": [
+          1,
+          [
+            "1"
+          ]
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "substring",
+      "expression": {
+        "in": [
+          "ell",
+          "hello"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "null haystack",
+      "expression": {
+        "in": [
+          "x",
+          null
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "null needle in a string",
+      "expression": {
+        "in": [
+          null,
+          "abc"
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "null element in an array",
+      "expression": {
+        "in": [
+          null,
+          [
+            null
+          ]
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "deep element equality",
+      "expression": {
+        "in": [
+          [
+            1
+          ],
+          [
+            [
+              1
+            ],
+            [
+              2
+            ]
+          ]
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "var needle",
+      "expression": {
+        "in": [
+          {
+            "var": "s"
+          },
+          [
+            "x",
+            "y"
+          ]
+        ]
+      },
+      "data": {
+        "s": "y"
+      },
+      "expected": true
+    },
+    {
+      "name": "job status filter (docs/04 §3.6)",
+      "expression": {
+        "in": [
+          {
+            "var": "job.status"
+          },
+          [
+            "assigned",
+            "accepted",
+            "in_progress",
+            "paused"
+          ]
+        ]
+      },
+      "data": {
+        "job": {
+          "status": "paused"
+        }
+      },
+      "expected": true
+    },
+    {
+      "name": "number needle in a string",
+      "expression": {
+        "in": [
+          1,
+          "123"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "number haystack",
+      "expression": {
+        "in": [
+          "a",
+          5
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "one argument",
+      "expression": {
+        "in": [
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

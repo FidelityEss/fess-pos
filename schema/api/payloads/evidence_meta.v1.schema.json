@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/payloads/evidence_meta.v1.schema.json",
+  "title": "evidence_meta payload, type_version 1",
+  "description": "Evidence record: hash of the canonical bytes, size and capture metadata (docs/07 §4 step 3). Bytes travel via upload grants.",
+  "type": "object",
+  "properties": {
+    "evidence_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "inspection_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "job_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "session_token_id": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "field_key": {
+      "$ref": "../common.schema.json#/$defs/key"
+    },
+    "category": {
+      "$ref": "../common.schema.json#/$defs/key"
+    },
+    "type": {
+      "enum": [
+        "photo",
+        "signature",
+        "override_photo",
+        "unable_photo",
+        "document",
+        "video",
+        "audio"
+      ]
+    },
+    "sha256": {
+      "$ref": "../common.schema.json#/$defs/sha256"
+    },
+    "bytes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "mime": {
+      "type": "string",
+      "pattern": "^(image|video|audio|application)/[a-z0-9.+-]+$"
+    },
+    "width": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "height": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "captured_at_device": {
+      "$ref": "../common.schema.json#/$defs/datetime"
+    },
+    "captured_at_monotonic_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "gnss_time": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/datetime"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "location": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/point"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "accuracy_m": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "is_mocked": {
+      "type": "boolean"
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "item_index": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "caption": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "strokes_sha256": {
+          "anyOf": [
+            {
+              "$ref": "../common.schema.json#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "local_hash_mismatch": {
+          "type": "boolean"
+        },
+        "integrity": {
+          "anyOf": [
+            {
+              "$ref": "../common.schema.json#/$defs/integrity_snapshot"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "evidence_id",
+    "inspection_id",
+    "job_id",
+    "session_token_id",
+    "field_key",
+    "category",
+    "type",
+    "sha256",
+    "bytes",
+    "mime",
+    "captured_at_device",
+    "captured_at_monotonic_ms",
+    "is_mocked"
+  ],
+  "additionalProperties": false
+}

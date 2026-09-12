@@ -1,0 +1,72 @@
+{
+  "operator": "!",
+  "cases": [
+    {
+      "name": "negates true",
+      "expression": {
+        "!": true
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "array form",
+      "expression": {
+        "!": [
+          false
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "null is falsy",
+      "expression": {
+        "!": {
+          "var": "x"
+        }
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "double negation",
+      "expression": {
+        "!": {
+          "!": true
+        }
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "non-boolean operand",
+      "expression": {
+        "!": [
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "two arguments",
+      "expression": {
+        "!": [
+          true,
+          false
+        ]
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    },
+    {
+      "name": "no arguments",
+      "expression": {
+        "!": []
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

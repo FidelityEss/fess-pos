@@ -1,0 +1,22 @@
+{
+  "description": "session issued",
+  "schema": "auth-exchange-response",
+  "value": {
+    "access_token": "eyJhbGciOiJIUzI1NiJ9.e30.sig",
+    "access_expires_at": "2026-09-10T08:46:03Z",
+    "refresh_token": "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    "refresh_expires_at": "2026-10-10T08:31:03Z",
+    "session_id": "4f2a1b3c-5d6e-4f70-8a9b-0c1d2e3f4a5b",
+    "scope": "full",
+    "user": {
+      "id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d10",
+      "employee_number": "E123",
+      "first_name": "Sipho",
+      "last_name": "Dlamini",
+      "role": "pos_agent",
+      "active": true
+    },
+    "server_time": "2026-09-10T08:31:03Z",
+    "profile_mismatch": null
+  }
+}

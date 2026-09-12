@@ -1,0 +1,43 @@
+{
+  "description": "later-field reference and unknown option literal are warnings",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text",
+            "visible": {
+              "==": [
+                {
+                  "var": "answers.b"
+                },
+                "zzz"
+              ]
+            }
+          },
+          {
+            "key": "b",
+            "type": "single_select",
+            "options": [
+              {
+                "value": "x",
+                "label": "X"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [],
+  "expected_warnings": [
+    "REFERENCES_LATER_FIELD",
+    "UNKNOWN_OPTION_VALUE"
+  ]
+}

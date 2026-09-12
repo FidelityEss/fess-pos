@@ -1,0 +1,17 @@
+{
+  "description": "view item type not in the catalogue",
+  "expected_errors": [
+    "DEF_UNKNOWN_VIEW_COMPONENT"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "view",
+    "family": "v",
+    "version": 1,
+    "items": [
+      {
+        "type": "carousel"
+      }
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "description": "zoom range must be ascending (engines only)",
+  "layers": [
+    {
+      "maps": {
+        "prefetch_zoom": [
+          17,
+          14
+        ]
+      }
+    }
+  ],
+  "schema_valid": true
+}

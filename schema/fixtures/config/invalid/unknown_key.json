@@ -1,0 +1,11 @@
+{
+  "description": "keys are a closed set",
+  "layers": [
+    {
+      "geofence": {
+        "radius": 75
+      }
+    }
+  ],
+  "schema_valid": false
+}

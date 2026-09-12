@@ -1,0 +1,672 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/common.schema.json",
+  "title": "POS API v1 shared definitions",
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "datetime": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d(\\.\\d{1,9})?)?(Z|[+-]([01]\\d|2[0-3]):[0-5]\\d)$",
+      "description": "ISO-8601 with offset (docs/12 §11)."
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Lower-case hex SHA-256."
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "hex_token": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32,128}$",
+      "description": "Opaque random token, lower-case hex."
+    },
+    "error_code": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$"
+    },
+    "client_type": {
+      "enum": [
+        "native",
+        "web"
+      ]
+    },
+    "lat": {
+      "type": "number",
+      "minimum": -90,
+      "maximum": 90,
+      "description": "Decimal degrees (7 dp)."
+    },
+    "lng": {
+      "type": "number",
+      "minimum": -180,
+      "maximum": 180,
+      "description": "Decimal degrees (7 dp)."
+    },
+    "point": {
+      "type": "object",
+      "properties": {
+        "lat": {
+          "$ref": "#/$defs/lat"
+        },
+        "lng": {
+          "$ref": "#/$defs/lng"
+        }
+      },
+      "required": [
+        "lat",
+        "lng"
+      ],
+      "additionalProperties": false
+    },
+    "geo_fix": {
+      "type": "object",
+      "properties": {
+        "lat": {
+          "$ref": "#/$defs/lat"
+        },
+        "lng": {
+          "$ref": "#/$defs/lng"
+        },
+        "accuracy_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "ts": {
+          "$ref": "#/$defs/datetime"
+        },
+        "gnss_ts": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/datetime"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_mocked": {
+          "type": "boolean"
+        },
+        "altitude_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "speed_mps": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "lat",
+        "lng",
+        "accuracy_m",
+        "ts",
+        "is_mocked"
+      ],
+      "additionalProperties": false
+    },
+    "json_object": {
+      "type": "object"
+    },
+    "answer_entry": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "description": "The answer value (component value shape, docs/11)."
+        },
+        "prefilled": {
+          "type": "boolean"
+        },
+        "flagged_differs": {
+          "type": "boolean"
+        },
+        "computed": {
+          "type": "boolean"
+        },
+        "rendered_as": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "other_text": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "unknown": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "v"
+      ],
+      "additionalProperties": false,
+      "description": "One answer (docs/04 §5). Repeatable-group values are arrays of objects of answer entries."
+    },
+    "answers": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/key"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/answer_entry"
+      }
+    },
+    "definition_ref": {
+      "type": "object",
+      "properties": {
+        "version_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "hash": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "required": [
+        "version_id",
+        "hash"
+      ],
+      "additionalProperties": false
+    },
+    "context_snapshot": {
+      "type": "object",
+      "properties": {
+        "today": {
+          "$ref": "#/$defs/date"
+        },
+        "job": {
+          "type": "object"
+        },
+        "agent": {
+          "type": "object"
+        },
+        "inspection": {
+          "type": "object"
+        },
+        "stats": {
+          "type": "object"
+        },
+        "config": {
+          "type": "object"
+        },
+        "previous": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "today"
+      ],
+      "additionalProperties": false,
+      "description": "What rules read, frozen at inspection start so the server re-evaluates identically (docs/04 §4.4)."
+    },
+    "field_timings": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/key"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "first_touch": {
+            "$ref": "#/$defs/datetime"
+          },
+          "last_change": {
+            "$ref": "#/$defs/datetime"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "integrity_snapshot": {
+      "type": "object",
+      "properties": {
+        "mock_location": {
+          "type": "boolean"
+        },
+        "rooted": {
+          "type": "boolean"
+        },
+        "hooked": {
+          "type": "boolean"
+        },
+        "debugger": {
+          "type": "boolean"
+        },
+        "emulator": {
+          "type": "boolean"
+        },
+        "tampered": {
+          "type": "boolean"
+        },
+        "dev_options": {
+          "type": "boolean"
+        },
+        "rasp_provider": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 60
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attestation": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "enum": [
+                    "play_integrity",
+                    "app_attest",
+                    "none"
+                  ]
+                },
+                "verdict": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "obtained_at": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/datetime"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "provider",
+                "verdict",
+                "obtained_at"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "clock_offset_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "checked_at": {
+          "$ref": "#/$defs/datetime"
+        },
+        "extra": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "mock_location",
+        "rooted",
+        "checked_at"
+      ],
+      "additionalProperties": false,
+      "description": "Device integrity signals (docs/07 §5) — recorded, not necessarily blocking."
+    },
+    "diagnostics": {
+      "type": "object",
+      "properties": {
+        "module_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "platform": {
+          "enum": [
+            "android",
+            "ios",
+            "web"
+          ]
+        },
+        "host_app_version": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "os_version": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "free_storage_mb": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "battery_restricted": {
+          "type": "boolean"
+        },
+        "background_restricted": {
+          "type": "boolean"
+        },
+        "network": {
+          "enum": [
+            "none",
+            "wifi",
+            "cellular",
+            "other",
+            "unknown"
+          ]
+        },
+        "extra": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "module_version",
+        "platform"
+      ],
+      "additionalProperties": false
+    },
+    "geofence_result": {
+      "type": "object",
+      "properties": {
+        "profile": {
+          "$ref": "#/$defs/key"
+        },
+        "profile_params": {
+          "type": "object",
+          "properties": {
+            "radius_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "max_accuracy_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "exit_consecutive_fixes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "prompt_checkin_on_arrival": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "radius_m",
+            "max_accuracy_m",
+            "exit_consecutive_fixes",
+            "prompt_checkin_on_arrival"
+          ],
+          "additionalProperties": false
+        },
+        "method": {
+          "enum": [
+            "inside_fix",
+            "outside_fix"
+          ],
+          "description": "inside_fix: a qualifying fix inside the fence; outside_fix: a fix recorded immediately outside (docs/07 §7.2)."
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "relaxed": {
+          "type": "boolean",
+          "description": "A relaxed profile or the outside-fix method was used (review badge)."
+        },
+        "override": {
+          "type": "boolean",
+          "description": "The geofence override path was used (inspection flagged geofence_override)."
+        },
+        "override_detail": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "reason_code": {
+                  "$ref": "#/$defs/key"
+                },
+                "note": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "form_version_id": {
+                  "$ref": "#/$defs/uuid"
+                },
+                "definition_hash": {
+                  "$ref": "#/$defs/sha256"
+                },
+                "answers": {
+                  "$ref": "#/$defs/answers"
+                },
+                "answers_hash": {
+                  "$ref": "#/$defs/sha256"
+                },
+                "photo_evidence_ids": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/uuid"
+                  }
+                },
+                "distance_m": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "allowed_max_m": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "reason_code",
+                "note",
+                "form_version_id",
+                "definition_hash",
+                "answers",
+                "answers_hash",
+                "photo_evidence_ids",
+                "distance_m",
+                "allowed_max_m"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "job_location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/point"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fix": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/geo_fix"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "checkin_fix": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/geo_fix"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "distance_m": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sampled_seconds": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "config_version_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evaluated_at_device": {
+          "$ref": "#/$defs/datetime"
+        }
+      },
+      "required": [
+        "profile",
+        "profile_params",
+        "method",
+        "passed",
+        "relaxed",
+        "override",
+        "job_location",
+        "fix",
+        "distance_m",
+        "evaluated_at_device"
+      ],
+      "additionalProperties": false,
+      "description": "Geofence outcome with the profile values in force, frozen at use (docs/07 §7.10)."
+    },
+    "version_map": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "capability_report": {
+      "type": "object",
+      "description": "Module capability report (docs/04 §8).",
+      "properties": {
+        "module_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "api_versions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "spec_versions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "components": {
+          "$ref": "#/$defs/version_map"
+        },
+        "page_types": {
+          "$ref": "#/$defs/version_map"
+        },
+        "step_types": {
+          "$ref": "#/$defs/version_map"
+        },
+        "view_components": {
+          "$ref": "#/$defs/version_map"
+        },
+        "client_type": {
+          "$ref": "#/$defs/client_type"
+        },
+        "platform": {
+          "type": "string",
+          "maxLength": 40
+        }
+      },
+      "additionalProperties": true
+    },
+    "error_detail": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/error_code"
+        },
+        "message": {
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean",
+          "description": "Every API error says whether a retry can succeed."
+        },
+        "details": {}
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

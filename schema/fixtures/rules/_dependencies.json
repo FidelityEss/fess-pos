@@ -1,0 +1,94 @@
+{
+  "topic": "dependencies",
+  "cases": [
+    {
+      "name": "single var",
+      "expression": {
+        "var": "answers.a"
+      },
+      "dependencies": [
+        "answers.a"
+      ]
+    },
+    {
+      "name": "sorted and de-duplicated",
+      "expression": {
+        "and": [
+          {
+            "var": "answers.b"
+          },
+          {
+            "var": [
+              "answers.a",
+              1
+            ]
+          },
+          {
+            "var": "answers.b"
+          }
+        ]
+      },
+      "dependencies": [
+        "answers.a",
+        "answers.b"
+      ]
+    },
+    {
+      "name": "option_meta path",
+      "expression": {
+        "option_meta": [
+          "answers.p",
+          "risk"
+        ]
+      },
+      "dependencies": [
+        "answers.p"
+      ]
+    },
+    {
+      "name": "literal",
+      "expression": 5,
+      "dependencies": []
+    },
+    {
+      "name": "iteration scope",
+      "expression": {
+        "some": [
+          {
+            "var": "xs"
+          },
+          {
+            ">": [
+              {
+                "var": "current"
+              },
+              {
+                "var": "limit"
+              }
+            ]
+          }
+        ]
+      },
+      "dependencies": [
+        "current",
+        "limit",
+        "xs"
+      ]
+    },
+    {
+      "name": "var default expression",
+      "expression": {
+        "var": [
+          "answers.a",
+          {
+            "var": "job.x"
+          }
+        ]
+      },
+      "dependencies": [
+        "answers.a",
+        "job.x"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "description": "item.* exists only inside repeatable groups",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text",
+            "visible": {
+              "==": [
+                {
+                  "var": "item.x"
+                },
+                1
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "UNKNOWN_ROOT"
+  ]
+}

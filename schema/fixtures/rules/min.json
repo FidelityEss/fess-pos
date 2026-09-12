@@ -1,0 +1,60 @@
+{
+  "operator": "min",
+  "cases": [
+    {
+      "name": "smallest",
+      "expression": {
+        "min": [
+          3,
+          1,
+          2
+        ]
+      },
+      "data": {},
+      "expected": 1
+    },
+    {
+      "name": "skips null",
+      "expression": {
+        "min": [
+          3,
+          null,
+          2
+        ]
+      },
+      "data": {},
+      "expected": 2
+    },
+    {
+      "name": "all null",
+      "expression": {
+        "min": [
+          null,
+          null
+        ]
+      },
+      "data": {},
+      "expected": null
+    },
+    {
+      "name": "single negative",
+      "expression": {
+        "min": [
+          -1
+        ]
+      },
+      "data": {},
+      "expected": -1
+    },
+    {
+      "name": "string",
+      "expression": {
+        "min": [
+          "a"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

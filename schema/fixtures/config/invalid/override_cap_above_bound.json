@@ -1,0 +1,11 @@
+{
+  "description": "override distance is capped at 500 m",
+  "layers": [
+    {
+      "geofence": {
+        "override_max_m": 800
+      }
+    }
+  ],
+  "schema_valid": false
+}

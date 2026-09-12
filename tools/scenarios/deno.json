@@ -1,0 +1,12 @@
+{
+  "imports": {
+    "zod": "npm:zod@^3.25.76",
+    "postgres": "npm:postgres@^3.4.5",
+    "jose": "npm:jose@^5.9.6",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.45.4",
+    "otpauth": "npm:otpauth@^9.3.6"
+  },
+  "compilerOptions": {
+    "strict": true
+  }
+}

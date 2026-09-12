@@ -1,0 +1,67 @@
+{
+  "spec_version": "1.0",
+  "kind": "form",
+  "family": "unable_to_complete",
+  "version": 1,
+  "title": "Unable to complete",
+  "sections": [
+    {
+      "key": "reason",
+      "title": "Unable to complete",
+      "fields": [
+        {
+          "key": "reason_code",
+          "type": "single_select",
+          "display": "radio",
+          "label": "Reason",
+          "required": true,
+          "options_source": {
+            "type": "reason_codes",
+            "category": "unable_to_complete"
+          }
+        },
+        {
+          "key": "note",
+          "type": "textarea",
+          "label": "Note",
+          "required": {
+            "==": [
+              {
+                "option_meta": [
+                  "answers.reason_code",
+                  "requires_note"
+                ]
+              },
+              true
+            ]
+          },
+          "props": {
+            "max_length": 1000
+          }
+        },
+        {
+          "key": "photo",
+          "type": "photo",
+          "label": "Photo",
+          "visible": {
+            "==": [
+              {
+                "option_meta": [
+                  "answers.reason_code",
+                  "requires_photo"
+                ]
+              },
+              true
+            ]
+          },
+          "required": true,
+          "props": {
+            "category": "unable",
+            "min_count": 1,
+            "max_count": 3
+          }
+        }
+      ]
+    }
+  ]
+}

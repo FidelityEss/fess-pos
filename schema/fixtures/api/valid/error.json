@@ -1,0 +1,12 @@
+{
+  "description": "every error carries retryable",
+  "schema": "error",
+  "value": {
+    "error": {
+      "code": "RATE_LIMITED",
+      "message": "slow down",
+      "retryable": true
+    },
+    "request_id": "req_01"
+  }
+}

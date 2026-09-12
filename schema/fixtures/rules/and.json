@@ -1,0 +1,89 @@
+{
+  "operator": "and",
+  "cases": [
+    {
+      "name": "all true",
+      "expression": {
+        "and": [
+          true,
+          true
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "one false",
+      "expression": {
+        "and": [
+          true,
+          false
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "single argument",
+      "expression": {
+        "and": [
+          true
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "null counts as false",
+      "expression": {
+        "and": [
+          true,
+          {
+            "var": "x"
+          }
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "short-circuits before a type error",
+      "expression": {
+        "and": [
+          false,
+          {
+            "==": [
+              {
+                "+": [
+                  "a"
+                ]
+              },
+              1
+            ]
+          }
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "non-boolean operand",
+      "expression": {
+        "and": [
+          true,
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "no arguments",
+      "expression": {
+        "and": []
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

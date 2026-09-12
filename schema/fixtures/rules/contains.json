@@ -1,0 +1,96 @@
+{
+  "operator": "contains",
+  "cases": [
+    {
+      "name": "array contains",
+      "expression": {
+        "contains": [
+          [
+            "a",
+            "b"
+          ],
+          "b"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "string contains",
+      "expression": {
+        "contains": [
+          "hello",
+          "ll"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "null haystack",
+      "expression": {
+        "contains": [
+          null,
+          "a"
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "absent element",
+      "expression": {
+        "contains": [
+          [
+            "a"
+          ],
+          "z"
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "multi-select answer",
+      "expression": {
+        "contains": [
+          {
+            "var": "answers.services"
+          },
+          "delivery"
+        ]
+      },
+      "data": {
+        "answers": {
+          "services": [
+            "retail",
+            "delivery"
+          ]
+        }
+      },
+      "expected": true
+    },
+    {
+      "name": "number haystack",
+      "expression": {
+        "contains": [
+          42,
+          "x"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "number needle in a string",
+      "expression": {
+        "contains": [
+          "abc",
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "description": "client-safe keys can be set and cleared",
+  "layers": [
+    {
+      "maps": {
+        "tile_url": "https://tiles.example.invalid/{z}/{x}/{y}.png",
+        "api_key": "pk_live_123"
+      },
+      "theme": {
+        "primary_color": "#0A7E3D"
+      }
+    },
+    {
+      "maps": {
+        "api_key": null
+      }
+    }
+  ],
+  "expect_values": {
+    "maps.api_key": null,
+    "theme.primary_color": "#0A7E3D"
+  }
+}

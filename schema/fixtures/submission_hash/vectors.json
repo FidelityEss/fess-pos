@@ -1,0 +1,115 @@
+{
+  "encoding": "sha256(utf8(JCS([tag, answers_hash, sorted evidence hashes, session_token_id, started_at_device, submitted_at_device, device_id]))) with tag \"fess-pos/submission-hash/v1\"",
+  "cases": [
+    {
+      "name": "evidence hashes are sorted",
+      "input": {
+        "answers_hash": "3f0c1e2d4b5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff0",
+        "evidence_hashes": [
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        ],
+        "session_token_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d30",
+        "started_at_device": "2026-09-10T10:02:11.004+02:00",
+        "submitted_at_device": "2026-09-10T10:41:57.880+02:00",
+        "device_id": "7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60"
+      },
+      "preimage": "[\"fess-pos/submission-hash/v1\",\"3f0c1e2d4b5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff0\",[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"],\"0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d30\",\"2026-09-10T10:02:11.004+02:00\",\"2026-09-10T10:41:57.880+02:00\",\"7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60\"]",
+      "sha256": "5067ebca724d1c8ff0e71d00114272c3a231296444224f184579c414ddaa4b24"
+    },
+    {
+      "name": "no session token (null)",
+      "input": {
+        "answers_hash": "3f0c1e2d4b5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff0",
+        "evidence_hashes": [
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        ],
+        "session_token_id": null,
+        "started_at_device": "2026-09-10T10:02:11.004+02:00",
+        "submitted_at_device": "2026-09-10T10:41:57.880+02:00",
+        "device_id": "7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60"
+      },
+      "preimage": "[\"fess-pos/submission-hash/v1\",\"3f0c1e2d4b5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff0\",[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"],null,\"2026-09-10T10:02:11.004+02:00\",\"2026-09-10T10:41:57.880+02:00\",\"7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60\"]",
+      "sha256": "c44e54f8a556bbd6abb8482a01f5b2783b40638eac76011f66f4b68452ef3019"
+    },
+    {
+      "name": "no evidence",
+      "input": {
+        "answers_hash": "3f0c1e2d4b5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff0",
+        "evidence_hashes": [],
+        "session_token_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d30",
+        "started_at_device": "2026-09-10T10:02:11.004+02:00",
+        "submitted_at_device": "2026-09-10T10:41:57.880+02:00",
+        "device_id": "7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60"
+      },
+      "preimage": "[\"fess-pos/submission-hash/v1\",\"3f0c1e2d4b5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff0\",[],\"0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d30\",\"2026-09-10T10:02:11.004+02:00\",\"2026-09-10T10:41:57.880+02:00\",\"7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60\"]",
+      "sha256": "7409a93f161bdb4901515b4d979459fdb83bb24a2b0d09c9c59abe73e1e8777d"
+    },
+    {
+      "name": "duplicate evidence hashes are kept",
+      "input": {
+        "answers_hash": "3f0c1e2d4b5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff0",
+        "evidence_hashes": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ],
+        "session_token_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d30",
+        "started_at_device": "2026-09-10T10:02:11.004+02:00",
+        "submitted_at_device": "2026-09-10T10:41:57.880+02:00",
+        "device_id": "7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60"
+      },
+      "preimage": "[\"fess-pos/submission-hash/v1\",\"3f0c1e2d4b5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff0\",[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"],\"0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d30\",\"2026-09-10T10:02:11.004+02:00\",\"2026-09-10T10:41:57.880+02:00\",\"7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60\"]",
+      "sha256": "abbde59380a7a8563d03352f498e578401947e37a8dea25526f27be0150f8785"
+    },
+    {
+      "name": "timestamps are used exactly as sent",
+      "input": {
+        "answers_hash": "3f0c1e2d4b5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff0",
+        "evidence_hashes": [
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        ],
+        "session_token_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d30",
+        "started_at_device": "2026-09-10T08:02:11.004Z",
+        "submitted_at_device": "2026-09-10T10:41:57.880+02:00",
+        "device_id": "7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60"
+      },
+      "preimage": "[\"fess-pos/submission-hash/v1\",\"3f0c1e2d4b5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff0\",[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"],\"0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d30\",\"2026-09-10T08:02:11.004Z\",\"2026-09-10T10:41:57.880+02:00\",\"7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60\"]",
+      "sha256": "0e6f8ce02f397a7341b569d371aff7687847b06e84356d2772cce5a4d9f06344"
+    },
+    {
+      "name": "upper-case hex is rejected",
+      "input": {
+        "answers_hash": "3f0c1e2d4b5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff0",
+        "evidence_hashes": [
+          "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        ],
+        "session_token_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d30",
+        "started_at_device": "2026-09-10T10:02:11.004+02:00",
+        "submitted_at_device": "2026-09-10T10:41:57.880+02:00",
+        "device_id": "7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60"
+      },
+      "error": "SUBMISSION_HASH_INVALID_INPUT"
+    },
+    {
+      "name": "malformed answers_hash is rejected",
+      "input": {
+        "answers_hash": "abc",
+        "evidence_hashes": [
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        ],
+        "session_token_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d30",
+        "started_at_device": "2026-09-10T10:02:11.004+02:00",
+        "submitted_at_device": "2026-09-10T10:41:57.880+02:00",
+        "device_id": "7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60"
+      },
+      "error": "SUBMISSION_HASH_INVALID_INPUT"
+    }
+  ]
+}

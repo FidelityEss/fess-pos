@@ -1,0 +1,300 @@
+{
+  "operator": "matches",
+  "cases": [
+    {
+      "name": "anchored full match",
+      "expression": {
+        "matches": [
+          "0821234567",
+          "^0[6-8][0-9]{8}$"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "anchored mismatch",
+      "expression": {
+        "matches": [
+          "12345",
+          "^[0-9]{6}$"
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "unanchored search",
+      "expression": {
+        "matches": [
+          "abc123",
+          "[0-9]+"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "unicode mode: . is one code point",
+      "expression": {
+        "matches": [
+          "😀",
+          "^.$"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "not multiline",
+      "expression": {
+        "matches": [
+          "line1\nline2",
+          "^line2$"
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "null text is false",
+      "expression": {
+        "matches": [
+          null,
+          "x"
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "CIPC number",
+      "expression": {
+        "matches": [
+          "2015/123456/07",
+          "^\\d{4}/\\d{6}/\\d{2}$"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "repeated group without inner quantifier",
+      "expression": {
+        "matches": [
+          "ababc",
+          "^(?:ab)+c$"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "alternation outside repetition",
+      "expression": {
+        "matches": [
+          "bb",
+          "^(a|b)b$"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "three unbounded quantifiers allowed",
+      "expression": {
+        "matches": [
+          "abc",
+          "^a*b*c*$"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "backreference",
+      "expression": {
+        "matches": [
+          "aa",
+          "(a)\\1"
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNSAFE_REGEX"
+    },
+    {
+      "name": "lookahead",
+      "expression": {
+        "matches": [
+          "a",
+          "(?=a)a"
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNSAFE_REGEX"
+    },
+    {
+      "name": "lookbehind",
+      "expression": {
+        "matches": [
+          "a",
+          "(?<!b)a"
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNSAFE_REGEX"
+    },
+    {
+      "name": "named group",
+      "expression": {
+        "matches": [
+          "a",
+          "(?<n>a)"
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNSAFE_REGEX"
+    },
+    {
+      "name": "nested quantifier",
+      "expression": {
+        "matches": [
+          "aaa",
+          "(a+)+$"
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNSAFE_REGEX"
+    },
+    {
+      "name": "repeated alternation",
+      "expression": {
+        "matches": [
+          "aaa",
+          "(a|aa)*"
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNSAFE_REGEX"
+    },
+    {
+      "name": "repeated non-capturing quantified group",
+      "expression": {
+        "matches": [
+          "aaa",
+          "(?:a*)*"
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNSAFE_REGEX"
+    },
+    {
+      "name": "four unbounded quantifiers",
+      "expression": {
+        "matches": [
+          "abcd",
+          "a*b*c*d*"
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNSAFE_REGEX"
+    },
+    {
+      "name": "repeat count above 1000",
+      "expression": {
+        "matches": [
+          "a",
+          "a{1001}"
+        ]
+      },
+      "data": {},
+      "error": "RULE_UNSAFE_REGEX"
+    },
+    {
+      "name": "unbalanced group",
+      "expression": {
+        "matches": [
+          "a",
+          "("
+        ]
+      },
+      "data": {},
+      "error": "RULE_INVALID_REGEX"
+    },
+    {
+      "name": "unterminated class",
+      "expression": {
+        "matches": [
+          "a",
+          "[a-"
+        ]
+      },
+      "data": {},
+      "error": "RULE_INVALID_REGEX"
+    },
+    {
+      "name": "pattern longer than 256",
+      "expression": {
+        "matches": [
+          "a",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+      },
+      "data": {},
+      "error": "RULE_REGEX_TOO_LONG"
+    },
+    {
+      "name": "pattern must be a literal",
+      "expression": {
+        "matches": [
+          "a",
+          {
+            "var": "p"
+          }
+        ]
+      },
+      "data": {
+        "p": "a"
+      },
+      "error": "RULE_INVALID_ARGUMENT"
+    },
+    {
+      "name": "number text",
+      "expression": {
+        "matches": [
+          5,
+          "5"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "input longer than 1024",
+      "expression": {
+        "matches": [
+          {
+            "var": "s"
+          },
+          "a"
+        ]
+      },
+      "data": {
+        "s": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "error": "RULE_LIMIT_EXCEEDED"
+    },
+    {
+      "name": "three arguments",
+      "expression": {
+        "matches": [
+          "a",
+          "a",
+          "b"
+        ]
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/auth-refresh-request.schema.json",
+  "title": "POST /v1/auth/refresh request",
+  "description": "Rotate the refresh token (reuse detection revokes the family). Response: auth-exchange-response.",
+  "type": "object",
+  "properties": {
+    "refresh_token": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 200
+    },
+    "device_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    }
+  },
+  "required": [
+    "refresh_token",
+    "device_id"
+  ],
+  "additionalProperties": false
+}

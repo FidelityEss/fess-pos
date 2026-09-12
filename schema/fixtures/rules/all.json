@@ -1,0 +1,98 @@
+{
+  "operator": "all",
+  "cases": [
+    {
+      "name": "all match",
+      "expression": {
+        "all": [
+          [
+            2,
+            3
+          ],
+          {
+            ">": [
+              {
+                "var": "current"
+              },
+              1
+            ]
+          }
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "one fails",
+      "expression": {
+        "all": [
+          [
+            2,
+            0
+          ],
+          {
+            ">": [
+              {
+                "var": "current"
+              },
+              1
+            ]
+          }
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "empty array is false (JsonLogic)",
+      "expression": {
+        "all": [
+          [],
+          true
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "null array is false",
+      "expression": {
+        "all": [
+          null,
+          true
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "stops at the first failure",
+      "expression": {
+        "all": [
+          [
+            false,
+            "x"
+          ],
+          {
+            "var": "current"
+          }
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "non-boolean predicate",
+      "expression": {
+        "all": [
+          [
+            1
+          ],
+          "yes"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

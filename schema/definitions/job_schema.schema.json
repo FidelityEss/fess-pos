@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/definitions/job_schema.schema.json",
+  "title": "Job schema definition (spec 1.0)",
+  "description": "Bank-specific custom job attributes (docs/04 §3.3), built from non-evidence input components.",
+  "type": "object",
+  "properties": {
+    "spec_version": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/spec_version"
+    },
+    "family": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/family"
+    },
+    "version": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/version"
+    },
+    "scope": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/scope"
+    },
+    "id": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/id"
+    },
+    "title": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/title"
+    },
+    "description": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/description"
+    },
+    "locale": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/locale"
+    },
+    "requires": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/requires"
+    },
+    "kind": {
+      "const": "job_schema"
+    },
+    "attributes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "components.schema.json#/$defs/attribute"
+      }
+    }
+  },
+  "required": [
+    "spec_version",
+    "kind",
+    "family",
+    "version",
+    "attributes"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,53 @@
+{
+  "description": "a branch must not skip the location check",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "flow",
+    "family": "f",
+    "version": 1,
+    "form_family": "t",
+    "steps": [
+      {
+        "id": "start",
+        "type": "job_briefing",
+        "view": "job_detail",
+        "next": {
+          "if": [
+            {
+              "==": [
+                {
+                  "var": "answers.skip"
+                },
+                true
+              ]
+            },
+            "form",
+            "loc"
+          ]
+        }
+      },
+      {
+        "id": "loc",
+        "type": "location_check"
+      },
+      {
+        "id": "form",
+        "type": "form",
+        "sections": [
+          "s"
+        ]
+      },
+      {
+        "id": "decl",
+        "type": "declaration"
+      },
+      {
+        "id": "submit",
+        "type": "submit"
+      }
+    ]
+  },
+  "expected_errors": [
+    "INTEGRITY_STEP_BYPASSABLE"
+  ]
+}

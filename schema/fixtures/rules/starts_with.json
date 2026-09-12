@@ -1,0 +1,93 @@
+{
+  "operator": "starts_with",
+  "cases": [
+    {
+      "name": "prefix",
+      "expression": {
+        "starts_with": [
+          "hello",
+          "he"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "not a prefix",
+      "expression": {
+        "starts_with": [
+          "hello",
+          "lo"
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "case-sensitive",
+      "expression": {
+        "starts_with": [
+          "Hello",
+          "he"
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "null text",
+      "expression": {
+        "starts_with": [
+          null,
+          "a"
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "null prefix",
+      "expression": {
+        "starts_with": [
+          "a",
+          null
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "job reference",
+      "expression": {
+        "starts_with": [
+          "POS-2026-000123",
+          "POS-"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "number text",
+      "expression": {
+        "starts_with": [
+          1,
+          "1"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "number prefix",
+      "expression": {
+        "starts_with": [
+          "a",
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

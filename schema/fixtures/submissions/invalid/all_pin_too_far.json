@@ -1,0 +1,231 @@
+{
+  "description": "every-component form: pin too far",
+  "form": "form_all_components",
+  "lists": {
+    "lookup_lists": {
+      "provinces": [
+        {
+          "value": "GP",
+          "label": "Gauteng"
+        },
+        {
+          "value": "WC",
+          "label": "Western Cape"
+        },
+        {
+          "value": "KZN",
+          "label": "KwaZulu-Natal"
+        }
+      ]
+    }
+  },
+  "document": {
+    "definition_refs": {
+      "form": {
+        "version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d80",
+        "hash": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "flow": {
+        "version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d81",
+        "hash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    },
+    "config_version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d82",
+    "context_snapshot": {
+      "today": "2026-09-10",
+      "job": {
+        "reference": "POS-2026-000123",
+        "merchant_name": "Joe's Spaza",
+        "location": {
+          "lat": -26.1041,
+          "lng": 28.0473
+        }
+      }
+    },
+    "answers": {
+      "t_text": {
+        "v": "Joe Soap"
+      },
+      "t_textarea": {
+        "v": "Some notes"
+      },
+      "t_number": {
+        "v": 12
+      },
+      "t_percentage": {
+        "v": 45.5
+      },
+      "t_phone": {
+        "v": "+27821234567"
+      },
+      "t_currency": {
+        "v": {
+          "minor": 150000,
+          "currency": "ZAR"
+        }
+      },
+      "t_slider": {
+        "v": 7.5
+      },
+      "t_rating": {
+        "v": 4
+      },
+      "t_email": {
+        "v": "joe@example.co.za"
+      },
+      "t_id": {
+        "v": "8001015009087"
+      },
+      "t_age": {
+        "v": 46,
+        "computed": true
+      },
+      "t_reg": {
+        "v": "2015/123456/07"
+      },
+      "t_boolean": {
+        "v": true
+      },
+      "t_tri": {
+        "v": "na"
+      },
+      "t_single": {
+        "v": "other",
+        "other_text": "Something else"
+      },
+      "t_multi": {
+        "v": [
+          "x",
+          "z"
+        ]
+      },
+      "t_lookup": {
+        "v": "GP"
+      },
+      "t_city": {
+        "v": "jhb"
+      },
+      "t_date": {
+        "v": "2020-02-29"
+      },
+      "t_time": {
+        "v": "08:30"
+      },
+      "t_duration": {
+        "v": {
+          "value": 3,
+          "unit": "years"
+        }
+      },
+      "t_hours": {
+        "v": {
+          "weekdays": {
+            "open": "08:00",
+            "close": "17:00"
+          },
+          "saturday": "24h",
+          "sunday": "closed"
+        }
+      },
+      "t_datetime": {
+        "v": "2026-09-10T10:15:00+02:00"
+      },
+      "t_address": {
+        "v": {
+          "line1": "1 Main Rd",
+          "suburb": "Sandton",
+          "city": "Johannesburg",
+          "province": "GP",
+          "postal_code": "2196",
+          "pin": {
+            "lat": -26.1076,
+            "lng": 28.0567,
+            "source": "map_pin"
+          }
+        }
+      },
+      "t_pin": {
+        "v": {
+          "lat": -26.2,
+          "lng": 28.0473,
+          "source": "map_pin"
+        }
+      },
+      "t_current": {
+        "v": {
+          "lat": -26.1041,
+          "lng": 28.0473,
+          "accuracy_m": 12,
+          "ts": "2026-09-10T10:00:00+02:00",
+          "gnss_ts": null,
+          "is_mocked": false
+        }
+      },
+      "t_photo": {
+        "v": [
+          "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d40"
+        ]
+      },
+      "t_signature": {
+        "v": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d41"
+      },
+      "t_declaration": {
+        "v": {
+          "accepted": true,
+          "declaration_version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d91",
+          "accepted_at": "2026-09-10T10:30:00+02:00"
+        }
+      },
+      "t_ack": {
+        "v": true
+      },
+      "t_consent": {
+        "v": {
+          "given": true,
+          "text_version_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d92",
+          "at": "2026-09-10T10:05:00+02:00",
+          "by_name": "Joe Soap"
+        }
+      },
+      "t_prefilled": {
+        "v": "POS-2026-000123",
+        "prefilled": true
+      },
+      "t_computed": {
+        "v": 13,
+        "computed": true
+      },
+      "t_group_child": {
+        "v": "inside a group"
+      },
+      "t_repeat": {
+        "v": [
+          {
+            "r_name": {
+              "v": "A"
+            },
+            "r_count": {
+              "v": 2
+            }
+          }
+        ]
+      },
+      "t_matrix": {
+        "v": {
+          "r1": "good",
+          "r2": "bad"
+        }
+      }
+    },
+    "answers_hash": "0c67f37c89fc67523a5ff08938187099c82ded85a54a6876f99617bab1e5cd6a"
+  },
+  "expected": {
+    "ok": false,
+    "errors": [
+      {
+        "field_key": "t_pin",
+        "code": "TOO_FAR"
+      }
+    ]
+  }
+}

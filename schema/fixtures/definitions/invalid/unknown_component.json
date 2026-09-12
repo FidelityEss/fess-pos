@@ -1,0 +1,23 @@
+{
+  "description": "component type not in the catalogue",
+  "expected_errors": [
+    "DEF_UNKNOWN_COMPONENT"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "signature_pad"
+          }
+        ]
+      }
+    ]
+  }
+}

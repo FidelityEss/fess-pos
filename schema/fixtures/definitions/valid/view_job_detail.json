@@ -1,0 +1,69 @@
+{
+  "spec_version": "1.0",
+  "kind": "view",
+  "family": "job_detail",
+  "version": 1,
+  "items": [
+    {
+      "type": "title",
+      "bind": "job.merchant_name"
+    },
+    {
+      "type": "badge",
+      "text": "High risk",
+      "tone": "danger",
+      "visible": {
+        "==": [
+          {
+            "var": "job.attributes.risk_tier"
+          },
+          "high"
+        ]
+      }
+    },
+    {
+      "type": "field_value",
+      "label": "Reference",
+      "bind": "job.reference",
+      "format": "text"
+    },
+    {
+      "type": "address_block",
+      "label": "Address",
+      "bind": "job.address"
+    },
+    {
+      "type": "map_preview",
+      "bind": "job.location",
+      "height": 200
+    },
+    {
+      "type": "contact",
+      "label": "On-site contact",
+      "bind": "job.onsite_contact",
+      "actions": [
+        "call",
+        "sms"
+      ]
+    },
+    {
+      "type": "schedule_window",
+      "label": "Visit window",
+      "bind": "job.scheduled"
+    },
+    {
+      "type": "markdown",
+      "text": "Bring your authorisation card for {{job.reference}}."
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "image",
+      "asset": {
+        "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "caption": "Example shopfront photo"
+    }
+  ]
+}

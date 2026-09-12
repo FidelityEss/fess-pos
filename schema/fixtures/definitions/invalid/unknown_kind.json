@@ -1,0 +1,12 @@
+{
+  "description": "kind must be one of the six definition kinds",
+  "expected_errors": [
+    "DEF_UNKNOWN_KIND"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "screen",
+    "family": "t",
+    "version": 1
+  }
+}

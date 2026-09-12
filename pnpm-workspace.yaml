@@ -1,0 +1,4 @@
+packages:
+  - apps/*
+  - packages/fess_pos_engine_ts
+  - tools

@@ -1,0 +1,31 @@
+{
+  "description": "declaration must precede submit",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "flow",
+    "family": "f",
+    "version": 1,
+    "form_family": "t",
+    "steps": [
+      {
+        "type": "location_check"
+      },
+      {
+        "type": "form",
+        "sections": [
+          "s"
+        ]
+      },
+      {
+        "type": "submit"
+      },
+      {
+        "type": "declaration"
+      }
+    ]
+  },
+  "expected_errors": [
+    "INTEGRITY_STEP_ORDER",
+    "INTEGRITY_STEP_BYPASSABLE"
+  ]
+}

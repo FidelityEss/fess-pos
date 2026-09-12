@@ -1,0 +1,433 @@
+{
+  "spec_version": "1.0",
+  "kind": "form",
+  "family": "site_inspection",
+  "version": 3,
+  "title": "High-Risk Merchant Site Verification",
+  "locale": "en-ZA",
+  "declaration_key": "agent_declaration",
+  "sections": [
+    {
+      "key": "merchant_profile",
+      "title": "Merchant profile",
+      "fields": [
+        {
+          "key": "merchant_name",
+          "type": "prefilled",
+          "label": "Merchant name",
+          "props": {
+            "source": "job.merchant_name",
+            "allow_flag_differs": true,
+            "differs_note": "Explain the difference"
+          }
+        },
+        {
+          "key": "trading_years",
+          "type": "number",
+          "label": "Years trading",
+          "required": true,
+          "props": {
+            "min": 0,
+            "max": 100,
+            "integer": true
+          }
+        },
+        {
+          "key": "established",
+          "type": "date",
+          "label": "Date established",
+          "props": {
+            "max": {
+              "today": []
+            },
+            "allow_unknown": true
+          }
+        },
+        {
+          "key": "services",
+          "type": "multi_select",
+          "display": "checkboxes",
+          "label": "Services offered",
+          "required": true,
+          "options": [
+            {
+              "value": "retail",
+              "label": "Retail"
+            },
+            {
+              "value": "delivery",
+              "label": "Delivery"
+            },
+            {
+              "value": "online",
+              "label": "Online"
+            },
+            {
+              "value": "none",
+              "label": "None of the above"
+            }
+          ],
+          "props": {
+            "min_select": 1,
+            "exclusive_options": [
+              "none"
+            ]
+          }
+        },
+        {
+          "key": "delivered_at_pos_pct",
+          "type": "percentage",
+          "label": "Delivered at point of sale",
+          "required": true
+        },
+        {
+          "key": "ecommerce_sales",
+          "type": "boolean",
+          "display": "yes_no_radio",
+          "label": "Does the business sell online?",
+          "required": true
+        },
+        {
+          "key": "ecommerce_pct",
+          "type": "percentage",
+          "label": "E-commerce share of sales",
+          "required": true,
+          "visible": {
+            "==": [
+              {
+                "var": "answers.ecommerce_sales"
+              },
+              true
+            ]
+          },
+          "validate": [
+            {
+              "rule": {
+                "<=": [
+                  {
+                    "+": [
+                      {
+                        "var": "answers.ecommerce_pct"
+                      },
+                      {
+                        "var": "answers.delivered_at_pos_pct"
+                      }
+                    ]
+                  },
+                  100
+                ]
+              },
+              "message": "E-commerce and point-of-sale delivery percentages cannot exceed 100% together.",
+              "code": "PCT_SUM_EXCEEDS_100"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "premises",
+      "title": "Premises",
+      "fields": [
+        {
+          "key": "premises_type",
+          "type": "single_select",
+          "display": "dropdown",
+          "label": "Premises type",
+          "required": true,
+          "options": [
+            {
+              "value": "mall",
+              "label": "Mall"
+            },
+            {
+              "value": "complex",
+              "label": "Complex"
+            },
+            {
+              "value": "office",
+              "label": "Office building"
+            },
+            {
+              "value": "home",
+              "label": "Private home",
+              "meta": {
+                "risk": "elevated"
+              }
+            },
+            {
+              "value": "other",
+              "label": "Other"
+            }
+          ],
+          "risk_indicator": {
+            "when": {
+              "==": [
+                {
+                  "var": "answers.premises_type"
+                },
+                "home"
+              ]
+            },
+            "level": "elevated",
+            "label": "Home-based business"
+          }
+        },
+        {
+          "key": "premises_type_other",
+          "type": "text",
+          "label": "Describe the premises",
+          "visible": {
+            "==": [
+              {
+                "var": "answers.premises_type"
+              },
+              "other"
+            ]
+          },
+          "required": true,
+          "props": {
+            "max_length": 200
+          }
+        },
+        {
+          "key": "operates_elsewhere",
+          "type": "boolean",
+          "display": "yes_no_radio",
+          "label": "Does the business also operate from another address?",
+          "required": true
+        },
+        {
+          "key": "other_address",
+          "type": "address",
+          "label": "Other address",
+          "visible": {
+            "==": [
+              {
+                "var": "answers.operates_elsewhere"
+              },
+              true
+            ]
+          },
+          "required": true,
+          "props": {
+            "map_pin": "required",
+            "geocode": "when_online"
+          },
+          "fallback": {
+            "type": "textarea"
+          }
+        },
+        {
+          "key": "home_note",
+          "type": "callout",
+          "tone": "warning",
+          "text": "Private-home premises: capture at least 4 internal photographs.",
+          "visible": {
+            "==": [
+              {
+                "var": "answers.premises_type"
+              },
+              "home"
+            ]
+          }
+        },
+        {
+          "key": "risk_score",
+          "type": "computed",
+          "label": "Risk score",
+          "value": {
+            "if": [
+              {
+                "==": [
+                  {
+                    "option_meta": [
+                      "answers.premises_type",
+                      "risk"
+                    ]
+                  },
+                  "elevated"
+                ]
+              },
+              3,
+              1
+            ]
+          },
+          "props": {
+            "hidden": true,
+            "format": "number"
+          }
+        }
+      ]
+    },
+    {
+      "key": "evidence",
+      "title": "Evidence",
+      "fields": [
+        {
+          "key": "external_photos",
+          "type": "photo",
+          "label": "External photographs",
+          "required": true,
+          "props": {
+            "category": "external",
+            "min_count": 2,
+            "max_count": 6
+          }
+        },
+        {
+          "key": "internal_photos",
+          "type": "photo",
+          "label": "Internal photographs",
+          "required": true,
+          "props": {
+            "category": "internal",
+            "max_count": 8,
+            "min_count": {
+              "if": [
+                {
+                  "==": [
+                    {
+                      "var": "answers.premises_type"
+                    },
+                    "home"
+                  ]
+                },
+                4,
+                2
+              ]
+            }
+          }
+        },
+        {
+          "key": "shopfront_photo",
+          "type": "photo",
+          "label": "Shopfront photo showing signage and unit number",
+          "required": true,
+          "visible": {
+            "or": [
+              {
+                "==": [
+                  {
+                    "var": "inspection.geofence.profile"
+                  },
+                  "shopping_centre"
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "inspection.geofence.method"
+                  },
+                  "outside_fix"
+                ]
+              }
+            ]
+          },
+          "props": {
+            "category": "shopfront",
+            "min_count": 1,
+            "max_count": 2
+          }
+        }
+      ]
+    },
+    {
+      "key": "other_businesses_section",
+      "title": "Other businesses",
+      "fields": [
+        {
+          "key": "other_businesses",
+          "type": "repeatable_group",
+          "label": "Other businesses at this address",
+          "props": {
+            "min_items": 0,
+            "max_items": 5,
+            "item_label": "Business {{index}}"
+          },
+          "fields": [
+            {
+              "key": "name",
+              "type": "text",
+              "label": "Business name",
+              "required": true
+            },
+            {
+              "key": "kind",
+              "type": "single_select",
+              "label": "Kind",
+              "required": true,
+              "options": [
+                {
+                  "value": "shop",
+                  "label": "Shop"
+                },
+                {
+                  "value": "home",
+                  "label": "Home business",
+                  "meta": {
+                    "risk": "high"
+                  }
+                }
+              ]
+            },
+            {
+              "key": "photos",
+              "type": "photo",
+              "label": "Photos of {{item.name}}",
+              "required": {
+                "==": [
+                  {
+                    "var": "item.kind"
+                  },
+                  "shop"
+                ]
+              },
+              "props": {
+                "category": "other_business",
+                "min_count": 1,
+                "max_count": 3
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "interviewee",
+      "title": "Interviewee",
+      "fields": [
+        {
+          "key": "interviewee_name",
+          "type": "text",
+          "label": "Interviewee name",
+          "required": true
+        },
+        {
+          "key": "interviewee_designation",
+          "type": "text",
+          "label": "Designation",
+          "required": true
+        },
+        {
+          "key": "interviewee_signature",
+          "type": "signature",
+          "label": "Interviewee signature",
+          "required": true,
+          "props": {
+            "signer_name_field": "interviewee_name",
+            "signer_designation_field": "interviewee_designation"
+          }
+        },
+        {
+          "key": "agent_declaration",
+          "type": "declaration",
+          "label": "Agent declaration",
+          "required": true,
+          "props": {
+            "declaration_key": "agent_declaration"
+          }
+        }
+      ]
+    }
+  ]
+}

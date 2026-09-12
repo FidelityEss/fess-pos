@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/definitions/form.schema.json",
+  "title": "Form definition (spec 1.0)",
+  "description": "Data capture: sections, fields and rules (docs/04 §3.1). `required: true` means required when visible.",
+  "type": "object",
+  "properties": {
+    "spec_version": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/spec_version"
+    },
+    "family": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/family"
+    },
+    "version": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/version"
+    },
+    "scope": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/scope"
+    },
+    "id": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/id"
+    },
+    "title": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/title"
+    },
+    "description": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/description"
+    },
+    "locale": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/locale"
+    },
+    "requires": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/requires"
+    },
+    "kind": {
+      "const": "form"
+    },
+    "declaration_key": {
+      "$ref": "common.schema.json#/$defs/key"
+    },
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "components.schema.json#/$defs/section"
+      }
+    }
+  },
+  "required": [
+    "spec_version",
+    "kind",
+    "family",
+    "version",
+    "sections"
+  ],
+  "additionalProperties": false
+}

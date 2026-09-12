@@ -1,0 +1,10 @@
+{
+  "name": "@fess-pos/tools",
+  "private": true,
+  "description": "Repo tooling: definition seed builder, engine vendoring, scenario seeder and API smoke test (Deno)",
+  "scripts": {
+    "seed:definitions": "cd .. && deno run --allow-read --allow-write --allow-env --config packages/fess_pos_engine_ts/deno.json tools/seed/build-definitions.mjs",
+    "smoke": "cd .. && deno run -A --config tools/scenarios/deno.json tools/scenarios/smoke.ts",
+    "scenarios": "cd .. && deno run -A --config tools/scenarios/deno.json tools/scenarios/seed.ts"
+  }
+}

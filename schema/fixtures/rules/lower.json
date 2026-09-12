@@ -1,0 +1,55 @@
+{
+  "operator": "lower",
+  "cases": [
+    {
+      "name": "ascii",
+      "expression": {
+        "lower": [
+          "ABC"
+        ]
+      },
+      "data": {},
+      "expected": "abc"
+    },
+    {
+      "name": "null",
+      "expression": {
+        "lower": [
+          null
+        ]
+      },
+      "data": {},
+      "expected": null
+    },
+    {
+      "name": "accented",
+      "expression": {
+        "lower": [
+          "ÀÉ"
+        ]
+      },
+      "data": {},
+      "expected": "àé"
+    },
+    {
+      "name": "mixed",
+      "expression": {
+        "lower": [
+          "MiXeD 123"
+        ]
+      },
+      "data": {},
+      "expected": "mixed 123"
+    },
+    {
+      "name": "number",
+      "expression": {
+        "lower": [
+          1
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

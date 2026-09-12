@@ -1,0 +1,31 @@
+{
+  "description": "only documented data roots are readable",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text",
+            "visible": {
+              "==": [
+                {
+                  "var": "secrets.key"
+                },
+                1
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "UNKNOWN_ROOT"
+  ]
+}

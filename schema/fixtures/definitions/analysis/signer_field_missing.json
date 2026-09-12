@@ -1,0 +1,26 @@
+{
+  "description": "signature bindings must name fields",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "sig",
+            "type": "signature",
+            "props": {
+              "signer_name_field": "nobody"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "MISSING_REF"
+  ]
+}

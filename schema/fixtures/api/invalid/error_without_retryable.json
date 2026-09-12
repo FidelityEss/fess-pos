@@ -1,0 +1,11 @@
+{
+  "description": "retryable is mandatory",
+  "schema": "error",
+  "value": {
+    "error": {
+      "code": "INTERNAL",
+      "message": "x"
+    },
+    "request_id": "r"
+  }
+}

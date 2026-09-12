@@ -1,0 +1,30 @@
+{
+  "description": "var path must be a literal",
+  "expected_errors": [
+    "DEF_INVALID_EXPRESSION"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text",
+            "visible": {
+              "var": [
+                {
+                  "var": "x"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

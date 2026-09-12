@@ -1,0 +1,33 @@
+{
+  "description": "option values are unique",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "s",
+            "type": "single_select",
+            "options": [
+              {
+                "value": "a",
+                "label": "A"
+              },
+              {
+                "value": "a",
+                "label": "A again"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "DUPLICATE_OPTION_VALUE"
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "operator": "count",
+  "cases": [
+    {
+      "name": "counts elements",
+      "expression": {
+        "count": [
+          [
+            1,
+            2,
+            3
+          ]
+        ]
+      },
+      "data": {},
+      "expected": 3
+    },
+    {
+      "name": "sugar form",
+      "expression": {
+        "count": {
+          "var": "xs"
+        }
+      },
+      "data": {
+        "xs": [
+          1,
+          2
+        ]
+      },
+      "expected": 2
+    },
+    {
+      "name": "null is 0",
+      "expression": {
+        "count": [
+          null
+        ]
+      },
+      "data": {},
+      "expected": 0
+    },
+    {
+      "name": "counts matches",
+      "expression": {
+        "count": [
+          [
+            1,
+            2,
+            3,
+            4
+          ],
+          {
+            ">": [
+              {
+                "var": "current"
+              },
+              2
+            ]
+          }
+        ]
+      },
+      "data": {},
+      "expected": 2
+    },
+    {
+      "name": "photo count",
+      "expression": {
+        "count": {
+          "var": "answers.internal_photos"
+        }
+      },
+      "data": {
+        "answers": {
+          "internal_photos": [
+            "a",
+            "b",
+            "c"
+          ]
+        }
+      },
+      "expected": 3
+    },
+    {
+      "name": "string collection",
+      "expression": {
+        "count": [
+          "abc"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "three arguments",
+      "expression": {
+        "count": [
+          [
+            1
+          ],
+          true,
+          3
+        ]
+      },
+      "data": {},
+      "error": "RULE_ARITY"
+    }
+  ]
+}

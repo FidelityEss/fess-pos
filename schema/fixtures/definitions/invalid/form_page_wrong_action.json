@@ -1,0 +1,21 @@
+{
+  "description": "form pages cannot submit inspections",
+  "expected_errors": [
+    "DEF_INVALID_VALUE"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "app",
+    "family": "a",
+    "version": 1,
+    "home": "home",
+    "pages": {
+      "home": {
+        "type": "form_page",
+        "form": "f",
+        "action": "inspection.submit",
+        "outcomes": "default"
+      }
+    }
+  }
+}

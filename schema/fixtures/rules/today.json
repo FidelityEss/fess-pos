@@ -1,0 +1,76 @@
+{
+  "operator": "today",
+  "cases": [
+    {
+      "name": "frozen date from the environment",
+      "expression": {
+        "today": []
+      },
+      "data": {},
+      "env": {
+        "today": "2026-09-10"
+      },
+      "expected": "2026-09-10"
+    },
+    {
+      "name": "used with date_add",
+      "expression": {
+        "date_add": [
+          {
+            "today": []
+          },
+          7,
+          "days"
+        ]
+      },
+      "data": {},
+      "env": {
+        "today": "2026-09-10"
+      },
+      "expected": "2026-09-17"
+    },
+    {
+      "name": "no frozen date",
+      "expression": {
+        "today": []
+      },
+      "data": {},
+      "error": "RULE_NO_TODAY"
+    },
+    {
+      "name": "invalid frozen date",
+      "expression": {
+        "today": []
+      },
+      "data": {},
+      "env": {
+        "today": "2026-13-01"
+      },
+      "error": "RULE_NO_TODAY"
+    },
+    {
+      "name": "takes no arguments",
+      "expression": {
+        "today": [
+          1
+        ]
+      },
+      "data": {},
+      "env": {
+        "today": "2026-09-10"
+      },
+      "error": "RULE_ARITY"
+    },
+    {
+      "name": "null sugar is one argument",
+      "expression": {
+        "today": null
+      },
+      "data": {},
+      "env": {
+        "today": "2026-09-10"
+      },
+      "error": "RULE_ARITY"
+    }
+  ]
+}

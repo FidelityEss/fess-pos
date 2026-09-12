@@ -1,0 +1,11 @@
+{
+  "description": "types are enforced",
+  "layers": [
+    {
+      "geofence": {
+        "sample_seconds": "60"
+      }
+    }
+  ],
+  "schema_valid": false
+}

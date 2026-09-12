@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/receipt.schema.json",
+  "title": "Receipt",
+  "description": "One per envelope in the ingest response (docs/12 §4). state null + durable false = refused at the door (invalid wrapper): park the item and report it via client_error.",
+  "type": "object",
+  "properties": {
+    "id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "state": {
+      "enum": [
+        "received",
+        "committed",
+        "duplicate",
+        "deferred",
+        "rejected",
+        "conflict",
+        null
+      ]
+    },
+    "durable": {
+      "type": "boolean"
+    },
+    "stored_hash": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "server_received_at": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/datetime"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "committed_at": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/datetime"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "result": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "error": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/error_detail"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "waiting_on": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "duplicate_of": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "state",
+    "durable"
+  ],
+  "additionalProperties": true
+}

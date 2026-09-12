@@ -1,0 +1,332 @@
+{
+  "operator": "option_meta",
+  "cases": [
+    {
+      "name": "selected option metadata",
+      "expression": {
+        "option_meta": [
+          "answers.premises_type",
+          "risk"
+        ]
+      },
+      "data": {
+        "answers": {
+          "premises_type": "home"
+        }
+      },
+      "env": {
+        "option_meta": {
+          "premises_type": {
+            "home": {
+              "risk": "elevated"
+            },
+            "mall": {}
+          },
+          "services": {
+            "a": {
+              "w": 1
+            }
+          },
+          "kind": {
+            "home": {
+              "risk": "high"
+            }
+          }
+        }
+      },
+      "expected": "elevated"
+    },
+    {
+      "name": "option without that key",
+      "expression": {
+        "option_meta": [
+          "answers.premises_type",
+          "risk"
+        ]
+      },
+      "data": {
+        "answers": {
+          "premises_type": "mall"
+        }
+      },
+      "env": {
+        "option_meta": {
+          "premises_type": {
+            "home": {
+              "risk": "elevated"
+            },
+            "mall": {}
+          },
+          "services": {
+            "a": {
+              "w": 1
+            }
+          },
+          "kind": {
+            "home": {
+              "risk": "high"
+            }
+          }
+        }
+      },
+      "expected": null
+    },
+    {
+      "name": "unanswered",
+      "expression": {
+        "option_meta": [
+          "answers.premises_type",
+          "risk"
+        ]
+      },
+      "data": {
+        "answers": {}
+      },
+      "env": {
+        "option_meta": {
+          "premises_type": {
+            "home": {
+              "risk": "elevated"
+            },
+            "mall": {}
+          },
+          "services": {
+            "a": {
+              "w": 1
+            }
+          },
+          "kind": {
+            "home": {
+              "risk": "high"
+            }
+          }
+        }
+      },
+      "expected": null
+    },
+    {
+      "name": "value not among options",
+      "expression": {
+        "option_meta": [
+          "answers.premises_type",
+          "risk"
+        ]
+      },
+      "data": {
+        "answers": {
+          "premises_type": "other"
+        }
+      },
+      "env": {
+        "option_meta": {
+          "premises_type": {
+            "home": {
+              "risk": "elevated"
+            },
+            "mall": {}
+          },
+          "services": {
+            "a": {
+              "w": 1
+            }
+          },
+          "kind": {
+            "home": {
+              "risk": "high"
+            }
+          }
+        }
+      },
+      "expected": null
+    },
+    {
+      "name": "multi-select yields one value per selection",
+      "expression": {
+        "option_meta": [
+          "answers.services",
+          "w"
+        ]
+      },
+      "data": {
+        "answers": {
+          "services": [
+            "a",
+            "b"
+          ]
+        }
+      },
+      "env": {
+        "option_meta": {
+          "premises_type": {
+            "home": {
+              "risk": "elevated"
+            },
+            "mall": {}
+          },
+          "services": {
+            "a": {
+              "w": 1
+            }
+          },
+          "kind": {
+            "home": {
+              "risk": "high"
+            }
+          }
+        }
+      },
+      "expected": [
+        1,
+        null
+      ]
+    },
+    {
+      "name": "repeatable item path",
+      "expression": {
+        "option_meta": [
+          "item.kind",
+          "risk"
+        ]
+      },
+      "data": {
+        "item": {
+          "kind": "home"
+        }
+      },
+      "env": {
+        "option_meta": {
+          "premises_type": {
+            "home": {
+              "risk": "elevated"
+            },
+            "mall": {}
+          },
+          "services": {
+            "a": {
+              "w": 1
+            }
+          },
+          "kind": {
+            "home": {
+              "risk": "high"
+            }
+          }
+        }
+      },
+      "expected": "high"
+    },
+    {
+      "name": "no metadata supplied",
+      "expression": {
+        "option_meta": [
+          "answers.premises_type",
+          "risk"
+        ]
+      },
+      "data": {
+        "answers": {
+          "premises_type": "home"
+        }
+      },
+      "expected": null
+    },
+    {
+      "name": "field path must be literal",
+      "expression": {
+        "option_meta": [
+          {
+            "var": "p"
+          },
+          "risk"
+        ]
+      },
+      "data": {},
+      "env": {
+        "option_meta": {
+          "premises_type": {
+            "home": {
+              "risk": "elevated"
+            },
+            "mall": {}
+          },
+          "services": {
+            "a": {
+              "w": 1
+            }
+          },
+          "kind": {
+            "home": {
+              "risk": "high"
+            }
+          }
+        }
+      },
+      "error": "RULE_INVALID_ARGUMENT"
+    },
+    {
+      "name": "number answer",
+      "expression": {
+        "option_meta": [
+          "answers.premises_type",
+          "risk"
+        ]
+      },
+      "data": {
+        "answers": {
+          "premises_type": 3
+        }
+      },
+      "env": {
+        "option_meta": {
+          "premises_type": {
+            "home": {
+              "risk": "elevated"
+            },
+            "mall": {}
+          },
+          "services": {
+            "a": {
+              "w": 1
+            }
+          },
+          "kind": {
+            "home": {
+              "risk": "high"
+            }
+          }
+        }
+      },
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "one argument",
+      "expression": {
+        "option_meta": [
+          "answers.premises_type"
+        ]
+      },
+      "data": {},
+      "env": {
+        "option_meta": {
+          "premises_type": {
+            "home": {
+              "risk": "elevated"
+            },
+            "mall": {}
+          },
+          "services": {
+            "a": {
+              "w": 1
+            }
+          },
+          "kind": {
+            "home": {
+              "risk": "high"
+            }
+          }
+        }
+      },
+      "error": "RULE_ARITY"
+    }
+  ]
+}

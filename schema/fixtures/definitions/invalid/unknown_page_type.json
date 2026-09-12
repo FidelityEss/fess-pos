@@ -1,0 +1,19 @@
+{
+  "description": "page type not in the catalogue",
+  "expected_errors": [
+    "DEF_UNKNOWN_PAGE_TYPE"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "app",
+    "family": "a",
+    "version": 1,
+    "home": "home",
+    "pages": {
+      "home": {
+        "type": "web_view",
+        "url": "https://example.org"
+      }
+    }
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/payloads/inspection_started.v1.schema.json",
+  "title": "inspection_started payload, type_version 1",
+  "description": "Begin inspection: session token consumed, versions pinned with hashes, fence result and integrity snapshot stored (docs/06 §2).",
+  "type": "object",
+  "properties": {
+    "inspection_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "job_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "session_token_id": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "session_token": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/hex_token"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "form_version_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "definition_hash": {
+      "$ref": "../common.schema.json#/$defs/sha256"
+    },
+    "flow_version_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "flow_hash": {
+      "$ref": "../common.schema.json#/$defs/sha256"
+    },
+    "job_schema_version_id": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "config_version_id": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "context_snapshot": {
+      "$ref": "../common.schema.json#/$defs/context_snapshot"
+    },
+    "geofence_result": {
+      "$ref": "../common.schema.json#/$defs/geofence_result"
+    },
+    "integrity": {
+      "$ref": "../common.schema.json#/$defs/integrity_snapshot"
+    },
+    "started_at_device": {
+      "$ref": "../common.schema.json#/$defs/datetime"
+    },
+    "monotonic_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "clock_offset_ms": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "gnss_time": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/datetime"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "inspection_id",
+    "job_id",
+    "attempt",
+    "session_token_id",
+    "form_version_id",
+    "definition_hash",
+    "flow_version_id",
+    "flow_hash",
+    "config_version_id",
+    "context_snapshot",
+    "geofence_result",
+    "integrity",
+    "started_at_device"
+  ],
+  "additionalProperties": false
+}

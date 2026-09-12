@@ -1,0 +1,16 @@
+{
+  "description": "content templates must be balanced",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "content",
+    "family": "c",
+    "version": 1,
+    "locale": "en-ZA",
+    "strings": {
+      "a.b": "Hi {{name"
+    }
+  },
+  "expected_errors": [
+    "INVALID_TEMPLATE"
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "spec_version": "1.0",
+  "kind": "app",
+  "family": "agent_app",
+  "version": 1,
+  "home": "home",
+  "navigation": {
+    "style": "bottom_tabs",
+    "items": [
+      {
+        "label": "Home",
+        "icon": "home",
+        "page": "home"
+      },
+      {
+        "label": "Leads",
+        "icon": "list",
+        "page": "active_jobs"
+      },
+      {
+        "label": "Card",
+        "icon": "badge",
+        "page": "agent_card"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "type": "view_page",
+      "view": "home"
+    },
+    "active_jobs": {
+      "type": "list_page",
+      "title": "Active leads",
+      "source": "jobs",
+      "filter": {
+        "in": [
+          {
+            "var": "job.status"
+          },
+          [
+            "assigned",
+            "accepted",
+            "in_progress",
+            "paused"
+          ]
+        ]
+      },
+      "sort": "job.scheduled_start",
+      "sort_direction": "asc",
+      "item_view": "job_card",
+      "on_tap": {
+        "page": "job_detail"
+      },
+      "empty_content": "jobs.empty_active"
+    },
+    "job_detail": {
+      "type": "view_page",
+      "view": "job_detail",
+      "actions": [
+        {
+          "label": "Start inspection",
+          "target": {
+            "page": "inspection"
+          }
+        },
+        {
+          "label": "Unable to complete",
+          "target": {
+            "page": "unable"
+          }
+        }
+      ]
+    },
+    "inspection": {
+      "type": "flow",
+      "flow": "site_inspection_flow",
+      "outcomes": "default"
+    },
+    "unable": {
+      "type": "flow",
+      "flow": "unable_to_complete_flow",
+      "outcomes": "default"
+    },
+    "agent_card": {
+      "type": "view_page",
+      "view": "agent_card",
+      "title": "My authorisation card"
+    },
+    "followup": {
+      "type": "form_page",
+      "title": "Follow-up",
+      "form": "merchant_followup",
+      "action": "record.submit",
+      "subject": "none",
+      "outcomes": "default"
+    },
+    "outcome_success": {
+      "type": "outcome_page",
+      "outcome": "success",
+      "title": "Received",
+      "message": "The server has your submission.",
+      "icon": "check",
+      "buttons": [
+        {
+          "label": "Home",
+          "action": "home"
+        },
+        {
+          "label": "Receipt",
+          "action": "receipt"
+        }
+      ]
+    },
+    "outcome_saved": {
+      "type": "outcome_page",
+      "outcome": "saved",
+      "title": "Saved on this phone",
+      "message": "It will send automatically.",
+      "icon": "cloud_off",
+      "buttons": [
+        {
+          "label": "Home",
+          "action": "home"
+        }
+      ],
+      "auto_return_s": 10
+    },
+    "outcome_failure": {
+      "type": "outcome_page",
+      "outcome": "failure",
+      "title": "Could not complete",
+      "message": "Nothing captured was lost.",
+      "icon": "warning",
+      "buttons": [
+        {
+          "label": "Try again",
+          "action": "retry"
+        },
+        {
+          "label": "Home",
+          "action": "home"
+        }
+      ]
+    }
+  },
+  "outcome_sets": {
+    "default": {
+      "success": "outcome_success",
+      "saved": "outcome_saved",
+      "failure": "outcome_failure"
+    }
+  }
+}

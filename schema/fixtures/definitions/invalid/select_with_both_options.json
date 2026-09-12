@@ -1,0 +1,33 @@
+{
+  "description": "options and options_source are exclusive",
+  "expected_errors": [
+    "DEF_OPTIONS_REQUIRED"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "single_select",
+            "options": [
+              {
+                "value": "x",
+                "label": "X"
+              }
+            ],
+            "options_source": {
+              "type": "lookup_list",
+              "key": "l"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

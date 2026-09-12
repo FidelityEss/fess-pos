@@ -1,0 +1,1112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/definitions/view.schema.json",
+  "title": "View definition (spec 1.0)",
+  "description": "Content of a page from the view-component catalogue (docs/04 §3.4, docs/11 §7.2). Items bind to job.*, agent.*, inspection.*, stats.* paths.",
+  "type": "object",
+  "properties": {
+    "spec_version": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/spec_version"
+    },
+    "family": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/family"
+    },
+    "version": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/version"
+    },
+    "scope": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/scope"
+    },
+    "id": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/id"
+    },
+    "title": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/title"
+    },
+    "description": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/description"
+    },
+    "locale": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/locale"
+    },
+    "requires": {
+      "$ref": "common.schema.json#/$defs/header_properties/properties/requires"
+    },
+    "kind": {
+      "const": "view"
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    }
+  },
+  "required": [
+    "spec_version",
+    "kind",
+    "family",
+    "version",
+    "items"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "item": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "title",
+            "field_value",
+            "address_block",
+            "map_preview",
+            "contact",
+            "schedule_window",
+            "status_chip",
+            "badge",
+            "markdown",
+            "image",
+            "divider",
+            "evidence_status",
+            "greeting",
+            "section_title",
+            "stat_row",
+            "stat_tile",
+            "job_list",
+            "agent_card_summary",
+            "action_button",
+            "sync_status",
+            "announcement",
+            "agent_card",
+            "job_card"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "title"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/title"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "field_value"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/field_value"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "address_block"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/address_block"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "map_preview"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/map_preview"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "contact"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/contact"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "schedule_window"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/schedule_window"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "status_chip"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/status_chip"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "badge"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/badge"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "markdown"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/markdown"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "image"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/image"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "divider"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/divider"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "evidence_status"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/evidence_status"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "greeting"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/greeting"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "section_title"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/section_title"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "stat_row"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/stat_row"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "stat_tile"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/stat_tile"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "job_list"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/job_list"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "agent_card_summary"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/agent_card_summary"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "action_button"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/action_button"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "sync_status"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/sync_status"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "announcement"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/announcement"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "agent_card"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/agent_card"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "job_card"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "$ref": "#/$defs/job_card"
+          }
+        }
+      ]
+    },
+    "stat_tiles": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/stat_tile"
+      }
+    },
+    "title": {
+      "type": "object",
+      "description": "title@1 (display)",
+      "properties": {
+        "type": {
+          "const": "title"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "bind": {
+          "$ref": "common.schema.json#/$defs/path"
+        },
+        "text": {
+          "$ref": "common.schema.json#/$defs/template"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "field_value": {
+      "type": "object",
+      "description": "field_value@1 (display)",
+      "properties": {
+        "type": {
+          "const": "field_value"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "bind": {
+          "$ref": "common.schema.json#/$defs/path"
+        },
+        "format": {
+          "enum": [
+            "text",
+            "date",
+            "datetime",
+            "number",
+            "currency"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "bind"
+      ],
+      "additionalProperties": false
+    },
+    "address_block": {
+      "type": "object",
+      "description": "address_block@1 (display)",
+      "properties": {
+        "type": {
+          "const": "address_block"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "bind": {
+          "$ref": "common.schema.json#/$defs/path"
+        }
+      },
+      "required": [
+        "type",
+        "bind"
+      ],
+      "additionalProperties": false
+    },
+    "map_preview": {
+      "type": "object",
+      "description": "map_preview@1 (display)",
+      "properties": {
+        "type": {
+          "const": "map_preview"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "bind": {
+          "$ref": "common.schema.json#/$defs/path"
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 80,
+          "maximum": 600
+        }
+      },
+      "required": [
+        "type",
+        "bind"
+      ],
+      "additionalProperties": false
+    },
+    "contact": {
+      "type": "object",
+      "description": "contact@1 (display)",
+      "properties": {
+        "type": {
+          "const": "contact"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "bind": {
+          "$ref": "common.schema.json#/$defs/path"
+        },
+        "actions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "call",
+              "sms",
+              "email"
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "bind"
+      ],
+      "additionalProperties": false
+    },
+    "schedule_window": {
+      "type": "object",
+      "description": "schedule_window@1 (display)",
+      "properties": {
+        "type": {
+          "const": "schedule_window"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "bind": {
+          "$ref": "common.schema.json#/$defs/path"
+        }
+      },
+      "required": [
+        "type",
+        "bind"
+      ],
+      "additionalProperties": false
+    },
+    "status_chip": {
+      "type": "object",
+      "description": "status_chip@1 (display)",
+      "properties": {
+        "type": {
+          "const": "status_chip"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "bind": {
+          "$ref": "common.schema.json#/$defs/path"
+        }
+      },
+      "required": [
+        "type",
+        "bind"
+      ],
+      "additionalProperties": false
+    },
+    "badge": {
+      "type": "object",
+      "description": "badge@1 (display)",
+      "properties": {
+        "type": {
+          "const": "badge"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "tone": {
+          "enum": [
+            "neutral",
+            "info",
+            "success",
+            "warning",
+            "danger"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "markdown": {
+      "type": "object",
+      "description": "markdown@1 (display)",
+      "properties": {
+        "type": {
+          "const": "markdown"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "text": {
+          "$ref": "common.schema.json#/$defs/template"
+        }
+      },
+      "required": [
+        "type",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "image": {
+      "type": "object",
+      "description": "image@1 (display)",
+      "properties": {
+        "type": {
+          "const": "image"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "asset": {
+          "$ref": "common.schema.json#/$defs/asset"
+        },
+        "caption": {
+          "$ref": "common.schema.json#/$defs/template"
+        }
+      },
+      "required": [
+        "type",
+        "asset"
+      ],
+      "additionalProperties": false
+    },
+    "divider": {
+      "type": "object",
+      "description": "divider@1 (display)",
+      "properties": {
+        "type": {
+          "const": "divider"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "evidence_status": {
+      "type": "object",
+      "description": "evidence_status@1 (display)",
+      "properties": {
+        "type": {
+          "const": "evidence_status"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "bind": {
+          "$ref": "common.schema.json#/$defs/path"
+        }
+      },
+      "required": [
+        "type",
+        "bind"
+      ],
+      "additionalProperties": false
+    },
+    "greeting": {
+      "type": "object",
+      "description": "greeting@1 (home)",
+      "properties": {
+        "type": {
+          "const": "greeting"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "text": {
+          "$ref": "common.schema.json#/$defs/template"
+        }
+      },
+      "required": [
+        "type",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "section_title": {
+      "type": "object",
+      "description": "section_title@1 (home)",
+      "properties": {
+        "type": {
+          "const": "section_title"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "text": {
+          "$ref": "common.schema.json#/$defs/template"
+        }
+      },
+      "required": [
+        "type",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "stat_row": {
+      "type": "object",
+      "description": "stat_row@1 (home)",
+      "properties": {
+        "type": {
+          "const": "stat_row"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "tiles": {
+          "$ref": "#/$defs/stat_tiles"
+        }
+      },
+      "required": [
+        "type",
+        "tiles"
+      ],
+      "additionalProperties": false
+    },
+    "stat_tile": {
+      "type": "object",
+      "description": "stat_tile@1 (home)",
+      "properties": {
+        "type": {
+          "const": "stat_tile"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "source": {
+          "enum": [
+            "local",
+            "server"
+          ]
+        },
+        "collection": {
+          "enum": [
+            "jobs",
+            "inspections",
+            "form_submissions"
+          ]
+        },
+        "filter": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "common.schema.json#/$defs/operation"
+            }
+          ]
+        },
+        "stat": {
+          "$ref": "common.schema.json#/$defs/path"
+        },
+        "on_tap": {
+          "$ref": "common.schema.json#/$defs/target"
+        }
+      },
+      "required": [
+        "type",
+        "label",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "job_list": {
+      "type": "object",
+      "description": "job_list@1 (home)",
+      "properties": {
+        "type": {
+          "const": "job_list"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "title": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "filter": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "common.schema.json#/$defs/operation"
+            }
+          ]
+        },
+        "sort": {
+          "$ref": "common.schema.json#/$defs/path"
+        },
+        "sort_direction": {
+          "enum": [
+            "asc",
+            "desc"
+          ]
+        },
+        "item_view": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "on_tap": {
+          "$ref": "common.schema.json#/$defs/target"
+        },
+        "empty_content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "type",
+        "item_view"
+      ],
+      "additionalProperties": false
+    },
+    "agent_card_summary": {
+      "type": "object",
+      "description": "agent_card_summary@1 (home)",
+      "properties": {
+        "type": {
+          "const": "agent_card_summary"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "on_tap": {
+          "$ref": "common.schema.json#/$defs/target"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "action_button": {
+      "type": "object",
+      "description": "action_button@1 (home)",
+      "properties": {
+        "type": {
+          "const": "action_button"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "target": {
+          "$ref": "common.schema.json#/$defs/target"
+        },
+        "style": {
+          "enum": [
+            "primary",
+            "secondary"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "label",
+        "target"
+      ],
+      "additionalProperties": false
+    },
+    "sync_status": {
+      "type": "object",
+      "description": "sync_status@1 (home)",
+      "properties": {
+        "type": {
+          "const": "sync_status"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "announcement": {
+      "type": "object",
+      "description": "announcement@1 (home)",
+      "properties": {
+        "type": {
+          "const": "announcement"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "text": {
+          "$ref": "common.schema.json#/$defs/template"
+        },
+        "tone": {
+          "enum": [
+            "neutral",
+            "info",
+            "success",
+            "warning",
+            "danger"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "agent_card": {
+      "type": "object",
+      "description": "agent_card@1 (card)",
+      "properties": {
+        "type": {
+          "const": "agent_card"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "show_photo": {
+          "type": "boolean"
+        },
+        "show_qr": {
+          "type": "boolean"
+        },
+        "show_status": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "job_card": {
+      "type": "object",
+      "description": "job_card@1 (card)",
+      "properties": {
+        "type": {
+          "const": "job_card"
+        },
+        "id": {
+          "$ref": "common.schema.json#/$defs/key"
+        },
+        "visible": {
+          "$ref": "common.schema.json#/$defs/r_boolean"
+        },
+        "show_photo": {
+          "type": "boolean"
+        },
+        "show_qr": {
+          "type": "boolean"
+        },
+        "show_status": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "description": "Supporting data the valid definitions reference (bundle for cross-reference analysis).",
+  "lookup_lists": [
+    "provinces"
+  ],
+  "reason_code_categories": [
+    "unable_to_complete",
+    "assignment_reject",
+    "geofence_override"
+  ],
+  "declarations": [
+    "agent_declaration",
+    "photo_consent"
+  ]
+}

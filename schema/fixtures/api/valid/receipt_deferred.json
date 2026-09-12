@@ -1,0 +1,14 @@
+{
+  "description": "landed; waiting on a dependency",
+  "schema": "receipt",
+  "value": {
+    "id": "0191d3c3-1019-7c1b-9f10-4b2e1c0a9e00",
+    "state": "deferred",
+    "durable": true,
+    "stored_hash": "ea07d49e77452c5708757dadbfc21dccf63bd8c96659f4f4ac38b140c372473e",
+    "waiting_on": {
+      "job_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+    },
+    "error": null
+  }
+}

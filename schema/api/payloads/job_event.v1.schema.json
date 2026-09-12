@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/payloads/job_event.v1.schema.json",
+  "title": "job_event payload, type_version 1",
+  "description": "Assignment response / unable to complete / geofence pause-resume (docs/06 §2). Reason capture uses the bank's configurable reason form: its answers travel in form_answers with form_version_id.",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "$ref": "../common.schema.json#/$defs/uuid"
+    },
+    "action": {
+      "enum": [
+        "accept",
+        "reject",
+        "unable",
+        "pause",
+        "resume"
+      ]
+    },
+    "trigger": {
+      "enum": [
+        "agent",
+        "geofence_exit",
+        "geofence_enter"
+      ]
+    },
+    "inspection_id": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reason_code": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/key"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "note": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "form_version_id": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "definition_hash": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "form_answers": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/answers"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "answers_hash": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "../common.schema.json#/$defs/uuid"
+      },
+      "maxItems": 20
+    },
+    "fix": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/geo_fix"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "config_version_id": {
+      "anyOf": [
+        {
+          "$ref": "../common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "job_id",
+    "action"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "enum": [
+              "reject",
+              "unable"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "then": {
+        "properties": {
+          "reason_code": {
+            "$ref": "../common.schema.json#/$defs/key"
+          }
+        },
+        "required": [
+          "reason_code"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "enum": [
+              "pause",
+              "resume"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "then": {
+        "properties": {
+          "inspection_id": {
+            "$ref": "../common.schema.json#/$defs/uuid"
+          }
+        },
+        "required": [
+          "inspection_id"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "form_answers": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "form_answers"
+        ]
+      },
+      "then": {
+        "properties": {
+          "form_version_id": {
+            "$ref": "../common.schema.json#/$defs/uuid"
+          },
+          "definition_hash": {
+            "$ref": "../common.schema.json#/$defs/sha256"
+          },
+          "answers_hash": {
+            "$ref": "../common.schema.json#/$defs/sha256"
+          }
+        },
+        "required": [
+          "form_version_id",
+          "definition_hash",
+          "answers_hash"
+        ]
+      }
+    }
+  ]
+}

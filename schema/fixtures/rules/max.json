@@ -1,0 +1,48 @@
+{
+  "operator": "max",
+  "cases": [
+    {
+      "name": "largest",
+      "expression": {
+        "max": [
+          3,
+          1,
+          2
+        ]
+      },
+      "data": {},
+      "expected": 3
+    },
+    {
+      "name": "skips null",
+      "expression": {
+        "max": [
+          null,
+          4
+        ]
+      },
+      "data": {},
+      "expected": 4
+    },
+    {
+      "name": "all null",
+      "expression": {
+        "max": [
+          null
+        ]
+      },
+      "data": {},
+      "expected": null
+    },
+    {
+      "name": "boolean",
+      "expression": {
+        "max": [
+          true
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

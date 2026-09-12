@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/auth-exchange-request.schema.json",
+  "title": "POST /v1/auth/exchange request",
+  "description": "Exchange a verified host token for a POS session (docs/07 §2, D-32).",
+  "type": "object",
+  "properties": {
+    "issuer": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384
+    },
+    "issued_at": {
+      "$ref": "common.schema.json#/$defs/datetime"
+    },
+    "secondary_token": {
+      "type": "string",
+      "maxLength": 16384
+    },
+    "device": {
+      "type": "object",
+      "properties": {
+        "device_id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "client_type": {
+          "$ref": "common.schema.json#/$defs/client_type"
+        },
+        "platform": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "os_version": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "host_app_version": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "module_version": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "capabilities": {
+          "$ref": "common.schema.json#/$defs/capability_report"
+        },
+        "push_provider": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "push_token": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "device_id"
+      ],
+      "additionalProperties": false
+    },
+    "profile": {
+      "type": "object",
+      "properties": {
+        "employee_number": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "first_name": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "last_name": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 320
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "photo_url": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "extra": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "description": "Display/audit snapshot only — never used to authorise (docs/03 §3)."
+    }
+  },
+  "required": [
+    "issuer",
+    "token",
+    "device"
+  ],
+  "additionalProperties": false
+}

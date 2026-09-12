@@ -1,0 +1,18 @@
+{
+  "spec_version": "1.0",
+  "kind": "view",
+  "family": "agent_card",
+  "version": 1,
+  "items": [
+    {
+      "type": "agent_card",
+      "show_photo": true,
+      "show_qr": true,
+      "show_status": true
+    },
+    {
+      "type": "job_card",
+      "show_qr": true
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "description": "evidence id only",
+  "schema": "upload-grant-request",
+  "value": {
+    "evidence_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d01"
+  }
+}

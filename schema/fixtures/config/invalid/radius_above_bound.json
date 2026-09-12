@@ -1,0 +1,18 @@
+{
+  "description": "geofence radius is bounded 25-500 m",
+  "layers": [
+    {
+      "geofence": {
+        "profiles": {
+          "standalone": {
+            "radius_m": 600,
+            "max_accuracy_m": 30,
+            "exit_consecutive_fixes": 3,
+            "prompt_checkin_on_arrival": false
+          }
+        }
+      }
+    }
+  ],
+  "schema_valid": false
+}

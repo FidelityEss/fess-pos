@@ -1,0 +1,62 @@
+{
+  "description": "coordinates are decimal degrees in range",
+  "expected": "payload",
+  "envelope": {
+    "api_version": "1",
+    "id": "0191d3c3-1030-7c1b-9f10-4b2e1c0a9e00",
+    "type": "evidence_meta",
+    "type_version": 1,
+    "payload_hash": "94a16ae633cd680ed2eaeee6e3a0d954405ea848e8cdd501fce9d3455c1b4cbb",
+    "device_id": "7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60",
+    "session_id": "4f2a1b3c-5d6e-4f70-8a9b-0c1d2e3f4a5b",
+    "device_seq": 18029,
+    "module_version": "1.4.2",
+    "client_type": "native",
+    "created_at_device": "2026-09-10T10:31:02.114+02:00",
+    "monotonic_ms": 5423311,
+    "payload": {
+      "evidence_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d01",
+      "inspection_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9f01",
+      "job_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "session_token_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9d70",
+      "field_key": "external_photos",
+      "category": "external",
+      "type": "photo",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "bytes": 412331,
+      "mime": "image/jpeg",
+      "width": 2048,
+      "height": 1536,
+      "captured_at_device": "2026-09-10T10:14:03.221+02:00",
+      "captured_at_monotonic_ms": 6150000,
+      "gnss_time": "2026-09-10T08:14:03Z",
+      "location": {
+        "lat": -126.1,
+        "lng": 28
+      },
+      "accuracy_m": 8,
+      "is_mocked": false,
+      "meta": {
+        "item_index": null,
+        "caption": null,
+        "local_hash_mismatch": false,
+        "integrity": {
+          "mock_location": false,
+          "rooted": false,
+          "hooked": false,
+          "debugger": false,
+          "emulator": false,
+          "tampered": false,
+          "rasp_provider": "freerasp",
+          "attestation": {
+            "provider": "play_integrity",
+            "verdict": "MEETS_DEVICE_INTEGRITY",
+            "obtained_at": "2026-09-10T07:00:00+02:00"
+          },
+          "clock_offset_ms": -1200,
+          "checked_at": "2026-09-10T10:01:55+02:00"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "spec_version": "1.0",
+  "kind": "view",
+  "family": "receipt",
+  "version": 1,
+  "items": [
+    {
+      "type": "title",
+      "text": "Inspection received"
+    },
+    {
+      "type": "evidence_status",
+      "bind": "inspection.evidence"
+    },
+    {
+      "type": "markdown",
+      "text": "Reference {{job.reference}}"
+    }
+  ]
+}

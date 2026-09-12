@@ -1,0 +1,17 @@
+{
+  "description": "step type not in the catalogue",
+  "expected_errors": [
+    "DEF_UNKNOWN_STEP_TYPE"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "flow",
+    "family": "f",
+    "version": 1,
+    "steps": [
+      {
+        "type": "sign"
+      }
+    ]
+  }
+}

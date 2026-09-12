@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/envelope.schema.json",
+  "title": "Envelope (wrapper)",
+  "description": "Every device write (docs/12 §4). Only the wrapper is checked at the door; payloads are validated after landing (payloads/<type>.v<type_version>). Unknown wrapper properties and unknown types are accepted so landing never refuses data a newer module sent.",
+  "x-known-types": [
+    "job_event",
+    "inspection_started",
+    "inspection_snapshot",
+    "evidence_meta",
+    "evidence_uploaded",
+    "traces_batch",
+    "submission",
+    "form_submission",
+    "custody_batch",
+    "sync_report",
+    "client_error"
+  ],
+  "type": "object",
+  "properties": {
+    "api_version": {
+      "const": "1"
+    },
+    "id": {
+      "$ref": "common.schema.json#/$defs/uuid",
+      "description": "UUIDv7 idempotency key (= entity id where the envelope creates one)."
+    },
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "type_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "payload_hash": {
+      "$ref": "common.schema.json#/$defs/sha256",
+      "description": "sha256(JCS(payload)) — RFC 8785."
+    },
+    "device_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "session_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "device_seq": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991,
+      "description": "Per-device counter, +1 per envelope (docs/12 §15)."
+    },
+    "module_version": {
+      "$ref": "common.schema.json#/$defs/semver"
+    },
+    "client_type": {
+      "$ref": "common.schema.json#/$defs/client_type"
+    },
+    "created_at_device": {
+      "$ref": "common.schema.json#/$defs/datetime"
+    },
+    "monotonic_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "api_version",
+    "id",
+    "type",
+    "type_version",
+    "payload_hash",
+    "device_id",
+    "session_id",
+    "device_seq",
+    "module_version",
+    "client_type",
+    "created_at_device",
+    "monotonic_ms",
+    "payload"
+  ],
+  "additionalProperties": true
+}

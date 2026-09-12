@@ -1,0 +1,16 @@
+{
+  "description": "content keys are dotted snake_case",
+  "expected_errors": [
+    "DEF_INVALID_VALUE"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "content",
+    "family": "c",
+    "version": 1,
+    "locale": "en-ZA",
+    "strings": {
+      "Button Label": "OK"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "spec_version": "1.0",
+  "kind": "form",
+  "family": "merchant_followup",
+  "version": 1,
+  "title": "Merchant follow-up",
+  "sections": [
+    {
+      "key": "followup",
+      "fields": [
+        {
+          "key": "spoke_to",
+          "type": "text",
+          "label": "Spoke to",
+          "required": true
+        },
+        {
+          "key": "outcome",
+          "type": "tri_state",
+          "display": "segmented",
+          "label": "Merchant satisfied?",
+          "required": true
+        },
+        {
+          "key": "rating",
+          "type": "rating",
+          "display": "stars",
+          "label": "Rating",
+          "props": {
+            "scale": 5
+          }
+        }
+      ]
+    }
+  ]
+}

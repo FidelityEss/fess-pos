@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/payloads/custody_batch.v1.schema.json",
+  "title": "custody_batch payload, type_version 1",
+  "description": "Device-side chain-of-custody events (docs/12 §10).",
+  "type": "object",
+  "properties": {
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "subject_type": {
+            "enum": [
+              "inspection",
+              "evidence",
+              "envelope",
+              "job"
+            ]
+          },
+          "subject_id": {
+            "$ref": "../common.schema.json#/$defs/uuid"
+          },
+          "event": {
+            "enum": [
+              "captured",
+              "persisted_local",
+              "queued",
+              "first_attempt",
+              "receipt_received",
+              "local_bytes_deleted"
+            ]
+          },
+          "at_device": {
+            "$ref": "../common.schema.json#/$defs/datetime"
+          },
+          "monotonic_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "detail": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "subject_type",
+          "subject_id",
+          "event",
+          "at_device",
+          "monotonic_ms"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 500
+    }
+  },
+  "required": [
+    "events"
+  ],
+  "additionalProperties": false
+}

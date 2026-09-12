@@ -1,0 +1,9 @@
+{
+  "description": "state is one of the documented outcomes",
+  "schema": "receipt",
+  "value": {
+    "id": "0191d3c3-1019-7c1b-9f10-4b2e1c0a9e00",
+    "state": "applied",
+    "durable": true
+  }
+}

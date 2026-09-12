@@ -1,0 +1,33 @@
+{
+  "description": "option_meta needs a choice field",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "t",
+            "type": "text"
+          },
+          {
+            "key": "c",
+            "type": "computed",
+            "value": {
+              "option_meta": [
+                "answers.t",
+                "risk"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected_errors": [
+    "OPTION_META_NOT_SELECT"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "description": "business duplicate",
+  "schema": "receipt",
+  "value": {
+    "id": "0191d3c3-1019-7c1b-9f10-4b2e1c0a9e00",
+    "state": "duplicate",
+    "durable": true,
+    "duplicate_of": "0191d3c3-1003-7c1b-9f10-4b2e1c0a9e00",
+    "result": {}
+  }
+}

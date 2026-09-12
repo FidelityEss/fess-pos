@@ -1,0 +1,149 @@
+{
+  "operator": "date_add",
+  "cases": [
+    {
+      "name": "month end clamps",
+      "expression": {
+        "date_add": [
+          "2026-01-31",
+          1,
+          "months"
+        ]
+      },
+      "data": {},
+      "expected": "2026-02-28"
+    },
+    {
+      "name": "leap-year month end",
+      "expression": {
+        "date_add": [
+          "2024-01-31",
+          1,
+          "months"
+        ]
+      },
+      "data": {},
+      "expected": "2024-02-29"
+    },
+    {
+      "name": "year rollover",
+      "expression": {
+        "date_add": [
+          "2026-12-31",
+          1,
+          "days"
+        ]
+      },
+      "data": {},
+      "expected": "2027-01-01"
+    },
+    {
+      "name": "negative days",
+      "expression": {
+        "date_add": [
+          "2026-03-01",
+          -1,
+          "days"
+        ]
+      },
+      "data": {},
+      "expected": "2026-02-28"
+    },
+    {
+      "name": "leap day plus a year",
+      "expression": {
+        "date_add": [
+          "2024-02-29",
+          1,
+          "years"
+        ]
+      },
+      "data": {},
+      "expected": "2025-02-28"
+    },
+    {
+      "name": "negative months",
+      "expression": {
+        "date_add": [
+          "2026-01-15",
+          -13,
+          "months"
+        ]
+      },
+      "data": {},
+      "expected": "2024-12-15"
+    },
+    {
+      "name": "datetime input returns a date",
+      "expression": {
+        "date_add": [
+          "2026-09-10T10:00:00Z",
+          1,
+          "days"
+        ]
+      },
+      "data": {},
+      "expected": "2026-09-11"
+    },
+    {
+      "name": "null date",
+      "expression": {
+        "date_add": [
+          null,
+          1,
+          "days"
+        ]
+      },
+      "data": {},
+      "expected": null
+    },
+    {
+      "name": "fractional amount",
+      "expression": {
+        "date_add": [
+          "2026-01-01",
+          1.5,
+          "days"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "string amount",
+      "expression": {
+        "date_add": [
+          "2026-01-01",
+          "1",
+          "days"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    },
+    {
+      "name": "beyond year 9999",
+      "expression": {
+        "date_add": [
+          "9999-12-31",
+          1,
+          "days"
+        ]
+      },
+      "data": {},
+      "error": "RULE_INVALID_DATE"
+    },
+    {
+      "name": "malformed date",
+      "expression": {
+        "date_add": [
+          "10/09/2026",
+          1,
+          "days"
+        ]
+      },
+      "data": {},
+      "error": "RULE_INVALID_DATE"
+    }
+  ]
+}

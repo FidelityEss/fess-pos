@@ -1,0 +1,22 @@
+{
+  "description": "attribute keys are unique",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "job_schema",
+    "family": "j",
+    "version": 1,
+    "attributes": [
+      {
+        "key": "a",
+        "type": "text"
+      },
+      {
+        "key": "a",
+        "type": "text"
+      }
+    ]
+  },
+  "expected_errors": [
+    "DUPLICATE_KEY"
+  ]
+}

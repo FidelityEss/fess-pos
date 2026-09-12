@@ -1,0 +1,60 @@
+{
+  "operator": "<=",
+  "cases": [
+    {
+      "name": "equal",
+      "expression": {
+        "<=": [
+          2,
+          2
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "greater",
+      "expression": {
+        "<=": [
+          3,
+          2
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "equal strings",
+      "expression": {
+        "<=": [
+          "10:00",
+          "10:00"
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "nulls are false",
+      "expression": {
+        "<=": [
+          null,
+          null
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "number vs string",
+      "expression": {
+        "<=": [
+          1,
+          "1"
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

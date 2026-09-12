@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/sync-pull-request.schema.json",
+  "title": "POST /v1/sync/pull request",
+  "description": "Keyset cursors (\"<timestamptz>|<uuid>\") per stream — jobs, reviews, evidence, envelopes — plus what the device already caches, and its capability report (docs/08 §2).",
+  "type": "object",
+  "properties": {
+    "cursors": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 200
+      }
+    },
+    "have": {
+      "type": "object",
+      "properties": {
+        "definition_version_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          "maxItems": 2000
+        },
+        "pinned_version_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          "maxItems": 500
+        },
+        "lookup_version_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          "maxItems": 2000
+        },
+        "declaration_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          "maxItems": 500
+        },
+        "reason_codes_hash": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "session_token_job_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          "maxItems": 2000
+        },
+        "job_card_job_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          "maxItems": 2000
+        },
+        "agent_card_valid": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "capabilities": {
+      "$ref": "common.schema.json#/$defs/capability_report"
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500
+    }
+  },
+  "additionalProperties": false
+}

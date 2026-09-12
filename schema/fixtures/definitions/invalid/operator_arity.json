@@ -1,0 +1,28 @@
+{
+  "description": "== takes two arguments",
+  "expected_errors": [
+    "DEF_INVALID_EXPRESSION"
+  ],
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "form",
+    "family": "t",
+    "version": 1,
+    "sections": [
+      {
+        "key": "s",
+        "fields": [
+          {
+            "key": "a",
+            "type": "text",
+            "visible": {
+              "==": [
+                1
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "spec_version": "1.0",
+  "kind": "view",
+  "family": "home",
+  "version": 1,
+  "items": [
+    {
+      "type": "greeting",
+      "text": "Hello {{agent.first_name}}"
+    },
+    {
+      "type": "announcement",
+      "text": "Remember to sync before 17:00",
+      "tone": "info",
+      "visible": {
+        "!=": [
+          {
+            "var": "config.pos.enabled"
+          },
+          false
+        ]
+      }
+    },
+    {
+      "type": "stat_row",
+      "tiles": [
+        {
+          "type": "stat_tile",
+          "label": "Active",
+          "source": "local",
+          "collection": "jobs",
+          "filter": {
+            "in": [
+              {
+                "var": "record.status"
+              },
+              [
+                "assigned",
+                "accepted",
+                "in_progress"
+              ]
+            ]
+          },
+          "on_tap": {
+            "page": "active_jobs"
+          }
+        },
+        {
+          "type": "stat_tile",
+          "label": "Completed this month",
+          "source": "server",
+          "stat": "stats.completed_this_month"
+        }
+      ]
+    },
+    {
+      "type": "section_title",
+      "text": "Your leads"
+    },
+    {
+      "type": "job_list",
+      "title": "Due today",
+      "filter": {
+        "==": [
+          {
+            "var": "record.status"
+          },
+          "accepted"
+        ]
+      },
+      "sort": "job.scheduled_start",
+      "sort_direction": "asc",
+      "item_view": "job_card",
+      "limit": 5,
+      "on_tap": {
+        "page": "job_detail"
+      },
+      "empty_content": "jobs.empty_active"
+    },
+    {
+      "type": "agent_card_summary",
+      "on_tap": {
+        "page": "agent_card"
+      }
+    },
+    {
+      "type": "action_button",
+      "label": "Log a follow-up",
+      "target": {
+        "page": "followup"
+      },
+      "style": "secondary"
+    },
+    {
+      "type": "sync_status"
+    }
+  ]
+}

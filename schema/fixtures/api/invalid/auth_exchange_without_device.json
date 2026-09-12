@@ -1,0 +1,8 @@
+{
+  "description": "device is required",
+  "schema": "auth-exchange-request",
+  "value": {
+    "issuer": "fess_auth_api",
+    "token": "t"
+  }
+}

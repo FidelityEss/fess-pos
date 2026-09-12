@@ -1,0 +1,29 @@
+{
+  "description": "host token exchange",
+  "schema": "auth-exchange-request",
+  "value": {
+    "issuer": "fess_auth_api",
+    "token": "opaque-host-token",
+    "issued_at": "2026-09-01T08:00:00+02:00",
+    "device": {
+      "device_id": "7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60",
+      "client_type": "native",
+      "platform": "android",
+      "model": "TECNO KG5",
+      "os_version": "12",
+      "host_app_version": "3.12.0",
+      "module_version": "1.4.2",
+      "push_provider": "fcm",
+      "push_token": "tok"
+    },
+    "profile": {
+      "employee_number": "E123",
+      "first_name": "Sipho",
+      "last_name": "Dlamini",
+      "email": "s@example.co.za",
+      "extra": {
+        "depot": "JHB"
+      }
+    }
+  }
+}

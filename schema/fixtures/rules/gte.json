@@ -1,0 +1,55 @@
+{
+  "operator": ">=",
+  "cases": [
+    {
+      "name": "equal",
+      "expression": {
+        ">=": [
+          2,
+          2
+        ]
+      },
+      "data": {},
+      "expected": true
+    },
+    {
+      "name": "less",
+      "expression": {
+        ">=": [
+          1,
+          2
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "unanswered is false",
+      "expression": {
+        ">=": [
+          {
+            "var": "x"
+          },
+          0
+        ]
+      },
+      "data": {},
+      "expected": false
+    },
+    {
+      "name": "arrays are not ordered",
+      "expression": {
+        ">=": [
+          [
+            1
+          ],
+          [
+            0
+          ]
+        ]
+      },
+      "data": {},
+      "error": "RULE_TYPE_ERROR"
+    }
+  ]
+}

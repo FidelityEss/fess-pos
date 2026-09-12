@@ -1,0 +1,17 @@
+{
+  "source": "RFC 8785 section 3.2.2 and 3.2.3 examples",
+  "cases": [
+    {
+      "name": "3.2.2 sample: numbers, string escapes, literals",
+      "input_json": "{\n  \"numbers\": [333333333.33333329, 1E30, 4.50, 2e-3, 0.000000000000000000000000001],\n  \"string\": \"€$\\u000f\\nA'B\\\"\\\\\\\\\\\"/\",\n  \"literals\": [null, true, false]\n}",
+      "canonical": "{\"literals\":[null,true,false],\"numbers\":[333333333.3333333,1e+30,4.5,0.002,1e-27],\"string\":\"€$\\u000f\\nA'B\\\"\\\\\\\\\\\"/\"}",
+      "sha256": "2d5e01a318d0f0879ab568c4be289c8b1f64ef8921a53c6277d5e069978baacb"
+    },
+    {
+      "name": "3.2.3 property sorting by UTF-16 code units",
+      "input_json": "{\n  \"€\": \"Euro Sign\",\n  \"\\r\": \"Carriage Return\",\n  \"דּ\": \"Hebrew Letter Dalet With Dagesh\",\n  \"1\": \"One\",\n  \"😀\": \"Emoji: Grinning Face\",\n  \"\": \"Control\",\n  \"ö\": \"Latin Small Letter O With Diaeresis\"\n}",
+      "canonical": "{\"\\r\":\"Carriage Return\",\"1\":\"One\",\"\":\"Control\",\"ö\":\"Latin Small Letter O With Diaeresis\",\"€\":\"Euro Sign\",\"😀\":\"Emoji: Grinning Face\",\"דּ\":\"Hebrew Letter Dalet With Dagesh\"}",
+      "sha256": "5e321556d22018a9656991a9e94f77ec175fa193e52a2429d312f8419ec8b08c"
+    }
+  ]
+}

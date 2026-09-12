@@ -1,0 +1,18 @@
+{
+  "description": "views bind to job, agent, inspection, stats, config",
+  "definition": {
+    "spec_version": "1.0",
+    "kind": "view",
+    "family": "v",
+    "version": 1,
+    "items": [
+      {
+        "type": "field_value",
+        "bind": "answers.x"
+      }
+    ]
+  },
+  "expected_errors": [
+    "UNKNOWN_ROOT"
+  ]
+}

@@ -1,0 +1,4532 @@
+{
+  "description": "at most 500 fixes",
+  "expected": "payload",
+  "envelope": {
+    "api_version": "1",
+    "id": "0191d3c3-1025-7c1b-9f10-4b2e1c0a9e00",
+    "type": "traces_batch",
+    "type_version": 1,
+    "payload_hash": "a6e1538b9aa9f92b0002ffee093010be2aa7713a3d88a693fb6e135cb5d30e6e",
+    "device_id": "7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60",
+    "session_id": "4f2a1b3c-5d6e-4f70-8a9b-0c1d2e3f4a5b",
+    "device_seq": 18024,
+    "module_version": "1.4.2",
+    "client_type": "native",
+    "created_at_device": "2026-09-10T10:31:02.114+02:00",
+    "monotonic_ms": 5423311,
+    "payload": {
+      "inspection_id": "0191d3c2-7a4e-7c1b-9f10-4b2e1c0a9f01",
+      "fixes": [
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000000",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 0,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000001",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 1,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000002",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 2,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000003",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 3,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000004",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 4,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000005",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 5,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000006",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 6,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000007",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 7,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000008",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 8,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000009",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 9,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000010",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 10,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000011",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 11,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000012",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 12,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000013",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 13,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000014",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 14,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000015",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 15,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000016",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 16,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000017",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 17,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000018",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 18,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000019",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 19,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000020",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 20,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000021",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 21,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000022",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 22,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000023",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 23,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000024",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 24,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000025",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 25,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000026",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 26,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000027",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 27,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000028",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 28,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000029",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 29,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000030",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 30,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000031",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 31,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000032",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 32,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000033",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 33,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000034",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 34,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000035",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 35,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000036",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 36,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000037",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 37,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000038",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 38,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000039",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 39,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000040",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 40,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000041",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 41,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000042",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 42,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000043",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 43,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000044",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 44,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000045",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 45,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000046",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 46,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000047",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 47,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000048",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 48,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000049",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 49,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000050",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 50,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000051",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 51,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000052",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 52,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000053",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 53,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000054",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 54,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000055",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 55,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000056",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 56,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000057",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 57,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000058",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 58,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000059",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 59,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000060",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 60,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000061",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 61,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000062",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 62,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000063",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 63,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000064",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 64,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000065",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 65,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000066",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 66,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000067",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 67,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000068",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 68,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000069",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 69,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000070",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 70,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000071",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 71,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000072",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 72,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000073",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 73,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000074",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 74,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000075",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 75,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000076",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 76,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000077",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 77,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000078",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 78,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000079",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 79,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000080",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 80,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000081",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 81,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000082",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 82,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000083",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 83,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000084",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 84,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000085",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 85,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000086",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 86,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000087",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 87,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000088",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 88,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000089",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 89,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000090",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 90,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000091",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 91,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000092",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 92,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000093",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 93,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000094",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 94,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000095",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 95,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000096",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 96,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000097",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 97,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000098",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 98,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000099",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 99,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000100",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 100,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000101",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 101,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000102",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 102,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000103",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 103,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000104",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 104,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000105",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 105,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000106",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 106,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000107",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 107,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000108",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 108,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000109",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 109,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000110",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 110,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000111",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 111,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000112",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 112,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000113",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 113,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000114",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 114,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000115",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 115,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000116",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 116,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000117",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 117,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000118",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 118,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000119",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 119,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000120",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 120,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000121",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 121,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000122",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 122,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000123",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 123,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000124",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 124,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000125",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 125,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000126",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 126,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000127",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 127,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000128",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 128,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000129",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 129,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000130",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 130,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000131",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 131,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000132",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 132,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000133",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 133,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000134",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 134,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000135",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 135,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000136",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 136,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000137",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 137,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000138",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 138,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000139",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 139,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000140",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 140,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000141",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 141,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000142",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 142,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000143",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 143,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000144",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 144,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000145",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 145,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000146",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 146,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000147",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 147,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000148",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 148,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000149",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 149,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000150",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 150,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000151",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 151,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000152",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 152,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000153",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 153,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000154",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 154,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000155",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 155,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000156",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 156,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000157",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 157,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000158",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 158,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000159",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 159,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000160",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 160,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000161",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 161,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000162",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 162,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000163",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 163,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000164",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 164,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000165",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 165,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000166",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 166,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000167",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 167,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000168",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 168,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000169",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 169,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000170",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 170,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000171",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 171,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000172",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 172,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000173",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 173,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000174",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 174,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000175",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 175,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000176",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 176,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000177",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 177,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000178",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 178,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000179",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 179,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000180",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 180,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000181",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 181,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000182",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 182,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000183",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 183,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000184",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 184,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000185",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 185,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000186",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 186,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000187",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 187,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000188",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 188,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000189",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 189,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000190",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 190,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000191",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 191,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000192",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 192,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000193",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 193,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000194",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 194,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000195",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 195,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000196",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 196,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000197",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 197,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000198",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 198,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000199",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 199,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000200",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 200,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000201",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 201,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000202",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 202,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000203",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 203,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000204",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 204,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000205",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 205,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000206",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 206,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000207",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 207,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000208",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 208,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000209",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 209,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000210",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 210,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000211",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 211,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000212",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 212,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000213",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 213,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000214",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 214,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000215",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 215,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000216",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 216,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000217",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 217,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000218",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 218,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000219",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 219,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000220",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 220,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000221",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 221,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000222",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 222,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000223",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 223,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000224",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 224,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000225",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 225,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000226",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 226,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000227",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 227,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000228",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 228,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000229",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 229,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000230",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 230,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000231",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 231,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000232",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 232,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000233",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 233,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000234",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 234,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000235",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 235,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000236",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 236,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000237",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 237,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000238",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 238,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000239",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 239,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000240",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 240,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000241",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 241,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000242",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 242,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000243",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 243,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000244",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 244,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000245",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 245,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000246",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 246,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000247",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 247,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000248",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 248,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000249",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 249,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000250",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 250,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000251",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 251,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000252",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 252,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000253",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 253,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000254",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 254,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000255",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 255,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000256",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 256,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000257",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 257,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000258",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 258,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000259",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 259,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000260",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 260,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000261",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 261,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000262",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 262,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000263",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 263,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000264",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 264,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000265",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 265,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000266",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 266,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000267",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 267,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000268",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 268,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000269",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 269,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000270",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 270,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000271",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 271,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000272",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 272,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000273",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 273,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000274",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 274,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000275",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 275,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000276",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 276,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000277",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 277,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000278",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 278,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000279",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 279,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000280",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 280,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000281",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 281,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000282",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 282,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000283",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 283,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000284",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 284,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000285",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 285,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000286",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 286,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000287",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 287,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000288",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 288,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000289",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 289,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000290",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 290,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000291",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 291,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000292",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 292,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000293",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 293,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000294",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 294,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000295",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 295,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000296",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 296,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000297",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 297,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000298",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 298,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000299",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 299,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000300",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 300,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000301",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 301,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000302",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 302,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000303",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 303,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000304",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 304,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000305",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 305,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000306",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 306,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000307",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 307,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000308",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 308,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000309",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 309,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000310",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 310,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000311",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 311,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000312",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 312,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000313",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 313,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000314",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 314,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000315",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 315,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000316",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 316,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000317",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 317,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000318",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 318,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000319",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 319,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000320",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 320,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000321",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 321,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000322",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 322,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000323",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 323,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000324",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 324,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000325",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 325,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000326",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 326,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000327",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 327,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000328",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 328,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000329",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 329,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000330",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 330,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000331",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 331,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000332",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 332,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000333",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 333,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000334",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 334,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000335",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 335,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000336",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 336,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000337",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 337,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000338",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 338,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000339",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 339,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000340",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 340,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000341",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 341,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000342",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 342,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000343",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 343,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000344",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 344,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000345",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 345,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000346",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 346,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000347",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 347,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000348",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 348,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000349",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 349,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000350",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 350,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000351",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 351,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000352",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 352,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000353",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 353,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000354",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 354,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000355",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 355,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000356",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 356,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000357",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 357,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000358",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 358,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000359",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 359,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000360",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 360,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000361",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 361,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000362",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 362,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000363",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 363,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000364",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 364,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000365",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 365,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000366",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 366,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000367",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 367,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000368",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 368,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000369",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 369,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000370",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 370,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000371",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 371,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000372",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 372,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000373",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 373,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000374",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 374,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000375",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 375,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000376",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 376,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000377",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 377,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000378",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 378,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000379",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 379,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000380",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 380,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000381",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 381,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000382",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 382,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000383",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 383,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000384",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 384,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000385",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 385,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000386",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 386,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000387",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 387,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000388",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 388,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000389",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 389,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000390",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 390,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000391",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 391,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000392",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 392,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000393",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 393,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000394",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 394,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000395",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 395,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000396",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 396,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000397",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 397,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000398",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 398,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000399",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 399,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000400",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 400,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000401",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 401,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000402",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 402,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000403",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 403,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000404",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 404,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000405",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 405,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000406",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 406,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000407",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 407,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000408",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 408,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000409",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 409,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000410",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 410,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000411",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 411,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000412",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 412,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000413",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 413,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000414",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 414,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000415",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 415,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000416",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 416,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000417",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 417,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000418",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 418,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000419",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 419,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000420",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 420,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000421",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 421,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000422",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 422,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000423",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 423,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000424",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 424,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000425",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 425,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000426",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 426,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000427",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 427,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000428",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 428,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000429",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 429,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000430",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 430,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000431",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 431,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000432",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 432,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000433",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 433,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000434",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 434,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000435",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 435,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000436",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 436,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000437",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 437,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000438",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 438,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000439",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 439,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000440",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 440,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000441",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 441,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000442",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 442,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000443",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 443,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000444",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 444,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000445",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 445,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000446",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 446,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000447",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 447,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000448",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 448,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000449",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 449,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000450",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 450,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000451",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 451,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000452",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 452,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000453",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 453,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000454",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 454,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000455",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 455,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000456",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 456,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000457",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 457,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000458",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 458,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000459",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 459,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000460",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 460,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000461",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 461,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000462",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 462,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000463",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 463,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000464",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 464,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000465",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 465,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000466",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 466,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000467",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 467,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000468",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 468,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000469",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 469,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000470",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 470,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000471",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 471,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000472",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 472,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000473",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 473,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000474",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 474,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000475",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 475,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000476",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 476,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000477",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 477,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000478",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 478,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000479",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 479,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000480",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 480,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000481",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 481,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000482",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 482,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000483",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 483,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000484",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 484,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000485",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 485,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000486",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 486,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000487",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 487,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000488",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 488,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000489",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 489,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000490",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 490,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000491",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 491,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000492",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 492,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000493",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 493,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000494",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 494,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000495",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 495,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000496",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 496,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000497",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 497,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000498",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 498,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000499",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 499,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        },
+        {
+          "fix_id": "0191d3c2-7a4e-7c1b-9f10-000000000500",
+          "ts_device": "2026-09-10T10:31:02.114+02:00",
+          "ts_monotonic_ms": 500,
+          "lat": 0,
+          "lng": 0,
+          "accuracy_m": 5,
+          "is_mocked": false
+        }
+      ]
+    }
+  }
+}

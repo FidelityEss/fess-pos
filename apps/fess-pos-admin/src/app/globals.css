@@ -1,0 +1,113 @@
+@import 'tailwindcss';
+
+/* Design tokens — the FESS brand (fess-pos/schema/design/tokens.json, extracted from the FESS app): Fidelity green, gold
+   accent, 5 / 8 / 12 px corners. The admin UI font is Inter (a screen-first web font); Montserrat, FESS's face, is used only
+   inside the phone preview. Neutrals and hover shades are admin additions for a data-dense desktop tool.
+   Used as bg-primary, text-muted-foreground, text-brand-gold, etc. */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.3125rem; /* FESS controls: 5 px */
+  --radius-lg: 0.5rem; /* FESS inner boxes / inputs: 8 px */
+  --radius-xl: 0.75rem; /* FESS cards: 12 px */
+
+  --color-background: #f6f6f7; /* FESS homeBg */
+  --color-foreground: #1a1a1a;
+  --color-card: #ffffff;
+  --color-card-foreground: #1a1a1a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1a1a1a;
+  --color-primary: #006b55; /* Fidelity green */
+  --color-primary-hover: #005747; /* FESS darkGreen */
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f1f2f3;
+  --color-secondary-foreground: #1a1a1a;
+  --color-muted: #f1f2f3;
+  --color-muted-foreground: #4c4c4c; /* FESS body text */
+  --color-accent: #eaf3f0; /* green-tinted hover */
+  --color-accent-foreground: #1a1a1a;
+  --color-destructive: #c4000b; /* FESS error, darkened for text contrast (tokens: errorText) */
+  --color-destructive-hover: #9f0009;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #dfdfdf; /* FESS borderColour */
+  --color-input: #a3a3a3; /* FESS textFieldIcon — visible field outlines */
+  --color-ring: #029073; /* FESS inactivePrimary */
+  --color-sidebar: #005747;
+  --color-sidebar-foreground: #e3efeb;
+  --color-sidebar-muted: #9cc3b7;
+  --color-sidebar-accent: #006b55;
+  --color-brand-gold: #b79e67; /* FESS secondary — accents, indicators (not small text on white) */
+  --color-brand-gold-text: #8a7443; /* gold for text on white (tokens: goldText) */
+
+  --animate-in-fade: in-fade 150ms ease-out;
+  --animate-slide-in-right: slide-in-right 200ms ease-out;
+  --animate-slide-in-left: slide-in-left 200ms ease-out;
+
+  @keyframes in-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  @keyframes slide-in-left {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before {
+    border-color: var(--color-border);
+  }
+  /* Readability (T2-23): 16px base; the user's text-size preference (lib/preferences) scales the whole UI, because
+     every size and spacing is in rem. */
+  html {
+    font-size: 16px;
+  }
+  html[data-text-size='large'] {
+    font-size: 18px;
+  }
+  html[data-text-size='xlarge'] {
+    font-size: 20px;
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  code,
+  pre,
+  kbd {
+    font-family: var(--font-mono);
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* MapLibre popups inherit the app font. */
+.maplibregl-popup-content {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  padding: 0.4rem 0.65rem;
+}
