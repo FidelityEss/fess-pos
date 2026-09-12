@@ -432,9 +432,10 @@ enabled = true
 [remotes.qa]
 project_id = "ysbgdxhdexpjvmlnjofc"
 
+# QA admin on Vercel (docs/15 §6): the stable URL, preview deployments of the QA project, and the local dev server.
 [remotes.qa.auth]
-site_url = "http://localhost:3001"
-additional_redirect_urls = ["http://localhost:3001", "http://127.0.0.1:3001"]
+site_url = "https://fess-pos-admin-qa.vercel.app"
+additional_redirect_urls = ["https://fess-pos-admin-qa.vercel.app/**", "https://fess-pos-admin-qa-*-fess2.vercel.app/**", "http://localhost:3001/**", "http://127.0.0.1:3001/**"]
 
 [remotes.qa.db.seed]
 enabled = true
@@ -443,9 +444,10 @@ sql_paths = ["./seed/10_reference.sql", "./seed/20_definitions.sql", "./seed/env
 [remotes.production]
 project_id = "zqunqunjdjhyriqsvzfr"
 
+# Production admin on Vercel (docs/15 §6): the stable URL and the local dev server. No preview pattern; production never builds previews.
 [remotes.production.auth]
-site_url = "http://localhost:3002"
-additional_redirect_urls = ["http://localhost:3002", "http://127.0.0.1:3002"]
+site_url = "https://fess-pos-admin.vercel.app"
+additional_redirect_urls = ["https://fess-pos-admin.vercel.app/**", "http://localhost:3002/**", "http://127.0.0.1:3002/**"]
 
 [remotes.production.db.seed]
 enabled = true
