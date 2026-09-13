@@ -6,7 +6,8 @@ Code for the FESS POS merchant site-verification feature: the host-agnostic Flut
 |------|------|
 | `schema/` | Language-agnostic contract: JSON Schemas for definitions, rules, API envelopes, remote config, plus shared fixtures |
 | `packages/fess_pos_engine_ts/` | TypeScript engine `@fess-pos/engine`: JCS hashing, rules engine, resolver, validator, analyser, test cases. Used by the API and the admin panel |
-| `packages/fess_pos/`, `packages/fess_pos_engine/` | Flutter module and pure-Dart engine (not started yet) |
+| `packages/fess_pos/` | Flutter module: the public contract, bootstrap layer, platform adapters and encrypted local store so far. `HOST_INTEGRATION.md` lists what a host must declare; `example/` is the harness host |
+| `packages/fess_pos_engine/` | Pure-Dart engine: JCS hashing so far; the rules engine arrives with T3-01. Runs the same fixtures as the TS engine |
 | `apps/fess-pos-admin/` | Admin panel (Next.js). `e2e/` holds the Playwright tests, still local-only (T1-38). `scripts/bootstrap-admin.mjs` links the first admin |
 | `supabase/migrations/` | Postgres schema `pos` (tables, RLS, triggers) and `pos_rpc` (every write path), linear and expand-only |
 | `supabase/functions/api/` | POS API v1: health, public verify, auth (exchange, refresh, sign-out), dev host token (QA only), device, sync pull, ingest (11 envelope types), evidence upload grants, admin. Known issue: the verify web page shows as plain text on `*.supabase.co` (T2-32) |
@@ -27,7 +28,7 @@ There is no local database; the Docker stack was retired on 2026-09-12. Laptops 
 | Admin panel on a laptop | `pnpm --filter fess-pos-admin dev:qa` → http://localhost:3001 | `pnpm --filter fess-pos-admin dev:prod` → http://localhost:3002 |
 | Data | dummy data from the scenario seeder | real data only; no seeders or tests |
 
-Prerequisites: the Supabase CLI (logged in), Deno 2, Node 20+ and pnpm. The admin panel reads `apps/fess-pos-admin/.env.qa` / `.env.production` (gitignored; see `.env.example`).
+Prerequisites: the Supabase CLI (logged in), Deno 2, Node 20+, pnpm, and Flutter 3.29+ (Dart 3.8+) for the module and the Dart engine. The admin panel reads `apps/fess-pos-admin/.env.qa` / `.env.production` (gitignored; see `.env.example`).
 
 ```bash
 pnpm install
@@ -37,6 +38,9 @@ pnpm db:test                                       # pgTAP suite on QA (no Docke
 POS_PUBLISHABLE_KEY=<QA publishable key> SUPABASE_SERVICE_ROLE_KEY=<QA service key; first run only> pnpm seed:scenarios   # dummy data, QA only
 POS_PUBLISHABLE_KEY=<QA publishable key> pnpm smoke   # end-to-end API smoke test; QA only, needs one seeder run first
 pnpm engine:test                                   # TS engine + the fixture contract
+pnpm engine:dart:test                              # Dart engine: the same fixtures, on the VM and compiled to JS
+pnpm module:test                                   # Flutter module: analyze + tests
+pnpm module:web                                    # the module's harness host must keep building for web
 pnpm functions:check                               # type-check the edge functions
 node tools/vendor-engine.mjs                       # copy the TS engine into supabase/functions/_shared/engine
 supabase functions deploy api workers --project-ref ysbgdxhdexpjvmlnjofc --no-verify-jwt
