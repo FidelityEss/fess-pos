@@ -10,6 +10,7 @@
 | `sync-pull-request` / `sync-pull-response` | `POST /v1/sync/pull` (docs/08 §2) |
 | `auth-exchange-*`, `auth-refresh-*` | `POST /v1/auth/exchange`, `/v1/auth/refresh` |
 | `upload-grant-*` | `POST /v1/evidence/upload-grant` |
+| `device-update-*` | `POST /v1/device` (T2-31): the module updates its own device registration — a refreshed push token or new versions — without a new exchange |
 | `answers-document.schema.json` | docs/04 §5 |
 | `common.schema.json` | Shared types: ids, timestamps, hashes, geo fix, answers, context snapshot, integrity snapshot, diagnostics, geofence result, capability report |
 

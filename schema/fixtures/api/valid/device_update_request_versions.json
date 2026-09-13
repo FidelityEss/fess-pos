@@ -1,0 +1,16 @@
+{
+  "description": "versions and capabilities only",
+  "schema": "device-update-request",
+  "value": {
+    "module_version": "0.2.0",
+    "host_app_version": "7.5.0",
+    "os_version": "14",
+    "capabilities": {
+      "module_version": "0.2.0",
+      "api_versions": ["1"],
+      "spec_versions": ["1.0"],
+      "client_type": "native",
+      "platform": "android"
+    }
+  }
+}

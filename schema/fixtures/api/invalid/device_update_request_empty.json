@@ -1,0 +1,5 @@
+{
+  "description": "at least one property",
+  "schema": "device-update-request",
+  "value": {}
+}

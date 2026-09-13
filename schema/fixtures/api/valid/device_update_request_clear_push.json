@@ -1,0 +1,7 @@
+{
+  "description": "an explicit null unregisters push",
+  "schema": "device-update-request",
+  "value": {
+    "push_token": null
+  }
+}

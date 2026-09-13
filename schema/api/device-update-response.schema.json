@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/device-update-response.schema.json",
+  "title": "POST /v1/device response",
+  "description": "The device registration after the update. The push token itself is never echoed; push_registered says whether one is held. Clients ignore unknown properties.",
+  "type": "object",
+  "properties": {
+    "device_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "push_provider": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "push_registered": {
+      "type": "boolean"
+    },
+    "module_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "host_app_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "last_seen_at": {
+      "$ref": "common.schema.json#/$defs/datetime"
+    }
+  },
+  "required": [
+    "device_id",
+    "push_registered",
+    "last_seen_at"
+  ],
+  "additionalProperties": true
+}

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fess-pos.invalid/schema/api/device-update-request.schema.json",
+  "title": "POST /v1/device request",
+  "description": "The module updates its own device registration without a new exchange (T2-31): a refreshed push token, or new module / host app / OS versions. At least one property. An explicit null push_token unregisters push; a push_token needs its push_provider.",
+  "type": "object",
+  "properties": {
+    "push_provider": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "push_token": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "platform": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "model": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "os_version": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "host_app_version": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "module_version": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "capabilities": {
+      "$ref": "common.schema.json#/$defs/capability_report"
+    }
+  },
+  "minProperties": 1,
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "push_token": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "push_token"
+    ]
+  },
+  "then": {
+    "properties": {
+      "push_provider": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 40
+      }
+    },
+    "required": [
+      "push_provider"
+    ]
+  }
+}

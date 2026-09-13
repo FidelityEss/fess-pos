@@ -144,20 +144,30 @@ authRoutes.post('/auth/signout', requirePublishable, requireAgent(['full', 'inge
   return c.json(res);
 });
 
-// Stand-in identity provider (instructions §10.5: dev and staging never call FESS). An admin mints the host token
-// a host app would hold for a provisioned agent — used by the scenario seeder and the admin "simulate sign-in" tool.
-const DevTokenBody = z.object({ user_id: z.string().uuid(), ttl_seconds: z.number().int().min(60).max(86400).optional() });
+// Stand-in identity provider (instructions §10.5: dev and QA never call FESS; production refuses pos_dev). An admin
+// mints the host token a host app would hold for a provisioned agent — used by the scenario seeder, the admin
+// "simulate sign-in" tool and the Postman collection. The agent is named by user_id or by employee_number.
+const DevTokenBody = z
+  .object({
+    user_id: z.string().uuid().optional(),
+    employee_number: z.string().min(1).max(32).optional(),
+    ttl_seconds: z.number().int().min(60).max(86400).optional(),
+  })
+  .refine((b) => (b.user_id === undefined) !== (b.employee_number === undefined), { message: 'give user_id or employee_number, not both' });
+type DevTokenUser = { id: string; employee_number: string; first_name: string; last_name: string; role: string; active: boolean };
 authRoutes.post('/dev/host-token', requireStaff(), async (c) => {
   const body = await readJson(c, DevTokenBody, 4096);
   const staff = c.get('staff');
   const { issuer, user } = await asService({ id: staff.userId, role: 'pos_admin', requestId: rid(c) }, async (tx) => ({
     issuer: await rpc<IssuerRow | null>(tx, 'issuer_get', [['pos_dev', 'text']]),
-    user: (await tx`select employee_number, first_name, last_name, role, active from pos.pos_users where id = ${body.user_id}::uuid`)[0] as
-      | { employee_number: string; first_name: string; last_name: string; role: string; active: boolean }
+    user: (body.user_id
+      ? await tx`select id, employee_number, first_name, last_name, role, active from pos.pos_users where id = ${body.user_id}::uuid`
+      : await tx`select id, employee_number, first_name, last_name, role, active from pos.pos_users where employee_number = ${body.employee_number!}`)[0] as
+      | DevTokenUser
       | undefined,
   }));
   if (!issuer || !issuer.active) throw new PosError('ISSUER_NOT_ACCEPTED', 'the stand-in issuer pos_dev is not active in this environment');
   if (!user) throw new PosError('NOT_FOUND', 'user not found');
   const token = await mintDevHostToken(issuer, user, body.ttl_seconds ?? 3600);
-  return c.json({ issuer: 'pos_dev', token, issued_at: new Date().toISOString(), employee_number: user.employee_number });
+  return c.json({ issuer: 'pos_dev', token, issued_at: new Date().toISOString(), user_id: user.id, employee_number: user.employee_number });
 });
