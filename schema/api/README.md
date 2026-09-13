@@ -14,6 +14,8 @@
 | `answers-document.schema.json` | docs/04 §5 |
 | `common.schema.json` | Shared types: ids, timestamps, hashes, geo fix, answers, context snapshot, integrity snapshot, diagnostics, geofence result, capability report |
 
+**Endpoints without schema files:** `GET /v1/health`, `GET /v1/public/verify/:token`, `POST /v1/auth/signout`, `POST /v1/dev/host-token` (QA only; `user_id` or `employee_number`) and `/v1/admin/*`. Their routes validate requests with Zod.
+
 **Conventions.**
 - Ids are UUIDs; client ids are UUIDv7. The wrapper accepts any UUID and the server may flag non-v7 ids.
 - Timestamps are ISO-8601 with an offset (`Z` or `±HH:MM`).

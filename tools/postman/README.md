@@ -42,7 +42,7 @@ Run the folders top to bottom, or run the whole collection. Each request stores 
 4. **Job events** — accept, an idempotent re-send (`duplicate`), and a same-id/different-payload `conflict`.
 5. **A complete inspection** — `inspection_started` → traces → 5 × `evidence_meta` → upload grants and uploads → `evidence_uploaded` → snapshot → sealed `submission`, then a pull to watch the photos move to `verified`.
 6. **Other envelope types** — `sync_report`, `custody_batch`, `client_error`, `form_submission`.
-7. **Public card verification** — agent card and job card, JSON and web page.
+7. **Public card verification** — agent card and job card, JSON and web page. The web page comes back as plain text on `*.supabase.co` (known issue T2-32); the test checks the markup and warns.
 8. **Other agent actions** — decline and unable-to-complete. They are recorded, not applied, on a job that is already accepted, so run QA setup and Pull again first if you want them applied.
 9. **Error cases** — the error shape, with `retryable`.
 10. **Sign out** — drops to `ingest_only`; uploads still land.
