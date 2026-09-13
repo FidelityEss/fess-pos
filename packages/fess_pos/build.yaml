@@ -1,0 +1,13 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # For `dart run drift_dev make-migrations`: schema dumps and
+          # generated migration tests (lib/src/data/local/pos_database.dart).
+          databases:
+            pos_database: lib/src/data/local/pos_database.dart
+          schema_dir: drift_schemas/
+          test_dir: test/drift/
+          # Device times are ISO-8601 text with their offset (docs/12 §11).
+          store_date_time_values_as_text: true

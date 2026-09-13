@@ -1,0 +1,7 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+linter:
+  rules:
+    # The public surface is documented where it matters; a doc comment on
+    # every member adds noise without adding information.
+    public_member_api_docs: false

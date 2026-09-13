@@ -8,6 +8,14 @@ out/
 coverage/
 *.tsbuildinfo
 
+# Dart / Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+# Library lockfiles aren't committed; the example app's is (DEVELOPMENT-GUIDELINES §5)
+packages/fess_pos/pubspec.lock
+packages/fess_pos_engine/pubspec.lock
+
 # Secrets and local environment — never commit
 .env
 .env.*

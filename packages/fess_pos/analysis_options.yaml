@@ -1,0 +1,13 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  exclude:
+    # Generated code (drift, design tokens) is checked by its generator's tests.
+    - "**/*.g.dart"
+    - example/**
+
+linter:
+  rules:
+    # The public surface (lib/fess_pos.dart) is documented; a doc comment on
+    # every internal member adds noise without adding information.
+    public_member_api_docs: false
