@@ -7,17 +7,16 @@
     "node": ">=20"
   },
   "scripts": {
-    "db:start": "supabase start",
-    "db:reset": "supabase db reset",
-    "db:test": "supabase test db",
-    "functions:serve": "supabase functions serve --env-file supabase/functions/.env.local",
+    "db:test": "node tools/ops/require-qa-link.mjs && node tools/ops/pgtap-qa.mjs",
+    "db:test:docker": "node tools/ops/require-qa-link.mjs && supabase test db --linked",
     "functions:check": "cd supabase/functions/api && deno check --node-modules-dir=none index.ts && cd ../workers && deno check --node-modules-dir=none index.ts",
     "engine:vendor": "node tools/vendor-engine.mjs",
     "functions:test": "deno test --allow-all supabase/functions",
     "engine:test": "pnpm --filter @fess-pos/engine test",
     "admin:dev": "pnpm --filter fess-pos-admin dev",
     "admin:build": "pnpm --filter fess-pos-admin build",
-    "seed:scenarios": "pnpm --filter @fess-pos/tools scenarios"
+    "seed:scenarios": "pnpm --filter @fess-pos/tools scenarios",
+    "smoke": "pnpm --filter @fess-pos/tools smoke"
   },
   "workspaces": ["apps/*", "packages/fess_pos_engine_ts", "tools"]
 }

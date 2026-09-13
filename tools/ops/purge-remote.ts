@@ -17,7 +17,6 @@ const argv = [...Deno.args];
 const has = (flag: string) => argv.includes(flag);
 const values = (flag: string) => argv.flatMap((a, i) => (a === flag && argv[i + 1] ? [argv[i + 1]!] : []));
 
-if (target === 'local') throw new Error('purge-remote targets a remote project: set POS_TARGET=qa or production');
 if (!env.serviceKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY is required');
 const apply = has('--apply');
 if (apply && values('--confirm')[0] !== env.ref) throw new Error(`--apply needs --confirm ${env.ref} (the ${target} project ref)`);

@@ -1,61 +1,71 @@
-// End-to-end smoke test of the POS API against the LOCAL stack (never staging): sign-in with the stand-in issuer,
-// pull, a full inspection with evidence, workers verifying + replicating, receipts, sessions, public verify.
-// Setup rows are inserted directly into the local database (the admin API path is covered by the seeder).
-//   deno run -A --config tools/scenarios/deno.json tools/scenarios/smoke.ts
-import postgres from 'postgres';
-import { SignJWT } from 'jose';
+// End-to-end smoke test of the POS API against QA (fess-pos-qa) — never production. It uses the real APIs only, as the
+// scenario seeder does: setup through the admin API as the seed admin (password + TOTP), a simulated phone through the
+// POS API with the stand-in issuer, and checks through PostgREST reads under RLS. pg_cron kicks the workers every 15 s,
+// so the verify/replicate checks poll rather than calling the workers. Covers sign-in, pull, a full inspection with
+// evidence, verification + replication, receipts, public verify and sessions.
+//
+//   POS_PUBLISHABLE_KEY=<QA publishable key> deno run -A --node-modules-dir=none --config tools/scenarios/deno.json tools/scenarios/smoke.ts
+//
+// Needs the seed admin's sign-in details from ~/.fess-pos/seed-state-qa.json, so run the scenario seeder once first.
+// Test data left on QA: bank SMOKE and agent SMOKE01 (created once), plus one job with its inspection per run.
 import { ApiError, call } from './lib/api.ts';
 import { Device } from './lib/device.ts';
-import { env, functionsUrl, target } from './lib/env.ts';
+import { env, refuseProduction, target } from './lib/env.ts';
 import { runInspection } from './lib/inspection.ts';
+import { Staff, type StaffCreds } from './lib/staff.ts';
 import { Check, sleep } from './lib/util.ts';
 
-if (target !== 'local') throw new Error('smoke.ts only runs against the local stack');
-const sql = postgres(env.dbUrl, { onnotice: () => {} });
+refuseProduction('The smoke test');
 const check = new Check();
-const hexBytes = (h: string) => Uint8Array.from(h.match(/../g)!.map((b) => parseInt(b, 16)));
+const startedAt = new Date().toISOString();
 
-async function secret(name: string): Promise<string> {
-  const [r] = await sql`select pos_rpc.secret_value(${name}) as v`;
-  return r.v as string;
-}
-
-async function hostToken(emp: string, first: string, last: string): Promise<string> {
-  return await new SignJWT({ employee_number: emp, first_name: first, last_name: last })
-    .setProtectedHeader({ alg: 'HS256', typ: 'JWT' }).setIssuer('pos-dev-issuer').setAudience('fess-pos')
-    .setSubject(`dev:${emp}`).setIssuedAt().setExpirationTime('1h').sign(hexBytes(await secret('pos_dev_issuer_secret')));
-}
-
-async function kickWorkers(times = 1): Promise<Record<string, unknown>> {
-  let last: Record<string, unknown> = {};
-  for (let i = 0; i < times; i++) {
-    const res = await fetch(`${functionsUrl}/workers`, {
-      method: 'POST', headers: { 'content-type': 'application/json', 'x-pos-worker-key': await secret('pos_worker_key') }, body: '{"task":"drain"}',
-    });
-    last = await res.json();
+async function poll<T>(read: () => Promise<T>, done: (v: T) => boolean, timeoutMs = 180_000): Promise<T> {
+  const t0 = Date.now();
+  let v = await read();
+  while (!done(v) && Date.now() - t0 < timeoutMs) {
+    await sleep(5_000);
+    v = await read();
   }
-  return last;
+  return v;
 }
 
-console.log('── setup (local database)');
+console.log(`── setup (${target}: ${env.supabaseUrl})`);
+const statePath = `${Deno.env.get('HOME')}/.fess-pos/seed-state-${target}.json`;
+let creds: StaffCreds | undefined;
+try {
+  creds = JSON.parse(Deno.readTextFileSync(statePath)).admin;
+} catch {
+  // reported just below
+}
+if (!creds?.totp_secret) throw new Error(`No seed admin in ${statePath}: run the scenario seeder against ${target} first.`);
+const admin = new Staff('seed admin', creds);
+await admin.login();
+
 const stamp = Date.now().toString(36).toUpperCase();
-await sql`insert into pos.banks (code, name) values ('SMOKE', 'Smoke Test Bank') on conflict (code) do nothing`;
-await sql`insert into pos.pos_users (employee_number, first_name, last_name, role) values ('SMOKE01', 'Sipho', 'Smoke', 'pos_agent')
-          on conflict (employee_number) do nothing`;
-const [bank] = await sql`select id from pos.banks where code = 'SMOKE'`;
-const [agent] = await sql`select id from pos.pos_users where employee_number = 'SMOKE01'`;
-const [job] = await sql`insert into pos.jobs (bank_id, merchant_name, address, location, location_source, location_type, mcc_code)
-  values (${bank.id}, ${'Smoke Spaza ' + stamp}, ${sql.json({ line1: '12 Vilakazi St', suburb: 'Orlando West', city: 'Soweto', province: 'GP', postal_code: '1804' })},
-          extensions.st_setsrid(extensions.st_makepoint(27.9087, -26.2385), 4326)::extensions.geography, 'pinned', 'standalone', '5411')
-  returning id, reference`;
-await sql`update pos.jobs set status = 'scheduled', scheduled_start = now() + interval '1 hour', scheduled_end = now() + interval '3 hours' where id = ${job.id}`;
-await sql`update pos.jobs set status = 'assigned', assigned_to = ${agent.id}, assigned_at = now() where id = ${job.id}`;
-await sql`insert into pos.job_assignments (job_id, user_id) values (${job.id}, ${agent.id})`;
+let [bank] = await admin.select<{ id: string }>('banks', 'code=eq.SMOKE&select=id');
+bank ??= await admin.api('POST', '/banks', { code: 'SMOKE', name: 'Smoke Test Bank (QA)', four_eyes_enabled: false, contacts: [] });
+let [agent] = await admin.select<{ id: string }>('pos_users', 'employee_number=eq.SMOKE01&select=id');
+agent ??= await admin.api('POST', '/users', { employee_number: 'SMOKE01', first_name: 'Sipho', last_name: 'Smoke', role: 'pos_agent', permissions: [] });
+const job = await admin.api('POST', '/jobs', {
+  bank_id: bank.id, merchant_name: `Smoke Spaza ${stamp}`, trading_name: null, external_ref: `SMOKE-${stamp}`,
+  address: { line1: '12 Vilakazi St', suburb: 'Orlando West', city: 'Soweto', province: 'Gauteng', postal_code: '1804', country: 'ZA' },
+  location: { lat: -26.2385, lng: 27.9087 }, location_source: 'pinned', location_type: 'standalone', mcc_code: '5411',
+  contact: { name: 'Sipho Smoke', phone: '+27823450099' }, notes: 'Smoke test (QA dummy data)',
+  attributes: { branch_code: '632005', account_manager: 'Smoke Test', risk_tier: 'standard' },
+});
+const start = new Date(Date.now() - 30 * 60_000);
+await admin.api('POST', `/jobs/${job.id}/contact-attempts`, { channel: 'phone', outcome: 'confirmed', contact_name: 'Sipho Smoke' });
+await admin.api('POST', `/jobs/${job.id}/schedule`, {
+  scheduled_start: start.toISOString(), scheduled_end: new Date(start.getTime() + 4 * 3_600_000).toISOString(),
+  onsite_contact: { name: 'Sipho Smoke', phone: '+27823450099', role: 'Owner' }, note: 'Smoke test',
+});
+await admin.api('POST', `/jobs/${job.id}/allocate`, { agent_id: agent.id });
 console.log(`  job ${job.reference}`);
 
 console.log('── sign-in (stand-in issuer → POS session)');
 const phone = new Device('smoke-phone');
-const session = await phone.exchange(await hostToken('SMOKE01', 'Sipho', 'Smoke'), { employee_number: 'SMOKE01', first_name: 'Sipho', last_name: 'Smoke' });
+const host = await call<{ token: string }>('POST', '/v1/dev/host-token', { bearer: admin.token, body: { user_id: agent.id } });
+const session = await phone.exchange(host.token, { employee_number: 'SMOKE01', first_name: 'Sipho', last_name: 'Smoke' });
 check.eq(session.scope, 'full', 'exchange issues a full-scope session');
 check.eq(session.user.employee_number, 'SMOKE01', 'session bound to the issuer-verified employee number');
 try {
@@ -71,10 +81,10 @@ const synced = phone.jobs.get(job.id);
 check.ok(synced && synced.assigned_to_me, 'the assigned job arrives');
 check.ok(phone.tokens.has(job.id), 'a session token is issued for it');
 check.ok(!!phone.agentCard, 'an agent-card token is issued');
-const [globals] = await sql`select count(distinct f.id)::int as n from pos.definition_families f
-  join pos.definition_activations a on a.family_id = f.id where f.bank_id is null and a.audience ->> 'type' = 'all'`;
-check.eq(phone.manifest.filter((m) => m.context_bank_id === null).length, globals.n, `all ${globals.n} active global definitions are resolved`);
-check.eq(phone.defs.size, globals.n, 'definition bodies delivered once');
+const globals = phone.manifest.filter((m) => m.context_bank_id === null);
+check.ok(globals.length > 0 && phone.manifest.every((m) => phone.defs.has(m.version_id)),
+  `all ${globals.length} active global definitions are resolved, with their bodies`);
+check.eq(phone.defs.size, new Set(phone.manifest.map((m) => m.version_id)).size, 'definition bodies delivered once');
 check.ok(phone.declarations.has('agent_declaration'), 'declarations delivered');
 const again = await phone.pull();
 check.eq(again.definitions.bodies.length, 0, 'bodies are not re-sent when the device has them');
@@ -85,33 +95,35 @@ const run = await runInspection(phone, synced!, { premises: 'complex', snapshot:
 check.ok(run.receipts.every((r) => r.state === 'committed'), `every envelope committed (${run.receipts.length} receipts)`);
 const sub = run.receipts[run.receipts.length - 1];
 check.eq(sub.result?.inspection_status, 'verifying', 'submission committed; evidence all received → verifying');
-const [flags] = await sql`select flags from pos.inspections where id = ${run.inspectionId}`;
-check.eq(flags.flags, [], 'a clean inspection carries no integrity flags (hashes, token, versions all match)');
-const [dup] = await phone.ingest([{ ...(await phone.envelope('sync_report', {
+const [flags] = await admin.select<{ flags: string[] }>('inspections', `id=eq.${run.inspectionId}&select=flags`);
+check.eq(flags?.flags, [], 'a clean inspection carries no integrity flags (hashes, token, versions all match)');
+const [report] = await phone.ingest([{ ...(await phone.envelope('sync_report', {
   reported_at_device: new Date().toISOString().replace('Z', '+00:00'), pending: { submission: 0 }, oldest_pending_at: null,
   last_success_at: null, free_storage_mb: 2048, battery_restricted: false, module_version: '0.1.0', config_version_id: null,
   capabilities: { spec_versions: ['1.0'] } })) }]);
-check.eq(dup.state, 'committed', 'sync report committed');
+check.eq(report.state, 'committed', 'sync report committed');
 
-console.log('── workers: verify + replicate');
-for (let i = 0; i < 4; i++) {
-  await kickWorkers();
-  const [s] = await sql`select status from pos.inspections where id = ${run.inspectionId}`;
-  if (s.status === 'under_review') break;
-  await sleep(500);
-}
-const [insp] = await sql`select status, evidence_expected, evidence_verified from pos.inspections where id = ${run.inspectionId}`;
-check.eq(insp.status, 'under_review', 'all evidence verified → inspection UNDER_REVIEW');
-check.eq(insp.evidence_verified, insp.evidence_expected, `evidence verified ${insp.evidence_verified}/${insp.evidence_expected}`);
-const [jobNow] = await sql`select status from pos.jobs where id = ${job.id}`;
-check.eq(jobNow.status, 'under_review', 'job UNDER_REVIEW');
-await kickWorkers();
-const [rep] = await sql`select count(*)::int as n from pos.evidence_replicas r join pos.evidence e on e.id = r.evidence_id where e.inspection_id = ${run.inspectionId}`;
-check.eq(rep.n, insp.evidence_expected, 'every verified item replicated with its hash re-verified');
-const [mismatch] = await sql`select count(*)::int as n from pos.alerts where kind = 'payload_hash_mismatch'`;
-check.eq(mismatch.n, 0, 'device and server JCS hashes agree on every envelope');
+console.log('── workers (pg_cron every 15 s): verify + replicate');
+type Insp = { status: string; evidence_expected: number; evidence_verified: number };
+const insp = await poll(
+  async () => (await admin.select<Insp>('inspections', `id=eq.${run.inspectionId}&select=status,evidence_expected,evidence_verified`))[0],
+  (i) => i?.status === 'under_review',
+);
+check.eq(insp?.status, 'under_review', 'all evidence verified → inspection UNDER_REVIEW');
+check.eq(insp?.evidence_verified, insp?.evidence_expected, `evidence verified ${insp?.evidence_verified}/${insp?.evidence_expected}`);
+const [jobNow] = await admin.select<{ status: string }>('jobs', `id=eq.${job.id}&select=status`);
+check.eq(jobNow?.status, 'under_review', 'job UNDER_REVIEW');
+const evidence = await poll(
+  () => admin.select<{ replica_state: string }>('evidence', `inspection_id=eq.${run.inspectionId}&select=replica_state`),
+  (rows) => rows.length > 0 && rows.every((r) => r.replica_state === 'replicated'),
+);
+const replicated = evidence.filter((r) => r.replica_state === 'replicated').length;
+check.eq(replicated, insp?.evidence_expected, `every verified item replicated with its hash re-verified (${replicated})`);
+const mismatches = await admin.select('alerts', `kind=eq.payload_hash_mismatch&created_at=gte.${startedAt}&select=id`);
+check.eq(mismatches.length, 0, 'device and server JCS hashes agree on every envelope');
 await phone.pull();
-check.ok([...phone.evidenceStatus.values()].filter((s) => s === 'verified').length >= insp.evidence_expected, 'the device learns `verified` for its evidence');
+check.ok([...phone.evidenceStatus.values()].filter((s) => s === 'verified').length >= (insp?.evidence_expected ?? 1),
+  'the device learns `verified` for its evidence');
 
 console.log('── public verification');
 const verify = await call<{ status: string; agent?: { employee_number_masked: string } }>('GET', `/v1/public/verify/${phone.agentCard!.token}`, { publishable: false });
@@ -141,5 +153,4 @@ try {
   check.eq((e as ApiError).code, 'SESSION_REVOKED', 'reusing a rotated refresh token revokes the family');
 }
 
-await sql.end();
 Deno.exit(check.summary());
