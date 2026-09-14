@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:fess_pos/src/contract/errors.dart';
 import 'package:fess_pos/src/core/time/device_time.dart';
 import 'package:fess_pos/src/core/version.dart';
+import 'package:fess_pos/src/data/local/pos_database.steps.dart';
 import 'package:fess_pos/src/data/local/tables.dart';
 
 part 'pos_database.g.dart';
@@ -13,15 +16,27 @@ part 'pos_database.g.dart';
 /// Changing the schema: bump [currentSchemaVersion], add the step to
 /// [migration], run `dart run drift_dev make-migrations` (it writes the
 /// schema dump in `drift_schemas/` and a migration test), and never change a
-/// version that has shipped. Until the module's first release, version 1 may
-/// still change. Tables arrive with their tasks: the outbox and receipts
-/// (T1-22), definitions and remote config (T1-23), drafts (T3-06), evidence
-/// (T4-03).
-@DriftDatabase(tables: [ModuleMeta, SyncState])
+/// version that has shipped. Tables arrive with their tasks: the outbox and
+/// cached server documents (schema 2, T1-22/T1-23), jobs, reviews and
+/// definitions (schema 3, T2-14), the map tile index (schema 4, T2-17),
+/// drafts (T3-06), evidence (T4-03).
+@DriftDatabase(
+  tables: [
+    ModuleMeta,
+    SyncState,
+    Outbox,
+    CachedDocuments,
+    Jobs,
+    Reviews,
+    DefinitionVersions,
+    ActiveDefinitions,
+    TileCacheIndex,
+  ],
+)
 class PosDatabase extends _$PosDatabase {
   PosDatabase(super.e);
 
-  static const int currentSchemaVersion = 1;
+  static const int currentSchemaVersion = 4;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -48,18 +63,33 @@ class PosDatabase extends _$PosDatabase {
     },
     onUpgrade: (m, from, to) async {
       _refuseDowngrade(from, to);
-      // Schema 1 is the first; later versions add their steps here.
-      throw PosException(
-        PosErrorCodes.localStoreUnavailable,
-        'no migration from local schema $from to $to',
-        kind: PosErrorKind.localStore,
-        retryable: false,
-      );
+      // Steps from `dart run drift_dev make-migrations`; each is checked
+      // against the schema dumps by test/drift/.
+      await stepByStep(
+        from1To2: (m, schema) async {
+          await m.createTable(schema.outbox);
+          await m.createTable(schema.cachedDocuments);
+        },
+        from2To3: (m, schema) async {
+          await m.createTable(schema.jobs);
+          await m.createTable(schema.reviews);
+          await m.createTable(schema.definitionVersions);
+          await m.createTable(schema.activeDefinitions);
+        },
+        from3To4: (m, schema) async {
+          await m.createTable(schema.tileCacheIndex);
+        },
+      )(m, from, to);
     },
     beforeOpen: (details) async {
       final before = details.versionBefore;
       if (before != null) _refuseDowngrade(before, details.versionNow);
       await customStatement('PRAGMA foreign_keys = ON');
+      // An item the app was sending when it stopped goes back to queued and
+      // is sent again, same id and bytes; landing is idempotent (docs/12 §3).
+      await (update(outbox)..where((o) => o.state.equals('in_flight'))).write(
+        const OutboxCompanion(state: Value('queued')),
+      );
     },
   );
 
@@ -80,4 +110,34 @@ class PosDatabase extends _$PosDatabase {
 abstract final class MetaKeys {
   static const String createdAt = 'store_created_at';
   static const String createdByModule = 'store_created_by_module';
+
+  /// JSON list of `{name, at}`: stores moved into `quarantine/` (D-52).
+  static const String quarantinedStores = 'quarantined_stores';
+
+  /// How many of [quarantinedStores] have gone out in a `client_error`.
+  static const String quarantinedStoresReported = 'quarantined_stores_reported';
+}
+
+extension QuarantineLog on PosDatabase {
+  /// Records stores moved aside because they could never be opened again
+  /// (D-52), for the sync layer to report (T1-22).
+  Future<void> recordQuarantine(List<String> names) async {
+    final now = isoWithOffset(DateTime.now());
+    final existing =
+        await (select(
+              moduleMeta,
+            )..where((m) => m.key.equals(MetaKeys.quarantinedStores)))
+            .getSingleOrNull();
+    final log = <Object?>[
+      if (existing != null) ...(jsonDecode(existing.value) as List<Object?>),
+      ...names.map((n) => {'name': n, 'at': now}),
+    ];
+    await into(moduleMeta).insertOnConflictUpdate(
+      ModuleMetaCompanion.insert(
+        key: MetaKeys.quarantinedStores,
+        value: jsonEncode(log),
+        updatedAt: now,
+      ),
+    );
+  }
 }

@@ -3,6 +3,9 @@ import 'package:fess_pos/src/core/content/bundled_copy.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/core/runtime/module_runtime.dart';
 import 'package:fess_pos/src/core/theme/pos_theme_data.dart';
+import 'package:fess_pos/src/domain/navigation/pos_link.dart';
+import 'package:fess_pos/src/features/cards/agent_card_page.dart';
+import 'package:fess_pos/src/features/jobs/job_pages.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,8 +14,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// Everything the module shows lives under here: its own provider scope
 /// (the runtime's container), its own theme and its own nested navigator
-/// (docs/03 §3, §7). Pages come from the app definition later (T3-17);
-/// until then there is one placeholder home.
+/// (docs/03 §3, §7). The home page lists the agent's jobs and a job opens
+/// its detail page; the app definition takes over navigation with T3-17.
 class PosEntryPoint extends StatefulWidget {
   const PosEntryPoint({super.key});
 
@@ -24,7 +27,10 @@ class _PosEntryPointState extends State<PosEntryPoint> {
   @override
   void initState() {
     super.initState();
-    ModuleRuntime.current?.emit(PosEvent(PosEvent.entryOpened));
+    final runtime = ModuleRuntime.current;
+    runtime?.emit(PosEvent(PosEvent.entryOpened));
+    // Opening POS is a good moment to catch up with the server.
+    runtime?.nudgeSync();
   }
 
   @override
@@ -53,31 +59,113 @@ class _PosEntryPointState extends State<PosEntryPoint> {
   }
 }
 
-class _PosShell extends ConsumerWidget {
+class _PosShell extends ConsumerStatefulWidget {
   const _PosShell({required this.onExit});
 
   final VoidCallback? onExit;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PosShell> createState() => _PosShellState();
+}
+
+class _PosShellState extends ConsumerState<_PosShell> {
+  /// The job whose detail page is open, if one is.
+  String? _openJob;
+
+  /// The agent card is open (from a deep link).
+  bool _openCard = false;
+
+  late final ModuleRuntime _runtime = ref.read(moduleRuntimeProvider);
+
+  @override
+  void initState() {
+    super.initState();
+    _runtime.pendingLink.addListener(_onLink);
+    // A link forwarded before this screen opened.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onLink());
+  }
+
+  @override
+  void dispose() {
+    _runtime.pendingLink.removeListener(_onLink);
+    super.dispose();
+  }
+
+  /// Opens a forwarded deep link once the agent can see POS; until then it
+  /// waits.
+  void _onLink() {
+    final link = _runtime.pendingLink.value;
+    if (!mounted ||
+        link == null ||
+        !_runtime.bootstrap.posEnabled ||
+        !_runtime.signedIn) {
+      return;
+    }
+    _runtime.pendingLink.value = null;
+    setState(() {
+      switch (link) {
+        case JobLink(:final jobId):
+          _openJob = jobId;
+          _openCard = false;
+        case CardLink():
+          _openJob = null;
+          _openCard = true;
+        case HomeLink():
+          _openJob = null;
+          _openCard = false;
+      }
+    });
+    // A job from a link may not have reached the phone yet.
+    if (link is JobLink) _runtime.nudgeSync();
+  }
+
+  void _closeJob() => setState(() => _openJob = null);
+
+  @override
+  Widget build(BuildContext context) {
     final theme = ref.watch(posThemeDataProvider);
-    final snapshot = ref.watch(bootstrapSnapshotProvider);
-    final home = snapshot.posEnabled
-        ? _MessagePage(
-            message: BundledCopy.text('shell.placeholder'),
-            onBack: onExit,
-          )
-        : _MessagePage(
-            message: BundledCopy.text('shell.unavailable'),
-            onBack: onExit,
-          );
+    final runtime = ref.watch(moduleRuntimeProvider);
+    final Widget home;
+    if (!runtime.bootstrap.posEnabled) {
+      home = _MessagePage(
+        message: BundledCopy.text('shell.unavailable'),
+        onBack: widget.onExit,
+      );
+    } else if (!runtime.signedIn) {
+      home = _MessagePage(
+        message: BundledCopy.text('shell.not_signed_in'),
+        onBack: widget.onExit,
+      );
+    } else {
+      home = JobsHomePage(
+        onBack: widget.onExit,
+        onOpenJob: (id) => setState(() => _openJob = id),
+      );
+    }
+    final job = _openJob;
     return Theme(
       data: theme,
       child: Navigator(
         pages: [
           MaterialPage<void>(key: const ValueKey('pos-home'), child: home),
+          if (job != null && runtime.signedIn)
+            MaterialPage<void>(
+              key: ValueKey('pos-job-$job'),
+              child: JobDetailPage(jobId: job, onBack: _closeJob),
+            ),
+          if (_openCard && runtime.signedIn)
+            const MaterialPage<void>(
+              key: ValueKey('pos-card'),
+              child: AgentCardPage(),
+            ),
         ],
-        onDidRemovePage: (_) {},
+        onDidRemovePage: (page) {
+          if (page.key == const ValueKey('pos-card')) {
+            setState(() => _openCard = false);
+          } else if (page.key != const ValueKey('pos-home')) {
+            _closeJob();
+          }
+        },
       ),
     );
   }

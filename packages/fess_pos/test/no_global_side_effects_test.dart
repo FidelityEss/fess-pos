@@ -38,6 +38,8 @@ void main() {
         }).toCacheJson(),
       );
       await PosModule.signIn(testIdentity());
+      // The job list reads the local store; open it outside the fake clock.
+      await runtime.localStore();
     });
     expect(runtime.observability.enabled, isTrue, reason: 'own hub built');
 
@@ -58,7 +60,8 @@ void main() {
     );
     await tester.tap(find.text('open POS'));
     await tester.pumpAndSettle();
-    expect(find.text(BundledCopy.text('shell.placeholder')), findsOneWidget);
+    // Signed in, with no jobs yet: the job list's empty text.
+    expect(find.text(BundledCopy.text('jobs.empty_active')), findsOneWidget);
 
     // The back button leaves the module by popping the host's route.
     await tester.tap(find.byTooltip(BundledCopy.text('shell.back')));
@@ -77,6 +80,8 @@ void main() {
       isFalse,
       reason: 'the app-wide Sentry hub belongs to the host',
     );
+    // Close the store outside the fake clock too.
+    await tester.runAsync(ModuleRuntime.reset);
   });
 
   testWidgets('the entry point copes with an uninitialised module', (

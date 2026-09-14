@@ -51,10 +51,15 @@ void main() {
     '.deleteAll(': 'never wipe secure storage the host shares (findings/03 §2)',
   };
 
+  // The one place allowed to delete all: FlutterSecureStore.reset, whose
+  // fixed options confine it to the module's own namespace (D-52).
+  const deleteAllAllowedIn = 'lib/src/platform/secure_store.dart';
+
   for (final f in lib) {
     test('${_rel(f)} uses no forbidden API', () {
       final code = _code(f);
       for (final e in forbidden.entries) {
+        if (e.key == '.deleteAll(' && _rel(f) == deleteAllAllowedIn) continue;
         expect(
           code.contains(e.key),
           isFalse,
@@ -80,7 +85,10 @@ void main() {
 
   test('plugins and native database code are used only under platform/', () {
     const platformOnly = [
-      'package:camera/',
+      'package:camera_platform_interface/',
+      'package:camera_android/',
+      'package:camera_avfoundation/',
+      'package:camera_web/',
       'package:connectivity_plus/',
       'package:device_info_plus/',
       'package:flutter_secure_storage/',
@@ -89,6 +97,7 @@ void main() {
       'package:path_provider/',
       'package:sqlcipher_flutter_libs/',
       'package:sqlite3/',
+      'package:url_launcher/',
       'package:drift/native.dart',
       'package:drift/wasm.dart',
     ];
@@ -104,6 +113,48 @@ void main() {
               'lib/src/platform/ (docs/03 §2)',
         );
       }
+    }
+  });
+
+  test('only data/remote/ talks HTTP, and screens never reach it', () {
+    for (final f in lib) {
+      final path = _rel(f);
+      final code = _code(f);
+      if (!path.startsWith('lib/src/data/remote/')) {
+        expect(
+          code.contains("'package:http/"),
+          isFalse,
+          reason:
+              '$path imports package:http: the POS API client lives in '
+              'lib/src/data/remote/ (docs/03 §4)',
+        );
+      }
+      if (path.startsWith('lib/src/features/')) {
+        expect(
+          code.contains('src/data/remote/'),
+          isFalse,
+          reason:
+              '$path: screens never touch the API client '
+              '(DEVELOPMENT-GUIDELINES §2)',
+        );
+      }
+    }
+  });
+
+  test('screens and the renderer never import the data layer', () {
+    for (final f in lib) {
+      final path = _rel(f);
+      if (!path.startsWith('lib/src/features/') &&
+          !path.startsWith('lib/src/renderer/')) {
+        continue;
+      }
+      expect(
+        _code(f).contains('src/data/'),
+        isFalse,
+        reason:
+            '$path: UI reaches data through domain interfaces and providers '
+            '(DEVELOPMENT-GUIDELINES §2)',
+      );
     }
   });
 
@@ -144,6 +195,8 @@ void main() {
       'firebase_messaging',
       // Would ship plain SQLite beside SQLCipher (docs/03 §7).
       'sqlite3_flutter_libs',
+      // Brings CameraX, which can need a higher minSdk than the host (D-54).
+      'camera',
     ]) {
       expect(
         RegExp('^\\s+$name:', multiLine: true).hasMatch(pubspec),

@@ -46,13 +46,23 @@ void main() {
   });
 
   group('PosBrand.resolve: host, then remote config, then tokens', () {
-    test('tokens by default', () {
+    test('tokens by default, with the bundled Montserrat', () {
       expect(
         PosBrand.resolve(),
         const PosBrand(
           primary: PosTokens.colorBrandPrimary,
-          fontFamily: PosTokens.fontFamily,
+          fontFamily: PosBrand.bundledFontFamily,
         ),
+      );
+      expect(PosBrand.bundledFontFamily, 'packages/fess_pos/Montserrat');
+    });
+
+    test('a host naming Montserrat still gets the bundled font', () {
+      expect(
+        PosBrand.resolve(
+          host: const PosTheme(fontFamily: 'Montserrat'),
+        ).fontFamily,
+        PosBrand.bundledFontFamily,
       );
     });
 
@@ -88,7 +98,41 @@ void main() {
     expect(button.minimumSize!.resolve({})!.height, 45);
     final shape = button.shape!.resolve({})! as RoundedRectangleBorder;
     expect(shape.borderRadius, BorderRadius.circular(5));
-    expect(theme.textTheme.bodyMedium!.fontFamily, 'Montserrat');
+    expect(
+      theme.textTheme.bodyMedium!.fontFamily,
+      'packages/fess_pos/Montserrat',
+    );
     expect(theme.textTheme.bodyMedium!.fontWeight, FontWeight.w600);
+  });
+
+  test('Montserrat is bundled for every weight the tokens use, with its '
+      'licence', () {
+    final pubspec = File('pubspec.yaml').readAsStringSync();
+    expect(pubspec, contains('- family: ${PosTokens.fontFamily}'));
+    final used = <int>{
+      for (final w in [
+        PosTokens.typePhoneHeadlineWeight,
+        PosTokens.typePhoneTitleLargeWeight,
+        PosTokens.typePhoneTitleWeight,
+        PosTokens.typePhoneBodyWeight,
+        PosTokens.typePhoneBodyRegularWeight,
+        PosTokens.typePhoneCaptionWeight,
+        PosTokens.typePhoneButtonWeight,
+        PosTokens.componentListRowTitleWeight,
+        PosTokens.componentListRowDescriptionWeight,
+      ])
+        w.value,
+    };
+    for (final weight in used) {
+      expect(pubspec, contains('weight: $weight'), reason: 'weight $weight');
+    }
+    final assets = RegExp(
+      r'asset: (assets/fonts/\S+\.ttf)',
+    ).allMatches(pubspec).map((m) => m.group(1)!);
+    expect(assets, isNotEmpty);
+    for (final asset in assets) {
+      expect(File(asset).existsSync(), isTrue, reason: asset);
+    }
+    expect(File('assets/fonts/montserrat/OFL.txt').existsSync(), isTrue);
   });
 }

@@ -1,7 +1,8 @@
 name: fess_pos_engine
 description: >-
-  Pure-Dart engine for the FESS POS module: RFC 8785 canonical JSON and the
-  POS hashes today; definitions, rules and validation later (T3-01). No Flutter.
+  Pure-Dart engine for the FESS POS module: RFC 8785 canonical JSON, the POS
+  hashes and the rules evaluator; definitions and validation later (T3-01).
+  No Flutter.
 version: 0.1.0
 publish_to: none
 repository: https://github.com/FidelityEss/fess-pos
@@ -12,6 +13,7 @@ environment:
 
 dependencies:
   crypto: ^3.0.6
+  meta: ^1.15.0
 
 dev_dependencies:
   test: ^1.25.0

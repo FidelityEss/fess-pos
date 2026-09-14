@@ -1,8 +1,8 @@
 import 'dart:math';
 
-import 'package:drift/drift.dart';
 import 'package:drift/wasm.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
+import 'package:fess_pos/src/platform/database/local_executor.dart';
 import 'package:fess_pos/src/platform/module_storage.dart';
 import 'package:fess_pos/src/platform/secure_store.dart';
 
@@ -14,9 +14,9 @@ const bool localStoreEncrypted = false;
 const PosLogger _log = PosLogger('local_store');
 
 /// sqlite3 WASM in the browser's storage (OPFS, or IndexedDB where OPFS is
-/// missing). The host serves `sqlite3.wasm` and `drift_worker.js` next to
-/// its web build (HOST_INTEGRATION.md).
-Future<QueryExecutor> openLocalExecutor({
+/// missing). The web build serves `sqlite3.wasm` and `drift_worker.js`
+/// next to `index.html` (T3-24).
+Future<LocalExecutor> openLocalExecutor({
   required SecureStore secureStore,
   required ModuleStorage storage,
   Random? random,
@@ -32,5 +32,11 @@ Future<QueryExecutor> openLocalExecutor({
       '${result.missingFeatures.map((f) => f.name).join(', ')}',
     );
   }
-  return result.resolvedExecutor;
+  return LocalExecutor(result.resolvedExecutor);
 }
+
+/// The web store has no key, so it never needs moving aside.
+Future<String> quarantineLocalDatabase(
+  String dir, {
+  required String reason,
+}) => Future.error(UnsupportedError('the web store has no key to lose'));

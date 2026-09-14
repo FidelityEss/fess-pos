@@ -1,6 +1,7 @@
 import 'package:fess_pos/fess_pos.dart';
 import 'package:fess_pos/src/bootstrap/bootstrap_snapshot.dart';
 import 'package:fess_pos/src/core/runtime/module_runtime.dart';
+import 'package:fess_pos/src/data/remote/api_session_gateway.dart';
 import 'package:fess_pos/src/domain/session/session_gateway.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -78,17 +79,12 @@ void main() {
       expect(await PosModule.signIn(testIdentity()), isA<PosAccess>());
     });
 
-    test(
-      'without the API client, signIn says AUTH_UNAVAILABLE (T1-21)',
-      () async {
-        await PosModule.initialize(testConfig());
-        await expectLater(
-          PosModule.signIn(testIdentity()),
-          throwsPosCode(PosErrorCodes.authUnavailable),
-        );
-        expect((await PosModule.access()).reason, PosAccessReason.notSignedIn);
-      },
-    );
+    test('an app signs in through the POS API client', () {
+      final deps = ModuleDependencies.production(testConfig());
+      expect(deps.sessionGateway, isA<ApiSessionGateway>());
+      expect(deps.apiClient, isNotNull);
+      deps.apiClient!.close();
+    });
   });
 
   group('access', () {

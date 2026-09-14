@@ -2,6 +2,7 @@ import 'package:fess_pos/src/platform/background_work.dart';
 import 'package:fess_pos/src/platform/camera.dart';
 import 'package:fess_pos/src/platform/connectivity.dart';
 import 'package:fess_pos/src/platform/device_info.dart';
+import 'package:fess_pos/src/platform/external_apps.dart';
 import 'package:fess_pos/src/platform/integrity.dart';
 import 'package:fess_pos/src/platform/location.dart';
 import 'package:fess_pos/src/platform/module_storage.dart';
@@ -22,6 +23,7 @@ class PlatformServices {
     required this.storage,
     required this.integrity,
     required this.backgroundWork,
+    required this.externalApps,
   });
 
   /// The real adapters. Creating them touches no platform channel; that
@@ -35,6 +37,7 @@ class PlatformServices {
     storage: const AppSupportModuleStorage(),
     integrity: const UnavailableIntegritySignals(),
     backgroundWork: const UnavailableBackgroundWork(),
+    externalApps: const LauncherExternalApps(),
   );
 
   final SecureStore secureStore;
@@ -45,4 +48,5 @@ class PlatformServices {
   final ModuleStorage storage;
   final IntegritySignalsProvider integrity;
   final BackgroundWorkScheduler backgroundWork;
+  final ExternalApps externalApps;
 }

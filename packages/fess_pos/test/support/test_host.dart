@@ -21,11 +21,13 @@ PosHostConfig testConfig({
   PosTheme? theme,
   void Function(PosEvent event)? onEvent,
   void Function()? onUserActivity,
+  PosPushConfig? push,
 }) => PosHostConfig(
   bootstrap: bootstrap ?? testBootstrap,
   theme: theme,
   onEvent: onEvent,
   onUserActivity: onUserActivity,
+  push: push,
 );
 
 PosIdentity testIdentity() => PosIdentity(
@@ -46,16 +48,25 @@ class FakeSessionGateway implements SessionGateway {
   int exchanges = 0;
   int uiAccessEnded = 0;
 
+  /// What the gateway reports now; tests change it to act as the server.
+  @override
+  PosSessionInfo? current;
+
   @override
   Future<PosSessionInfo> exchange(PosIdentity identity) async {
     exchanges++;
     final e = error;
     if (e != null) throw e;
-    return PosSessionInfo(scope: scope);
+    return current = PosSessionInfo(scope: scope);
   }
 
   @override
   Future<void> endUiAccess() async => uiAccessEnded++;
+
+  int reverifications = 0;
+
+  @override
+  Future<void> reverifyIfDue(Duration every) async => reverifications++;
 }
 
 /// Starts the module with test doubles. Pair with

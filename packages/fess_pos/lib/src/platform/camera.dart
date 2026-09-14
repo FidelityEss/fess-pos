@@ -1,4 +1,4 @@
-import 'package:camera/camera.dart';
+import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:fess_pos/src/contract/errors.dart';
 import 'package:fess_pos/src/platform/io/files.dart';
 import 'package:flutter/foundation.dart';
@@ -96,6 +96,8 @@ abstract interface class CameraService {
 /// An open camera. The capture screen (T4-01) shows [preview] and calls
 /// [capture]; [close] releases the camera.
 abstract interface class CameraSession {
+  /// The live preview. On Android it isn't rotated for the device's
+  /// orientation; the capture screen handles that (T4-01).
   Widget preview();
 
   Future<CameraCaptureResult> capture();
@@ -103,15 +105,22 @@ abstract interface class CameraSession {
   Future<void> close();
 }
 
-/// The camera plugin (CameraX, AVFoundation, getUserMedia on the web).
-/// Audio is off: no microphone permission is needed (findings/03 §7).
+/// The camera through its platform interface: Camera2 on Android
+/// (camera_android), AVFoundation on iOS, getUserMedia on the web. The
+/// module doesn't use the app-facing `camera` package, whose Android default
+/// (CameraX) can need a higher minSdk than the host has (D-54). Audio is
+/// off: no microphone is needed (findings/03 §7).
 class PluginCameraService implements CameraService {
   const PluginCameraService();
+
+  CameraPlatform get _platform => CameraPlatform.instance;
 
   @override
   Future<List<PosCamera>> cameras() async {
     try {
-      return (await availableCameras()).map(PosCamera.fromDescription).toList();
+      return (await _platform.availableCameras())
+          .map(PosCamera.fromDescription)
+          .toList();
     } on CameraException catch (e) {
       throw _failed(e);
     }
@@ -122,10 +131,11 @@ class PluginCameraService implements CameraService {
     PosCamera camera, {
     PosCameraResolution resolution = PosCameraResolution.veryHigh,
   }) async {
-    final CameraDescription description;
+    final int id;
     try {
-      final all = await availableCameras();
-      final match = all.where((c) => c.name == camera.id);
+      final match = (await _platform.availableCameras()).where(
+        (c) => c.name == camera.id,
+      );
       if (match.isEmpty) {
         throw const PosException(
           PosErrorCodes.cameraUnavailable,
@@ -134,42 +144,47 @@ class PluginCameraService implements CameraService {
           retryable: false,
         );
       }
-      description = match.first;
+      id = await _platform.createCameraWithSettings(
+        match.first,
+        MediaSettings(
+          resolutionPreset: switch (resolution) {
+            PosCameraResolution.high => ResolutionPreset.high,
+            PosCameraResolution.veryHigh => ResolutionPreset.veryHigh,
+            PosCameraResolution.max => ResolutionPreset.max,
+          },
+        ),
+      );
     } on CameraException catch (e) {
       throw _failed(e);
     }
-    final controller = CameraController(
-      description,
-      switch (resolution) {
-        PosCameraResolution.high => ResolutionPreset.high,
-        PosCameraResolution.veryHigh => ResolutionPreset.veryHigh,
-        PosCameraResolution.max => ResolutionPreset.max,
-      },
-      enableAudio: false,
-    );
     try {
-      await controller.initialize();
+      // Listen before initialising: the event can arrive before the call
+      // returns.
+      final initialized = _platform.onCameraInitialized(id).first;
+      await _platform.initializeCamera(id);
+      await initialized;
     } on CameraException catch (e) {
-      await controller.dispose();
+      await _platform.dispose(id);
       throw _failed(e);
     }
-    return _PluginCameraSession(controller, camera);
+    return _PluginCameraSession(_platform, id, camera);
   }
 }
 
 class _PluginCameraSession implements CameraSession {
-  _PluginCameraSession(this._controller, this._camera);
+  _PluginCameraSession(this._platform, this._id, this._camera);
 
-  final CameraController _controller;
+  final CameraPlatform _platform;
+  final int _id;
   final PosCamera _camera;
 
   @override
-  Widget preview() => CameraPreview(_controller);
+  Widget preview() => _platform.buildPreview(_id);
 
   @override
   Future<CameraCaptureResult> capture() async {
     try {
-      final file = await _controller.takePicture();
+      final file = await _platform.takePicture(_id);
       final capturedAt = DateTime.now();
       final bytes = await file.readAsBytes();
       return CameraCaptureResult._(
@@ -186,7 +201,7 @@ class _PluginCameraSession implements CameraSession {
   }
 
   @override
-  Future<void> close() => _controller.dispose();
+  Future<void> close() => _platform.dispose(_id);
 }
 
 PosException _failed(CameraException e) => PosException(

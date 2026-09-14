@@ -11,11 +11,30 @@ import 'package:fess_pos/src/contract/identity.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/observability/pos_observability.dart';
+import 'package:fess_pos/src/data/local/job_actions_store.dart';
 import 'package:fess_pos/src/data/local/local_store.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
+import 'package:fess_pos/src/data/local/tile_cache.dart';
+import 'package:fess_pos/src/data/outbox/action_recorder.dart';
+import 'package:fess_pos/src/data/outbox/outbox_sender.dart';
+import 'package:fess_pos/src/data/outbox/outbox_store.dart';
+import 'package:fess_pos/src/data/remote/api_session_gateway.dart';
+import 'package:fess_pos/src/data/remote/api_transport.dart';
+import 'package:fess_pos/src/data/remote/pos_api_client.dart';
+import 'package:fess_pos/src/data/remote/push_registration.dart';
+import 'package:fess_pos/src/data/remote/session_vault.dart';
+import 'package:fess_pos/src/data/remote/tile_fetcher.dart';
+import 'package:fess_pos/src/data/sync/pull_engine.dart';
+import 'package:fess_pos/src/data/sync/sections.dart';
+import 'package:fess_pos/src/data/sync/sync_engine.dart';
+import 'package:fess_pos/src/domain/jobs/job_actions.dart';
+import 'package:fess_pos/src/domain/maps/map_tiles.dart';
+import 'package:fess_pos/src/domain/navigation/pos_link.dart';
 import 'package:fess_pos/src/domain/session/session_gateway.dart';
+import 'package:fess_pos/src/platform/connectivity.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:fess_pos/src/platform/secure_store.dart';
+import 'package:flutter/foundation.dart' show ValueNotifier, kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meta/meta.dart';
 import 'package:sentry/sentry.dart' show Transport;
@@ -29,25 +48,38 @@ class ModuleDependencies {
     required this.platform,
     required this.bootstrapCache,
     required this.sessionGateway,
+    this.apiClient,
     this.localStoreOpener = openLocalStore,
     this.sentryTransport,
     this.clock = DateTime.now,
   });
 
-  /// What `PosModule.initialize` uses in an app.
-  factory ModuleDependencies.production() {
+  /// What `PosModule.initialize` uses in an app. Creating it sends nothing
+  /// and touches no platform channel.
+  factory ModuleDependencies.production(PosHostConfig config) {
     final platform = PlatformServices.forCurrentPlatform();
+    final client = PosApiClient(
+      transport: ApiTransport(bootstrap: config.bootstrap),
+      vault: SessionVault(platform.secureStore),
+    );
     return ModuleDependencies(
       platform: platform,
       bootstrapCache: SecureStoreBootstrapCache(platform.secureStore),
-      // Replaced by the POS API client (T1-21).
-      sessionGateway: const UnavailableSessionGateway(),
+      apiClient: client,
+      sessionGateway: ApiSessionGateway(
+        client: client,
+        deviceInfo: platform.deviceInfo,
+        push: config.push,
+      ),
     );
   }
 
   final PlatformServices platform;
   final BootstrapCache bootstrapCache;
   final SessionGateway sessionGateway;
+
+  /// The POS API client; null in tests that don't need one.
+  final PosApiClient? apiClient;
 
   /// Opens the local database. Tests pass an in-memory one.
   final Future<PosDatabase> Function(PlatformServices platform)
@@ -62,7 +94,7 @@ class ModuleDependencies {
 final class ModuleRuntime {
   ModuleRuntime._(
     this.config,
-    this.bootstrap,
+    this._bootstrap,
     this.observability,
     this.dependencies,
   ) {
@@ -107,7 +139,7 @@ final class ModuleRuntime {
     }
     return _starting ??= _start(
       config,
-      dependencies ?? ModuleDependencies.production(),
+      dependencies ?? ModuleDependencies.production(config),
     ).whenComplete(() => _starting = null);
   }
 
@@ -154,15 +186,204 @@ final class ModuleRuntime {
   }
 
   final PosHostConfig config;
-  final BootstrapSnapshot bootstrap;
   final PosObservability observability;
   final ModuleDependencies dependencies;
   late final ProviderContainer container;
 
-  PosSessionInfo? _session;
+  BootstrapSnapshot _bootstrap;
   bool _uiAccess = false;
   DateTime? _lastActivityReport;
   Future<PosDatabase>? _localStore;
+  SyncEngine? _sync;
+  OutboxStore? _outbox;
+  JobActions? _jobActions;
+  CachedTileSource? _tiles;
+  Future<void>? _prefetching;
+  PushRegistration? _pushRegistration;
+
+  /// A forwarded deep link waiting for the POS screen to open it (T2-19).
+  final ValueNotifier<PosLink?> pendingLink = ValueNotifier(null);
+  StreamSubscription<NetworkState>? _network;
+
+  static const String _clientType = kIsWeb ? 'web' : 'native';
+
+  /// The cached kill switches and other bootstrap keys, read at start and
+  /// refreshed by every pull that brings a config (docs/13 §6).
+  BootstrapSnapshot get bootstrap => _bootstrap;
+
+  /// The sync engine, built once the local store opens; null in builds
+  /// without the POS API client.
+  Future<SyncEngine?> syncEngine() async {
+    final built = _sync;
+    if (built != null) return built;
+    final client = dependencies.apiClient;
+    if (client == null) return null;
+    final db = await localStore();
+    return _sync ??= _newSyncEngine(client, db);
+  }
+
+  /// Syncs now and, with [keepRunning], keeps syncing on the engine's
+  /// timer and when the network comes back. Never throws: a failure waits
+  /// for the next trigger.
+  Future<SyncRunReport?> runSync({bool keepRunning = true}) async {
+    try {
+      final engine = await syncEngine();
+      if (engine == null) return null;
+      if (keepRunning && !engine.started) {
+        engine.start();
+        _network ??= dependencies.platform.connectivity.changes.listen((s) {
+          if (s.connected) engine.nudge();
+        });
+      }
+      final report = await engine.syncNow();
+      unawaited(_reconcilePush());
+      return report;
+    } on Object catch (e, st) {
+      _log.warning('sync could not run', error: e, stackTrace: st);
+      return null;
+    }
+  }
+
+  /// Something to sync (an action, a push hint): soon, if syncing runs.
+  void nudgeSync() => _sync?.nudge();
+
+  /// Syncs soon: nudges the running sync engine, or runs one pass when it
+  /// isn't running (e.g. a push handled before sign-in or in background).
+  void syncSoon() {
+    final engine = _sync;
+    if (engine != null && engine.started) {
+      engine.nudge();
+    } else {
+      unawaited(runSync(keepRunning: false));
+    }
+  }
+
+  /// Hands a forwarded deep link to the POS screen, which opens it once
+  /// the agent is signed in.
+  void openLink(PosLink link) {
+    pendingLink.value = link;
+    emit(PosEvent(PosEvent.deepLinkOpened, properties: {'page': link.page}));
+  }
+
+  /// Brings the push registration in step with the host's token and the
+  /// session (T2-19). Never throws: a failed update is tried again.
+  Future<void> _reconcilePush() async {
+    final client = dependencies.apiClient;
+    final push = config.push;
+    if (client == null || push == null) return;
+    try {
+      final db = await localStore();
+      await (_pushRegistration ??= PushRegistration(
+        client: client,
+        db: db,
+        push: push,
+        clock: dependencies.clock,
+      )).reconcile();
+    } on Object catch (e) {
+      final code = e is PosException ? e.code : e.runtimeType.toString();
+      _log.info('push registration not updated ($code); tried again later');
+    }
+  }
+
+  /// Job actions (T2-16), recorded under the signed-in user's session;
+  /// null in builds without the POS API client.
+  Future<JobActions?> jobActions() async {
+    final built = _jobActions;
+    if (built != null) return built;
+    final client = dependencies.apiClient;
+    if (client == null) return null;
+    final db = await localStore();
+    return _jobActions ??= DriftJobActions(
+      db: db,
+      recorder: ActionRecorder(_outboxFor(db)),
+      origin: () async {
+        final session = (await client.vault.read()).active;
+        if (session == null) return null;
+        return EnvelopeOrigin(
+          deviceId: await client.vault.deviceId(),
+          clientType: _clientType,
+          userId: session.user.id,
+          sessionId: session.sessionId,
+        );
+      },
+      send: runSync,
+    );
+  }
+
+  /// Map tiles (T2-17): cached on the phone, fetched from the provider in
+  /// remote config.
+  Future<TileSource> mapTiles() => _tileCache();
+
+  Future<CachedTileSource> _tileCache() async {
+    final built = _tiles;
+    if (built != null) return built;
+    final db = await localStore();
+    return _tiles ??= CachedTileSource(
+      db: db,
+      fetcher: TileFetcher(),
+      moduleDirectory: dependencies.platform.storage.moduleDirectory,
+      config: () => readRemoteConfig(db),
+      clock: dependencies.clock,
+    );
+  }
+
+  /// Keeps the map around the agent's jobs for offline use, after a pull;
+  /// one run at a time. Never throws.
+  void _prefetchTiles() {
+    _prefetching ??= () async {
+      try {
+        final tiles = await _tileCache();
+        await tiles.prefetchAssigned(
+          await dependencies.platform.connectivity.current(),
+        );
+      } on Object catch (e, st) {
+        _log.warning('map tiles were not prefetched', error: e, stackTrace: st);
+      } finally {
+        _prefetching = null;
+      }
+    }();
+  }
+
+  /// One outbox for the store: the sync engine and the action recorder
+  /// share it.
+  OutboxStore _outboxFor(PosDatabase db) =>
+      _outbox ??= OutboxStore(db, clock: dependencies.clock);
+
+  SyncEngine _newSyncEngine(PosApiClient client, PosDatabase db) {
+    final outbox = _outboxFor(db);
+    const clientType = _clientType;
+    return SyncEngine(
+      sender: OutboxSender(store: outbox, client: client),
+      puller: PullEngine(
+        db: db,
+        client: client,
+        outbox: outbox,
+        bootstrapCache: dependencies.bootstrapCache,
+        capabilities: capabilityReport(clientType, null),
+        sections: [
+          JobsSection(db),
+          DefinitionsSection(db),
+          CardsSection(db, clock: dependencies.clock),
+        ],
+        clock: dependencies.clock,
+      ),
+      outbox: outbox,
+      deviceOrigin: () async => EnvelopeOrigin(
+        deviceId: await client.vault.deviceId(),
+        clientType: clientType,
+      ),
+      canPull: () => signedIn,
+      reverify: (config) =>
+          dependencies.sessionGateway.reverifyIfDue(config.reverifyEvery),
+      onPulled: (report) {
+        final snapshot = report.bootstrap;
+        if (snapshot != null) _bootstrap = snapshot;
+        _prefetchTiles();
+        unawaited(_reconcilePush());
+      },
+      clock: dependencies.clock,
+    );
+  }
 
   /// The local store, opened on first use.
   ///
@@ -190,13 +411,23 @@ final class ModuleRuntime {
   /// The minimum gap between two `onUserActivity` calls to the host.
   static const Duration activityThrottle = Duration(seconds: 5);
 
-  bool get signedIn => _session != null && _uiAccess;
+  /// Signed in during this process, with a session that may still show the
+  /// UI. The gateway's view changes when the server ends or narrows the
+  /// session, e.g. a revoked device or a deactivated agent.
+  bool get signedIn {
+    final session = dependencies.sessionGateway.current;
+    return _uiAccess &&
+        session != null &&
+        session.uiAccess &&
+        session.scope == PosSessionScope.full;
+  }
 
   Future<PosAccess> signIn(PosIdentity identity) async {
     final session = await dependencies.sessionGateway.exchange(identity);
-    _session = session;
-    _uiAccess = session.scope == PosSessionScope.full;
-    emit(PosEvent(PosEvent.signedIn));
+    _uiAccess = session.scope == PosSessionScope.full && session.uiAccess;
+    emit(PosEvent(PosEvent.signedIn, properties: {'offline': session.offline}));
+    unawaited(runSync());
+    unawaited(_reconcilePush());
     return access();
   }
 
@@ -213,8 +444,11 @@ final class ModuleRuntime {
       );
     }
     _uiAccess = false;
+    pendingLink.value = null;
     await dependencies.sessionGateway.endUiAccess();
     emit(PosEvent(PosEvent.signedOut));
+    // No more job hints to a phone whose agent has left.
+    unawaited(_reconcilePush());
   }
 
   PosAccess access() {
@@ -255,7 +489,12 @@ final class ModuleRuntime {
   }
 
   Future<void> _dispose() async {
+    _sync?.stop();
+    await _network?.cancel();
+    _network = null;
     container.dispose();
+    pendingLink.dispose();
+    dependencies.apiClient?.close();
     final store = _localStore;
     _localStore = null;
     if (store != null) {

@@ -21,12 +21,25 @@ class PosBrand {
             host?.primaryColor ??
             _parseHex(config?.themePrimaryColor) ??
             PosTokens.colorBrandPrimary,
-        fontFamily:
-            host?.fontFamily ?? config?.themeFontFamily ?? PosTokens.fontFamily,
+        fontFamily: _family(
+          host?.fontFamily ?? config?.themeFontFamily ?? PosTokens.fontFamily,
+        ),
       );
 
+  /// The bundled Montserrat is a package font, so Flutter knows it as
+  /// `packages/fess_pos/Montserrat`. It never depends on, or clashes with, a
+  /// font the host loads under the same name.
+  static const String bundledFontFamily =
+      'packages/fess_pos/${PosTokens.fontFamily}';
+
   final Color primary;
+
+  /// The family as the theme names it: the bundled font for the token
+  /// family, any other family (a host or config override) as given.
   final String fontFamily;
+
+  static String _family(String name) =>
+      name == PosTokens.fontFamily ? bundledFontFamily : name;
 
   static Color? _parseHex(String? hex) {
     if (hex == null || hex.length != 7 || !hex.startsWith('#')) return null;
