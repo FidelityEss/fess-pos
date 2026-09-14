@@ -280,6 +280,7 @@ class GeofencePlan {
     this.paused = false,
     this.outsideFix,
     this.checkin,
+    this.overrideWithinM,
   });
 
   final Fence fence;
@@ -302,6 +303,21 @@ class GeofencePlan {
 
   /// The check-in recorded for the job on arrival, if any.
   final GeoFix? checkin;
+
+  /// How far from the pin an override is allowed (docs/07 §7 item 6,
+  /// T4-10): the radius times `geofence.override_radius_multiplier`, at
+  /// most `geofence.override_max_m`; null when none is.
+  final double? overrideWithinM;
+
+  /// Whether an override may be offered for [verdict]: outside the fence by
+  /// a fix that counts, within [overrideWithinM], and not mocked.
+  bool overrideAllowed(FixVerdict verdict) {
+    final within = overrideWithinM;
+    return within != null &&
+        verdict.outside &&
+        !verdict.mocked &&
+        verdict.distanceM <= within;
+  }
 }
 
 /// The outside fix (docs/07 §7 item 2, B3.9): with no lock inside, a fix

@@ -259,6 +259,7 @@ abstract interface class Inspections implements DeliveryTracker {
     required String category,
     required CapturedPhoto photo,
     String? caption,
+    String type = 'photo',
   });
 
   /// As [recordPhoto], for a drawn signature.
@@ -294,6 +295,7 @@ abstract interface class Inspections implements DeliveryTracker {
     required int sampledSeconds,
     String method = 'inside_fix',
     GeoFix? checkin,
+    Map<String, Object?>? override,
   });
 
   /// The check-in on arrival for [job] (T4-23): whether it is asked for,

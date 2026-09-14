@@ -708,8 +708,9 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
     Inspections inspections,
     Map<String, Declaration?> declarations,
     String Function(String key) copy,
-    Map<String, EvidenceItem> evidence,
-  ) => FormFieldServices(
+    Map<String, EvidenceItem> evidence, {
+    String evidenceType = 'photo',
+  }) => FormFieldServices(
     takePhoto: (context, field, shot) async {
       final of = shot.of;
       final photo = await Navigator.of(context).push<CapturedPhoto>(
@@ -753,6 +754,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
           category: _category(field),
           photo: photo,
           caption: caption,
+          type: evidenceType,
         ),
       );
     },
@@ -888,8 +890,10 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
         return LocationCheckView(
           inspections: _inspections!,
           inspectionId: widget.inspectionId,
-          jobId: widget.job.id,
+          job: widget.job,
+          services: services,
           onPassed: _locationDone,
+          overrideForm: _string(step['override_form']) ?? 'geofence_override',
         );
       case 'form':
         return FormView(
@@ -1006,16 +1010,25 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
             _stepView(
               at,
               controller,
-              _services(inspections, declarations, copy, {
-                for (final e
-                    in _data(
-                          ref.watch(
-                            inspectionEvidenceProvider(widget.inspectionId),
-                          ),
-                        ) ??
-                        const <EvidenceItem>[])
-                  e.id: e,
-              }),
+              _services(
+                inspections,
+                declarations,
+                copy,
+                {
+                  for (final e
+                      in _data(
+                            ref.watch(
+                              inspectionEvidenceProvider(widget.inspectionId),
+                            ),
+                          ) ??
+                          const <EvidenceItem>[])
+                    e.id: e,
+                },
+                // Photos on the location step are the override's (T4-10).
+                evidenceType: step['type'] == 'location_check'
+                    ? 'override_photo'
+                    : 'photo',
+              ),
               copy,
             ),
           ],

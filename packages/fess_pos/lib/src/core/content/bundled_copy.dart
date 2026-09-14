@@ -185,6 +185,12 @@ abstract final class BundledCopy {
     'checkin.button': 'Check in outside',
     'checkin.recording': 'Recording your location…',
     'checkin.done': 'Checked in outside.',
+    'location.override': 'Continue with an override',
+    'location.override_too_far':
+        "You're too far from the premises for an override. If you can't "
+        'find them, mark the job unable to complete.',
+    'override.title': 'Location override',
+    'override.submit': 'Continue with the override',
     'inspection.declaration_missing':
         "This declaration hasn't reached your phone yet. Connect to the "
         'internet and try again.',

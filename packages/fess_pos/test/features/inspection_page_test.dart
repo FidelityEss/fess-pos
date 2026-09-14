@@ -161,9 +161,10 @@ class _FakeInspections implements Inspections {
     required String category,
     required CapturedPhoto photo,
     String? caption,
+    String type = 'photo',
   }) async {
     final id = _nextId();
-    captured.add((field: fieldKey, type: 'photo'));
+    captured.add((field: fieldKey, type: type));
     captions.add(caption);
     return id;
   }
@@ -215,6 +216,7 @@ class _FakeInspections implements Inspections {
     required int sampledSeconds,
     String method = 'inside_fix',
     GeoFix? checkin,
+    Map<String, Object?>? override,
   }) async => checks.add((
     passed: passed,
     sampled: sampledSeconds,
@@ -319,6 +321,7 @@ GeofencePlan _plan({required bool passed, GeoFix? checkin}) => GeofencePlan(
     validFor: Duration(minutes: 20),
   ),
   checkin: checkin,
+  overrideWithinM: 150,
 );
 
 /// A fix near the pin but too vague to count (±80 m).
@@ -758,6 +761,26 @@ void main() {
         ('outside_fix', true),
       );
       expect(find.text('Step 1 of 4'), findsOneWidget);
+    });
+
+    testWidgets('outside but near enough, it offers an override (T4-10)', (
+      tester,
+    ) async {
+      final (_, location) = await open(tester, passed: false);
+      location.updates.add(_at(120));
+      await tester.pump(const Duration(seconds: 61));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('location-override')), findsOneWidget);
+      expect(find.text(_copy('location.override_too_far')), findsNothing);
+    });
+
+    testWidgets('too far for an override, it says so (T4-10)', (tester) async {
+      final (_, location) = await open(tester, passed: false);
+      location.updates.add(_at(400));
+      await tester.pump(const Duration(seconds: 61));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('location-override')), findsNothing);
+      expect(find.text(_copy('location.override_too_far')), findsOneWidget);
     });
 
     testWidgets('leaving the fence pauses the inspection; coming back '

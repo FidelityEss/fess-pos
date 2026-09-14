@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
+import 'package:fess_pos/src/domain/jobs/job_record.dart';
+import 'package:fess_pos/src/features/inspections/geofence_override_page.dart';
 import 'package:fess_pos/src/platform/location.dart';
+import 'package:fess_pos/src/renderer/form/form_services.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart' show renderTemplate;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -201,26 +204,35 @@ class _FixSamplerState extends ConsumerState<FixSampler> {
   }
 }
 
-/// The `location_check` step (docs/07 §7, T4-07, T4-23). It samples for up
-/// to the window until a fix that counts puts the agent inside the fence.
-/// With no fix accurate enough inside, a check-in recorded on arrival
-/// proves the location if it still counts (the outside fix); otherwise the
-/// agent can step outside and record one here. Outside the fence, or with
-/// a mocked location, it says so and offers to try again; the override
-/// (T4-10) comes later. Each outcome goes into `geofence_result`.
+/// The `location_check` step (docs/07 §7; T4-07, T4-23, T4-10). It samples
+/// for up to the window until a fix that counts puts the agent inside the
+/// fence. With no fix accurate enough inside, a check-in recorded on
+/// arrival proves the location if it still counts (the outside fix);
+/// otherwise the agent can step outside and record one here. Outside the
+/// fence but near enough, the bank's override form lets the agent go on,
+/// flagged for review; further away, or with a mocked location, it says
+/// so and offers to try again. Each outcome goes into `geofence_result`.
 class LocationCheckView extends ConsumerStatefulWidget {
   const LocationCheckView({
     required this.inspections,
     required this.inspectionId,
-    required this.jobId,
+    required this.job,
+    required this.services,
     required this.onPassed,
+    this.overrideForm = 'geofence_override',
     super.key,
   });
 
   final Inspections inspections;
   final String inspectionId;
-  final String jobId;
+  final JobRecord job;
+
+  /// The inspection's camera, for the override's photos.
+  final FormFieldServices services;
   final VoidCallback onPassed;
+
+  /// The flow's `override_form`.
+  final String overrideForm;
 
   @override
   ConsumerState<LocationCheckView> createState() => _LocationCheckViewState();
@@ -237,7 +249,10 @@ class _LocationCheckViewState extends ConsumerState<LocationCheckView> {
 
   /// How the last attempt ended; null while one runs.
   CheckState? _result;
-  double? _distance;
+
+  /// The nearest fix that counted but was outside, and how long it took.
+  FixVerdict? _outsideBy;
+  int _sampled = 0;
 
   @override
   void initState() {
@@ -267,6 +282,7 @@ class _LocationCheckViewState extends ConsumerState<LocationCheckView> {
     FixVerdict? verdict,
     int sampled, {
     GeoFix? checkin,
+    Map<String, Object?>? override,
   }) => widget.inspections.recordLocationCheck(
     widget.inspectionId,
     passed: passed,
@@ -274,6 +290,7 @@ class _LocationCheckViewState extends ConsumerState<LocationCheckView> {
     sampledSeconds: sampled,
     method: _outside || checkin != null ? 'outside_fix' : 'inside_fix',
     checkin: checkin,
+    override: override,
   );
 
   Future<void> _done(LocationCheck check, CheckState state, int sampled) async {
@@ -284,7 +301,7 @@ class _LocationCheckViewState extends ConsumerState<LocationCheckView> {
     if (_outside && passed) {
       // Recorded outside: it is the check-in, and it proves the location.
       final fix = check.passedBy!.fix;
-      await widget.inspections.recordCheckin(widget.jobId, fix);
+      await widget.inspections.recordCheckin(widget.job.id, fix);
       await _record(true, check.passedBy, sampled, checkin: fix);
     } else if (!_outside &&
         state == CheckState.noLock &&
@@ -309,8 +326,28 @@ class _LocationCheckViewState extends ConsumerState<LocationCheckView> {
     }
     setState(() {
       _result = state;
-      _distance = check.closestOutside?.distanceM;
+      _outsideBy = check.closestOutside;
+      _sampled = sampled;
     });
+  }
+
+  /// Outside the fence but near enough: the bank's override form, then on
+  /// (docs/07 §7 item 6, T4-10).
+  Future<void> _override(FixVerdict verdict, double allowedMaxM) async {
+    final detail = await Navigator.of(context).push<Map<String, Object?>>(
+      MaterialPageRoute(
+        builder: (_) => GeofenceOverridePage(
+          job: widget.job,
+          formKey: widget.overrideForm,
+          services: widget.services,
+          distanceM: verdict.distanceM,
+          allowedMaxM: allowedMaxM,
+        ),
+      ),
+    );
+    if (detail == null || !mounted) return;
+    await _record(true, verdict, _sampled, override: detail);
+    if (mounted) widget.onPassed();
   }
 
   @override
@@ -347,10 +384,22 @@ class _LocationCheckViewState extends ConsumerState<LocationCheckView> {
             CheckState.outside => [
               say(
                 renderTemplate(copy('location.outside'), {
-                  'm': _distance?.round(),
+                  'm': _outsideBy?.distanceM.round(),
                 }),
                 'outside',
               ),
+              if (_outsideBy case final FixVerdict by
+                  when plan.overrideAllowed(by))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: FilledButton(
+                    key: const ValueKey('location-override'),
+                    onPressed: () => _override(by, plan.overrideWithinM!),
+                    child: Text(copy('location.override')),
+                  ),
+                )
+              else
+                say(copy('location.override_too_far'), 'override-too-far'),
               retry,
             ],
             CheckState.noLock when rule != null => [

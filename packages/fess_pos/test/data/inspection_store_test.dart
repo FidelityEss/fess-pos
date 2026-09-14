@@ -511,6 +511,57 @@ void main() {
       expect((seen['method'], seen['inside']), ('outside_fix', false));
     });
 
+    test('an override goes into the geofence result, and rules see it '
+        '(T4-10)', () async {
+      final plan = (await inspections.geofencePlan(id))!;
+      expect(plan.overrideWithinM, 200, reason: '2 × 100 m, under 500');
+      final near = plan.fence.judge(at(150));
+      expect(plan.overrideAllowed(near), isTrue);
+      expect(plan.overrideAllowed(plan.fence.judge(at(250))), isFalse);
+      final detail = <String, Object?>{
+        'reason_code': 'gps_inaccurate_indoors',
+        'note': 'Deep inside the centre, no lock at the unit.',
+        'photo_evidence_ids': <String>[],
+        'distance_m': 150.0,
+        'allowed_max_m': 200.0,
+      };
+      await inspections.recordLocationCheck(
+        id,
+        passed: true,
+        verdict: near,
+        sampledSeconds: 60,
+        override: detail,
+      );
+      final row = await (db.select(
+        db.inspections,
+      )..where((i) => i.id.equals(id))).getSingle();
+      final g = jsonDecode(row.geofence) as Map<String, Object?>;
+      expect((g['override'], g['passed']), (true, true));
+      expect(g['override_detail'], detail);
+      final context = jsonDecode(row.contextSnapshot) as Map<String, Object?>;
+      final seen = (context['inspection']! as Map)['geofence']! as Map;
+      expect((seen['override'], seen['inside']), (true, false));
+    });
+
+    test('an override photo is evidence of its own type (T4-10)', () async {
+      await inspections.recordPhoto(
+        id,
+        fieldKey: 'override_photo',
+        category: 'override',
+        photo: photo(img.encodeJpg(img.Image(width: 40, height: 30))),
+        type: 'override_photo',
+      );
+      final p = payloadOf((await envelopes('evidence_meta')).single);
+      expect(
+        (p['type'], p['category'], p['field_key']),
+        (
+          'override_photo',
+          'override',
+          'override_photo',
+        ),
+      );
+    });
+
     test('leaving pauses the inspection with a job_event; coming back '
         'resumes it', () async {
       final plan = (await inspections.geofencePlan(id))!;

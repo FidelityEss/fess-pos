@@ -294,6 +294,7 @@ class DriftInspections implements Inspections {
     required String category,
     required CapturedPhoto photo,
     String? caption,
+    String type = 'photo',
   }) async {
     if (photo is! CameraCaptureResult) {
       throw ArgumentError.value(
@@ -309,7 +310,7 @@ class DriftInspections implements Inspections {
       inspectionId,
       fieldKey: fieldKey,
       category: category,
-      type: 'photo',
+      type: type,
       mime: canonical.mime,
       bytes: canonical.bytes,
       capturedAt: photo.capturedAt,
@@ -465,6 +466,14 @@ class DriftInspections implements Inspections {
       paused: paused != null,
       outsideFix: _outsideFixRule(config),
       checkin: await _checkin(row.jobId),
+      overrideWithinM: math.min(
+        fence.radiusM *
+            switch (config.value('geofence.override_radius_multiplier')) {
+              final num m => m.toDouble(),
+              _ => 2.0,
+            },
+        config.integer('geofence.override_max_m').toDouble(),
+      ),
     );
   }
 
@@ -476,6 +485,7 @@ class DriftInspections implements Inspections {
     required int sampledSeconds,
     String method = 'inside_fix',
     GeoFix? checkin,
+    Map<String, Object?>? override,
   }) => _db.transaction(() async {
     final row = await _row(inspectionId);
     if (row == null || row.status != 'in_progress') return;
@@ -488,6 +498,7 @@ class DriftInspections implements Inspections {
       'passed': passed,
       'fix': verdict == null ? null : _fixJson(verdict.fix),
       if (checkin != null) 'checkin_fix': _fixJson(checkin),
+      if (override != null) ...{'override': true, 'override_detail': override},
       'distance_m': verdict == null
           ? null
           : (verdict.distanceM * 10).roundToDouble() / 10,
@@ -509,9 +520,11 @@ class DriftInspections implements Inspections {
               ...inspection,
               'geofence': {
                 ...geofence,
-                // Proven from outside, the agent wasn't seen inside.
-                'inside': passed && method == 'inside_fix',
+                // Proven from outside, or overridden: the agent wasn't
+                // seen inside.
+                'inside': passed && method == 'inside_fix' && override == null,
                 'method': method,
+                if (override != null) 'override': true,
               },
             },
           }),
