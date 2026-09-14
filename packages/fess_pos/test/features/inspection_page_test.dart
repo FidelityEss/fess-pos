@@ -172,6 +172,8 @@ class _FakeInspections implements Inspections {
     String inspectionId, {
     required String fieldKey,
     required SignatureCapture signature,
+    String? signerName,
+    String? signerDesignation,
   }) async {
     final id = _nextId();
     captured.add((field: fieldKey, type: 'signature'));

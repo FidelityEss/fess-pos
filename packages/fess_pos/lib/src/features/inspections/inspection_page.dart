@@ -51,7 +51,7 @@ final renderPlanProvider = FutureProvider.family<CompiledForm, String>((
 }, name: 'renderPlan');
 
 /// An inspection's evidence as the phone holds it, live, without the
-/// bytes: the photo fields show their captions from it.
+/// bytes: the evidence fields show captions and who signed from it.
 // ignore: specify_nonobvious_property_types
 final inspectionEvidenceProvider = StreamProvider.autoDispose
     .family<List<EvidenceItem>, String>((ref, inspectionId) async* {
@@ -601,7 +601,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
     Inspections inspections,
     Map<String, Declaration?> declarations,
     String Function(String key) copy,
-    Map<String, String> captions,
+    Map<String, EvidenceItem> evidence,
   ) => FormFieldServices(
     takePhoto: (context, field, shot) async {
       final of = shot.of;
@@ -649,16 +649,25 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
         ),
       );
     },
-    evidenceCaption: (id) => captions[id],
+    evidence: (id) => evidence[id],
     drawSignature: (context, field) async {
-      final nameField = _string(field.props['signer_name_field']);
+      // Who signs, as the answers say just before (docs/07 §4).
+      String? bound(String prop) {
+        final key = _string(field.props[prop]);
+        final value = key == null ? null : _form?.value(key);
+        return value == null ? null : '$value';
+      }
+
+      final name = bound('signer_name_field');
+      final designation = bound('signer_designation_field');
+      final minLength = field.props['min_stroke_length'];
       final signature = await Navigator.of(context).push<SignatureCapture>(
         MaterialPageRoute(
           builder: (_) => SignaturePadPage(
             title: field.label ?? copy('inspection.signature_title'),
-            signerName: nameField == null
-                ? null
-                : _string(_form?.value(nameField)),
+            signerName: name,
+            signerDesignation: designation,
+            minStrokeLength: minLength is num ? minLength.toDouble() : 0,
           ),
         ),
       );
@@ -671,6 +680,8 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
           widget.inspectionId,
           fieldKey: field.key,
           signature: signature,
+          signerName: name,
+          signerDesignation: designation,
         ),
       );
     },
@@ -889,7 +900,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
                           ),
                         ) ??
                         const <EvidenceItem>[])
-                  if (e.caption case final String caption) e.id: caption,
+                  e.id: e,
               }),
               copy,
             ),

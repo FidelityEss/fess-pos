@@ -38,14 +38,21 @@ class SignatureCapture {
     required this.width,
     required this.height,
     required this.capturedAt,
+    this.padWidth,
+    this.padHeight,
   });
 
-  /// Each stroke's points as `[x, y, ms since the first touch]`.
+  /// Each stroke's points as `[x, y, ms since the first touch]`, in the
+  /// pad's logical pixels.
   final List<List<List<num>>> strokes;
   final Uint8List png;
   final int width;
   final int height;
   final DateTime capturedAt;
+
+  /// The pad the strokes were drawn on, in logical pixels.
+  final double? padWidth;
+  final double? padHeight;
 
   bool get isEmpty => strokes.every((s) => s.isEmpty);
 }
@@ -165,6 +172,8 @@ class EvidenceItem {
     required this.type,
     required this.state,
     this.caption,
+    this.signerName,
+    this.signerDesignation,
   });
 
   final String id;
@@ -178,6 +187,11 @@ class EvidenceItem {
 
   /// The caption written when the photo was taken.
   final String? caption;
+
+  /// Who signed a signature, and as what, as the answers said when it was
+  /// signed.
+  final String? signerName;
+  final String? signerDesignation;
 }
 
 enum BeginStatus {
@@ -246,6 +260,8 @@ abstract interface class Inspections implements DeliveryTracker {
     String inspectionId, {
     required String fieldKey,
     required SignatureCapture signature,
+    String? signerName,
+    String? signerDesignation,
   });
 
   /// The bytes of evidence [evidenceId] while the phone still holds them.

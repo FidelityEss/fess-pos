@@ -931,7 +931,7 @@ class _PhotoInputState extends State<_PhotoInput> {
                                 ),
                               ),
                             ),
-                            if (widget.services.evidenceCaption(ids[i])
+                            if (widget.services.evidence(ids[i])?.caption
                                 case final String caption)
                               Text(
                                 caption,
@@ -973,7 +973,12 @@ class _PhotoInputState extends State<_PhotoInput> {
   }
 }
 
-/// A signature (`11` §3.5): drawn on the pad, stored, then shown here.
+/// A signature (`11` §3.5, T4-05): drawn on the pad, stored, then shown
+/// here with who signed. Where the form binds the signer's name and
+/// designation (`signer_name_field`, `signer_designation_field`), they are
+/// filled in before signing and go into the signature's record; if either
+/// changes afterwards, the field says to sign again. Signing again keeps
+/// the earlier signature on record.
 class _SignatureInput extends StatefulWidget {
   const _SignatureInput(this.b, this.services, {super.key});
 
@@ -987,11 +992,51 @@ class _SignatureInput extends StatefulWidget {
 class _SignatureInputState extends State<_SignatureInput> {
   bool _busy = false;
 
-  Future<void> _sign() async {
+  _Binding get b => widget.b;
+
+  /// The answer of the field bound by [prop], as text: null when none is
+  /// bound, '' when it has no answer.
+  String? _bound(String prop) {
+    final key = _string(b.props[prop]);
+    if (key == null) return null;
+    final value = b.controller.value(key);
+    return value == null ? '' : '$value'.trim();
+  }
+
+  /// A bound field that is shown and still empty: the signer is named
+  /// before signing (docs/07 §4).
+  bool _missing(String prop) {
+    final key = _string(b.props[prop]);
+    if (key == null) return false;
+    final shown = b.controller.resolved?.fields[key]?.visible ?? false;
+    return shown && (_bound(prop)?.isEmpty ?? false);
+  }
+
+  Future<void> _sign({required bool again}) async {
+    if (again) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => AlertDialog(
+          content: Text(b.copy('signature.sign_again_confirm')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialog).pop(false),
+              child: Text(b.copy('inspection.cancel')),
+            ),
+            FilledButton(
+              key: ValueKey('signature-confirm-${b.key}'),
+              onPressed: () => Navigator.of(dialog).pop(true),
+              child: Text(b.copy('inspection.sign_again')),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
     setState(() => _busy = true);
     try {
-      final id = await widget.services.drawSignature(context, widget.b.field);
-      if (id != null) widget.b.controller.setValue(widget.b.key, id);
+      final id = await widget.services.drawSignature(context, b.field);
+      if (id != null) b.controller.setValue(b.key, id);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -999,8 +1044,23 @@ class _SignatureInputState extends State<_SignatureInput> {
 
   @override
   Widget build(BuildContext context) {
-    final b = widget.b;
     final id = _string(b.controller.value(b.key));
+    final item = id == null ? null : widget.services.evidence(id);
+    final name = _bound('signer_name_field');
+    final designation = _bound('signer_designation_field');
+    final waiting =
+        _missing('signer_name_field') || _missing('signer_designation_field');
+    // Who signed, as recorded, against what the answers say now.
+    final changed =
+        item != null &&
+        ((name != null && (item.signerName ?? '') != name) ||
+            (designation != null &&
+                (item.signerDesignation ?? '') != designation));
+    final signedBy = [
+      item?.signerName,
+      item?.signerDesignation,
+    ].whereType<String>().join(' · ');
+    final small = Theme.of(context).textTheme.bodySmall;
     return _Frame(
       b,
       child: Column(
@@ -1014,9 +1074,42 @@ class _SignatureInputState extends State<_SignatureInput> {
                 child: widget.services.evidenceImage(id, 120),
               ),
             ),
+          if (signedBy.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                renderTemplate(b.copy('signature.signed_by'), {
+                  'who': signedBy,
+                }),
+                key: ValueKey('signature-signer-${b.key}'),
+                style: small,
+              ),
+            ),
+          if (changed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                b.copy('signature.signer_changed'),
+                key: ValueKey('signature-changed-${b.key}'),
+                style: small?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
+          if (waiting)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                b.copy('signature.signer_first'),
+                key: ValueKey('signature-waiting-${b.key}'),
+                style: small,
+              ),
+            ),
           OutlinedButton.icon(
             key: ValueKey('signature-sign-${b.key}'),
-            onPressed: b.field.readOnly || _busy ? null : _sign,
+            onPressed: b.field.readOnly || _busy || waiting
+                ? null
+                : () => _sign(again: id != null),
             icon: const Icon(Icons.draw),
             label: Text(
               b.copy(id == null ? 'inspection.sign' : 'inspection.sign_again'),

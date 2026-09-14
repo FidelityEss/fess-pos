@@ -12,7 +12,7 @@ class PhotoShot {
   final int? of;
 }
 
-String? _noCaption(String evidenceId) => null;
+EvidenceItem? _noEvidence(String evidenceId) => null;
 
 /// What the evidence and legal fields need from the inspection they belong
 /// to (T4-27): the camera, the signature pad, the phone's copy of the
@@ -25,7 +25,7 @@ class FormFieldServices {
     required this.drawSignature,
     required this.evidenceImage,
     required this.declaration,
-    this.evidenceCaption = _noCaption,
+    this.evidence = _noEvidence,
     this.now = DateTime.now,
   });
 
@@ -48,8 +48,9 @@ class FormFieldServices {
   /// phone holds it.
   final Widget Function(String evidenceId, double size) evidenceImage;
 
-  /// A piece of evidence's caption, as it was recorded; null for none.
-  final String? Function(String evidenceId) evidenceCaption;
+  /// A piece of evidence as the phone recorded it (its caption, who
+  /// signed); null until it shows.
+  final EvidenceItem? Function(String evidenceId) evidence;
 
   /// A declaration, by key, as on the phone; null before it arrives.
   final Declaration? Function(String key) declaration;

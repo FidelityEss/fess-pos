@@ -464,7 +464,8 @@ void main() {
       expect(await db.select(db.evidence).get(), isEmpty);
     });
 
-    test('a signature keeps the hash of its strokes', () async {
+    test('a signature keeps its strokes, their hash and who signed '
+        '(T4-05)', () async {
       final strokes = [
         [
           [1.0, 2.0, 0],
@@ -480,16 +481,30 @@ void main() {
           width: 600,
           height: 300,
           capturedAt: now,
+          padWidth: 300,
+          padHeight: 150,
         ),
+        signerName: ' Thandi Mokoena ',
+        signerDesignation: 'Owner',
       );
       final p = payloadOf((await envelopes('evidence_meta')).single);
       expect(p['evidence_id'], evidenceId);
       expect(p['type'], 'signature');
       expect(p['mime'], 'image/png');
       expect(p['width'], 600);
+      final meta = p['meta']! as Map<String, Object?>;
+      expect(meta['strokes_sha256'], payloadHash(strokes));
+      expect(meta['strokes'], strokes, reason: 'the vector strokes go too');
+      expect(meta['pad'], {'width': 300, 'height': 150});
+      expect(meta['signer_name'], 'Thandi Mokoena');
+      expect(meta['signer_designation'], 'Owner');
+      final item = (await inspections.watchEvidence(id).first).single;
       expect(
-        (p['meta']! as Map<String, Object?>)['strokes_sha256'],
-        payloadHash(strokes),
+        (item.signerName, item.signerDesignation),
+        (
+          'Thandi Mokoena',
+          'Owner',
+        ),
       );
     });
 

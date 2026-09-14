@@ -133,6 +133,14 @@ abstract final class BundledCopy {
     'inspection.signature_hint': 'Sign inside the box.',
     'inspection.clear': 'Clear',
     'inspection.done': 'Done',
+    'signature.too_short': 'Keep going: the signature is too short.',
+    'signature.full': 'The pad is full. Tap Done, or Clear to start again.',
+    'signature.signed_by': 'Signed by {{who}}',
+    'signature.signer_first': 'Fill in who is signing first.',
+    'signature.signer_changed':
+        'Who is signing changed after this signature. Sign again.',
+    'signature.sign_again_confirm':
+        'Sign again? The earlier signature stays on record.',
     'inspection.declaration_accept': 'I accept this declaration',
     'inspection.declaration_missing':
         "This declaration hasn't reached your phone yet. Connect to the "

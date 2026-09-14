@@ -1,3 +1,4 @@
+import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/renderer/form/form_controller.dart';
 import 'package:fess_pos/src/renderer/form/form_services.dart';
 import 'package:fess_pos/src/renderer/form/form_view.dart';
@@ -23,7 +24,13 @@ class _Camera {
     drawSignature: (context, field) async => null,
     evidenceImage: (id, size) =>
         SizedBox.square(key: ValueKey('image-$id'), dimension: size),
-    evidenceCaption: (id) => captions[id],
+    evidence: (id) => EvidenceItem(
+      id: id,
+      fieldKey: 'outside',
+      type: 'photo',
+      state: 'local_only',
+      caption: captions[id],
+    ),
     declaration: (key) => null,
   );
 }

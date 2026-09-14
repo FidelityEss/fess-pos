@@ -316,7 +316,7 @@ class DriftInspections implements Inspections {
       height: canonical.height,
       meta: {
         ...canonical.meta,
-        if (_captionOf(caption) case final String text) 'caption': text,
+        if (_textOf(caption, 500) case final String text) 'caption': text,
       },
       pendingFix: fix,
     );
@@ -325,13 +325,29 @@ class DriftInspections implements Inspections {
     return id;
   }
 
-  /// A caption as recorded: trimmed, at most 500 characters (the
-  /// `evidence_meta` limit), none when empty.
-  static String? _captionOf(String? caption) {
-    final text = caption?.trim() ?? '';
+  /// Text as recorded in evidence meta: trimmed, at most [max] characters
+  /// (500 for a caption, the `evidence_meta` limit), none when empty.
+  static String? _textOf(String? value, int max) {
+    final text = value?.trim() ?? '';
     if (text.isEmpty) return null;
-    return String.fromCharCodes(text.runes.take(500));
+    return String.fromCharCodes(text.runes.take(max));
   }
+
+  EvidenceItem _evidenceItem(
+    String id,
+    String fieldKey,
+    String type,
+    String state,
+    Map<String, Object?>? meta,
+  ) => EvidenceItem(
+    id: id,
+    fieldKey: fieldKey,
+    type: type,
+    state: state,
+    caption: _string(meta?['caption']),
+    signerName: _string(meta?['signer_name']),
+    signerDesignation: _string(meta?['signer_designation']),
+  );
 
   /// The canonical photo (docs/07 §4 step 2, T4-02) with the limits in
   /// force for the job's bank. A capture that can't be read as an image is
@@ -388,6 +404,8 @@ class DriftInspections implements Inspections {
     String inspectionId, {
     required String fieldKey,
     required SignatureCapture signature,
+    String? signerName,
+    String? signerDesignation,
   }) {
     if (signature.isEmpty) {
       throw ArgumentError.value(signature, 'signature', 'nothing was drawn');
@@ -402,7 +420,18 @@ class DriftInspections implements Inspections {
       capturedAt: signature.capturedAt,
       width: signature.width,
       height: signature.height,
-      meta: {'strokes_sha256': payloadHash(signature.strokes)},
+      // The vector strokes go with their hash (B5.4), and who signed, as
+      // the answers said just before (docs/07 §4, D-76).
+      meta: {
+        'strokes_sha256': payloadHash(signature.strokes),
+        'strokes': signature.strokes,
+        if (signature.padWidth case final double width)
+          'pad': {'width': width, 'height': signature.padHeight},
+        if (_textOf(signerName, 200) case final String name)
+          'signer_name': name,
+        if (_textOf(signerDesignation, 200) case final String designation)
+          'signer_designation': designation,
+      },
     );
   }
 
@@ -424,12 +453,12 @@ class DriftInspections implements Inspections {
         .map(
           (rows) => [
             for (final r in rows)
-              EvidenceItem(
-                id: r.read(e.id)!,
-                fieldKey: r.read(e.fieldKey)!,
-                type: r.read(e.type)!,
-                state: r.read(e.state)!,
-                caption: _string(_decode(r.read(e.meta))?['caption']),
+              _evidenceItem(
+                r.read(e.id)!,
+                r.read(e.fieldKey)!,
+                r.read(e.type)!,
+                r.read(e.state)!,
+                _decode(r.read(e.meta)),
               ),
           ],
         );
