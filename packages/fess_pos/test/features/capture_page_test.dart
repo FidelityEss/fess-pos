@@ -5,6 +5,7 @@ import 'package:fess_pos/src/core/content/bundled_copy.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/features/inspections/capture_page.dart';
 import 'package:fess_pos/src/platform/camera.dart';
+import 'package:fess_pos/src/platform/location.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:fess_pos/src/platform/secure_store.dart';
 import 'package:flutter/material.dart';
@@ -63,23 +64,39 @@ class _Session implements CameraSession {
 }
 
 class _Screen {
-  _Screen({required this.camera, required this.store, required this.apps});
+  _Screen({
+    required this.camera,
+    required this.store,
+    required this.apps,
+    required this.location,
+  });
 
   final _Camera camera;
   final MemorySecureStore store;
   final FakeExternalApps apps;
+  final FakeLocation location;
   Object? result;
 }
+
+LocationFix _fix() => LocationFix(
+  latitude: -26.2042,
+  longitude: 28.0474,
+  accuracyM: 8,
+  fixTime: DateTime.utc(2026, 9, 14),
+);
 
 Future<_Screen> _show(
   WidgetTester tester, {
   bool explained = false,
   bool allowed = true,
+  CapturePage page = const CapturePage(title: 'Shopfront'),
+  FakeLocation? location,
 }) async {
   final screen = _Screen(
     camera: _Camera()..allowed = allowed,
     store: MemorySecureStore(),
     apps: FakeExternalApps(),
+    location: location ?? (FakeLocation()..fix = _fix()),
   );
   if (explained) screen.store.values[cameraExplainedKey] = '1';
   final base = fakePlatform(
@@ -89,7 +106,7 @@ Future<_Screen> _show(
   final services = PlatformServices(
     secureStore: base.secureStore,
     connectivity: base.connectivity,
-    location: base.location,
+    location: screen.location,
     camera: screen.camera,
     deviceInfo: base.deviceInfo,
     storage: base.storage,
@@ -110,7 +127,7 @@ Future<_Screen> _show(
               onPressed: () async {
                 screen.result = await Navigator.of(context).push<Object?>(
                   MaterialPageRoute<Object?>(
-                    builder: (_) => const CapturePage(title: 'Shopfront'),
+                    builder: (_) => page,
                   ),
                 );
               },
@@ -210,5 +227,74 @@ void main() {
     await tester.pumpAndSettle();
     expect(s.camera.opened, 2);
     expect(find.byKey(const ValueKey('preview')), findsOneWidget);
+  });
+
+  testWidgets('the guidance and which photo of a sequence show over the '
+      'preview (T4-04)', (tester) async {
+    await _show(
+      tester,
+      explained: true,
+      page: const CapturePage(
+        title: 'Shopfront',
+        guidance: 'Stand across the road.',
+        progress: 'Photo 2 of 3',
+      ),
+    );
+    expect(find.text('Stand across the road.'), findsOneWidget);
+    expect(find.text('Photo 2 of 3'), findsOneWidget);
+  });
+
+  testWidgets('a photo that needs the location waits for a fix', (
+    tester,
+  ) async {
+    final location = FakeLocation();
+    final s = await _show(
+      tester,
+      explained: true,
+      location: location,
+      page: const CapturePage(title: 'Shopfront', requireLocation: true),
+    );
+    final shutter = find.byKey(const ValueKey('capture-shutter'));
+    expect(find.text(_copy('camera.location_wait')), findsOneWidget);
+    expect(
+      tester.widget<FloatingActionButton>(shutter).onPressed,
+      isNull,
+      reason: 'no photo before the phone knows where it is',
+    );
+
+    location.fix = _fix();
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(find.text(_copy('camera.location_wait')), findsNothing);
+    await tester.tap(shutter);
+    await tester.pumpAndSettle();
+    expect(s.result, isA<CameraCaptureResult>());
+  });
+
+  testWidgets('location refused: allow it here, or in settings when the '
+      'phone will not ask again', (tester) async {
+    final location = FakeLocation()
+      ..accessState = LocationAccess.denied
+      ..fix = _fix();
+    final s = await _show(
+      tester,
+      explained: true,
+      location: location,
+      page: const CapturePage(title: 'Shopfront', requireLocation: true),
+    );
+    final allow = find.byKey(const ValueKey('camera-location-allow'));
+    expect(find.text(_copy('camera.location_needed')), findsOneWidget);
+
+    location.accessState = LocationAccess.deniedForever;
+    await tester.tap(allow);
+    await tester.pumpAndSettle();
+    expect(s.apps.settingsOpened, 1);
+
+    location.accessState = LocationAccess.whileInUse;
+    _lifecycle(tester, [AppLifecycleState.inactive, AppLifecycleState.resumed]);
+    await tester.pumpAndSettle();
+    expect(find.text(_copy('camera.location_needed')), findsNothing);
+    final shutter = find.byKey(const ValueKey('capture-shutter'));
+    expect(tester.widget<FloatingActionButton>(shutter).onPressed, isNotNull);
   });
 }

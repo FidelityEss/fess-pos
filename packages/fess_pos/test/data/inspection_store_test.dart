@@ -385,6 +385,45 @@ void main() {
       expect(p['meta'], isEmpty);
     });
 
+    test('a caption is kept with the photo, trimmed and at most 500 '
+        'characters (T4-04)', () async {
+      final evidenceId = await inspections.recordPhoto(
+        id,
+        fieldKey: 'external_photos',
+        category: 'external',
+        photo: photo(img.encodeJpg(img.Image(width: 40, height: 30))),
+        caption: '  The front door  ',
+      );
+      final p = payloadOf((await envelopes('evidence_meta')).single);
+      expect(p['meta'], {'caption': 'The front door'});
+      final items = await inspections.watchEvidence(id).first;
+      expect(items.single.id, evidenceId);
+      expect(items.single.caption, 'The front door');
+
+      await inspections.recordPhoto(
+        id,
+        fieldKey: 'external_photos',
+        category: 'external',
+        photo: photo(img.encodeJpg(img.Image(width: 40, height: 30))),
+        caption: 'x' * 600,
+      );
+      await inspections.recordPhoto(
+        id,
+        fieldKey: 'external_photos',
+        category: 'external',
+        photo: photo(img.encodeJpg(img.Image(width: 40, height: 30))),
+        caption: '   ',
+      );
+      final metas = [
+        for (final e in await envelopes('evidence_meta')) payloadOf(e)['meta'],
+      ];
+      expect(metas.map((m) => ((m! as Map)['caption'] as String?)?.length), [
+        14,
+        500,
+        null,
+      ]);
+    });
+
     test('a capture that is no image is kept as taken, and marked', () async {
       final bytes = [1, 2, 3, 4];
       final evidenceId = await inspections.recordPhoto(

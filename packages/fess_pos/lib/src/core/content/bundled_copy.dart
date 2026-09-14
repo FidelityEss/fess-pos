@@ -151,6 +151,28 @@ abstract final class BundledCopy {
         "phone's settings, then come back.",
     'camera.open_settings': 'Open settings',
     'camera.try_again': 'Try again',
+    'camera.location_wait': 'Waiting for your location…',
+    'camera.location_needed':
+        'These photos need your location. Allow FESS to use it.',
+    'camera.location_allow': 'Allow location',
+    'camera.location_off': 'Turn on location on your phone for these photos.',
+    'inspection.take_photos': 'Take photos',
+    'photo.progress': 'Photo {{n}} of {{total}}',
+    'photo.count': '{{n}} taken',
+    'photo.count.min': '{{n}} taken · at least {{min}}',
+    'photo.count.max': '{{n}} taken · up to {{max}}',
+    'photo.count.range': '{{n}} taken · {{min}} to {{max}}',
+    'photo.retake': 'Retake',
+    'photo.remove': 'Remove',
+    'photo.retake_confirm':
+        'Replace this photo? The one you replace stays on record.',
+    'photo.remove_confirm':
+        'Remove this photo? It stays on record, but not in your answers.',
+    'photo.caption.title': 'Caption',
+    'photo.caption.hint': 'What does this photo show?',
+    'photo.caption.save': 'Save',
+    'photo.caption.skip': 'No caption',
+    'photo.caption.discard': 'Discard photo',
     'form.error.RULE_ERROR':
         "This question couldn't be checked. Tell your administrator.",
     'form.error.VALIDATION_RULE_FAILED': 'Check this answer.',

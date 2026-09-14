@@ -48,7 +48,12 @@ const Map<String, Object?> _form = {
           'type': 'photo',
           'label': 'Outside',
           'required': true,
-          'props': {'category': 'external', 'min_count': 1, 'max_count': 2},
+          'props': {
+            'category': 'external',
+            'min_count': 1,
+            'max_count': 2,
+            'caption': 'required',
+          },
         },
       ],
     },
@@ -152,11 +157,15 @@ class _FakeInspections implements Inspections {
     required String fieldKey,
     required String category,
     required CapturedPhoto photo,
+    String? caption,
   }) async {
     final id = _nextId();
     captured.add((field: fieldKey, type: 'photo'));
+    captions.add(caption);
     return id;
   }
+
+  final List<String?> captions = [];
 
   @override
   Future<String> recordSignature(
@@ -379,8 +388,22 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('camera-explain-continue')));
     await _settle(tester);
     await tester.tap(find.byKey(const ValueKey('capture-shutter')));
+    // The caption box has the focus, and its cursor never settles.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    // The field asks for a caption; it goes with the photo (T4-04).
+    final save = find.byKey(const ValueKey('photo-caption-save'));
+    expect(tester.widget<FilledButton>(save).onPressed, isNull);
+    await tester.enterText(
+      find.byKey(const ValueKey('photo-caption')),
+      'The shopfront',
+    );
+    await tester.pump();
+    await tester.tap(save);
     await _settle(tester);
     expect(inspections.captured.single.type, 'photo');
+    expect(inspections.captions.single, 'The shopfront');
 
     // A signature on the pad; rendering its PNG needs real async.
     await tester.tap(

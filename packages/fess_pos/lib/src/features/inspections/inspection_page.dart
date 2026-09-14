@@ -50,6 +50,76 @@ final renderPlanProvider = FutureProvider.family<CompiledForm, String>((
   return ref.watch(formCompilerProvider)(form);
 }, name: 'renderPlan');
 
+/// An inspection's evidence as the phone holds it, live, without the
+/// bytes: the photo fields show their captions from it.
+// ignore: specify_nonobvious_property_types
+final inspectionEvidenceProvider = StreamProvider.autoDispose
+    .family<List<EvidenceItem>, String>((ref, inspectionId) async* {
+      final inspections = await ref.watch(inspectionsProvider.future);
+      if (inspections != null) yield* inspections.watchEvidence(inspectionId);
+    }, name: 'inspectionEvidence');
+
+/// Asks for a photo's caption (`caption: optional | required`): the text,
+/// '' when an optional one is skipped, null when the photo is discarded.
+class _CaptionDialog extends StatefulWidget {
+  const _CaptionDialog({required this.required, required this.copy});
+
+  final bool required;
+  final String Function(String key) copy;
+
+  @override
+  State<_CaptionDialog> createState() => _CaptionDialogState();
+}
+
+class _CaptionDialogState extends State<_CaptionDialog> {
+  final TextEditingController _text = TextEditingController();
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = widget.copy;
+    final text = _text.text.trim();
+    return AlertDialog(
+      title: Text(copy('photo.caption.title')),
+      content: TextField(
+        key: const ValueKey('photo-caption'),
+        controller: _text,
+        autofocus: true,
+        maxLength: 500,
+        minLines: 1,
+        maxLines: 3,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: InputDecoration(hintText: copy('photo.caption.hint')),
+        onChanged: (_) => setState(() {}),
+      ),
+      actions: [
+        TextButton(
+          key: const ValueKey('photo-caption-skip'),
+          onPressed: () =>
+              Navigator.of(context).pop(widget.required ? null : ''),
+          child: Text(
+            copy(
+              widget.required ? 'photo.caption.discard' : 'photo.caption.skip',
+            ),
+          ),
+        ),
+        FilledButton(
+          key: const ValueKey('photo-caption-save'),
+          onPressed: text.isEmpty
+              ? null
+              : () => Navigator.of(context).pop(text),
+          child: Text(copy('photo.caption.save')),
+        ),
+      ],
+    );
+  }
+}
+
 T? _data<T>(AsyncValue<T> value) => switch (value) {
   AsyncData(:final value) => value,
   _ => null,
@@ -518,19 +588,56 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
     );
   }
 
+  /// A photo field's guidance, filled in from what the rules see.
+  String? _guidance(ResolvedField field) {
+    final guidance = field.props['guidance'];
+    final text = guidance is Map<String, Object?> ? guidance['text'] : null;
+    return text is String
+        ? renderTemplate(text, _form?.resolved?.data ?? const {})
+        : null;
+  }
+
   FormFieldServices _services(
     Inspections inspections,
     Map<String, Declaration?> declarations,
     String Function(String key) copy,
+    Map<String, String> captions,
   ) => FormFieldServices(
-    takePhoto: (context, field) async {
+    takePhoto: (context, field, shot) async {
+      final of = shot.of;
       final photo = await Navigator.of(context).push<CapturedPhoto>(
         MaterialPageRoute(
-          builder: (_) =>
-              CapturePage(title: field.label ?? copy('inspection.take_photo')),
+          builder: (_) => CapturePage(
+            title: field.label ?? copy('inspection.take_photo'),
+            guidance: _guidance(field),
+            progress: of == null
+                ? null
+                : renderTemplate(copy('photo.progress'), {
+                    'n': shot.number,
+                    'total': of,
+                  }),
+            requireLocation: field.props['require_gps'] == true,
+          ),
         ),
       );
       if (photo == null || !context.mounted) return null;
+      // The caption goes with the photo's record, so it's asked for now.
+      final policy = _string(field.props['caption']) ?? 'none';
+      String? caption;
+      if (policy == 'optional' || policy == 'required') {
+        caption = await showDialog<String>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) =>
+              _CaptionDialog(required: policy == 'required', copy: copy),
+        );
+        if (caption == null) {
+          // Discarded before it was stored: not evidence yet.
+          await photo.releaseSource();
+          return null;
+        }
+        if (!context.mounted) return null;
+      }
       return _stored(
         context,
         () => inspections.recordPhoto(
@@ -538,9 +645,11 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
           fieldKey: field.key,
           category: _category(field),
           photo: photo,
+          caption: caption,
         ),
       );
     },
+    evidenceCaption: (id) => captions[id],
     drawSignature: (context, field) async {
       final nameField = _string(field.props['signer_name_field']);
       final signature = await Navigator.of(context).push<SignatureCapture>(
@@ -772,7 +881,16 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
             _stepView(
               at,
               controller,
-              _services(inspections, declarations, copy),
+              _services(inspections, declarations, copy, {
+                for (final e
+                    in _data(
+                          ref.watch(
+                            inspectionEvidenceProvider(widget.inspectionId),
+                          ),
+                        ) ??
+                        const <EvidenceItem>[])
+                  if (e.caption case final String caption) e.id: caption,
+              }),
               copy,
             ),
           ],

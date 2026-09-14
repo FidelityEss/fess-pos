@@ -739,9 +739,15 @@ List<String> _evidenceIds(Object? v) => [
       if (x is String) x,
 ];
 
-/// Photos (`11` §3.5): the ones taken so far and a button for the next,
-/// up to `max_count`. The camera stores each photo before it shows here.
-/// Retakes, captions and guided sequences come with T4-04.
+/// Photos (`11` §3.5, T4-04): the field's guidance, the photos taken so far
+/// with their captions, how many it needs (`min_count`, `max_count`, which
+/// rules may set) and a button for the next. The camera stores each photo
+/// before it shows here.
+///
+/// With `display: guided_sequence` one tap takes photo after photo until
+/// the field has what it asks for. Tapping a photo offers a retake or its
+/// removal, as `retake` allows (`allowed`, `confirm`, `disallowed`). A photo
+/// replaced or removed stays on record; it just isn't in the answer.
 class _PhotoInput extends StatefulWidget {
   const _PhotoInput(this.b, this.services, {super.key});
 
@@ -755,33 +761,148 @@ class _PhotoInput extends StatefulWidget {
 class _PhotoInputState extends State<_PhotoInput> {
   bool _busy = false;
 
+  _Binding get b => widget.b;
+
+  List<String> get _ids => _evidenceIds(b.controller.value(b.key));
+
+  int? get _min => _num(b.props['min_count'])?.toInt();
+
+  int? get _max => _num(b.props['max_count'])?.toInt();
+
+  String get _retake => _string(b.props['retake']) ?? 'allowed';
+
+  void _set(List<String> ids) => b.controller.setValue(b.key, ids);
+
+  Future<String?> _shoot(PhotoShot shot) =>
+      widget.services.takePhoto(context, b.field, shot);
+
   Future<void> _take() async {
     setState(() => _busy = true);
     try {
-      final id = await widget.services.takePhoto(context, widget.b.field);
-      if (id != null) {
-        final b = widget.b;
-        b.controller.setValue(b.key, [
-          ..._evidenceIds(b.controller.value(b.key)),
-          id,
-        ]);
+      if (b.display != 'guided_sequence') {
+        final id = await _shoot(PhotoShot(number: _ids.length + 1));
+        if (id != null) _set([..._ids, id]);
+        return;
+      }
+      // The camera comes back until the field has what it asks for, or the
+      // agent goes back.
+      var total = math.max(_min ?? 1, _ids.length + 1);
+      if (_max case final int max) total = math.min(total, max);
+      while (mounted && _ids.length < total) {
+        final id = await _shoot(
+          PhotoShot(number: _ids.length + 1, of: total),
+        );
+        if (id == null) break;
+        _set([..._ids, id]);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
+  Future<void> _manage(int index) async {
+    if (_retake == 'disallowed' || b.field.readOnly || _busy) return;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              key: ValueKey('photo-retake-${b.key}-$index'),
+              leading: const Icon(Icons.replay),
+              title: Text(b.copy('photo.retake')),
+              onTap: () => Navigator.of(sheet).pop('retake'),
+            ),
+            ListTile(
+              key: ValueKey('photo-remove-${b.key}-$index'),
+              leading: const Icon(Icons.delete_outline),
+              title: Text(b.copy('photo.remove')),
+              onTap: () => Navigator.of(sheet).pop('remove'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    if (_retake == 'confirm') {
+      final retake = choice == 'retake';
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => AlertDialog(
+          content: Text(
+            b.copy(retake ? 'photo.retake_confirm' : 'photo.remove_confirm'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialog).pop(false),
+              child: Text(b.copy('inspection.cancel')),
+            ),
+            FilledButton(
+              key: ValueKey('photo-confirm-${b.key}'),
+              onPressed: () => Navigator.of(dialog).pop(true),
+              child: Text(b.copy(retake ? 'photo.retake' : 'photo.remove')),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
+    if (choice == 'remove') {
+      _set([..._ids]..removeAt(index));
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final id = await _shoot(PhotoShot(number: index + 1));
+      if (id != null && mounted) {
+        final ids = [..._ids];
+        if (index < ids.length) {
+          ids[index] = id;
+        } else {
+          ids.add(id);
+        }
+        _set(ids);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  String _count(int n) {
+    final (min, max) = (_min, _max);
+    final key = switch ((min != null && min > 0, max != null)) {
+      (true, true) => 'photo.count.range',
+      (true, false) => 'photo.count.min',
+      (false, true) => 'photo.count.max',
+      _ => 'photo.count',
+    };
+    return renderTemplate(b.copy(key), {'n': n, 'min': ?min, 'max': ?max});
+  }
+
   @override
   Widget build(BuildContext context) {
-    final b = widget.b;
-    final ids = _evidenceIds(b.controller.value(b.key));
-    final max = b.props['max_count'];
-    final full = max is num && ids.length >= max;
+    final ids = _ids;
+    final max = _max;
+    final full = max != null && ids.length >= max;
+    final guidance = b.props['guidance'] is Map<String, Object?>
+        ? b.template((b.props['guidance']! as Map<String, Object?>)['text'])
+        : null;
+    final theme = Theme.of(context);
     return _Frame(
       b,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (guidance != null && guidance.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                guidance,
+                key: ValueKey('photo-guidance-${b.key}'),
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
           if (ids.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -789,24 +910,61 @@ class _PhotoInputState extends State<_PhotoInput> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  for (final id in ids)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(
-                        PosTokens.radiusControl,
-                      ),
-                      child: SizedBox.square(
-                        dimension: 88,
-                        child: widget.services.evidenceImage(id, 88),
+                  for (var i = 0; i < ids.length; i++)
+                    InkWell(
+                      key: ValueKey('photo-thumb-${b.key}-$i'),
+                      onTap: () => _manage(i),
+                      child: SizedBox(
+                        width: 88,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                PosTokens.radiusControl,
+                              ),
+                              child: SizedBox.square(
+                                dimension: 88,
+                                child: widget.services.evidenceImage(
+                                  ids[i],
+                                  88,
+                                ),
+                              ),
+                            ),
+                            if (widget.services.evidenceCaption(ids[i])
+                                case final String caption)
+                              Text(
+                                caption,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall,
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                 ],
               ),
             ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              _count(ids.length),
+              key: ValueKey('photo-count-${b.key}'),
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
           OutlinedButton.icon(
             key: ValueKey('photo-take-${b.key}'),
             onPressed: b.field.readOnly || full || _busy ? null : _take,
             icon: const Icon(Icons.photo_camera),
-            label: Text(b.copy('inspection.take_photo')),
+            label: Text(
+              b.copy(
+                b.display == 'guided_sequence'
+                    ? 'inspection.take_photos'
+                    : 'inspection.take_photo',
+              ),
+            ),
           ),
           if (_busy) _Saving(b.copy('inspection.saving')),
         ],

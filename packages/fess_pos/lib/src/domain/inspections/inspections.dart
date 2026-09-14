@@ -164,6 +164,7 @@ class EvidenceItem {
     required this.fieldKey,
     required this.type,
     required this.state,
+    this.caption,
   });
 
   final String id;
@@ -174,6 +175,9 @@ class EvidenceItem {
 
   /// `local_only`, `uploaded`, `verified` or `quarantined` (docs/08 §1).
   final String state;
+
+  /// The caption written when the photo was taken.
+  final String? caption;
 }
 
 enum BeginStatus {
@@ -226,13 +230,15 @@ abstract interface class Inspections implements DeliveryTracker {
     List<List<int>> flowPath = const [],
   });
 
-  /// Stores [photo] for field [fieldKey] and records its `evidence_meta`;
+  /// Stores [photo] for field [fieldKey] and records its `evidence_meta`,
+  /// with its [caption] (written when the photo is taken, never changed);
   /// returns the evidence id, the field's answer.
   Future<String> recordPhoto(
     String inspectionId, {
     required String fieldKey,
     required String category,
     required CapturedPhoto photo,
+    String? caption,
   });
 
   /// As [recordPhoto], for a drawn signature.

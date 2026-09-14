@@ -292,6 +292,7 @@ class DriftInspections implements Inspections {
     required String fieldKey,
     required String category,
     required CapturedPhoto photo,
+    String? caption,
   }) async {
     if (photo is! CameraCaptureResult) {
       throw ArgumentError.value(
@@ -313,12 +314,23 @@ class DriftInspections implements Inspections {
       capturedAt: photo.capturedAt,
       width: canonical.width,
       height: canonical.height,
-      meta: canonical.meta,
+      meta: {
+        ...canonical.meta,
+        if (_captionOf(caption) case final String text) 'caption': text,
+      },
       pendingFix: fix,
     );
     // Only now is the camera's temporary copy a spare (docs/12 §3).
     await photo.releaseSource();
     return id;
+  }
+
+  /// A caption as recorded: trimmed, at most 500 characters (the
+  /// `evidence_meta` limit), none when empty.
+  static String? _captionOf(String? caption) {
+    final text = caption?.trim() ?? '';
+    if (text.isEmpty) return null;
+    return String.fromCharCodes(text.runes.take(500));
   }
 
   /// The canonical photo (docs/07 §4 step 2, T4-02) with the limits in
@@ -405,7 +417,7 @@ class DriftInspections implements Inspections {
     final e = _db.evidence;
     // Without the bytes: this is watched while photos are taken (D-74).
     return (_db.selectOnly(e)
-          ..addColumns([e.id, e.fieldKey, e.type, e.state])
+          ..addColumns([e.id, e.fieldKey, e.type, e.state, e.meta])
           ..where(e.inspectionId.equals(inspectionId))
           ..orderBy([OrderingTerm.asc(e.createdAtMs)]))
         .watch()
@@ -417,6 +429,7 @@ class DriftInspections implements Inspections {
                 fieldKey: r.read(e.fieldKey)!,
                 type: r.read(e.type)!,
                 state: r.read(e.state)!,
+                caption: _string(_decode(r.read(e.meta))?['caption']),
               ),
           ],
         );
