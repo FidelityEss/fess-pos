@@ -49,6 +49,32 @@ const List<Object?> _jobCard = [
 ];
 
 void main() {
+  testWidgets('the sync status opens what needs attention, when something '
+      'does (T4-13)', (tester) async {
+    final opened = <Map<String, Object?>>[];
+    RenderContext ctx(int attention) => RenderContext(
+      data: {
+        'sync': {'pending': 0, 'needs_attention': attention},
+      },
+      onNavigate: (target, data) => opened.add(target),
+    );
+    await _render(tester, const [
+      {'type': 'sync_status'},
+    ], ctx(0));
+    expect(find.text(BundledCopy.text('sync.synced')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('sync-status')));
+    expect(opened, isEmpty);
+
+    await _render(tester, const [
+      {'type': 'sync_status'},
+    ], ctx(2));
+    expect(find.text(BundledCopy.text('sync.needs_attention')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('sync-status')));
+    expect(opened, [
+      {'page': 'needs_attention'},
+    ]);
+  });
+
   testWidgets('a job card shows what its view binds', (tester) async {
     await _render(
       tester,

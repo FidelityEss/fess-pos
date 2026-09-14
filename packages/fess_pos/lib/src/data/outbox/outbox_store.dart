@@ -420,6 +420,25 @@ class OutboxStore {
     );
   }
 
+  /// What the server couldn't take (`needs_attention`, docs/08 §8), newest
+  /// first, for the needs-attention list (T4-13). Kept until the server's
+  /// resolution is pulled.
+  Stream<List<OutboxRow>> watchNeedsAttention() =>
+      _needsAttentionQuery().watch();
+
+  /// [status], again each time the outbox changes, for the sync status.
+  Stream<OutboxStatus> watchStatus() async* {
+    yield await status();
+    yield* _db
+        .tableUpdates(TableUpdateQuery.onTable(_db.outbox))
+        .asyncMap((_) => status());
+  }
+
+  SimpleSelectStatement<$OutboxTable, OutboxRow> _needsAttentionQuery() =>
+      _db.select(_db.outbox)
+        ..where((o) => o.state.equals(OutboxState.needsAttention))
+        ..orderBy([(o) => OrderingTerm.desc(o.createdAtMs)]);
+
   /// Reports stores moved into quarantine (D-52) that haven't been
   /// reported yet, as one `client_error`.
   Future<void> reportQuarantinedStores(EnvelopeOrigin origin) =>

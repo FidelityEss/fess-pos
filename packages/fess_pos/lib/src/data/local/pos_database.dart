@@ -139,6 +139,10 @@ abstract final class MetaKeys {
   /// An inspection's breadcrumbs waiting to go, and how many batches went
   /// (T4-08).
   static String traces(String inspectionId) => 'traces.$inspectionId';
+
+  /// A resumable upload in progress for a piece of evidence (T4-13): its
+  /// address at the storage, so it carries on after the app was closed.
+  static String upload(String evidenceId) => 'upload.$evidenceId';
 }
 
 extension QuarantineLog on PosDatabase {

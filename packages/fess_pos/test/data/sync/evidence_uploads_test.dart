@@ -141,6 +141,100 @@ void main() {
         e! as Map<String, Object?>,
   ];
 
+  group('resumable (T4-13)', () {
+    const endpoint =
+        'https://pos-qa.example.invalid/storage/v1/upload/resumable/sign';
+
+    Map<String, Object?> resumableGrant() => {
+      ...uploadGrant(),
+      'resumable': {
+        'endpoint': endpoint,
+        'headers': {'x-signature': 'sig'},
+      },
+    };
+
+    test(
+      'with a resumable grant the bytes go by TUS: created, then sent',
+      () async {
+        storage = (r) => switch (r.method) {
+          'POST' => http.Response(
+            '',
+            201,
+            headers: {'location': '/storage/v1/upload/resumable/sign/u1'},
+          ),
+          'PATCH' => http.Response('', 204, headers: {'upload-offset': '4'}),
+          _ => http.Response('', 500),
+        };
+        grant(resumableGrant());
+        expect(await uploads.run(), 1);
+        expect(puts.map((r) => r.method), ['POST', 'PATCH']);
+        final created = puts.first;
+        expect(created.url.toString(), endpoint);
+        expect(created.headers['upload-length'], '4');
+        expect(created.headers['x-signature'], 'sig');
+        expect(created.headers['tus-resumable'], '1.0.0');
+        expect(
+          created.headers['upload-metadata'],
+          contains(
+            base64Encode(utf8.encode('bank/b/job/j/inspection/i/e1.jpg')),
+          ),
+        );
+        final sent = puts.last;
+        expect(
+          sent.url.toString(),
+          'https://pos-qa.example.invalid/storage/v1/upload/resumable/sign/u1',
+        );
+        expect(sent.headers['upload-offset'], '0');
+        expect(sent.bodyBytes, bytes);
+        expect(await uploaded(), hasLength(1));
+      },
+    );
+
+    test(
+      'an interrupted upload carries on from where the storage has it',
+      () async {
+        var failPatch = true;
+        storage = (r) {
+          if (r.method == 'POST') {
+            return http.Response(
+              '',
+              201,
+              headers: {'location': '$endpoint/u1'},
+            );
+          }
+          if (r.method == 'PATCH' && failPatch) {
+            failPatch = false;
+            throw http.ClientException('the line dropped');
+          }
+          if (r.method == 'HEAD') {
+            return http.Response('', 200, headers: {'upload-offset': '2'});
+          }
+          return http.Response('', 204, headers: {'upload-offset': '4'});
+        };
+        grant(resumableGrant());
+        expect(await uploads.run(), 0, reason: 'it waits for the next run');
+        expect(await uploaded(), isEmpty);
+
+        puts.clear();
+        expect(await uploads.run(), 1);
+        expect(puts.map((r) => r.method), ['HEAD', 'PATCH']);
+        expect(puts.last.headers['upload-offset'], '2');
+        expect(puts.last.bodyBytes, bytes.sublist(2));
+        expect(await uploaded(), hasLength(1));
+      },
+    );
+
+    test('refused as resumable, the bytes go in one PUT', () async {
+      storage = (r) => r.method == 'POST'
+          ? http.Response('{"message":"not allowed"}', 400)
+          : http.Response('{"Key":"evidence/e1.jpg"}', 200);
+      grant(resumableGrant());
+      expect(await uploads.run(), 1);
+      expect(puts.map((r) => r.method), ['POST', 'PUT']);
+      expect(puts.last.url.toString(), _signedUrl);
+    });
+  });
+
   group('T4-03', () {
     test('a record purged after the server held it still lets the bytes go '
         'up', () async {

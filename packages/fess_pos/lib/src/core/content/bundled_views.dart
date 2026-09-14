@@ -15,6 +15,8 @@ abstract final class BundledViews {
       'on_tap': {'page': 'job_detail'},
       'empty_content': 'jobs.empty_active',
     },
+    // Synced, pending, or what needs attention (docs/08 §8).
+    {'type': 'sync_status'},
   ];
 
   static const List<Object?> jobCard = [

@@ -207,6 +207,25 @@ abstract final class BundledCopy {
     'checkin.button': 'Check in outside',
     'checkin.recording': 'Recording your location…',
     'checkin.done': 'Checked in outside.',
+    'attention.title': 'Needs attention',
+    'attention.explain':
+        "The server couldn't accept these. Your data is safe on this phone, "
+        'and an administrator has been told.',
+    'attention.none': 'Nothing needs attention.',
+    'attention.saved_at': 'Saved {{at}}',
+    'attention.reason': 'Reason: {{code}}',
+    'attention.type.submission': 'Inspection submission',
+    'attention.type.inspection_started': 'Inspection start',
+    'attention.type.job_event': 'Job update',
+    'attention.type.form_submission': 'Form',
+    'attention.type.evidence_meta': 'Photo or signature record',
+    'attention.type.evidence_uploaded': 'Upload record',
+    'attention.type.traces_batch': 'Location trail',
+    'attention.type.inspection_snapshot': 'Inspection snapshot',
+    'attention.type.custody_batch': 'Custody record',
+    'attention.type.sync_report': 'Sync report',
+    'attention.type.client_error': 'Error report',
+    'attention.type.other': 'Record',
     'location.override': 'Continue with an override',
     'location.override_too_far':
         "You're too far from the premises for an override. If you can't "

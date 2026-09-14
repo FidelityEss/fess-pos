@@ -6,6 +6,7 @@ import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/features/cards/agent_card_page.dart';
 import 'package:fess_pos/src/features/jobs/job_action_pages.dart';
 import 'package:fess_pos/src/features/maps/job_map.dart';
+import 'package:fess_pos/src/features/shell/needs_attention_page.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:fess_pos/src/renderer/render_context.dart';
 import 'package:fess_pos/src/renderer/template.dart';
@@ -64,6 +65,7 @@ class JobsHomePage extends ConsumerWidget {
     final jobCard = viewItems(ref, 'job_card');
     final agent = _data(ref.watch(agentProvider));
     final totals = _data(ref.watch(agentTotalsProvider));
+    final sync = _data(ref.watch(syncStatusProvider));
     final body = switch (jobs) {
       AsyncData(:final value) => RefreshIndicator(
         onRefresh: () async {
@@ -83,12 +85,26 @@ class JobsHomePage extends ConsumerWidget {
                     now: DateTime.now(),
                     url: (token) => ref.read(verifyUrlProvider)(token),
                   ),
+                  // The sync status (docs/08 §8, T4-13).
+                  if (sync != null)
+                    'sync': {
+                      'pending': sync.pending,
+                      'needs_attention': sync.needsAttention,
+                    },
                 },
                 jobs: [for (final job in value) jobViewData(job)],
                 itemViews: {'job_card': jobCard},
                 copy: copy,
                 today: todayIso(),
                 onNavigate: (target, data) {
+                  if (target['page'] == 'needs_attention') {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const NeedsAttentionPage(),
+                      ),
+                    );
+                    return;
+                  }
                   if (target['page'] == 'agent_card') {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
