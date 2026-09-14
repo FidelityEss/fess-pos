@@ -134,8 +134,9 @@ class _FakeInspections implements Inspections {
     required int currentStep,
     Set<String> unknownDates = const {},
     Set<String> flaggedDiffers = const {},
+    List<List<int>> flowPath = const [],
   }) async {
-    drafts.add({'values': values, 'step': currentStep});
+    drafts.add({'values': values, 'step': currentStep, 'path': flowPath});
   }
 
   @override
@@ -240,7 +241,12 @@ JobRecord _job(String status) => JobRecord(
 
 void _noop() {}
 
-List<Override> _overrides(_FakeInspections inspections, JobRecord job) => [
+List<Override> _overrides(
+  _FakeInspections inspections,
+  JobRecord job, {
+  Map<String, Object?> form = _form,
+  Map<String, Object?> flow = _flow,
+}) => [
   inspectionsProvider.overrideWith((ref) async => inspections),
   jobProvider.overrideWith((ref, id) => Stream.value(job)),
   agentProvider.overrideWith((ref) => Stream.value({'first_name': 'Sipho'})),
@@ -250,7 +256,7 @@ List<Override> _overrides(_FakeInspections inspections, JobRecord job) => [
   ),
   jobActionsProvider.overrideWith((ref) async => null),
   definitionVersionProvider.overrideWith(
-    (ref, id) async => id == 'form-v' ? _form : _flow,
+    (ref, id) async => id == 'form-v' ? form : flow,
   ),
   // In place: a background isolate's answer never arrives in a widget test.
   formCompilerProvider.overrideWithValue((form) async => compileForm(form)),
@@ -454,5 +460,191 @@ void main() {
       findsOneWidget,
       reason: 'the answer given before the app closed',
     );
+  });
+
+  group('the full flow runner (T3-04)', () {
+    const smallForm = <String, Object?>{
+      'kind': 'form',
+      'family': 'site_inspection',
+      'sections': [
+        {
+          'key': 's1',
+          'title': 'Business',
+          'fields': [
+            {
+              'key': 'name',
+              'type': 'text',
+              'label': 'Business name',
+              'required': true,
+            },
+          ],
+        },
+        {
+          'key': 's2',
+          'title': 'Trading',
+          'fields': [
+            {
+              'key': 'open',
+              'type': 'boolean',
+              'label': 'Open now?',
+              'required': true,
+              'risk_indicator': {
+                'when': {
+                  '==': [
+                    {'var': 'answers.open'},
+                    false,
+                  ],
+                },
+                'level': 'high',
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    Future<_FakeInspections> show(
+      WidgetTester tester,
+      Map<String, Object?> flow,
+    ) async {
+      final inspections = _FakeInspections(_record());
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: _overrides(
+            inspections,
+            _job('in_progress'),
+            form: smallForm,
+            flow: flow,
+          ),
+          child: MaterialApp(
+            home: InspectionPage(
+              job: _job('in_progress'),
+              inspectionId: 'insp-1',
+            ),
+          ),
+        ),
+      );
+      await _settle(tester);
+      return inspections;
+    }
+
+    Future<void> next(WidgetTester tester) async {
+      await tester.tap(find.byKey(const ValueKey('inspection-next')));
+      await _settle(tester);
+    }
+
+    testWidgets('a briefing to acknowledge, a page per section, and a '
+        'review that jumps back', (tester) async {
+      final inspections = await show(tester, const {
+        'kind': 'flow',
+        'steps': [
+          {
+            'id': 'briefing',
+            'type': 'job_briefing',
+            'view': 'job_detail',
+            'acknowledgement_text': 'I have read the job details',
+          },
+          {'id': 'location', 'type': 'location_check'},
+          {
+            'id': 'business',
+            'type': 'form',
+            'sections': ['s1', 's2'],
+            'paging': 'section_per_page',
+          },
+          {
+            'id': 'review',
+            'type': 'summary_review',
+            'show_risk_indicators': true,
+            'allow_jump_back': true,
+          },
+          {'id': 'submit', 'type': 'submit', 'label': 'Submit inspection'},
+          {'id': 'receipt', 'type': 'receipt', 'view': 'receipt'},
+        ],
+      });
+      expect(find.text('Step 1 of 5'), findsOneWidget);
+      await next(tester);
+      expect(find.text(_copy('inspection.acknowledge_first')), findsOneWidget);
+      // Below the job's details, as on a phone.
+      final ack = find.byKey(const ValueKey('briefing-ack-0'));
+      await tester.ensureVisible(ack);
+      await tester.pump();
+      await tester.tap(ack);
+      await next(tester);
+
+      expect(find.text('Step 2 of 5'), findsOneWidget);
+      expect(find.text('Business name *'), findsOneWidget);
+      expect(find.text('Open now? *'), findsNothing, reason: 'its own page');
+      await tester.enterText(find.byType(TextField), 'Joe Spaza');
+      await next(tester);
+      expect(find.text('Step 3 of 5'), findsOneWidget);
+      await tester.tap(find.text('No'));
+      await next(tester);
+
+      expect(find.text('Step 4 of 5'), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('summary-name'))).data,
+        'Joe Spaza',
+      );
+      expect(find.byKey(const ValueKey('summary-risk-open')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('summary-edit-s1')));
+      await _settle(tester);
+      expect(find.text('Step 2 of 5'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Joe Spaza'), findsOneWidget);
+
+      await next(tester);
+      await next(tester);
+      await next(tester);
+      expect(find.text('Step 5 of 5'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('inspection-submit')));
+      await _settle(tester);
+      await tester.tap(find.byKey(const ValueKey('inspection-submit-confirm')));
+      await _settle(tester);
+      expect(inspections.submitted!.keys, {'name', 'open'});
+      expect(
+        inspections.drafts.last['path'],
+        isNotEmpty,
+        reason: 'the way through is kept with the draft',
+      );
+    });
+
+    testWidgets('a branch to a flow this build cannot open says so', (
+      tester,
+    ) async {
+      await show(tester, const {
+        'kind': 'flow',
+        'steps': [
+          {
+            'id': 'trading',
+            'type': 'form',
+            'sections': ['s2'],
+            'next': {
+              'if': [
+                {
+                  '==': [
+                    {'var': 'answers.open'},
+                    false,
+                  ],
+                },
+                'flow:unable_to_complete_flow',
+                null,
+              ],
+            },
+          },
+          {
+            'id': 'business',
+            'type': 'form',
+            'sections': ['s1'],
+          },
+          {'id': 'submit', 'type': 'submit'},
+        ],
+      });
+      await tester.tap(find.text('No'));
+      await next(tester);
+      expect(find.text(_copy('inspection.branch_unavailable')), findsOneWidget);
+      expect(find.text('Step 1 of 3'), findsOneWidget);
+      await tester.tap(find.text('Yes'));
+      await next(tester);
+      expect(find.text('Step 2 of 3'), findsOneWidget);
+    });
   });
 }

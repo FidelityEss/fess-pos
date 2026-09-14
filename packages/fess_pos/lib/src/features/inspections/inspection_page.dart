@@ -2,18 +2,28 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:fess_pos/src/core/di/providers.dart';
+import 'package:fess_pos/src/domain/flows/flow_runner.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
+import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/features/inspections/capture_page.dart';
 import 'package:fess_pos/src/features/inspections/signature_pad_page.dart';
 import 'package:fess_pos/src/features/jobs/job_action_pages.dart';
+import 'package:fess_pos/src/features/jobs/job_pages.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:fess_pos/src/renderer/form/form_controller.dart';
 import 'package:fess_pos/src/renderer/form/form_services.dart';
 import 'package:fess_pos/src/renderer/form/form_view.dart';
 import 'package:fess_pos/src/renderer/form/render_plans.dart';
+import 'package:fess_pos/src/renderer/render_context.dart';
+import 'package:fess_pos/src/renderer/view_renderer.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart'
-    show CompiledForm, ResolvedField, contextFromSnapshot, renderTemplate;
+    show
+        CompiledForm,
+        ResolvedField,
+        contextFromSnapshot,
+        evaluateRule,
+        renderTemplate;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -47,28 +57,11 @@ T? _data<T>(AsyncValue<T> value) => switch (value) {
 
 String? _string(Object? v) => v is String ? v : null;
 
-List<String> _strings(Object? v) => [
-  if (v is List<Object?>)
-    for (final x in v)
-      if (x is String) x,
-];
-
 List<Map<String, Object?>> _maps(Object? v) => v is List<Object?>
     ? v.whereType<Map<String, Object?>>().toList()
     : const [];
 
 final RegExp _keyPattern = RegExp(r'^[a-z][a-z0-9_]{0,63}$');
-
-/// The flow steps this build runs (T4-27): `form`, `declaration` and
-/// `submit`. `location_check` ran when the inspection began; the briefing,
-/// the summary and the rest of the step catalogue come with the full flow
-/// runner (T3-04).
-const Set<String> runnableStepTypes = {'form', 'declaration', 'submit'};
-
-List<Map<String, Object?>> runnableSteps(Map<String, Object?> flow) => [
-  for (final s in _maps(flow['steps']))
-    if (runnableStepTypes.contains(s['type'])) s,
-];
 
 /// An input field of the form: its key, type and props.
 typedef _FieldDef = ({String key, String type, Map<String, Object?> props});
@@ -101,10 +94,42 @@ Map<String, List<_FieldDef>> _fieldsBySection(Map<String, Object?> form) {
   return out;
 }
 
-/// An inspection in progress (T4-27): the pinned flow's steps over the
-/// pinned form, the answers kept on the phone as they're given (a closed
-/// app resumes where it was), then the seal and the submission. The rules,
-/// what's required and the wording all come from the definitions.
+/// What the flow reads: the form as the rules make it now.
+class _FlowData implements FlowData {
+  _FlowData(this.form, {required this.declarationStep});
+
+  final FormController form;
+
+  /// Declaration fields have a step of their own, so they don't count on
+  /// form pages.
+  final bool declarationStep;
+
+  @override
+  bool sectionShown(String key) {
+    final r = form.resolved;
+    if (r == null || !(r.sections[key]?.visible ?? false)) return false;
+    return r.fields.values.any(
+      (f) =>
+          f.section == key &&
+          f.visible &&
+          f.type != 'group' &&
+          !(declarationStep && f.type == 'declaration'),
+    );
+  }
+
+  @override
+  Object? evaluate(Object? expr) {
+    final r = form.resolved;
+    return r == null ? null : evaluateRule(expr, r.data, env: r.env);
+  }
+}
+
+/// An inspection in progress (T4-27, T3-04): the pinned flow over the
+/// pinned form, page by page as the flow runner leads (briefing, form
+/// pages, review, declaration, submit), the answers and the way through
+/// kept on the phone as they're given, so a closed app resumes where it
+/// was. Then the seal and the submission. The rules, what's required and
+/// the wording all come from the definitions.
 class InspectionPage extends ConsumerStatefulWidget {
   const InspectionPage({
     required this.job,
@@ -122,13 +147,21 @@ class InspectionPage extends ConsumerStatefulWidget {
 class _InspectionPageState extends ConsumerState<InspectionPage> {
   FormController? _form;
   Inspections? _inspections;
+  FlowRunner? _runner;
+  late _FlowData _flowData;
   Map<String, List<_FieldDef>> _sections = const {};
-  List<Map<String, Object?>> _steps = const [];
-  int _step = 0;
+
+  /// The pages the agent went through to here; the last is on screen.
+  List<FlowPosition> _path = const [];
+
+  /// Briefing steps whose acknowledgement is ticked.
+  final Set<int> _acknowledged = {};
   Timer? _saveTimer;
   bool _unsaved = false;
   bool _busy = false;
   String? _message;
+
+  FlowPosition get _at => _path.last;
 
   @override
   void dispose() {
@@ -150,9 +183,8 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
     if (_form != null) return;
     _inspections = inspections;
     _sections = _fieldsBySection(form);
-    _steps = runnableSteps(flow);
-    _step = _steps.isEmpty ? 0 : record.currentStep.clamp(0, _steps.length - 1);
-    _form = FormController(
+    final runner = _runner = FlowRunner(flow);
+    final controller = _form = FormController(
       definition: form,
       plan: plan,
       inspection: true,
@@ -162,6 +194,42 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
       initialUnknown: record.unknownDates,
       initialFlaggedDiffers: record.flaggedDiffers,
     )..addListener(_scheduleSave);
+    final data = _flowData = _FlowData(
+      controller,
+      declarationStep: runner.steps.any((s) => s['type'] == 'declaration'),
+    );
+    _path = _resume(record, runner, data);
+  }
+
+  /// Where a reopened inspection continues: the pages it went through, or
+  /// for a draft from before the full flow runner, its place among the
+  /// pages shown.
+  static List<FlowPosition> _resume(
+    InspectionRecord record,
+    FlowRunner runner,
+    FlowData data,
+  ) {
+    final path = [
+      for (final p in record.flowPath)
+        if (FlowPosition.tryParse(p) case final FlowPosition at
+            when runner.shows(at, data))
+          at,
+    ];
+    if (path.isNotEmpty) return path;
+    final shown = runner.shown(data);
+    return shown.isEmpty
+        ? const []
+        : [shown[record.currentStep.clamp(0, shown.length - 1)]];
+  }
+
+  /// The page on screen among the pages shown now: (index, count).
+  (int, int) _progress() {
+    final shown = _runner!.shown(_flowData);
+    final at = _at;
+    final n = shown.indexWhere(
+      (p) => p.step > at.step || (p.step == at.step && p.page >= at.page),
+    );
+    return (n < 0 ? (shown.length - 1).clamp(0, 1 << 30) : n, shown.length);
   }
 
   void _scheduleSave() {
@@ -175,11 +243,12 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
   Future<void> _save() async {
     final form = _form;
     final inspections = _inspections;
-    if (form == null || inspections == null) return;
+    if (form == null || inspections == null || _path.isEmpty) return;
     _unsaved = false;
     final values = form.values;
     final other = form.otherTexts;
-    final step = _step;
+    final step = _progress().$1;
+    final path = [for (final p in _path) p.toJson()];
     try {
       await inspections.saveDraft(
         widget.inspectionId,
@@ -188,6 +257,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
         currentStep: step,
         unknownDates: form.unknownKeys,
         flaggedDiffers: form.flaggedDiffers,
+        flowPath: path,
       );
     } on Object {
       // The answers are still on screen; the next change saves again.
@@ -195,7 +265,8 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
     }
   }
 
-  bool get _hasDeclarationStep => _steps.any((s) => s['type'] == 'declaration');
+  bool get _hasDeclarationStep =>
+      _runner?.steps.any((s) => s['type'] == 'declaration') ?? false;
 
   /// The declaration fields [step] asks for.
   Set<String> _declarationKeys(Map<String, Object?> step) {
@@ -209,16 +280,28 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
     };
   }
 
-  /// The fields step [step] shows.
-  Set<String> _keysOf(Map<String, Object?> step) => switch (step['type']) {
-    'form' => {
-      for (final section in _strings(step['sections']))
-        for (final f in _sections[section] ?? const <_FieldDef>[])
-          if (!(_hasDeclarationStep && f.type == 'declaration')) f.key,
-    },
-    'declaration' => _declarationKeys(step),
-    _ => const {},
-  };
+  /// The fields page [at] shows.
+  Set<String> _keysAt(FlowPosition at) {
+    final runner = _runner!;
+    return switch (runner.typeOf(at.step)) {
+      'form' => {
+        for (final section in runner.sectionsAt(at))
+          for (final f in _sections[section] ?? const <_FieldDef>[])
+            if (!(_hasDeclarationStep && f.type == 'declaration')) f.key,
+      },
+      'declaration' => _declarationKeys(runner.steps[at.step]),
+      _ => const {},
+    };
+  }
+
+  /// The form sections of the flow's form steps, in flow order.
+  List<String> get _flowSections {
+    final runner = _runner!;
+    return {
+      for (var i = 0; i < runner.steps.length; i++)
+        if (runner.typeOf(i) == 'form') ...runner.sections(i),
+    }.toList();
+  }
 
   bool _stepHasProblems(Set<String> keys) {
     final form = _form!;
@@ -226,31 +309,119 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
         form.unsupportedVisible.any(keys.contains);
   }
 
-  void _next() {
-    final keys = _keysOf(_steps[_step]);
-    _form!.touchAll(keys);
-    if (_stepHasProblems(keys)) {
-      final copy = ref.read(copyProvider);
-      setState(() => _message = copy('inspection.fix_answers'));
-      return;
-    }
+  void _go(List<FlowPosition> path) {
     setState(() {
-      _step++;
+      _path = path;
       _message = null;
     });
     unawaited(_save());
   }
 
-  void _back() {
-    if (_step == 0) {
-      Navigator.of(context).pop();
+  void _next() {
+    final runner = _runner!;
+    final at = _at;
+    final step = runner.steps[at.step];
+    final copy = ref.read(copyProvider);
+    final keys = _keysAt(at);
+    _form!.touchAll(keys);
+    if (_stepHasProblems(keys)) {
+      setState(() => _message = copy('inspection.fix_answers'));
       return;
     }
-    setState(() {
-      _step--;
-      _message = null;
-    });
-    unawaited(_save());
+    if (step['type'] == 'job_briefing' &&
+        _string(step['acknowledgement_text']) != null &&
+        !_acknowledged.contains(at.step)) {
+      setState(() => _message = copy('inspection.acknowledge_first'));
+      return;
+    }
+    switch (runner.next(at, _flowData)) {
+      case MoveTo(:final position):
+        _go([..._path, position]);
+      case MoveToFlow(:final family):
+        unawaited(_openFlow(family));
+      case MoveToPage():
+        // App pages open once the app definition drives navigation (T3-17).
+        setState(() => _message = copy('inspection.branch_unavailable'));
+      case MoveEnd():
+        break;
+    }
+  }
+
+  /// Back along the way the agent came; from the first page, off the
+  /// inspection (its answers stay on the phone).
+  void _back() {
+    final runner = _runner!;
+    final data = _flowData;
+    final path = [..._path]..removeLast();
+    while (path.isNotEmpty && !runner.shows(path.last, data)) {
+      path.removeLast();
+    }
+    if (path.isNotEmpty) {
+      _go(path);
+      return;
+    }
+    final at = _at;
+    final before = runner
+        .shown(data)
+        .where(
+          (p) => p.step < at.step || (p.step == at.step && p.page < at.page),
+        )
+        .lastOrNull;
+    if (before != null) {
+      _go([before]);
+      return;
+    }
+    Navigator.of(context).pop();
+  }
+
+  /// From the review, back to the page that shows [section].
+  void _jumpTo(String section) {
+    final runner = _runner!;
+    for (final at in runner.shown(_flowData)) {
+      if (runner.typeOf(at.step) == 'form' &&
+          runner.sectionsAt(at).contains(section)) {
+        _go([..._path, at]);
+        return;
+      }
+    }
+  }
+
+  /// A branch to another flow (`flow:<family>`): the unable-to-complete
+  /// flow opens the job's unable reason form; the inspection stays open on
+  /// the phone with its answers.
+  Future<void> _openFlow(String family) async {
+    final copy = ref.read(copyProvider);
+    Map<String, Object?>? target;
+    // Listened while it loads: a provider nobody listens to is paused.
+    final sub = ref.listenManual(
+      activeDefinitionProvider((
+        kind: 'flow',
+        key: family,
+        bankId: widget.job.bankId,
+      )).future,
+      (_, _) {},
+    );
+    try {
+      target = await sub.read();
+    } on Object {
+      target = null;
+    } finally {
+      sub.close();
+    }
+    if (!mounted) return;
+    if (target?['action'] != JobAction.unable.actionName) {
+      setState(() => _message = copy('inspection.branch_unavailable'));
+      return;
+    }
+    _saveTimer?.cancel();
+    await _save();
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            ReasonFormPage(job: widget.job, action: JobAction.unable),
+      ),
+    );
   }
 
   Future<void> _submit(Map<String, Object?> step) async {
@@ -261,18 +432,25 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
         for (final e in form.errors) e.fieldKey,
         ...form.unsupportedVisible,
       };
-      final at = _steps.indexWhere((s) => _keysOf(s).any(bad.contains));
+      final at = _runner!
+          .shown(_flowData)
+          .where((p) => _keysAt(p).any(bad.contains))
+          .firstOrNull;
       setState(() {
-        if (at >= 0) _step = at;
+        if (at != null) _path = [..._path, at];
         _message = copy('inspection.fix_answers');
       });
       return;
     }
+    final data = form.resolved?.data ?? const <String, Object?>{};
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         content: Text(
-          _string(step['confirm_text']) ?? copy('inspection.submit_confirm'),
+          renderTemplate(
+            _string(step['confirm_text']) ?? copy('inspection.submit_confirm'),
+            data,
+          ),
         ),
         actions: [
           TextButton(
@@ -282,7 +460,12 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
           FilledButton(
             key: const ValueKey('inspection-submit-confirm'),
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text(_string(step['label']) ?? copy('inspection.submit')),
+            child: Text(
+              renderTemplate(
+                _string(step['label']) ?? copy('inspection.submit'),
+                data,
+              ),
+            ),
           ),
         ],
       ),
@@ -298,6 +481,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
     );
     if (!mounted) return;
     setState(() => _busy = false);
+    // The flow's receipt: the outcome page (docs/04 §3.7).
     await Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => ActionOutcomePage(
@@ -384,22 +568,87 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
     return c is String && _keyPattern.hasMatch(c) ? c : 'photo';
   }
 
-  Widget _stepView(
+  /// A `job_briefing` step: the job as its view shows it, and the
+  /// acknowledgement the flow asks for.
+  Widget _briefing(
     Map<String, Object?> step,
+    int index,
+    FormController form,
+    String Function(String key) copy,
+  ) {
+    final ack = _string(step['acknowledgement_text']);
+    final agent = _data(ref.watch(agentProvider));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ViewRenderer(
+          items: viewItems(
+            ref,
+            _string(step['view']) ?? 'job_detail',
+            bankId: widget.job.bankId,
+          ),
+          context: RenderContext(
+            data: {
+              'job': jobViewData(widget.job),
+              'agent': agent ?? const <String, Object?>{},
+            },
+            copy: copy,
+            today: todayIso(),
+          ),
+        ),
+        if (ack != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: CheckboxListTile(
+              key: ValueKey('briefing-ack-$index'),
+              value: _acknowledged.contains(index),
+              onChanged: (on) => setState(() {
+                if (on ?? false) {
+                  _acknowledged.add(index);
+                } else {
+                  _acknowledged.remove(index);
+                }
+                _message = null;
+              }),
+              title: Text(
+                renderTemplate(ack, form.resolved?.data ?? const {}),
+              ),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _stepView(
+    FlowPosition at,
     FormController form,
     FormFieldServices services,
     String Function(String key) copy,
   ) {
+    final runner = _runner!;
+    final step = runner.steps[at.step];
     switch (step['type']) {
+      case 'job_briefing':
+        return _briefing(step, at.step, form, copy);
       case 'form':
         return FormView(
           controller: form,
           copy: copy,
           services: services,
-          sections: _strings(step['sections']),
+          sections: runner.sectionsAt(at),
           fieldFilter: _hasDeclarationStep
               ? (f) => f.type != 'declaration'
               : null,
+        );
+      case 'summary_review':
+        return FormSummary(
+          controller: form,
+          copy: copy,
+          sections: _flowSections,
+          showRiskIndicators: step['show_risk_indicators'] == true,
+          onEdit: step['allow_jump_back'] == true ? _jumpTo : null,
         );
       case 'declaration':
         final keys = _declarationKeys(step);
@@ -453,7 +702,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
     } else {
       _start(record, form, flow, inspections, plan!);
       final controller = _form!;
-      if (controller.definitionError != null || _steps.isEmpty) {
+      if (controller.definitionError != null || _path.isEmpty) {
         body = _Message(copy('form.unavailable'));
       } else {
         final declarations = <String, Declaration?>{
@@ -466,36 +715,41 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
                     ref.watch(declarationProvider(key)),
                   ),
         };
-        final step = _steps[_step];
+        final at = _at;
+        final step = _runner!.steps[at.step];
         final last = step['type'] == 'submit';
+        final (n, total) = _progress();
+        final data = controller.resolved?.data ?? const <String, Object?>{};
+        final label = _string(step['label']);
         body = ListView(
+          // Each page opens at its top.
+          key: ValueKey('inspection-page-$at'),
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Text(
                 renderTemplate(copy('inspection.step'), {
-                  'n': _step + 1,
-                  'total': _steps.length,
+                  'n': n + 1,
+                  'total': total,
                 }),
-                key: ValueKey('inspection-step-$_step'),
+                key: ValueKey('inspection-step-$n'),
                 style: Theme.of(context).textTheme.labelLarge,
               ),
             ),
+            if (label != null && !last)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                child: Text(
+                  renderTemplate(label, data),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
             _stepView(
-              step,
+              at,
               controller,
               _services(inspections, declarations, copy),
               copy,
             ),
-            if (_message != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  _message!,
-                  key: const ValueKey('inspection-message'),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
           ],
         );
         bar = SafeArea(
@@ -521,7 +775,10 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
                         : _next,
                     child: Text(
                       last
-                          ? _string(step['label']) ?? copy('inspection.submit')
+                          ? renderTemplate(
+                              label ?? copy('inspection.submit'),
+                              data,
+                            )
                           : copy('inspection.next'),
                     ),
                   ),
@@ -530,6 +787,24 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
             ),
           ),
         );
+        // Above the buttons, so it shows however long the page is.
+        final message = _message;
+        if (message != null) {
+          bar = Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Text(
+                  message,
+                  key: const ValueKey('inspection-message'),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+              bar,
+            ],
+          );
+        }
       }
     }
     return Scaffold(

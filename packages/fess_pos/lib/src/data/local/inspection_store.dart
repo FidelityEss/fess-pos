@@ -264,6 +264,7 @@ class DriftInspections implements Inspections {
     required int currentStep,
     Set<String> unknownDates = const {},
     Set<String> flaggedDiffers = const {},
+    List<List<int>> flowPath = const [],
   }) async {
     await (_db.update(_db.inspections)..where(
           (i) => i.id.equals(inspectionId) & i.status.equals('in_progress'),
@@ -276,6 +277,7 @@ class DriftInspections implements Inspections {
                 'other': otherText,
                 'unknown': unknownDates.toList()..sort(),
                 'flagged_differs': flaggedDiffers.toList()..sort(),
+                'path': flowPath,
               }),
             ),
             currentStep: Value(currentStep),
@@ -842,6 +844,11 @@ class DriftInspections implements Inspections {
       },
       unknownDates: keys(draft?['unknown']),
       flaggedDiffers: keys(draft?['flagged_differs']),
+      flowPath: [
+        if (draft?['path'] case final List<Object?> path)
+          for (final p in path)
+            if (p case [final int step, final int page]) [step, page],
+      ],
       currentStep: r.currentStep,
       startedAtDevice: r.startedAtDevice,
       submittedAtDevice: r.submittedAtDevice,

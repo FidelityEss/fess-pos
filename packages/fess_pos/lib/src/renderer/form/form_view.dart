@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 part 'form_inputs.dart';
+part 'form_summary.dart';
 
 /// Draws a `form` definition (docs/04 §3.2, `11` §3–5) from its
 /// [FormController]: each visible section's title and visible fields, in

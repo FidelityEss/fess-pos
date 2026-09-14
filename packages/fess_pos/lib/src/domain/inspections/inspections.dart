@@ -114,6 +114,7 @@ class InspectionRecord {
     required this.startedAtDevice,
     this.unknownDates = const {},
     this.flaggedDiffers = const {},
+    this.flowPath = const [],
     this.submittedAtDevice,
     this.submissionEnvelopeId,
   });
@@ -141,7 +142,12 @@ class InspectionRecord {
   final Set<String> unknownDates;
   final Set<String> flaggedDiffers;
 
-  /// The flow step the agent is on.
+  /// The flow pages the agent went through to where they are, each
+  /// `[step, page]`, so Back retraces a branch; empty in drafts from
+  /// before the full flow runner (T3-04).
+  final List<List<int>> flowPath;
+
+  /// The flow step the agent is on: its place among the pages shown.
   final int currentStep;
   final String startedAtDevice;
   final String? submittedAtDevice;
@@ -217,6 +223,7 @@ abstract interface class Inspections implements DeliveryTracker {
     required int currentStep,
     Set<String> unknownDates = const {},
     Set<String> flaggedDiffers = const {},
+    List<List<int>> flowPath = const [],
   });
 
   /// Stores [photo] for field [fieldKey] and records its `evidence_meta`;
