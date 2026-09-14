@@ -284,12 +284,25 @@ abstract interface class Inspections implements DeliveryTracker {
   /// Records the location check's outcome in the inspection's
   /// `geofence_result`, which the submission carries, and in what the rules
   /// see (`inspection.geofence`).
+  ///
+  /// [method] is `inside_fix`, or `outside_fix` when a fix taken just
+  /// outside proved the location ([checkin], T4-23).
   Future<void> recordLocationCheck(
     String inspectionId, {
     required bool passed,
     required FixVerdict? verdict,
     required int sampledSeconds,
+    String method = 'inside_fix',
+    GeoFix? checkin,
   });
+
+  /// The check-in on arrival for [job] (T4-23): whether it is asked for,
+  /// and the one recorded; null when the job has no location or the config
+  /// doesn't allow the outside fix.
+  Future<CheckinPlan?> checkinPlan(JobRecord job);
+
+  /// Keeps a check-in fix for [jobId], for the location check to use.
+  Future<void> recordCheckin(String jobId, GeoFix fix);
 
   /// Records the agent leaving the fence (the inspection pauses) or coming
   /// back (it resumes) as a `job_event`, and keeps the pause on the phone.

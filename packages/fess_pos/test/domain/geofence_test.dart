@@ -103,6 +103,37 @@ void main() {
     });
   });
 
+  group('the outside fix (T4-23)', () {
+    const rule = OutsideFixRule(
+      maxAccuracyM: 30,
+      validFor: Duration(minutes: 20),
+    );
+
+    test('counts when accurate enough, within the fence and recent', () {
+      final now = _t0.add(const Duration(minutes: 10));
+      expect(rule.counts(_fix(50, accuracy: 20), _fence, now), isTrue);
+      expect(
+        rule.counts(_fix(50, accuracy: 40), _fence, now),
+        isFalse,
+        reason: 'not accurate enough',
+      );
+      expect(
+        rule.counts(_fix(200, accuracy: 20), _fence, now),
+        isFalse,
+        reason: 'outside the fence',
+      );
+      expect(
+        rule.counts(
+          _fix(50, accuracy: 20),
+          _fence,
+          _t0.add(const Duration(minutes: 21)),
+        ),
+        isFalse,
+        reason: 'too old',
+      );
+    });
+  });
+
   group('during the inspection', () {
     test("the profile's fixes in a row outside pause it; one inside "
         'resumes it; vague fixes change nothing', () {

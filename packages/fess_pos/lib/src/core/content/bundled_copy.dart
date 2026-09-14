@@ -169,6 +169,22 @@ abstract final class BundledCopy {
     'location.allow': 'Allow location',
     'location.off': 'Location is off on this phone. Turn it on and try again.',
     'location.try_again': 'Try again',
+    'location.no_lock_outside':
+        "Your location isn't accurate enough inside. Step outside the "
+        'premises and record your location there.',
+    'location.record_outside': 'Record my location outside',
+    'location.recording_outside':
+        'Recording your location outside the premises…',
+    'checkin.title': 'Check in',
+    'checkin.prompt':
+        'GPS is often weak inside a site like this. Check in outside before '
+        'you go in.',
+    'checkin.explain':
+        'Stand outside the premises, in the open, while the phone records '
+        'where you are.',
+    'checkin.button': 'Check in outside',
+    'checkin.recording': 'Recording your location…',
+    'checkin.done': 'Checked in outside.',
     'inspection.declaration_missing':
         "This declaration hasn't reached your phone yet. Connect to the "
         'internet and try again.',

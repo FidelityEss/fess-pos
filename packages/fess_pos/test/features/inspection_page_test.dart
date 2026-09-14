@@ -200,8 +200,9 @@ class _FakeInspections implements Inspections {
   }
 
   GeofencePlan? plan;
-  final List<({bool passed, int sampled})> checks = [];
+  final List<({bool passed, int sampled, String method})> checks = [];
   final List<GeofenceChange> changes = [];
+  final List<GeoFix> checkins = [];
 
   @override
   Future<GeofencePlan?> geofencePlan(String inspectionId) async => plan;
@@ -212,7 +213,20 @@ class _FakeInspections implements Inspections {
     required bool passed,
     required FixVerdict? verdict,
     required int sampledSeconds,
-  }) async => checks.add((passed: passed, sampled: sampledSeconds));
+    String method = 'inside_fix',
+    GeoFix? checkin,
+  }) async => checks.add((
+    passed: passed,
+    sampled: sampledSeconds,
+    method: method,
+  ));
+
+  @override
+  Future<CheckinPlan?> checkinPlan(JobRecord job) async => null;
+
+  @override
+  Future<void> recordCheckin(String jobId, GeoFix fix) async =>
+      checkins.add(fix);
 
   @override
   Future<void> recordGeofenceChange(
@@ -287,7 +301,7 @@ void _noop() {}
 const double _pinLat = -26.2041;
 const double _pinLng = 28.0473;
 
-GeofencePlan _plan({required bool passed}) => GeofencePlan(
+GeofencePlan _plan({required bool passed, GeoFix? checkin}) => GeofencePlan(
   fence: Fence.fromResult({
     'profile': 'standalone',
     'job_location': {'lat': _pinLat, 'lng': _pinLng},
@@ -300,6 +314,20 @@ GeofencePlan _plan({required bool passed}) => GeofencePlan(
   sampleWindow: const Duration(seconds: 60),
   fixInterval: const Duration(seconds: 20),
   passed: passed,
+  outsideFix: const OutsideFixRule(
+    maxAccuracyM: 30,
+    validFor: Duration(minutes: 20),
+  ),
+  checkin: checkin,
+);
+
+/// A fix near the pin but too vague to count (±80 m).
+LocationFix _vague() => LocationFix(
+  latitude: _pinLat,
+  longitude: _pinLng,
+  accuracyM: 80,
+  fixTime: DateTime.utc(2026, 9, 14, 10),
+  isMocked: false,
 );
 
 /// A fix [metres] north of the pin, accurate to 10 m.
@@ -611,6 +639,7 @@ void main() {
     Future<(_FakeInspections, FakeLocation)> open(
       WidgetTester tester, {
       required bool passed,
+      GeoFix? checkin,
     }) async {
       final record = _record();
       final inspections = _FakeInspections(
@@ -628,7 +657,7 @@ void main() {
           startedAtDevice: record.startedAtDevice,
           locationPassed: passed,
         ),
-      )..plan = _plan(passed: passed);
+      )..plan = _plan(passed: passed, checkin: checkin);
       final location = FakeLocation();
       await tester.pumpWidget(
         ProviderScope(
@@ -685,6 +714,50 @@ void main() {
       await tester.pump();
       expect(find.text(_copy('inspection.location_first')), findsOneWidget);
       expect(find.text('Step 1 of 5'), findsOneWidget);
+    });
+
+    testWidgets('with no lock inside, the check-in on arrival counts as '
+        'the outside fix (T4-23)', (tester) async {
+      final (inspections, location) = await open(
+        tester,
+        passed: false,
+        checkin: GeoFix(
+          lat: _pinLat,
+          lng: _pinLng,
+          accuracyM: 15,
+          at: DateTime.now(),
+          isMocked: false,
+        ),
+      );
+      location.updates.add(_vague());
+      await tester.pump(const Duration(seconds: 61));
+      await _settle(tester);
+      expect(inspections.checks.single.method, 'outside_fix');
+      expect(inspections.checks.single.passed, isTrue);
+      expect(find.text('Step 1 of 4'), findsOneWidget);
+    });
+
+    testWidgets('with no lock and no check-in, the agent can record one '
+        'outside (T4-23)', (tester) async {
+      final (inspections, location) = await open(tester, passed: false);
+      location.updates.add(_vague());
+      await tester.pump(const Duration(seconds: 61));
+      await tester.pump();
+      expect(find.text(_copy('location.no_lock_outside')), findsOneWidget);
+      expect(inspections.checks.single.passed, isFalse);
+
+      await tester.tap(find.byKey(const ValueKey('location-record-outside')));
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      location.updates.add(_at(20));
+      await _settle(tester);
+      expect(inspections.checkins, hasLength(1));
+      expect(
+        (inspections.checks.last.method, inspections.checks.last.passed),
+        ('outside_fix', true),
+      );
+      expect(find.text('Step 1 of 4'), findsOneWidget);
     });
 
     testWidgets('leaving the fence pauses the inspection; coming back '

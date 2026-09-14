@@ -888,6 +888,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
         return LocationCheckView(
           inspections: _inspections!,
           inspectionId: widget.inspectionId,
+          jobId: widget.job.id,
           onPassed: _locationDone,
         );
       case 'form':

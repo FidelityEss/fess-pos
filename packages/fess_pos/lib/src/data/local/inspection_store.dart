@@ -463,6 +463,8 @@ class DriftInspections implements Inspections {
       ),
       passed: result['passed'] == true,
       paused: paused != null,
+      outsideFix: _outsideFixRule(config),
+      checkin: await _checkin(row.jobId),
     );
   }
 
@@ -472,6 +474,8 @@ class DriftInspections implements Inspections {
     required bool passed,
     required FixVerdict? verdict,
     required int sampledSeconds,
+    String method = 'inside_fix',
+    GeoFix? checkin,
   }) => _db.transaction(() async {
     final row = await _row(inspectionId);
     if (row == null || row.status != 'in_progress') return;
@@ -480,9 +484,10 @@ class DriftInspections implements Inspections {
     // item 10); the check adds how it went. The submission carries it.
     final result = {
       ...?_decode(row.geofence),
-      'method': 'inside_fix',
+      'method': method,
       'passed': passed,
       'fix': verdict == null ? null : _fixJson(verdict.fix),
+      if (checkin != null) 'checkin_fix': _fixJson(checkin),
       'distance_m': verdict == null
           ? null
           : (verdict.distanceM * 10).roundToDouble() / 10,
@@ -504,8 +509,9 @@ class DriftInspections implements Inspections {
               ...inspection,
               'geofence': {
                 ...geofence,
-                'inside': passed,
-                'method': 'inside_fix',
+                // Proven from outside, the agent wasn't seen inside.
+                'inside': passed && method == 'inside_fix',
+                'method': method,
               },
             },
           }),
@@ -569,6 +575,94 @@ class DriftInspections implements Inspections {
       },
     );
     unawaited(_send());
+  }
+
+  @override
+  Future<CheckinPlan?> checkinPlan(JobRecord job) async {
+    final config = RemoteConfig((await _config(job.bankId)).values);
+    final rule = _outsideFixRule(config);
+    final location = _map(job.data['location']);
+    final lat = _num(location?['lat']);
+    final lng = _num(location?['lng']);
+    if (rule == null || lat == null || lng == null) return null;
+    final name = _string(job.data['location_type']) ?? 'standalone';
+    final profiles = _map(_map(config.values?['geofence'])?['profiles']);
+    final p = _map(profiles?[name]) ?? _defaultProfile;
+    // The flow may ask for a check-in whatever the profile says.
+    final flow = _decode((await _active('flow', _flowKey, job.bankId))?.body);
+    final always = [
+      if (flow?['steps'] case final List<Object?> steps)
+        for (final s in steps)
+          if (s is Map<String, Object?> &&
+              s['type'] == 'location_check' &&
+              s['checkin_prompt'] == 'always')
+            s,
+    ].isNotEmpty;
+    return CheckinPlan(
+      fence: Fence(
+        profile: name,
+        lat: lat.toDouble(),
+        lng: lng.toDouble(),
+        radiusM: (_num(p['radius_m']) ?? 75).toDouble(),
+        maxAccuracyM: (_num(p['max_accuracy_m']) ?? 30).toDouble(),
+        exitConsecutiveFixes: 3,
+        blockOnMock: config.flag('integrity.block_on_mock'),
+      ),
+      rule: rule,
+      prompt: always || p['prompt_checkin_on_arrival'] == true,
+      window: Duration(seconds: config.integer('geofence.sample_seconds')),
+      checkin: await _checkin(job.id),
+    );
+  }
+
+  @override
+  Future<void> recordCheckin(String jobId, GeoFix fix) async {
+    final now = isoWithOffset(_clock());
+    await _db
+        .into(_db.moduleMeta)
+        .insertOnConflictUpdate(
+          ModuleMetaCompanion.insert(
+            key: MetaKeys.checkin(jobId),
+            value: jsonEncode(_fixJson(fix)),
+            updatedAt: now,
+          ),
+        );
+  }
+
+  /// The outside fix as the config in force allows it; null when it
+  /// doesn't (`geofence.outside_fix.allowed`).
+  static OutsideFixRule? _outsideFixRule(RemoteConfig config) =>
+      config.flag('geofence.outside_fix.allowed')
+      ? OutsideFixRule(
+          maxAccuracyM: config
+              .integer('geofence.outside_fix.max_accuracy_m')
+              .toDouble(),
+          validFor: Duration(
+            minutes: config.integer('geofence.outside_fix.valid_minutes'),
+          ),
+        )
+      : null;
+
+  /// The check-in kept for [jobId], if any.
+  Future<GeoFix?> _checkin(String jobId) async {
+    final row = await (_db.select(
+      _db.moduleMeta,
+    )..where((m) => m.key.equals(MetaKeys.checkin(jobId)))).getSingleOrNull();
+    final fix = _decode(row?.value);
+    final lat = _num(fix?['lat']);
+    final lng = _num(fix?['lng']);
+    final accuracy = _num(fix?['accuracy_m']);
+    final at = DateTime.tryParse(_string(fix?['ts']) ?? '');
+    if (lat == null || lng == null || accuracy == null || at == null) {
+      return null;
+    }
+    return GeoFix(
+      lat: lat.toDouble(),
+      lng: lng.toDouble(),
+      accuracyM: accuracy.toDouble(),
+      at: at,
+      isMocked: fix?['is_mocked'] == true,
+    );
   }
 
   @override
@@ -943,7 +1037,7 @@ class DriftInspections implements Inspections {
       },
       'method': 'inside_fix',
       'passed': passed,
-      'relaxed': p['relaxed'] == true,
+      'relaxed': _relaxed(p, profiles, RemoteConfig(config.values)),
       'override': false,
       'override_detail': null,
       'job_location': jobPoint,
@@ -1102,6 +1196,22 @@ class DriftInspections implements Inspections {
       submissionEnvelopeId: r.submissionEnvelopeId,
       locationPassed: _locationPassed(r.geofence),
     );
+  }
+
+  /// A profile looser than the default one (`geofence.default_profile`,
+  /// the strictest): a wider fence or a looser accuracy (T4-23, D-79).
+  static bool _relaxed(
+    Map<String, Object?> profile,
+    Map<String, Object?>? profiles,
+    RemoteConfig config,
+  ) {
+    final base =
+        _map(profiles?[config.text('geofence.default_profile') ?? '']) ??
+        _defaultProfile;
+    double n(Map<String, Object?> p, String key, double fallback) =>
+        (_num(p[key]) ?? fallback).toDouble();
+    return n(profile, 'radius_m', 0) > n(base, 'radius_m', 75) ||
+        n(profile, 'max_accuracy_m', 0) > n(base, 'max_accuracy_m', 30);
   }
 
   /// Whether an inspection's location check has passed. One whose job has

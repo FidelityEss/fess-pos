@@ -90,6 +90,17 @@ class Fence {
   /// Whether a mocked fix is refused (`integrity.block_on_mock`).
   final bool blockOnMock;
 
+  /// The same fence, judging fixes by [maxAccuracyM] instead.
+  Fence withAccuracy(double maxAccuracyM) => Fence(
+    profile: profile,
+    lat: lat,
+    lng: lng,
+    radiusM: radiusM,
+    maxAccuracyM: maxAccuracyM,
+    exitConsecutiveFixes: exitConsecutiveFixes,
+    blockOnMock: blockOnMock,
+  );
+
   /// How [fix] stands against the fence.
   FixVerdict judge(GeoFix fix) {
     final distance = haversineM(
@@ -267,6 +278,8 @@ class GeofencePlan {
     required this.fixInterval,
     required this.passed,
     this.paused = false,
+    this.outsideFix,
+    this.checkin,
   });
 
   final Fence fence;
@@ -282,4 +295,68 @@ class GeofencePlan {
 
   /// Whether the agent left the fence and hasn't come back.
   final bool paused;
+
+  /// How a fix taken just outside proves the location when there's no
+  /// lock inside (T4-23); null where the config doesn't allow it.
+  final OutsideFixRule? outsideFix;
+
+  /// The check-in recorded for the job on arrival, if any.
+  final GeoFix? checkin;
+}
+
+/// The outside fix (docs/07 §7 item 2, B3.9): with no lock inside, a fix
+/// recorded immediately outside the premises proves the location when it
+/// is accurate to [maxAccuracyM], within the fence and at most [validFor]
+/// old. A check-in on arrival counts.
+@immutable
+class OutsideFixRule {
+  const OutsideFixRule({required this.maxAccuracyM, required this.validFor});
+
+  /// `geofence.outside_fix.max_accuracy_m`.
+  final double maxAccuracyM;
+
+  /// `geofence.outside_fix.valid_minutes`.
+  final Duration validFor;
+
+  /// The fence as an outside fix is judged: by this rule's accuracy.
+  Fence fenceFor(Fence fence) => fence.withAccuracy(maxAccuracyM);
+
+  /// Whether [fix] proves the location at [now].
+  bool counts(GeoFix fix, Fence fence, DateTime now) {
+    final age = now.difference(fix.at);
+    // A little allowance for a fix stamped by a clock slightly ahead.
+    return fenceFor(fence).judge(fix).passes &&
+        age <= validFor &&
+        age >= const Duration(minutes: -2);
+  }
+}
+
+/// The check-in on arrival for a job (docs/07 §7 item 2, T4-23): whether
+/// its profile, or the flow, asks for one, and the one recorded.
+@immutable
+class CheckinPlan {
+  const CheckinPlan({
+    required this.fence,
+    required this.rule,
+    required this.prompt,
+    required this.window,
+    this.checkin,
+  });
+
+  final Fence fence;
+  final OutsideFixRule rule;
+
+  /// The profile's `prompt_checkin_on_arrival`, or the flow's
+  /// `checkin_prompt: always`.
+  final bool prompt;
+
+  /// How long a check-in samples (`geofence.sample_seconds`).
+  final Duration window;
+  final GeoFix? checkin;
+
+  /// Whether a check-in that still counts is on the phone at [now].
+  bool checkedIn(DateTime now) {
+    final fix = checkin;
+    return fix != null && rule.counts(fix, fence, now);
+  }
 }

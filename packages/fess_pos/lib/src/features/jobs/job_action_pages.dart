@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/domain/forms/reason_codes.dart';
 import 'package:fess_pos/src/domain/forms/reason_form.dart';
+import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/features/inspections/inspection_page.dart';
+import 'package:fess_pos/src/features/jobs/checkin_page.dart';
 import 'package:fess_pos/src/features/jobs/job_pages.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:fess_pos/src/renderer/form/form_controller.dart';
@@ -213,6 +215,8 @@ class _JobActionBarState extends ConsumerState<JobActionBar> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (inspections != null && canInspect && !open)
+              _CheckinPrompt(inspections: inspections, job: widget.job),
             if (inspections != null && canInspect)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -257,6 +261,84 @@ class _JobActionBarState extends ConsumerState<JobActionBar> {
             onPressed: _busy ? null : () => _openForm(action, config),
             child: label,
           );
+  }
+}
+
+/// Asks for a check-in on arrival where the job's profile, or the flow,
+/// expects no GPS lock indoors (docs/07 §7 item 2, T4-23), and says when one
+/// that still counts is on the phone.
+class _CheckinPrompt extends ConsumerStatefulWidget {
+  const _CheckinPrompt({required this.inspections, required this.job});
+
+  final Inspections inspections;
+  final JobRecord job;
+
+  @override
+  ConsumerState<_CheckinPrompt> createState() => _CheckinPromptState();
+}
+
+class _CheckinPromptState extends ConsumerState<_CheckinPrompt> {
+  CheckinPlan? _plan;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    final plan = await widget.inspections.checkinPlan(widget.job);
+    if (mounted) setState(() => _plan = plan);
+  }
+
+  Future<void> _checkIn(CheckinPlan plan) async {
+    final done = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => CheckinPage(
+          job: widget.job,
+          plan: plan,
+          inspections: widget.inspections,
+        ),
+      ),
+    );
+    await _load();
+    if ((done ?? false) && mounted) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(ref.read(copyProvider)('checkin.done'))),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = ref.watch(copyProvider);
+    final plan = _plan;
+    if (plan == null || !plan.prompt) return const SizedBox.shrink();
+    if (plan.checkedIn(DateTime.now())) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(
+          copy('checkin.done'),
+          key: const ValueKey('job-checked-in'),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(copy('checkin.prompt')),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const ValueKey('job-checkin'),
+            onPressed: () => _checkIn(plan),
+            icon: const Icon(Icons.my_location),
+            label: Text(copy('checkin.button')),
+          ),
+        ],
+      ),
+    );
   }
 }
 

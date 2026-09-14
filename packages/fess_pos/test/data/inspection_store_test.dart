@@ -373,6 +373,55 @@ void main() {
     expect(geofence['passed'], isTrue, reason: '105 − 10 ≤ 100');
   });
 
+  test('a profile looser than the default one is relaxed, and asks for a '
+      'check-in on arrival (T4-23)', () async {
+    await putDoc(DocKeys.configDefault, {
+      'config_version_id': _configVersion,
+      'values': {
+        'geofence': {
+          'default_profile': 'standalone',
+          'profiles': {
+            'standalone': {
+              'radius_m': 100,
+              'max_accuracy_m': 30,
+              'exit_consecutive_fixes': 3,
+              'prompt_checkin_on_arrival': false,
+            },
+            'shopping_centre': {
+              'radius_m': 250,
+              'max_accuracy_m': 75,
+              'exit_consecutive_fixes': 5,
+              'prompt_checkin_on_arrival': true,
+            },
+          },
+        },
+      },
+    }, hash: _configVersion);
+    final mall = JobRecord(
+      id: 'j1',
+      reference: 'POS-j1',
+      status: 'accepted',
+      assignedToMe: true,
+      bankId: _bank,
+      data: {...job().data, 'location_type': 'shopping_centre'},
+    );
+    expect((await inspections.checkinPlan(mall))!.prompt, isTrue);
+    expect((await inspections.checkinPlan(job()))!.prompt, isFalse);
+
+    await inspections.begin(mall);
+    final p = payloadOf((await envelopes('inspection_started')).single);
+    final geofence = p['geofence_result']! as Map<String, Object?>;
+    expect(
+      (geofence['profile'], geofence['relaxed']),
+      ('shopping_centre', true),
+    );
+    final context = p['context_snapshot']! as Map<String, Object?>;
+    expect(
+      ((context['inspection']! as Map)['geofence']! as Map)['relaxed'],
+      isTrue,
+    );
+  });
+
   group('geofence (T4-07)', () {
     late String id;
 
@@ -423,6 +472,43 @@ void main() {
         isFalse,
       );
       expect((await inspections.watch(id).first)!.locationPassed, isFalse);
+    });
+
+    test('a check-in is kept for the job and recorded as the outside fix '
+        '(T4-23)', () async {
+      final plan0 = (await inspections.geofencePlan(id))!;
+      expect(plan0.outsideFix!.maxAccuracyM, 30);
+      expect(plan0.outsideFix!.validFor, const Duration(minutes: 20));
+      expect(plan0.checkin, isNull);
+
+      final fix = at(20);
+      await inspections.recordCheckin('j1', fix);
+      final plan = (await inspections.geofencePlan(id))!;
+      expect(plan.checkin!.lat, closeTo(fix.lat, 1e-9));
+      expect(
+        (await inspections.checkinPlan(
+          job(),
+        ))!.checkedIn(DateTime(2026, 9, 14, 10, 5)),
+        isTrue,
+      );
+
+      await inspections.recordLocationCheck(
+        id,
+        passed: true,
+        verdict: plan.fence.judge(fix),
+        sampledSeconds: 60,
+        method: 'outside_fix',
+        checkin: fix,
+      );
+      final row = await (db.select(
+        db.inspections,
+      )..where((i) => i.id.equals(id))).getSingle();
+      final g = jsonDecode(row.geofence) as Map<String, Object?>;
+      expect((g['method'], g['passed']), ('outside_fix', true));
+      expect((g['checkin_fix']! as Map)['accuracy_m'], 10);
+      final context = jsonDecode(row.contextSnapshot) as Map<String, Object?>;
+      final seen = (context['inspection']! as Map)['geofence']! as Map;
+      expect((seen['method'], seen['inside']), ('outside_fix', false));
     });
 
     test('leaving pauses the inspection with a job_event; coming back '

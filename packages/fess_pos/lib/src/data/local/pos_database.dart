@@ -131,6 +131,10 @@ abstract final class MetaKeys {
   /// (T4-07); its value is when.
   static String geofencePaused(String inspectionId) =>
       'geofence_paused.$inspectionId';
+
+  /// A job's check-in on arrival (T4-23): the fix, as `geofence_result`
+  /// carries one.
+  static String checkin(String jobId) => 'checkin.$jobId';
 }
 
 extension QuarantineLog on PosDatabase {
