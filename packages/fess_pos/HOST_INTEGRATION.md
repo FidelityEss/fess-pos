@@ -36,8 +36,10 @@ generated files, so FlutterFlow regeneration can't lose it.
 | Every logout path, including forced and 401 sign-outs | `PosModule.signOut()` |
 | Showing the POS tile | only when `(await PosModule.access()).visible` |
 | Opening POS | push a route with `PosModule.entryPoint()` |
-| A push message with `data.source == 'fess_pos'` | `PosModule.handlePushPayload(data)` (optional: push is only a hint) |
-| A deep link under `/pos/…` | `PosModule.handleDeepLink(uri)` |
+| A push message with `data.source == 'fess_pos'`, in the foreground or background | `PosModule.handlePushPayload(data)` (optional: push is only a hint to sync) |
+| The user taps a POS notification | `PosModule.handleDeepLink(Uri.parse('<scheme>://pos'))`, then push `PosModule.entryPoint()` |
+| A deep link under `/pos/…` (`/pos`, `/pos/job/<id>`, `/pos/card`) | if `await PosModule.handleDeepLink(uri)` is true, push `PosModule.entryPoint()` unless it's showing; the module opens the page once the user is signed in |
+| The host's push token (FCM or OneSignal) | give `PosHostConfig(push: PosPushConfig(provider: …, getToken: …))`. The module registers it at sign-in, re-registers a changed token after each sync, and clears it at sign-out |
 
 - **Bootstrap:** the API URL, the **publishable** key and the environment come from the build flavour
   (`--dart-define`). `initialize` refuses a non-HTTPS URL and anything that looks like a secret or service-role key.

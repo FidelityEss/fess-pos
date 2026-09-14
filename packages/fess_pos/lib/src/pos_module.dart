@@ -1,10 +1,12 @@
 import 'package:fess_pos/src/contract/access.dart';
+import 'package:fess_pos/src/contract/events.dart';
 import 'package:fess_pos/src/contract/host_config.dart';
 import 'package:fess_pos/src/contract/identity.dart';
 import 'package:fess_pos/src/contract/module_info.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/runtime/module_runtime.dart';
 import 'package:fess_pos/src/core/version.dart';
+import 'package:fess_pos/src/domain/navigation/pos_link.dart';
 import 'package:fess_pos/src/features/shell/pos_entry_point.dart';
 import 'package:fess_pos/src/platform/background_work.dart';
 import 'package:flutter/widgets.dart';
@@ -44,24 +46,41 @@ abstract final class PosModule {
   /// The POS home. The host pushes it as a route.
   static Widget entryPoint() => const PosEntryPoint();
 
-  /// Push messages tagged `source: fess_pos`. Returns whether the message
-  /// was the module's. Push is only a hint to sync soon; opening a job from
-  /// it arrives with T2-19.
+  /// Push messages the host forwards: the `data` of a message tagged
+  /// `source: fess_pos`. Push only hints that there is something to sync
+  /// (payloads are content-free, docs/07 §8), so the module syncs soon and
+  /// reads nothing more into it. Returns whether the message was the
+  /// module's. Safe before [initialize] and in a background isolate: the
+  /// next sync picks the change up.
   static Future<bool> handlePushPayload(Map<String, dynamic> message) async {
     if (message['source'] != 'fess_pos') return false;
+    final hint = message['hint'];
+    final runtime = ModuleRuntime.current;
     _log.debug('push hint received');
-    ModuleRuntime.current?.nudgeSync();
+    runtime?.emit(
+      PosEvent(
+        PosEvent.pushReceived,
+        properties: {
+          if (hint is String && _hint.hasMatch(hint)) 'hint': hint,
+        },
+      ),
+    );
+    runtime?.syncSoon();
     return true;
   }
 
-  /// Deep links under `<host-scheme>/pos/…`. Returns whether the link was
-  /// the module's (navigation from T2-19).
+  static final RegExp _hint = RegExp(r'^[a-z_]{1,40}$');
+
+  /// Deep links under `/pos/…` on either host scheme: `…/pos` (home),
+  /// `…/pos/job/<id>` and `…/pos/card`. Returns whether the link was the
+  /// module's. When it was, push [entryPoint] if it isn't showing: it opens
+  /// the page as soon as the agent is signed in.
   static Future<bool> handleDeepLink(Uri uri) async {
-    final segments = uri.pathSegments;
-    final isPos =
-        (segments.isNotEmpty && segments.first == 'pos') || uri.host == 'pos';
-    if (isPos) _log.debug('deep link received');
-    return isPos;
+    final link = PosLink.parse(uri);
+    if (link == null) return false;
+    _log.debug('deep link received (${link.page})');
+    ModuleRuntime.current?.openLink(link);
+    return true;
   }
 
   /// Registers the module's background sync with the platform. The host

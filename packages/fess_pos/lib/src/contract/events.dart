@@ -15,6 +15,12 @@ class PosEvent {
   static const String signedOut = 'pos_signed_out';
   static const String entryOpened = 'pos_entry_opened';
 
+  /// A forwarded push hint was the module's (`properties.hint`).
+  static const String pushReceived = 'pos_push_received';
+
+  /// A forwarded deep link was the module's (`properties.page`).
+  static const String deepLinkOpened = 'pos_deep_link_opened';
+
   final String name;
   final Map<String, Object?> properties;
   final DateTime at;

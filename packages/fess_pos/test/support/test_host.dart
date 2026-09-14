@@ -21,11 +21,13 @@ PosHostConfig testConfig({
   PosTheme? theme,
   void Function(PosEvent event)? onEvent,
   void Function()? onUserActivity,
+  PosPushConfig? push,
 }) => PosHostConfig(
   bootstrap: bootstrap ?? testBootstrap,
   theme: theme,
   onEvent: onEvent,
   onUserActivity: onUserActivity,
+  push: push,
 );
 
 PosIdentity testIdentity() => PosIdentity(

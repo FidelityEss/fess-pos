@@ -140,8 +140,13 @@ employee number, role, status and a QR that opens the public verify page for the
 page shows the card for that visit. Cards work offline until their token expires, then say so and hide the QR. The
 photo waits for the server to send one (T2-34); until then the card shows initials.
 
-Tested: 427 unit and widget tests; the live test against QA; 5 device tests against QA (SQLCipher, store recovery,
+In review (T2-19; D-64): **push and deep links.** A forwarded POS push syncs soon and nothing more (payloads carry no
+data). Deep links `/pos`, `/pos/job/<id>` and `/pos/card` open their page once the agent is signed in, whether POS is
+already showing or opens with the link. The host's push token is kept registered with the POS API as it changes,
+and cleared at sign-out. Push delivery itself waits on FESS's channel (D-06).
+
+Tested: 445 unit and widget tests; the live test against QA; 5 device tests against QA (SQLCipher, store recovery,
 camera, QA sign-in, the QA job list), last run on the Android emulator and the iPhone 17 simulator on 2026-09-14.
 
-Next: push and deep links (T2-19). Known gap: a session refresh whose answer is lost ends the session until the next sign-in (R-44,
+Next: the inspection (Phases 3–4), starting with the remaining Wave-1 components and the flow runner. Known gap: a session refresh whose answer is lost ends the session until the next sign-in (R-44,
 backend fix T1-43).

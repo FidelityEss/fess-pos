@@ -3,6 +3,8 @@ import 'package:fess_pos/src/core/content/bundled_copy.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/core/runtime/module_runtime.dart';
 import 'package:fess_pos/src/core/theme/pos_theme_data.dart';
+import 'package:fess_pos/src/domain/navigation/pos_link.dart';
+import 'package:fess_pos/src/features/cards/agent_card_page.dart';
 import 'package:fess_pos/src/features/jobs/job_pages.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:flutter/material.dart';
@@ -70,6 +72,53 @@ class _PosShellState extends ConsumerState<_PosShell> {
   /// The job whose detail page is open, if one is.
   String? _openJob;
 
+  /// The agent card is open (from a deep link).
+  bool _openCard = false;
+
+  late final ModuleRuntime _runtime = ref.read(moduleRuntimeProvider);
+
+  @override
+  void initState() {
+    super.initState();
+    _runtime.pendingLink.addListener(_onLink);
+    // A link forwarded before this screen opened.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onLink());
+  }
+
+  @override
+  void dispose() {
+    _runtime.pendingLink.removeListener(_onLink);
+    super.dispose();
+  }
+
+  /// Opens a forwarded deep link once the agent can see POS; until then it
+  /// waits.
+  void _onLink() {
+    final link = _runtime.pendingLink.value;
+    if (!mounted ||
+        link == null ||
+        !_runtime.bootstrap.posEnabled ||
+        !_runtime.signedIn) {
+      return;
+    }
+    _runtime.pendingLink.value = null;
+    setState(() {
+      switch (link) {
+        case JobLink(:final jobId):
+          _openJob = jobId;
+          _openCard = false;
+        case CardLink():
+          _openJob = null;
+          _openCard = true;
+        case HomeLink():
+          _openJob = null;
+          _openCard = false;
+      }
+    });
+    // A job from a link may not have reached the phone yet.
+    if (link is JobLink) _runtime.nudgeSync();
+  }
+
   void _closeJob() => setState(() => _openJob = null);
 
   @override
@@ -104,9 +153,18 @@ class _PosShellState extends ConsumerState<_PosShell> {
               key: ValueKey('pos-job-$job'),
               child: JobDetailPage(jobId: job, onBack: _closeJob),
             ),
+          if (_openCard && runtime.signedIn)
+            const MaterialPage<void>(
+              key: ValueKey('pos-card'),
+              child: AgentCardPage(),
+            ),
         ],
         onDidRemovePage: (page) {
-          if (page.key != const ValueKey('pos-home')) _closeJob();
+          if (page.key == const ValueKey('pos-card')) {
+            setState(() => _openCard = false);
+          } else if (page.key != const ValueKey('pos-home')) {
+            _closeJob();
+          }
         },
       ),
     );
