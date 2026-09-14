@@ -1,23 +1,9 @@
+import 'dart:convert';
+
 import 'package:fess_pos_engine/fess_pos_engine.dart';
 import 'package:test/test.dart';
 
 import 'support/fixtures.dart';
-
-FormLists _lists(Object? json) {
-  Map<String, List<OptionDef>> table(Object? t) => {
-    if (t is Map<String, Object?>)
-      for (final e in t.entries)
-        e.key: [
-          if (e.value case final List<Object?> items)
-            for (final item in items) ?OptionDef.tryParse(item),
-        ],
-  };
-  final m = json is Map<String, Object?> ? json : const <String, Object?>{};
-  return FormLists(
-    lookupLists: table(m['lookup_lists']),
-    reasonCodes: table(m['reason_codes']),
-  );
-}
 
 List<String> _keys(Iterable<ValidationError> errors) =>
     [for (final e in errors) '${e.fieldKey}|${e.code}']..sort();
@@ -87,20 +73,12 @@ void main() {
     for (final dir in ['valid', 'invalid']) {
       for (final f in fixtures('submissions/$dir')) {
         final form = fixtureJson('definitions/valid/${f.data['form']}.json');
-        String? skip;
-        try {
-          compileForm(form);
-        } on EngineError catch (e) {
-          skip =
-              'the Dart engine does not validate ${e.details?['type']} yet '
-              '(T3-01)';
-        }
         test('$dir/${f.name}', () {
           final expected = f.data['expected']! as Map<String, Object?>;
           final res = validateSubmission(
             form,
             f.data['document']! as Map<String, Object?>,
-            lists: _lists(f.data['lists']),
+            lists: FormLists.fromJson(f.data['lists']),
           );
           expect(
             _keys(res.errors),
@@ -112,9 +90,53 @@ void main() {
             ]..sort(),
           );
           expect(res.ok, expected['ok']);
-        }, skip: skip);
+        });
       }
     }
+  });
+
+  group('definition test cases (schema/fixtures/testcases)', () {
+    for (final f in fixtures('testcases')) {
+      group(f.name, () {
+        final form = fixtureJson('definitions/valid/${f.data['form']}.json');
+        final lists = f.data['lists'] == null
+            ? null
+            : FormLists.fromJson(f.data['lists']);
+        for (final c in f.cases) {
+          test('${c['name']}', () {
+            final res = runTestCase(form, c, lists: lists);
+            final expectPass = c['expect_pass'] ?? true;
+            expect(
+              res.passed,
+              expectPass,
+              reason: jsonEncode([for (final x in res.failures) x.toJson()]),
+            );
+            if (expectPass == false) expect(res.failures, isNotEmpty);
+          });
+        }
+        test('runTestCases aggregates', () {
+          final all = runTestCases(form, [
+            for (final c in f.cases)
+              if (c['expect_pass'] != false) c,
+          ], lists: lists ?? const FormLists());
+          expect(all.passed, isTrue);
+        });
+      });
+    }
+  });
+
+  test('the catalogue is every component the schema allows', () {
+    final field =
+        (schemaJson('definitions/components.schema.json')[r'$defs']!
+                as Map<String, Object?>)['field']!
+            as Map<String, Object?>;
+    final type =
+        (field['properties']! as Map<String, Object?>)['type']!
+            as Map<String, Object?>;
+    expect(
+      formComponents.keys.toSet(),
+      (type['enum']! as List<Object?>).toSet(),
+    );
   });
 
   group('resolving a reason form', () {
@@ -208,7 +230,7 @@ void main() {
             {
               'key': 's',
               'fields': [
-                {'key': 'd', 'type': 'date'},
+                {'key': 'd', 'type': 'hologram'},
               ],
             },
           ],

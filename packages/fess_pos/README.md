@@ -146,7 +146,7 @@ data). Deep links `/pos`, `/pos/job/<id>` and `/pos/card` open their page once t
 already showing or opens with the link. The host's push token is kept registered with the POS API as it changes,
 and cleared at sign-out. Push delivery itself waits on FESS's channel (D-06).
 
-In review, not merged yet (T4-27, batch M1; D-65): **the walking-skeleton inspection.**
+Merged (T4-27, batch M1, PR #6; D-65): **the walking-skeleton inspection.**
 - *Begin inspection* pins the versions in force, freezes the context and uses the job's session token.
 - The flow's form, declaration and submit steps run over the pinned form. The answers and the step are kept as they
   change, so a restarted app resumes where it was.

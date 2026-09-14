@@ -377,7 +377,8 @@ void main() {
         {
           'key': 's',
           'fields': [
-            {'key': 'visit', 'type': 'date', 'label': 'Visit date'},
+            // From a newer spec: the engine knows every 1.0 component.
+            {'key': 'visit', 'type': 'hologram', 'label': 'Visit date'},
           ],
         },
       ],

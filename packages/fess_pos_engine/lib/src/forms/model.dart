@@ -48,6 +48,24 @@ class OptionDef {
 class FormLists {
   const FormLists({this.lookupLists = const {}, this.reasonCodes = const {}});
 
+  /// From `{lookup_lists: {key: [option…]}, reason_codes: {category:
+  /// [option…]}}`, as test cases and fixtures give them.
+  factory FormLists.fromJson(Object? json) {
+    Map<String, List<OptionDef>> table(Object? t) => {
+      if (t is Map<String, Object?>)
+        for (final e in t.entries)
+          e.key: [
+            if (e.value case final List<Object?> items)
+              for (final item in items) ?OptionDef.tryParse(item),
+          ],
+    };
+    final m = json is Map<String, Object?> ? json : const <String, Object?>{};
+    return FormLists(
+      lookupLists: table(m['lookup_lists']),
+      reasonCodes: table(m['reason_codes']),
+    );
+  }
+
   final Map<String, List<OptionDef>> lookupLists;
   final Map<String, List<OptionDef>> reasonCodes;
 }
@@ -80,7 +98,8 @@ class ResolveContext {
 class RuleIssue {
   const RuleIssue(this.path, this.property, this.code, this.message);
 
-  /// The field key, or `§<section key>` for a section.
+  /// The field's path (its key, or `group[i].key` inside a repeatable
+  /// group), or `§<section key>` for a section.
   final String path;
   final String property;
   final String code;
@@ -100,14 +119,19 @@ class ResolvedField {
     required this.value,
     required this.computed,
     required this.props,
+    String? path,
     this.label,
     this.text,
     this.hasDefault = false,
     this.defaultValue,
     this.options,
-  });
+    this.items,
+  }) : path = path ?? key;
 
   final String key;
+
+  /// Where it sits: its key, or `group[i].key` inside a repeatable group.
+  final String path;
   final String type;
   final String section;
   final bool visible;
@@ -131,6 +155,28 @@ class ResolvedField {
 
   /// The options after `options_filter` (choice components).
   final List<OptionDef>? options;
+
+  /// The items of a repeatable group.
+  final List<ResolvedItem>? items;
+}
+
+/// One item of a repeatable group, as the rules make it now.
+@immutable
+class ResolvedItem {
+  const ResolvedItem({
+    required this.index,
+    required this.fields,
+    required this.data,
+  });
+
+  final int index;
+
+  /// Its child fields by key; each [ResolvedField.path] is
+  /// `group[index].key`.
+  final Map<String, ResolvedField> fields;
+
+  /// What its rules read: the answers, `item`, `index` and the context.
+  final Map<String, Object?> data;
 }
 
 @immutable

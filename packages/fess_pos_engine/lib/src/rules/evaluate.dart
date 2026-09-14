@@ -124,7 +124,10 @@ int? _compare(Object? a, Object? b, String op) {
 bool _isEmpty(Object? v) =>
     v == null || v == '' || (v is List<Object?> && v.isEmpty);
 
-({double lat, double lng})? _toPoint(Object? v, String op) {
+/// A point from `{lat, lng}` (other keys ignored): null stays null,
+/// anything else is `RULE_INVALID_POINT` (`toPoint` in
+/// `src/rules/math.ts`).
+({double lat, double lng})? toGeoPoint(Object? v, String op) {
   if (v == null) return null;
   if (v is! Map<Object?, Object?>) {
     throw RuleError('RULE_INVALID_POINT', '$op: expected {lat, lng}');
@@ -353,12 +356,12 @@ class _Evaluator {
           dateAdd(parseDate(d, op), n.toInt(), args[2]! as String),
         );
       case 'distance_m':
-        final a = _toPoint(arg(0), op);
-        final b = _toPoint(arg(1), op);
+        final a = toGeoPoint(arg(0), op);
+        final b = toGeoPoint(arg(1), op);
         return a == null || b == null ? null : haversineM(a, b);
       case 'within_m':
-        final a = _toPoint(arg(0), op);
-        final b = _toPoint(arg(1), op);
+        final a = toGeoPoint(arg(0), op);
+        final b = toGeoPoint(arg(1), op);
         final m = _asNum(arg(2), op);
         return a != null && b != null && m != null && haversineM(a, b) <= m;
       case 'option_meta':
