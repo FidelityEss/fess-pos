@@ -121,6 +121,72 @@ void main() {
 
   tearDown(() => db.close());
 
+  Map<String, Object?> uploadGrant() => {
+    'state': 'upload',
+    'evidence_id': 'e1',
+    'bucket': 'evidence',
+    'path': 'bank/b/job/j/inspection/i/e1.jpg',
+    'signed_url': _signedUrl,
+    'content_type': 'image/jpeg',
+  };
+
+  Future<List<Map<String, Object?>>> clientErrors() async => [
+    for (final o in await (db.select(
+      db.outbox,
+    )..where((o) => o.type.equals('client_error'))).get())
+      for (final e
+          in ((jsonDecode(o.envelope) as Map<String, Object?>)['payload']!
+                  as Map<String, Object?>)['errors']!
+              as List<Object?>)
+        e! as Map<String, Object?>,
+  ];
+
+  group('T4-03', () {
+    test('a record purged after the server held it still lets the bytes go '
+        'up', () async {
+      grant(uploadGrant());
+      expect(await uploads.run(), 1);
+      expect(puts, hasLength(1));
+      expect(await uploaded(), hasLength(1));
+    });
+
+    test('bytes that no longer match their hash go up anyway, and it is '
+        'reported', () async {
+      await (db.update(db.evidence)..where((e) => e.id.equals('e1'))).write(
+        EvidenceCompanion(sha256: Value('f' * 64)),
+      );
+      await putMeta(OutboxState.committed);
+      grant(uploadGrant());
+      expect(await uploads.run(), 1);
+      expect(puts, hasLength(1), reason: 'never dropped');
+      final error = (await clientErrors()).single;
+      expect(error['kind'], 'local_hash_mismatch');
+      expect(error['code'], 'EVIDENCE_LOCAL_HASH_MISMATCH');
+      expect(error['detail'], {
+        'evidence_id': 'e1',
+        'recorded_sha256': 'f' * 64,
+        'local_sha256': sha256HexBytes(bytes),
+      });
+    });
+
+    test('evidence whose bytes are gone is reported once, and kept', () async {
+      await (db.update(db.evidence)..where((e) => e.id.equals('e1'))).write(
+        const EvidenceCompanion(bytes: Value(null)),
+      );
+      const origin = EnvelopeOrigin(
+        deviceId: testDeviceId,
+        clientType: 'native',
+      );
+      await outbox.reportEvidenceAnomalies(origin);
+      await outbox.reportEvidenceAnomalies(origin);
+      final error = (await clientErrors()).single;
+      expect(error['code'], 'EVIDENCE_BYTES_MISSING');
+      expect(error['kind'], 'recovery_anomaly');
+      expect((error['detail']! as Map)['evidence_id'], 'e1');
+      expect(await evidence(), isA<EvidenceRow>(), reason: 'nothing deleted');
+    });
+  });
+
   test('once the record is held, the bytes go up and it is said', () async {
     await putMeta(OutboxState.committed);
     grant({

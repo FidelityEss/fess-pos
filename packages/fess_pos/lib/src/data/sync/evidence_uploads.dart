@@ -41,13 +41,23 @@ class EvidenceUploads {
   /// wrote. Stops at the first failure that means the network or the
   /// server is out of reach.
   Future<int> run() async {
+    final e = _db.evidence;
+    // Ids first: the bytes are read one item at a time (D-74).
     final waiting =
-        await (_db.select(_db.evidence)
-              ..where((e) => e.state.equals('local_only') & e.bytes.isNotNull())
-              ..orderBy([(e) => OrderingTerm.asc(e.createdAtMs)]))
+        await (_db.selectOnly(e)
+              ..addColumns([e.id])
+              ..where(e.state.equals('local_only') & e.bytes.isNotNull())
+              ..orderBy([OrderingTerm.asc(e.createdAtMs)]))
+            .map((r) => r.read(e.id)!)
             .get();
     var written = 0;
-    for (final row in waiting) {
+    for (final id in waiting) {
+      final row = await (_db.select(
+        e,
+      )..where((x) => x.id.equals(id))).getSingleOrNull();
+      if (row == null || row.state != 'local_only' || row.bytes == null) {
+        continue;
+      }
       final envelopes = await (_db.select(
         _db.outbox,
       )..where((o) => o.entityRef.equals('evidence:${row.id}'))).get();
@@ -56,10 +66,16 @@ class EvidenceUploads {
         continue;
       }
       final meta = envelopes.where((o) => o.type == 'evidence_meta');
-      final held = meta.any(
-        (o) =>
-            o.state == OutboxState.durable || o.state == OutboxState.committed,
-      );
+      // The record and the bytes were written together, so a record no
+      // longer in the outbox was committed and later purged (docs/08 §4):
+      // only one still waiting for the server holds the upload back.
+      final held =
+          meta.isEmpty ||
+          meta.any(
+            (o) =>
+                o.state == OutboxState.durable ||
+                o.state == OutboxState.committed,
+          );
       // The grant needs the record first (EVIDENCE_NOT_LANDED otherwise).
       if (!held) continue;
       try {
@@ -89,7 +105,9 @@ class EvidenceUploads {
         final url = grant['signed_url'];
         final bytes = row.bytes;
         if (url is! String || bytes == null) return false;
-        if (sha256HexBytes(bytes) != row.sha256) {
+        final local = sha256HexBytes(bytes);
+        final mismatch = local == row.sha256 ? null : local;
+        if (mismatch != null) {
           // The stored bytes changed since capture. They go up anyway: the
           // server's own hash check quarantines them, and nothing is lost.
           _log.error('evidence ${row.id} failed its pre-upload hash check');
@@ -104,7 +122,7 @@ class EvidenceUploads {
         } on PosException catch (e) {
           if (e.code != EvidenceUploader.alreadyStored) rethrow;
         }
-        await _recordUploaded(row, grant['path']);
+        await _recordUploaded(row, grant['path'], localHash: mismatch);
         return true;
       case 'already_uploaded':
         await _recordUploaded(row, grant['path']);
@@ -129,11 +147,42 @@ class EvidenceUploads {
     }
   }
 
-  /// `evidence_uploaded` and the item's new state, in one transaction.
-  Future<void> _recordUploaded(EvidenceRow row, Object? path) async {
+  /// `evidence_uploaded` and the item's new state, in one transaction; with
+  /// [localHash], the hash the stored bytes had instead of the recorded one,
+  /// reported alongside (docs/12 §3: uploaded anyway, never dropped).
+  Future<void> _recordUploaded(
+    EvidenceRow row,
+    Object? path, {
+    String? localHash,
+  }) async {
     final origin = await _originFor(row.userId);
     final now = _clock();
     await _db.transaction(() async {
+      if (localHash != null) {
+        await outbox.add(
+          origin,
+          type: 'client_error',
+          typeVersion: 1,
+          payload: {
+            'errors': [
+              {
+                'code': 'EVIDENCE_LOCAL_HASH_MISMATCH',
+                'kind': 'local_hash_mismatch',
+                'about_envelope_id': null,
+                'message':
+                    'the stored bytes no longer match the hash taken at '
+                    'capture; uploaded anyway for the server to check',
+                'detail': {
+                  'evidence_id': row.id,
+                  'recorded_sha256': row.sha256,
+                  'local_sha256': localHash,
+                },
+                'at': isoWithOffset(now),
+              },
+            ],
+          },
+        );
+      }
       await outbox.add(
         origin,
         type: 'evidence_uploaded',

@@ -134,7 +134,10 @@ class SyncEngine {
         }
       }
       final origin = await _deviceOrigin();
-      if (origin != null) await outbox.reportQuarantinedStores(origin);
+      if (origin != null) {
+        await outbox.reportQuarantinedStores(origin);
+        await outbox.reportEvidenceAnomalies(origin);
+      }
 
       drained = await sender.drain();
       final upload = _uploadEvidence;

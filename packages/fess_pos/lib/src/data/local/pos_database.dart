@@ -117,6 +117,10 @@ abstract final class MetaKeys {
   static const String createdAt = 'store_created_at';
   static const String createdByModule = 'store_created_by_module';
 
+  /// Evidence ids already reported as lost (JSON list), so each is reported
+  /// once (docs/12 §3).
+  static const String evidenceAnomaliesReported = 'evidence_anomalies_reported';
+
   /// JSON list of `{name, at}`: stores moved into `quarantine/` (D-52).
   static const String quarantinedStores = 'quarantined_stores';
 

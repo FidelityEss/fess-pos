@@ -50,13 +50,11 @@ const Map<String, Object> _defaultProfile = {
 /// Inspections on the local store (T4-27): each change and the envelope
 /// that records it in one transaction (docs/12 §3).
 ///
-/// The walking skeleton keeps it thin, and says so where it does:
 /// - the location check is one fix at the start that never blocks
 ///   (the geofence engine is T4-07);
-/// - the canonical image is the camera's JPEG as taken (EXIF stripping and
-///   resizing are T4-02);
-/// - evidence bytes live in the encrypted store itself (D-65; T4-03 may
-///   move them to files).
+/// - a photo is made canonical before it is hashed (T4-02, D-73);
+/// - evidence bytes live in the encrypted store itself, read one item at a
+///   time (D-65, D-74).
 class DriftInspections implements Inspections {
   DriftInspections({
     required OutboxStore outbox,
@@ -403,22 +401,26 @@ class DriftInspections implements Inspections {
       )..where((e) => e.id.equals(evidenceId))).getSingleOrNull())?.bytes;
 
   @override
-  Stream<List<EvidenceItem>> watchEvidence(String inspectionId) =>
-      (_db.select(_db.evidence)
-            ..where((e) => e.inspectionId.equals(inspectionId))
-            ..orderBy([(e) => OrderingTerm.asc(e.createdAtMs)]))
-          .watch()
-          .map(
-            (rows) => [
-              for (final r in rows)
-                EvidenceItem(
-                  id: r.id,
-                  fieldKey: r.fieldKey,
-                  type: r.type,
-                  state: r.state,
-                ),
-            ],
-          );
+  Stream<List<EvidenceItem>> watchEvidence(String inspectionId) {
+    final e = _db.evidence;
+    // Without the bytes: this is watched while photos are taken (D-74).
+    return (_db.selectOnly(e)
+          ..addColumns([e.id, e.fieldKey, e.type, e.state])
+          ..where(e.inspectionId.equals(inspectionId))
+          ..orderBy([OrderingTerm.asc(e.createdAtMs)]))
+        .watch()
+        .map(
+          (rows) => [
+            for (final r in rows)
+              EvidenceItem(
+                id: r.read(e.id)!,
+                fieldKey: r.read(e.fieldKey)!,
+                type: r.read(e.type)!,
+                state: r.read(e.state)!,
+              ),
+          ],
+        );
+  }
 
   @override
   Future<JobActionResult> submit(
@@ -653,23 +655,33 @@ class DriftInspections implements Inspections {
     String inspectionId,
     Map<String, Object?> answers,
   ) async {
+    final ev = _db.evidence;
+    // Without the bytes (D-74).
     final held = {
-      for (final e in await (_db.select(
-        _db.evidence,
-      )..where((e) => e.inspectionId.equals(inspectionId))).get())
-        e.id: e,
+      for (final r
+          in await (_db.selectOnly(ev)
+                ..addColumns([
+                  ev.id,
+                  ev.fieldKey,
+                  ev.category,
+                  ev.sha256,
+                  ev.size,
+                ])
+                ..where(ev.inspectionId.equals(inspectionId)))
+              .get())
+        r.read(ev.id)!: r,
     };
     final items = <Map<String, Object?>>[];
     void add(Object? id, int? index) {
-      final e = id is String ? held[id] : null;
-      if (e == null) return;
+      final r = id is String ? held[id] : null;
+      if (r == null) return;
       items.add({
-        'evidence_id': e.id,
-        'field_key': e.fieldKey,
+        'evidence_id': r.read(ev.id),
+        'field_key': r.read(ev.fieldKey),
         'item_index': index,
-        'category': e.category,
-        'sha256': e.sha256,
-        'bytes': e.size,
+        'category': r.read(ev.category),
+        'sha256': r.read(ev.sha256),
+        'bytes': r.read(ev.size),
       });
     }
 
