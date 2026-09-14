@@ -6,6 +6,12 @@
 library;
 
 export 'src/errors.dart';
+export 'src/forms/catalogue.dart';
+export 'src/forms/model.dart';
+export 'src/forms/resolver.dart' show CompiledForm, compileForm, resolveForm;
+export 'src/forms/templates.dart';
+export 'src/forms/validator.dart';
+export 'src/forms/values.dart' show isEmptyAnswer;
 export 'src/hash.dart';
 export 'src/jcs.dart';
 export 'src/json.dart' show deepEqual, jsonTypeOf, readPath;

@@ -64,6 +64,27 @@ void main() {
       }
       _printScreen(tester, 'job_detail');
       expect(find.text('Reference'), findsOneWidget, reason: 'job_detail');
+
+      // The actions the job allows, and a reason form from the server:
+      // opened and left without submitting, so nothing changes on QA.
+      final shown = [
+        for (final a in ['accept', 'reject', 'unable'])
+          if (find.byKey(ValueKey('job-action-$a')).evaluate().isNotEmpty) a,
+      ];
+      debugPrint('POS_ACTIONS ${shown.join(',')}');
+      final reason = shown.where((a) => a != 'accept').firstOrNull;
+      if (reason != null) {
+        await tester.tap(find.byKey(ValueKey('job-action-$reason')));
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 300));
+        }
+        _printScreen(tester, 'reason_form_$reason');
+        expect(
+          find.byKey(const ValueKey('reason-form-submit')),
+          findsOneWidget,
+          reason: "the server's reason form and reason codes are on the phone",
+        );
+      }
     }
   }, skip: identity == null);
 }

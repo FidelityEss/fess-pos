@@ -33,6 +33,62 @@ abstract final class BundledCopy {
     'job.status.appointment_not_secured': 'Appointment not secured',
     'job.status.cancelled': 'Cancelled',
     'job.status.closed': 'Closed',
+    'job.action.accept': 'Accept job',
+    'job.action.reject': "Can't take this job",
+    'job.action.unable': 'Unable to complete',
+    'job.action.reject.title': 'Reject job',
+    'job.action.unable.title': 'Unable to complete',
+    'job.action.submit': 'Submit',
+    'job.action.not_allowed':
+        'This job has changed on your phone. Go back to see where it stands.',
+    'job.action.unavailable':
+        "This can't be saved right now. Open POS from FESS again and retry.",
+    'job.action.form_missing':
+        "This form hasn't reached your phone yet. Connect to the internet "
+        'and try again.',
+    'outcome.sending': 'Sending…',
+    'outcome.success.title': 'Received by the server',
+    'outcome.success.message': 'Thank you — the server has confirmed it.',
+    'outcome.saved.title': 'Saved on this phone',
+    'outcome.saved.message':
+        "It will send automatically when you're back online. You don't need "
+        'to do anything else.',
+    'outcome.failure.title': "This couldn't be completed",
+    'outcome.failure.message':
+        'Nothing you captured has been lost. Check the message below and try '
+        'again, or contact your administrator.',
+    'outcome.needs_attention':
+        "The server couldn't accept this. Your data is safe and an "
+        'administrator has been told.',
+    'outcome.home': 'Back to home',
+    'outcome.retry': 'Try again',
+    'form.error.NOTE_REQUIRED': 'This reason needs a note.',
+    'form.error.NOTE_TOO_LONG': 'Use at most 2000 characters.',
+    'form.yes': 'Yes',
+    'form.no': 'No',
+    'form.other': 'Other',
+    'form.other_text': 'Describe it',
+    'form.select': 'Choose…',
+    'form.unsupported_field': 'This question needs a newer version of FESS.',
+    'form.unavailable': "This form can't be shown in this version of FESS.",
+    'form.error.REQUIRED': 'This answer is required.',
+    'form.error.INVALID_TYPE': "This answer isn't in the right format.",
+    'form.error.INVALID_ENTRY': "This answer isn't in the right format.",
+    'form.error.INVALID_OPTION': 'Choose one of the options shown.',
+    'form.error.OTHER_TEXT_REQUIRED': 'Describe the other option.',
+    'form.error.TOO_SHORT': 'Enter at least {{min_length}} characters.',
+    'form.error.TOO_LONG': 'Use at most {{max_length}} characters.',
+    'form.error.PATTERN_MISMATCH': "This doesn't match the expected format.",
+    'form.error.DUPLICATE_VALUE': 'The same choice appears twice.',
+    'form.error.EXCLUSIVE_OPTION_COMBINED':
+        "This choice can't be combined with others.",
+    'form.error.multi_select.TOO_FEW': 'Choose at least {{min_select}}.',
+    'form.error.multi_select.TOO_MANY': 'Choose at most {{max_select}}.',
+    'form.error.photo.TOO_FEW': 'Take at least {{min_count}} photos.',
+    'form.error.photo.TOO_MANY': 'Keep at most {{max_count}} photos.',
+    'form.error.RULE_ERROR':
+        "This question couldn't be checked. Tell your administrator.",
+    'form.error.VALIDATION_RULE_FAILED': 'Check this answer.',
     'date.month.1': 'Jan',
     'date.month.2': 'Feb',
     'date.month.3': 'Mar',

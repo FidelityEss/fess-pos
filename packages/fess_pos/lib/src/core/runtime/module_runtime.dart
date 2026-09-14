@@ -11,8 +11,10 @@ import 'package:fess_pos/src/contract/identity.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/observability/pos_observability.dart';
+import 'package:fess_pos/src/data/local/job_actions_store.dart';
 import 'package:fess_pos/src/data/local/local_store.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
+import 'package:fess_pos/src/data/outbox/action_recorder.dart';
 import 'package:fess_pos/src/data/outbox/outbox_sender.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart';
 import 'package:fess_pos/src/data/remote/api_session_gateway.dart';
@@ -22,6 +24,7 @@ import 'package:fess_pos/src/data/remote/session_vault.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
 import 'package:fess_pos/src/data/sync/sections.dart';
 import 'package:fess_pos/src/data/sync/sync_engine.dart';
+import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/session/session_gateway.dart';
 import 'package:fess_pos/src/platform/connectivity.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
@@ -187,7 +190,11 @@ final class ModuleRuntime {
   DateTime? _lastActivityReport;
   Future<PosDatabase>? _localStore;
   SyncEngine? _sync;
+  OutboxStore? _outbox;
+  JobActions? _jobActions;
   StreamSubscription<NetworkState>? _network;
+
+  static const String _clientType = kIsWeb ? 'web' : 'native';
 
   /// The cached kill switches and other bootstrap keys, read at start and
   /// refreshed by every pull that brings a config (docs/13 §6).
@@ -227,9 +234,39 @@ final class ModuleRuntime {
   /// Something to sync (an action, a push hint): soon, if syncing runs.
   void nudgeSync() => _sync?.nudge();
 
+  /// Job actions (T2-16), recorded under the signed-in user's session;
+  /// null in builds without the POS API client.
+  Future<JobActions?> jobActions() async {
+    final built = _jobActions;
+    if (built != null) return built;
+    final client = dependencies.apiClient;
+    if (client == null) return null;
+    final db = await localStore();
+    return _jobActions ??= DriftJobActions(
+      db: db,
+      recorder: ActionRecorder(_outboxFor(db)),
+      origin: () async {
+        final session = (await client.vault.read()).active;
+        if (session == null) return null;
+        return EnvelopeOrigin(
+          deviceId: await client.vault.deviceId(),
+          clientType: _clientType,
+          userId: session.user.id,
+          sessionId: session.sessionId,
+        );
+      },
+      send: runSync,
+    );
+  }
+
+  /// One outbox for the store: the sync engine and the action recorder
+  /// share it.
+  OutboxStore _outboxFor(PosDatabase db) =>
+      _outbox ??= OutboxStore(db, clock: dependencies.clock);
+
   SyncEngine _newSyncEngine(PosApiClient client, PosDatabase db) {
-    final outbox = OutboxStore(db, clock: dependencies.clock);
-    const clientType = kIsWeb ? 'web' : 'native';
+    final outbox = _outboxFor(db);
+    const clientType = _clientType;
     return SyncEngine(
       sender: OutboxSender(store: outbox, client: client),
       puller: PullEngine(

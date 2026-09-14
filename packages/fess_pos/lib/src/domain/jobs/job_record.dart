@@ -41,13 +41,34 @@ abstract interface class JobRepository {
   Stream<JobRecord?> watchJob(String id);
 }
 
+/// A definition version in force: what a submission names it by.
+@immutable
+class ActiveDefinition {
+  const ActiveDefinition({
+    required this.versionId,
+    required this.hash,
+    required this.body,
+  });
+
+  final String versionId;
+
+  /// `definition_hash`, checked against [body] when it was pulled.
+  final String hash;
+  final Map<String, Object?> body;
+}
+
 /// Definitions in force on this device (docs/04 §7).
-// An interface, not a typedef: repositories are swapped as objects.
-// ignore: one_member_abstracts
 abstract interface class DefinitionRepository {
   /// The `kind`/`key` definition in force for [bankId] — the bank's own if
   /// it has one, otherwise the default — or null before one arrives.
   Stream<Map<String, Object?>?> watchActive(
+    String kind,
+    String key, {
+    String? bankId,
+  });
+
+  /// As [watchActive], with its version id and hash.
+  Stream<ActiveDefinition?> watchActiveVersion(
     String kind,
     String key, {
     String? bankId,

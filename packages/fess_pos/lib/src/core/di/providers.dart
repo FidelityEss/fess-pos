@@ -10,6 +10,8 @@ import 'package:fess_pos/src/core/runtime/module_runtime.dart';
 import 'package:fess_pos/src/core/theme/pos_theme_data.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/local/repositories.dart';
+import 'package:fess_pos/src/domain/forms/reason_codes.dart';
+import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:flutter/material.dart';
@@ -68,6 +70,19 @@ final agentRepositoryProvider = FutureProvider<AgentRepository>(
   name: 'agentRepository',
 );
 
+final referenceRepositoryProvider = FutureProvider<ReferenceRepository>(
+  (ref) async =>
+      DriftReferenceRepository(await ref.watch(localDatabaseProvider.future)),
+  name: 'referenceRepository',
+);
+
+/// The reason codes from the last pull (docs/06 §3), live.
+final reasonCodesProvider = StreamProvider<List<ReasonCode>>((ref) async* {
+  yield* (await ref.watch(
+    referenceRepositoryProvider.future,
+  )).watchReasonCodes();
+}, name: 'reasonCodes');
+
 /// The agent's own jobs, live.
 final myJobsProvider = StreamProvider<List<JobRecord>>((ref) async* {
   yield* (await ref.watch(jobRepositoryProvider.future)).watchMine();
@@ -94,6 +109,21 @@ final activeDefinitionProvider =
       final repo = await ref.watch(definitionRepositoryProvider.future);
       yield* repo.watchActive(key.kind, key.key, bankId: key.bankId);
     }, name: 'activeDefinition');
+
+/// As [activeDefinitionProvider], with the version id and hash a
+/// submission names it by.
+// ignore: specify_nonobvious_property_types
+final activeDefinitionVersionProvider =
+    StreamProvider.family<ActiveDefinition?, DefinitionKey>((ref, key) async* {
+      final repo = await ref.watch(definitionRepositoryProvider.future);
+      yield* repo.watchActiveVersion(key.kind, key.key, bankId: key.bankId);
+    }, name: 'activeDefinitionVersion');
+
+/// Recording job actions; null in builds without the POS API client.
+final jobActionsProvider = FutureProvider<JobActions?>(
+  (ref) => ref.watch(moduleRuntimeProvider).jobActions(),
+  name: 'jobActions',
+);
 
 /// `me` from the last pull.
 final agentProvider = StreamProvider<Map<String, Object?>?>((ref) async* {

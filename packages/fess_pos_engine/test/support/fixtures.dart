@@ -24,6 +24,10 @@ class Fixture {
       (data['cases']! as List<Object?>).cast<Map<String, Object?>>();
 }
 
+/// A JSON file under `schema/fixtures/`, e.g. `definitions/valid/x.json`.
+Map<String, Object?> fixtureJson(String path) =>
+    jsonDecode(impl.readText('$fixturesRoot/$path')) as Map<String, Object?>;
+
 /// A JSON file under `schema/`, e.g. `rules/operators.json`.
 Map<String, Object?> schemaJson(String path) =>
     jsonDecode(impl.readText('../../schema/$path')) as Map<String, Object?>;

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
+import 'package:fess_pos/src/data/outbox/envelope.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart' show definitionHash;
 
@@ -23,10 +24,12 @@ class JobsSection implements PullSection {
 
   @override
   Future<void> apply(Map<String, Object?> page) async {
-    for (final job in _items(_map(page['jobs'])?['items'])) {
+    final waiting = await _jobsWithWaitingActions();
+    for (final pulled in _items(_map(page['jobs'])?['items'])) {
+      var job = pulled;
       final id = job['id'];
       final reference = job['reference'];
-      final status = job['status'];
+      var status = job['status'];
       final updatedAt = job['updated_at'];
       if (id is! String ||
           reference is! String ||
@@ -34,6 +37,20 @@ class JobsSection implements PullSection {
           updatedAt is! String) {
         _log.error('a pulled job lacks id, reference, status or updated_at');
         continue;
+      }
+      var mine = job['assigned_to_me'] == true;
+      if (waiting.contains(id)) {
+        // The agent's action on it hasn't reached the server yet: keep the
+        // status it gave the job, so a pull can't undo it (docs/08 §3).
+        // Once the server holds the action, its own status wins.
+        final local = await (db.select(
+          db.jobs,
+        )..where((j) => j.id.equals(id))).getSingleOrNull();
+        if (local != null) {
+          status = local.status;
+          mine = local.assignedToMe;
+          job = {...job, 'status': status, 'assigned_to_me': mine};
+        }
       }
       final bank = _map(job['bank']);
       final start = job['scheduled_start'];
@@ -45,7 +62,7 @@ class JobsSection implements PullSection {
               reference: reference,
               status: status,
               updatedAt: updatedAt,
-              assignedToMe: Value(job['assigned_to_me'] == true),
+              assignedToMe: Value(mine),
               bankId: Value(
                 bank?['id'] is String ? bank!['id']! as String : null,
               ),
@@ -88,6 +105,24 @@ class JobsSection implements PullSection {
             ),
           );
     }
+  }
+}
+
+extension on JobsSection {
+  /// Jobs with a `job_event` still on the phone, not yet sent.
+  Future<Set<String>> _jobsWithWaitingActions() async {
+    final rows =
+        await (db.select(db.outbox)..where(
+              (o) =>
+                  o.type.equals('job_event') &
+                  o.state.isIn([OutboxState.queued, OutboxState.inFlight]),
+            ))
+            .get();
+    return {
+      for (final r in rows)
+        if (r.entityRef case final String ref when ref.startsWith('job:'))
+          ref.substring('job:'.length),
+    };
   }
 }
 

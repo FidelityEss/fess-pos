@@ -1,6 +1,7 @@
 import 'package:fess_pos/src/core/content/bundled_views.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
+import 'package:fess_pos/src/features/jobs/job_action_pages.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:fess_pos/src/renderer/render_context.dart';
 import 'package:fess_pos/src/renderer/template.dart';
@@ -19,7 +20,7 @@ Map<String, Object?> jobViewData(JobRecord job) => {
   },
 };
 
-String _today() {
+String todayIso() {
   final now = DateTime.now();
   String two(int n) => n.toString().padLeft(2, '0');
   return '${now.year}-${two(now.month)}-${two(now.day)}';
@@ -77,7 +78,7 @@ class JobsHomePage extends ConsumerWidget {
                 jobs: [for (final job in value) jobViewData(job)],
                 itemViews: {'job_card': jobCard},
                 copy: copy,
-                today: _today(),
+                today: todayIso(),
                 onNavigate: (target, data) {
                   final id = readPath(data, 'job.id');
                   if (target['page'] == 'job_detail' && id is String) {
@@ -128,7 +129,7 @@ class JobDetailPage extends ConsumerWidget {
                 'agent': agent ?? const <String, Object?>{},
               },
               copy: copy,
-              today: _today(),
+              today: todayIso(),
             ),
           ),
         ],
@@ -140,6 +141,7 @@ class JobDetailPage extends ConsumerWidget {
     return Scaffold(
       appBar: PosHeader(title: title, onBack: onBack),
       body: body,
+      bottomNavigationBar: record == null ? null : JobActionBar(job: record),
     );
   }
 }

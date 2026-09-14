@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
+import 'package:fess_pos/src/domain/forms/reason_codes.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 
 /// Jobs from the local store, updated live as pulls land.
@@ -47,6 +48,13 @@ class DriftDefinitionRepository implements DefinitionRepository {
     String kind,
     String key, {
     String? bankId,
+  }) => watchActiveVersion(kind, key, bankId: bankId).map((d) => d?.body);
+
+  @override
+  Stream<ActiveDefinition?> watchActiveVersion(
+    String kind,
+    String key, {
+    String? bankId,
   }) {
     final active = _db.activeDefinitions;
     final versions = _db.definitionVersions;
@@ -67,7 +75,16 @@ class DriftDefinitionRepository implements DefinitionRepository {
       }
 
       final row = (bankId == null ? null : pick(bankId)) ?? pick('');
-      return row == null ? null : _object(row.readTable(versions).body);
+      if (row == null) return null;
+      final version = row.readTable(versions);
+      final body = _object(version.body);
+      return body == null
+          ? null
+          : ActiveDefinition(
+              versionId: version.versionId,
+              hash: version.hash,
+              body: body,
+            );
     });
   }
 }
@@ -88,6 +105,30 @@ class DriftAgentRepository implements AgentRepository {
       (_db.select(_db.cachedDocuments)..where((d) => d.key.equals(key)))
           .watchSingleOrNull()
           .map((r) => r == null ? null : _object(r.body));
+}
+
+/// Reference data from the last pull.
+class DriftReferenceRepository implements ReferenceRepository {
+  DriftReferenceRepository(this._db);
+
+  final PosDatabase _db;
+
+  @override
+  Stream<List<ReasonCode>> watchReasonCodes() =>
+      (_db.select(_db.cachedDocuments)
+            ..where((d) => d.key.equals(DocKeys.reasonCodes)))
+          .watchSingleOrNull()
+          .map((r) => r == null ? const [] : _reasonCodes(r.body));
+}
+
+List<ReasonCode> _reasonCodes(String json) {
+  try {
+    final v = jsonDecode(json);
+    if (v is! List<Object?>) return const [];
+    return [for (final item in v) ?ReasonCode.tryParse(item)];
+  } on FormatException {
+    return const [];
+  }
 }
 
 Map<String, Object?>? _object(String json) {
