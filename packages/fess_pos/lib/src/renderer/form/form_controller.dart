@@ -3,8 +3,7 @@ import 'package:flutter/foundation.dart';
 
 /// The form components this renderer draws (`11` §3–5), with their
 /// versions for the capability report (T3-07). The rest arrive with their
-/// tasks: number, date and the other Wave-1 inputs (T3-03), photo and
-/// signature with the evidence pipeline.
+/// tasks: number, date and the other Wave-1 inputs (T3-03).
 const Map<String, int> supportedFormComponents = {
   'text': 1,
   'textarea': 1,
@@ -15,6 +14,18 @@ const Map<String, int> supportedFormComponents = {
   'callout': 1,
   'divider': 1,
   'group': 1,
+  'photo': 1,
+  'signature': 1,
+  'declaration': 1,
+};
+
+/// Components drawn only inside an inspection, which brings the camera,
+/// the signature pad and the declarations (T4-27). Elsewhere, e.g. an
+/// unable reason that needs a photo, they hold the form as unsupported.
+const Set<String> inspectionOnlyComponents = {
+  'photo',
+  'signature',
+  'declaration',
 };
 
 /// One form being filled in (docs/04 §4–6): the answers so far and what
@@ -31,9 +42,12 @@ class FormController extends ChangeNotifier {
     this.lists = const FormLists(),
     this.context = const ResolveContext(),
     this.extraChecks,
+    this.inspection = false,
     Map<String, Object?> initialValues = const {},
+    Map<String, String> initialOtherText = const {},
   }) {
     _values.addAll(initialValues);
+    _otherText.addAll(initialOtherText);
     try {
       compileForm(definition);
     } on EngineError catch (e) {
@@ -59,6 +73,10 @@ class FormController extends ChangeNotifier {
   final List<ValidationError> Function(Map<String, Object?> answers)?
   extraChecks;
 
+  /// Filled in inside an inspection, where [inspectionOnlyComponents] can
+  /// be answered.
+  final bool inspection;
+
   final Map<String, Object?> _values = {};
   final Map<String, String> _otherText = {};
   final Set<String> _touched = {};
@@ -77,6 +95,22 @@ class FormController extends ChangeNotifier {
   /// The raw value of [key], shown or not.
   Object? value(String key) => _values[key];
 
+  /// Every raw answer given, shown or not: what a draft keeps.
+  Map<String, Object?> get values => Map.unmodifiable(_values);
+
+  /// The "other" descriptions given, by field key.
+  Map<String, String> get otherTexts => Map.unmodifiable(_otherText);
+
+  /// Shows the problems of [keys] from now on, e.g. a flow step's fields
+  /// when the agent tries to go on.
+  void touchAll(Iterable<String> keys) {
+    var changed = false;
+    for (final k in keys) {
+      changed = _touched.add(k) || changed;
+    }
+    if (changed) notifyListeners();
+  }
+
   /// The "other" description given for [key].
   String? otherText(String key) => _otherText[key];
 
@@ -94,11 +128,13 @@ class FormController extends ChangeNotifier {
     if (r == null) return const [];
     return [
       for (final key in r.order)
-        if (r.fields[key]!.visible &&
-            !supportedFormComponents.containsKey(r.fields[key]!.type))
-          key,
+        if (r.fields[key]!.visible && !_drawable(r.fields[key]!.type)) key,
     ];
   }
+
+  bool _drawable(String type) =>
+      supportedFormComponents.containsKey(type) &&
+      (inspection || !inspectionOnlyComponents.contains(type));
 
   /// The problems to show under [key]: once the agent has finished with
   /// it, or everywhere after [validate].

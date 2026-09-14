@@ -221,6 +221,127 @@ class TileCacheIndex extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
+/// Inspections begun on this phone (docs/06 §2, docs/08 §1): the pinned
+/// versions, what rules read (frozen at the start), the answers so far and
+/// where the agent is in the flow. Written with the envelope that records
+/// each change (T4-27).
+@DataClassName('InspectionRow')
+class Inspections extends Table {
+  TextColumn get id => text()();
+
+  TextColumn get jobId => text()();
+
+  /// The user who began it; their session sends its envelopes.
+  TextColumn get userId => text()();
+
+  IntColumn get attempt => integer()();
+
+  /// `in_progress` or `submitted`.
+  TextColumn get status => text()();
+
+  TextColumn get formVersionId => text()();
+
+  TextColumn get formHash => text()();
+
+  TextColumn get flowVersionId => text()();
+
+  TextColumn get flowHash => text()();
+
+  TextColumn get jobSchemaVersionId => text().nullable()();
+
+  TextColumn get configVersionId => text().nullable()();
+
+  /// What rules read, frozen at the start (docs/04 §4.4), as JSON.
+  TextColumn get contextSnapshot => text()();
+
+  /// The geofence result at the start, as JSON.
+  TextColumn get geofence => text()();
+
+  /// The integrity snapshot at the start, as JSON.
+  TextColumn get integrity => text()();
+
+  TextColumn get sessionTokenId => text().nullable()();
+
+  TextColumn get sessionToken => text().nullable()();
+
+  TextColumn get startedAtDevice => text()();
+
+  /// The answers so far: `{values: {key: value}, other: {key: text}}`.
+  TextColumn get draft => text().withDefault(const Constant('{}'))();
+
+  /// The flow step the agent is on.
+  IntColumn get currentStep => integer().withDefault(const Constant(0))();
+
+  TextColumn get submittedAtDevice => text().nullable()();
+
+  TextColumn get startedEnvelopeId => text().nullable()();
+
+  TextColumn get submissionEnvelopeId => text().nullable()();
+
+  TextColumn get updatedAt => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Evidence captured on this phone (docs/07 §4, docs/12 §6): the canonical
+/// bytes, their hash and the capture metadata. The bytes are kept in the
+/// encrypted store itself (D-65) and cleared only once the server reports
+/// the object verified (docs/08 §4); the record stays.
+@DataClassName('EvidenceRow')
+class Evidence extends Table {
+  TextColumn get id => text()();
+
+  TextColumn get inspectionId => text()();
+
+  TextColumn get jobId => text()();
+
+  TextColumn get userId => text()();
+
+  TextColumn get fieldKey => text()();
+
+  TextColumn get category => text()();
+
+  /// `photo` or `signature`.
+  TextColumn get type => text()();
+
+  TextColumn get mime => text()();
+
+  /// SHA-256 of [bytes], lower-case hex.
+  TextColumn get sha256 => text()();
+
+  IntColumn get size => integer()();
+
+  IntColumn get width => integer().nullable()();
+
+  IntColumn get height => integer().nullable()();
+
+  TextColumn get capturedAtDevice => text()();
+
+  IntColumn get capturedMonotonicMs => integer()();
+
+  /// `{lat, lng, accuracy_m}` when a fix was available, as JSON.
+  TextColumn get location => text().nullable()();
+
+  BoolColumn get isMocked => boolean().withDefault(const Constant(false))();
+
+  /// The `evidence_meta` payload's `meta`, as JSON.
+  TextColumn get meta => text().withDefault(const Constant('{}'))();
+
+  /// The canonical bytes; null once the server verified them.
+  BlobColumn get bytes => blob().nullable()();
+
+  /// `local_only`, `uploaded`, `verified` or `quarantined` (docs/08 §1).
+  TextColumn get state => text()();
+
+  IntColumn get createdAtMs => integer()();
+
+  TextColumn get updatedAt => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 /// Sync machinery: pull cursors, `server_epoch`, the clock offset
 /// (docs/08 §1–2) and the last `device_seq`.
 @DataClassName('SyncStateRow')

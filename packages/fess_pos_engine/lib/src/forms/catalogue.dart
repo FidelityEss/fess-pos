@@ -70,6 +70,7 @@ const Map<String, ComponentSpec> formComponents = {
     },
   ),
   'signature': ComponentSpec('signature', valueType: 'string'),
+  'declaration': ComponentSpec('declaration', valueType: 'object'),
   'prefilled': ComponentSpec('prefilled', valueType: 'any'),
   'info': ComponentSpec('info', valueType: 'none'),
   'callout': ComponentSpec('callout', valueType: 'none'),

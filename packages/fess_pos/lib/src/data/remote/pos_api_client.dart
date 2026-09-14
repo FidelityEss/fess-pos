@@ -15,6 +15,7 @@ abstract final class EndpointGroup {
   static const String sync = 'sync';
   static const String ingest = 'ingest';
   static const String device = 'device';
+  static const String evidence = 'evidence';
 }
 
 /// The POS API for the module (docs/03 §4): the session (exchange, refresh,
@@ -145,6 +146,19 @@ class PosApiClient {
     '/device',
     fields,
     group: EndpointGroup.device,
+    userId: userId,
+  )).body;
+
+  /// `POST /v1/evidence/upload-grant` (docs/12 §6): where to upload
+  /// [evidenceId]'s bytes, or that the server already holds them. Works
+  /// under `ingest_only` too, so a signed-out agent's photos still go up.
+  Future<Map<String, Object?>> uploadGrant(
+    String evidenceId, {
+    required String userId,
+  }) async => (await _agentCall(
+    '/evidence/upload-grant',
+    {'evidence_id': evidenceId},
+    group: EndpointGroup.evidence,
     userId: userId,
   )).body;
 

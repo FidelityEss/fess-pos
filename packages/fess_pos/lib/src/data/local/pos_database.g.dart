@@ -4233,6 +4233,2484 @@ class TileCacheIndexCompanion extends UpdateCompanion<TileRow> {
   }
 }
 
+class $InspectionsTable extends Inspections
+    with TableInfo<$InspectionsTable, InspectionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $InspectionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _jobIdMeta = const VerificationMeta('jobId');
+  @override
+  late final GeneratedColumn<String> jobId = GeneratedColumn<String>(
+    'job_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _attemptMeta = const VerificationMeta(
+    'attempt',
+  );
+  @override
+  late final GeneratedColumn<int> attempt = GeneratedColumn<int>(
+    'attempt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _formVersionIdMeta = const VerificationMeta(
+    'formVersionId',
+  );
+  @override
+  late final GeneratedColumn<String> formVersionId = GeneratedColumn<String>(
+    'form_version_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _formHashMeta = const VerificationMeta(
+    'formHash',
+  );
+  @override
+  late final GeneratedColumn<String> formHash = GeneratedColumn<String>(
+    'form_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _flowVersionIdMeta = const VerificationMeta(
+    'flowVersionId',
+  );
+  @override
+  late final GeneratedColumn<String> flowVersionId = GeneratedColumn<String>(
+    'flow_version_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _flowHashMeta = const VerificationMeta(
+    'flowHash',
+  );
+  @override
+  late final GeneratedColumn<String> flowHash = GeneratedColumn<String>(
+    'flow_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _jobSchemaVersionIdMeta =
+      const VerificationMeta('jobSchemaVersionId');
+  @override
+  late final GeneratedColumn<String> jobSchemaVersionId =
+      GeneratedColumn<String>(
+        'job_schema_version_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _configVersionIdMeta = const VerificationMeta(
+    'configVersionId',
+  );
+  @override
+  late final GeneratedColumn<String> configVersionId = GeneratedColumn<String>(
+    'config_version_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _contextSnapshotMeta = const VerificationMeta(
+    'contextSnapshot',
+  );
+  @override
+  late final GeneratedColumn<String> contextSnapshot = GeneratedColumn<String>(
+    'context_snapshot',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _geofenceMeta = const VerificationMeta(
+    'geofence',
+  );
+  @override
+  late final GeneratedColumn<String> geofence = GeneratedColumn<String>(
+    'geofence',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _integrityMeta = const VerificationMeta(
+    'integrity',
+  );
+  @override
+  late final GeneratedColumn<String> integrity = GeneratedColumn<String>(
+    'integrity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionTokenIdMeta = const VerificationMeta(
+    'sessionTokenId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionTokenId = GeneratedColumn<String>(
+    'session_token_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sessionTokenMeta = const VerificationMeta(
+    'sessionToken',
+  );
+  @override
+  late final GeneratedColumn<String> sessionToken = GeneratedColumn<String>(
+    'session_token',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startedAtDeviceMeta = const VerificationMeta(
+    'startedAtDevice',
+  );
+  @override
+  late final GeneratedColumn<String> startedAtDevice = GeneratedColumn<String>(
+    'started_at_device',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _draftMeta = const VerificationMeta('draft');
+  @override
+  late final GeneratedColumn<String> draft = GeneratedColumn<String>(
+    'draft',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _currentStepMeta = const VerificationMeta(
+    'currentStep',
+  );
+  @override
+  late final GeneratedColumn<int> currentStep = GeneratedColumn<int>(
+    'current_step',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _submittedAtDeviceMeta = const VerificationMeta(
+    'submittedAtDevice',
+  );
+  @override
+  late final GeneratedColumn<String> submittedAtDevice =
+      GeneratedColumn<String>(
+        'submitted_at_device',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _startedEnvelopeIdMeta = const VerificationMeta(
+    'startedEnvelopeId',
+  );
+  @override
+  late final GeneratedColumn<String> startedEnvelopeId =
+      GeneratedColumn<String>(
+        'started_envelope_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _submissionEnvelopeIdMeta =
+      const VerificationMeta('submissionEnvelopeId');
+  @override
+  late final GeneratedColumn<String> submissionEnvelopeId =
+      GeneratedColumn<String>(
+        'submission_envelope_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    jobId,
+    userId,
+    attempt,
+    status,
+    formVersionId,
+    formHash,
+    flowVersionId,
+    flowHash,
+    jobSchemaVersionId,
+    configVersionId,
+    contextSnapshot,
+    geofence,
+    integrity,
+    sessionTokenId,
+    sessionToken,
+    startedAtDevice,
+    draft,
+    currentStep,
+    submittedAtDevice,
+    startedEnvelopeId,
+    submissionEnvelopeId,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'inspections';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<InspectionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('job_id')) {
+      context.handle(
+        _jobIdMeta,
+        jobId.isAcceptableOrUnknown(data['job_id']!, _jobIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_jobIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('attempt')) {
+      context.handle(
+        _attemptMeta,
+        attempt.isAcceptableOrUnknown(data['attempt']!, _attemptMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_attemptMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('form_version_id')) {
+      context.handle(
+        _formVersionIdMeta,
+        formVersionId.isAcceptableOrUnknown(
+          data['form_version_id']!,
+          _formVersionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_formVersionIdMeta);
+    }
+    if (data.containsKey('form_hash')) {
+      context.handle(
+        _formHashMeta,
+        formHash.isAcceptableOrUnknown(data['form_hash']!, _formHashMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_formHashMeta);
+    }
+    if (data.containsKey('flow_version_id')) {
+      context.handle(
+        _flowVersionIdMeta,
+        flowVersionId.isAcceptableOrUnknown(
+          data['flow_version_id']!,
+          _flowVersionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_flowVersionIdMeta);
+    }
+    if (data.containsKey('flow_hash')) {
+      context.handle(
+        _flowHashMeta,
+        flowHash.isAcceptableOrUnknown(data['flow_hash']!, _flowHashMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_flowHashMeta);
+    }
+    if (data.containsKey('job_schema_version_id')) {
+      context.handle(
+        _jobSchemaVersionIdMeta,
+        jobSchemaVersionId.isAcceptableOrUnknown(
+          data['job_schema_version_id']!,
+          _jobSchemaVersionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('config_version_id')) {
+      context.handle(
+        _configVersionIdMeta,
+        configVersionId.isAcceptableOrUnknown(
+          data['config_version_id']!,
+          _configVersionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('context_snapshot')) {
+      context.handle(
+        _contextSnapshotMeta,
+        contextSnapshot.isAcceptableOrUnknown(
+          data['context_snapshot']!,
+          _contextSnapshotMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_contextSnapshotMeta);
+    }
+    if (data.containsKey('geofence')) {
+      context.handle(
+        _geofenceMeta,
+        geofence.isAcceptableOrUnknown(data['geofence']!, _geofenceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_geofenceMeta);
+    }
+    if (data.containsKey('integrity')) {
+      context.handle(
+        _integrityMeta,
+        integrity.isAcceptableOrUnknown(data['integrity']!, _integrityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_integrityMeta);
+    }
+    if (data.containsKey('session_token_id')) {
+      context.handle(
+        _sessionTokenIdMeta,
+        sessionTokenId.isAcceptableOrUnknown(
+          data['session_token_id']!,
+          _sessionTokenIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('session_token')) {
+      context.handle(
+        _sessionTokenMeta,
+        sessionToken.isAcceptableOrUnknown(
+          data['session_token']!,
+          _sessionTokenMeta,
+        ),
+      );
+    }
+    if (data.containsKey('started_at_device')) {
+      context.handle(
+        _startedAtDeviceMeta,
+        startedAtDevice.isAcceptableOrUnknown(
+          data['started_at_device']!,
+          _startedAtDeviceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtDeviceMeta);
+    }
+    if (data.containsKey('draft')) {
+      context.handle(
+        _draftMeta,
+        draft.isAcceptableOrUnknown(data['draft']!, _draftMeta),
+      );
+    }
+    if (data.containsKey('current_step')) {
+      context.handle(
+        _currentStepMeta,
+        currentStep.isAcceptableOrUnknown(
+          data['current_step']!,
+          _currentStepMeta,
+        ),
+      );
+    }
+    if (data.containsKey('submitted_at_device')) {
+      context.handle(
+        _submittedAtDeviceMeta,
+        submittedAtDevice.isAcceptableOrUnknown(
+          data['submitted_at_device']!,
+          _submittedAtDeviceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('started_envelope_id')) {
+      context.handle(
+        _startedEnvelopeIdMeta,
+        startedEnvelopeId.isAcceptableOrUnknown(
+          data['started_envelope_id']!,
+          _startedEnvelopeIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('submission_envelope_id')) {
+      context.handle(
+        _submissionEnvelopeIdMeta,
+        submissionEnvelopeId.isAcceptableOrUnknown(
+          data['submission_envelope_id']!,
+          _submissionEnvelopeIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  InspectionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return InspectionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      jobId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}job_id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      attempt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      formVersionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}form_version_id'],
+      )!,
+      formHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}form_hash'],
+      )!,
+      flowVersionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}flow_version_id'],
+      )!,
+      flowHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}flow_hash'],
+      )!,
+      jobSchemaVersionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}job_schema_version_id'],
+      ),
+      configVersionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}config_version_id'],
+      ),
+      contextSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}context_snapshot'],
+      )!,
+      geofence: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}geofence'],
+      )!,
+      integrity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}integrity'],
+      )!,
+      sessionTokenId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_token_id'],
+      ),
+      sessionToken: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_token'],
+      ),
+      startedAtDevice: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}started_at_device'],
+      )!,
+      draft: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}draft'],
+      )!,
+      currentStep: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}current_step'],
+      )!,
+      submittedAtDevice: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}submitted_at_device'],
+      ),
+      startedEnvelopeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}started_envelope_id'],
+      ),
+      submissionEnvelopeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}submission_envelope_id'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $InspectionsTable createAlias(String alias) {
+    return $InspectionsTable(attachedDatabase, alias);
+  }
+}
+
+class InspectionRow extends DataClass implements Insertable<InspectionRow> {
+  final String id;
+  final String jobId;
+
+  /// The user who began it; their session sends its envelopes.
+  final String userId;
+  final int attempt;
+
+  /// `in_progress` or `submitted`.
+  final String status;
+  final String formVersionId;
+  final String formHash;
+  final String flowVersionId;
+  final String flowHash;
+  final String? jobSchemaVersionId;
+  final String? configVersionId;
+
+  /// What rules read, frozen at the start (docs/04 §4.4), as JSON.
+  final String contextSnapshot;
+
+  /// The geofence result at the start, as JSON.
+  final String geofence;
+
+  /// The integrity snapshot at the start, as JSON.
+  final String integrity;
+  final String? sessionTokenId;
+  final String? sessionToken;
+  final String startedAtDevice;
+
+  /// The answers so far: `{values: {key: value}, other: {key: text}}`.
+  final String draft;
+
+  /// The flow step the agent is on.
+  final int currentStep;
+  final String? submittedAtDevice;
+  final String? startedEnvelopeId;
+  final String? submissionEnvelopeId;
+  final String updatedAt;
+  const InspectionRow({
+    required this.id,
+    required this.jobId,
+    required this.userId,
+    required this.attempt,
+    required this.status,
+    required this.formVersionId,
+    required this.formHash,
+    required this.flowVersionId,
+    required this.flowHash,
+    this.jobSchemaVersionId,
+    this.configVersionId,
+    required this.contextSnapshot,
+    required this.geofence,
+    required this.integrity,
+    this.sessionTokenId,
+    this.sessionToken,
+    required this.startedAtDevice,
+    required this.draft,
+    required this.currentStep,
+    this.submittedAtDevice,
+    this.startedEnvelopeId,
+    this.submissionEnvelopeId,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['job_id'] = Variable<String>(jobId);
+    map['user_id'] = Variable<String>(userId);
+    map['attempt'] = Variable<int>(attempt);
+    map['status'] = Variable<String>(status);
+    map['form_version_id'] = Variable<String>(formVersionId);
+    map['form_hash'] = Variable<String>(formHash);
+    map['flow_version_id'] = Variable<String>(flowVersionId);
+    map['flow_hash'] = Variable<String>(flowHash);
+    if (!nullToAbsent || jobSchemaVersionId != null) {
+      map['job_schema_version_id'] = Variable<String>(jobSchemaVersionId);
+    }
+    if (!nullToAbsent || configVersionId != null) {
+      map['config_version_id'] = Variable<String>(configVersionId);
+    }
+    map['context_snapshot'] = Variable<String>(contextSnapshot);
+    map['geofence'] = Variable<String>(geofence);
+    map['integrity'] = Variable<String>(integrity);
+    if (!nullToAbsent || sessionTokenId != null) {
+      map['session_token_id'] = Variable<String>(sessionTokenId);
+    }
+    if (!nullToAbsent || sessionToken != null) {
+      map['session_token'] = Variable<String>(sessionToken);
+    }
+    map['started_at_device'] = Variable<String>(startedAtDevice);
+    map['draft'] = Variable<String>(draft);
+    map['current_step'] = Variable<int>(currentStep);
+    if (!nullToAbsent || submittedAtDevice != null) {
+      map['submitted_at_device'] = Variable<String>(submittedAtDevice);
+    }
+    if (!nullToAbsent || startedEnvelopeId != null) {
+      map['started_envelope_id'] = Variable<String>(startedEnvelopeId);
+    }
+    if (!nullToAbsent || submissionEnvelopeId != null) {
+      map['submission_envelope_id'] = Variable<String>(submissionEnvelopeId);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
+    return map;
+  }
+
+  InspectionsCompanion toCompanion(bool nullToAbsent) {
+    return InspectionsCompanion(
+      id: Value(id),
+      jobId: Value(jobId),
+      userId: Value(userId),
+      attempt: Value(attempt),
+      status: Value(status),
+      formVersionId: Value(formVersionId),
+      formHash: Value(formHash),
+      flowVersionId: Value(flowVersionId),
+      flowHash: Value(flowHash),
+      jobSchemaVersionId: jobSchemaVersionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(jobSchemaVersionId),
+      configVersionId: configVersionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(configVersionId),
+      contextSnapshot: Value(contextSnapshot),
+      geofence: Value(geofence),
+      integrity: Value(integrity),
+      sessionTokenId: sessionTokenId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sessionTokenId),
+      sessionToken: sessionToken == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sessionToken),
+      startedAtDevice: Value(startedAtDevice),
+      draft: Value(draft),
+      currentStep: Value(currentStep),
+      submittedAtDevice: submittedAtDevice == null && nullToAbsent
+          ? const Value.absent()
+          : Value(submittedAtDevice),
+      startedEnvelopeId: startedEnvelopeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startedEnvelopeId),
+      submissionEnvelopeId: submissionEnvelopeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(submissionEnvelopeId),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory InspectionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return InspectionRow(
+      id: serializer.fromJson<String>(json['id']),
+      jobId: serializer.fromJson<String>(json['jobId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      attempt: serializer.fromJson<int>(json['attempt']),
+      status: serializer.fromJson<String>(json['status']),
+      formVersionId: serializer.fromJson<String>(json['formVersionId']),
+      formHash: serializer.fromJson<String>(json['formHash']),
+      flowVersionId: serializer.fromJson<String>(json['flowVersionId']),
+      flowHash: serializer.fromJson<String>(json['flowHash']),
+      jobSchemaVersionId: serializer.fromJson<String?>(
+        json['jobSchemaVersionId'],
+      ),
+      configVersionId: serializer.fromJson<String?>(json['configVersionId']),
+      contextSnapshot: serializer.fromJson<String>(json['contextSnapshot']),
+      geofence: serializer.fromJson<String>(json['geofence']),
+      integrity: serializer.fromJson<String>(json['integrity']),
+      sessionTokenId: serializer.fromJson<String?>(json['sessionTokenId']),
+      sessionToken: serializer.fromJson<String?>(json['sessionToken']),
+      startedAtDevice: serializer.fromJson<String>(json['startedAtDevice']),
+      draft: serializer.fromJson<String>(json['draft']),
+      currentStep: serializer.fromJson<int>(json['currentStep']),
+      submittedAtDevice: serializer.fromJson<String?>(
+        json['submittedAtDevice'],
+      ),
+      startedEnvelopeId: serializer.fromJson<String?>(
+        json['startedEnvelopeId'],
+      ),
+      submissionEnvelopeId: serializer.fromJson<String?>(
+        json['submissionEnvelopeId'],
+      ),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'jobId': serializer.toJson<String>(jobId),
+      'userId': serializer.toJson<String>(userId),
+      'attempt': serializer.toJson<int>(attempt),
+      'status': serializer.toJson<String>(status),
+      'formVersionId': serializer.toJson<String>(formVersionId),
+      'formHash': serializer.toJson<String>(formHash),
+      'flowVersionId': serializer.toJson<String>(flowVersionId),
+      'flowHash': serializer.toJson<String>(flowHash),
+      'jobSchemaVersionId': serializer.toJson<String?>(jobSchemaVersionId),
+      'configVersionId': serializer.toJson<String?>(configVersionId),
+      'contextSnapshot': serializer.toJson<String>(contextSnapshot),
+      'geofence': serializer.toJson<String>(geofence),
+      'integrity': serializer.toJson<String>(integrity),
+      'sessionTokenId': serializer.toJson<String?>(sessionTokenId),
+      'sessionToken': serializer.toJson<String?>(sessionToken),
+      'startedAtDevice': serializer.toJson<String>(startedAtDevice),
+      'draft': serializer.toJson<String>(draft),
+      'currentStep': serializer.toJson<int>(currentStep),
+      'submittedAtDevice': serializer.toJson<String?>(submittedAtDevice),
+      'startedEnvelopeId': serializer.toJson<String?>(startedEnvelopeId),
+      'submissionEnvelopeId': serializer.toJson<String?>(submissionEnvelopeId),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+    };
+  }
+
+  InspectionRow copyWith({
+    String? id,
+    String? jobId,
+    String? userId,
+    int? attempt,
+    String? status,
+    String? formVersionId,
+    String? formHash,
+    String? flowVersionId,
+    String? flowHash,
+    Value<String?> jobSchemaVersionId = const Value.absent(),
+    Value<String?> configVersionId = const Value.absent(),
+    String? contextSnapshot,
+    String? geofence,
+    String? integrity,
+    Value<String?> sessionTokenId = const Value.absent(),
+    Value<String?> sessionToken = const Value.absent(),
+    String? startedAtDevice,
+    String? draft,
+    int? currentStep,
+    Value<String?> submittedAtDevice = const Value.absent(),
+    Value<String?> startedEnvelopeId = const Value.absent(),
+    Value<String?> submissionEnvelopeId = const Value.absent(),
+    String? updatedAt,
+  }) => InspectionRow(
+    id: id ?? this.id,
+    jobId: jobId ?? this.jobId,
+    userId: userId ?? this.userId,
+    attempt: attempt ?? this.attempt,
+    status: status ?? this.status,
+    formVersionId: formVersionId ?? this.formVersionId,
+    formHash: formHash ?? this.formHash,
+    flowVersionId: flowVersionId ?? this.flowVersionId,
+    flowHash: flowHash ?? this.flowHash,
+    jobSchemaVersionId: jobSchemaVersionId.present
+        ? jobSchemaVersionId.value
+        : this.jobSchemaVersionId,
+    configVersionId: configVersionId.present
+        ? configVersionId.value
+        : this.configVersionId,
+    contextSnapshot: contextSnapshot ?? this.contextSnapshot,
+    geofence: geofence ?? this.geofence,
+    integrity: integrity ?? this.integrity,
+    sessionTokenId: sessionTokenId.present
+        ? sessionTokenId.value
+        : this.sessionTokenId,
+    sessionToken: sessionToken.present ? sessionToken.value : this.sessionToken,
+    startedAtDevice: startedAtDevice ?? this.startedAtDevice,
+    draft: draft ?? this.draft,
+    currentStep: currentStep ?? this.currentStep,
+    submittedAtDevice: submittedAtDevice.present
+        ? submittedAtDevice.value
+        : this.submittedAtDevice,
+    startedEnvelopeId: startedEnvelopeId.present
+        ? startedEnvelopeId.value
+        : this.startedEnvelopeId,
+    submissionEnvelopeId: submissionEnvelopeId.present
+        ? submissionEnvelopeId.value
+        : this.submissionEnvelopeId,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  InspectionRow copyWithCompanion(InspectionsCompanion data) {
+    return InspectionRow(
+      id: data.id.present ? data.id.value : this.id,
+      jobId: data.jobId.present ? data.jobId.value : this.jobId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      attempt: data.attempt.present ? data.attempt.value : this.attempt,
+      status: data.status.present ? data.status.value : this.status,
+      formVersionId: data.formVersionId.present
+          ? data.formVersionId.value
+          : this.formVersionId,
+      formHash: data.formHash.present ? data.formHash.value : this.formHash,
+      flowVersionId: data.flowVersionId.present
+          ? data.flowVersionId.value
+          : this.flowVersionId,
+      flowHash: data.flowHash.present ? data.flowHash.value : this.flowHash,
+      jobSchemaVersionId: data.jobSchemaVersionId.present
+          ? data.jobSchemaVersionId.value
+          : this.jobSchemaVersionId,
+      configVersionId: data.configVersionId.present
+          ? data.configVersionId.value
+          : this.configVersionId,
+      contextSnapshot: data.contextSnapshot.present
+          ? data.contextSnapshot.value
+          : this.contextSnapshot,
+      geofence: data.geofence.present ? data.geofence.value : this.geofence,
+      integrity: data.integrity.present ? data.integrity.value : this.integrity,
+      sessionTokenId: data.sessionTokenId.present
+          ? data.sessionTokenId.value
+          : this.sessionTokenId,
+      sessionToken: data.sessionToken.present
+          ? data.sessionToken.value
+          : this.sessionToken,
+      startedAtDevice: data.startedAtDevice.present
+          ? data.startedAtDevice.value
+          : this.startedAtDevice,
+      draft: data.draft.present ? data.draft.value : this.draft,
+      currentStep: data.currentStep.present
+          ? data.currentStep.value
+          : this.currentStep,
+      submittedAtDevice: data.submittedAtDevice.present
+          ? data.submittedAtDevice.value
+          : this.submittedAtDevice,
+      startedEnvelopeId: data.startedEnvelopeId.present
+          ? data.startedEnvelopeId.value
+          : this.startedEnvelopeId,
+      submissionEnvelopeId: data.submissionEnvelopeId.present
+          ? data.submissionEnvelopeId.value
+          : this.submissionEnvelopeId,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InspectionRow(')
+          ..write('id: $id, ')
+          ..write('jobId: $jobId, ')
+          ..write('userId: $userId, ')
+          ..write('attempt: $attempt, ')
+          ..write('status: $status, ')
+          ..write('formVersionId: $formVersionId, ')
+          ..write('formHash: $formHash, ')
+          ..write('flowVersionId: $flowVersionId, ')
+          ..write('flowHash: $flowHash, ')
+          ..write('jobSchemaVersionId: $jobSchemaVersionId, ')
+          ..write('configVersionId: $configVersionId, ')
+          ..write('contextSnapshot: $contextSnapshot, ')
+          ..write('geofence: $geofence, ')
+          ..write('integrity: $integrity, ')
+          ..write('sessionTokenId: $sessionTokenId, ')
+          ..write('sessionToken: $sessionToken, ')
+          ..write('startedAtDevice: $startedAtDevice, ')
+          ..write('draft: $draft, ')
+          ..write('currentStep: $currentStep, ')
+          ..write('submittedAtDevice: $submittedAtDevice, ')
+          ..write('startedEnvelopeId: $startedEnvelopeId, ')
+          ..write('submissionEnvelopeId: $submissionEnvelopeId, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    jobId,
+    userId,
+    attempt,
+    status,
+    formVersionId,
+    formHash,
+    flowVersionId,
+    flowHash,
+    jobSchemaVersionId,
+    configVersionId,
+    contextSnapshot,
+    geofence,
+    integrity,
+    sessionTokenId,
+    sessionToken,
+    startedAtDevice,
+    draft,
+    currentStep,
+    submittedAtDevice,
+    startedEnvelopeId,
+    submissionEnvelopeId,
+    updatedAt,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is InspectionRow &&
+          other.id == this.id &&
+          other.jobId == this.jobId &&
+          other.userId == this.userId &&
+          other.attempt == this.attempt &&
+          other.status == this.status &&
+          other.formVersionId == this.formVersionId &&
+          other.formHash == this.formHash &&
+          other.flowVersionId == this.flowVersionId &&
+          other.flowHash == this.flowHash &&
+          other.jobSchemaVersionId == this.jobSchemaVersionId &&
+          other.configVersionId == this.configVersionId &&
+          other.contextSnapshot == this.contextSnapshot &&
+          other.geofence == this.geofence &&
+          other.integrity == this.integrity &&
+          other.sessionTokenId == this.sessionTokenId &&
+          other.sessionToken == this.sessionToken &&
+          other.startedAtDevice == this.startedAtDevice &&
+          other.draft == this.draft &&
+          other.currentStep == this.currentStep &&
+          other.submittedAtDevice == this.submittedAtDevice &&
+          other.startedEnvelopeId == this.startedEnvelopeId &&
+          other.submissionEnvelopeId == this.submissionEnvelopeId &&
+          other.updatedAt == this.updatedAt);
+}
+
+class InspectionsCompanion extends UpdateCompanion<InspectionRow> {
+  final Value<String> id;
+  final Value<String> jobId;
+  final Value<String> userId;
+  final Value<int> attempt;
+  final Value<String> status;
+  final Value<String> formVersionId;
+  final Value<String> formHash;
+  final Value<String> flowVersionId;
+  final Value<String> flowHash;
+  final Value<String?> jobSchemaVersionId;
+  final Value<String?> configVersionId;
+  final Value<String> contextSnapshot;
+  final Value<String> geofence;
+  final Value<String> integrity;
+  final Value<String?> sessionTokenId;
+  final Value<String?> sessionToken;
+  final Value<String> startedAtDevice;
+  final Value<String> draft;
+  final Value<int> currentStep;
+  final Value<String?> submittedAtDevice;
+  final Value<String?> startedEnvelopeId;
+  final Value<String?> submissionEnvelopeId;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
+  const InspectionsCompanion({
+    this.id = const Value.absent(),
+    this.jobId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.attempt = const Value.absent(),
+    this.status = const Value.absent(),
+    this.formVersionId = const Value.absent(),
+    this.formHash = const Value.absent(),
+    this.flowVersionId = const Value.absent(),
+    this.flowHash = const Value.absent(),
+    this.jobSchemaVersionId = const Value.absent(),
+    this.configVersionId = const Value.absent(),
+    this.contextSnapshot = const Value.absent(),
+    this.geofence = const Value.absent(),
+    this.integrity = const Value.absent(),
+    this.sessionTokenId = const Value.absent(),
+    this.sessionToken = const Value.absent(),
+    this.startedAtDevice = const Value.absent(),
+    this.draft = const Value.absent(),
+    this.currentStep = const Value.absent(),
+    this.submittedAtDevice = const Value.absent(),
+    this.startedEnvelopeId = const Value.absent(),
+    this.submissionEnvelopeId = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  InspectionsCompanion.insert({
+    required String id,
+    required String jobId,
+    required String userId,
+    required int attempt,
+    required String status,
+    required String formVersionId,
+    required String formHash,
+    required String flowVersionId,
+    required String flowHash,
+    this.jobSchemaVersionId = const Value.absent(),
+    this.configVersionId = const Value.absent(),
+    required String contextSnapshot,
+    required String geofence,
+    required String integrity,
+    this.sessionTokenId = const Value.absent(),
+    this.sessionToken = const Value.absent(),
+    required String startedAtDevice,
+    this.draft = const Value.absent(),
+    this.currentStep = const Value.absent(),
+    this.submittedAtDevice = const Value.absent(),
+    this.startedEnvelopeId = const Value.absent(),
+    this.submissionEnvelopeId = const Value.absent(),
+    required String updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       jobId = Value(jobId),
+       userId = Value(userId),
+       attempt = Value(attempt),
+       status = Value(status),
+       formVersionId = Value(formVersionId),
+       formHash = Value(formHash),
+       flowVersionId = Value(flowVersionId),
+       flowHash = Value(flowHash),
+       contextSnapshot = Value(contextSnapshot),
+       geofence = Value(geofence),
+       integrity = Value(integrity),
+       startedAtDevice = Value(startedAtDevice),
+       updatedAt = Value(updatedAt);
+  static Insertable<InspectionRow> custom({
+    Expression<String>? id,
+    Expression<String>? jobId,
+    Expression<String>? userId,
+    Expression<int>? attempt,
+    Expression<String>? status,
+    Expression<String>? formVersionId,
+    Expression<String>? formHash,
+    Expression<String>? flowVersionId,
+    Expression<String>? flowHash,
+    Expression<String>? jobSchemaVersionId,
+    Expression<String>? configVersionId,
+    Expression<String>? contextSnapshot,
+    Expression<String>? geofence,
+    Expression<String>? integrity,
+    Expression<String>? sessionTokenId,
+    Expression<String>? sessionToken,
+    Expression<String>? startedAtDevice,
+    Expression<String>? draft,
+    Expression<int>? currentStep,
+    Expression<String>? submittedAtDevice,
+    Expression<String>? startedEnvelopeId,
+    Expression<String>? submissionEnvelopeId,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (jobId != null) 'job_id': jobId,
+      if (userId != null) 'user_id': userId,
+      if (attempt != null) 'attempt': attempt,
+      if (status != null) 'status': status,
+      if (formVersionId != null) 'form_version_id': formVersionId,
+      if (formHash != null) 'form_hash': formHash,
+      if (flowVersionId != null) 'flow_version_id': flowVersionId,
+      if (flowHash != null) 'flow_hash': flowHash,
+      if (jobSchemaVersionId != null)
+        'job_schema_version_id': jobSchemaVersionId,
+      if (configVersionId != null) 'config_version_id': configVersionId,
+      if (contextSnapshot != null) 'context_snapshot': contextSnapshot,
+      if (geofence != null) 'geofence': geofence,
+      if (integrity != null) 'integrity': integrity,
+      if (sessionTokenId != null) 'session_token_id': sessionTokenId,
+      if (sessionToken != null) 'session_token': sessionToken,
+      if (startedAtDevice != null) 'started_at_device': startedAtDevice,
+      if (draft != null) 'draft': draft,
+      if (currentStep != null) 'current_step': currentStep,
+      if (submittedAtDevice != null) 'submitted_at_device': submittedAtDevice,
+      if (startedEnvelopeId != null) 'started_envelope_id': startedEnvelopeId,
+      if (submissionEnvelopeId != null)
+        'submission_envelope_id': submissionEnvelopeId,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  InspectionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? jobId,
+    Value<String>? userId,
+    Value<int>? attempt,
+    Value<String>? status,
+    Value<String>? formVersionId,
+    Value<String>? formHash,
+    Value<String>? flowVersionId,
+    Value<String>? flowHash,
+    Value<String?>? jobSchemaVersionId,
+    Value<String?>? configVersionId,
+    Value<String>? contextSnapshot,
+    Value<String>? geofence,
+    Value<String>? integrity,
+    Value<String?>? sessionTokenId,
+    Value<String?>? sessionToken,
+    Value<String>? startedAtDevice,
+    Value<String>? draft,
+    Value<int>? currentStep,
+    Value<String?>? submittedAtDevice,
+    Value<String?>? startedEnvelopeId,
+    Value<String?>? submissionEnvelopeId,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return InspectionsCompanion(
+      id: id ?? this.id,
+      jobId: jobId ?? this.jobId,
+      userId: userId ?? this.userId,
+      attempt: attempt ?? this.attempt,
+      status: status ?? this.status,
+      formVersionId: formVersionId ?? this.formVersionId,
+      formHash: formHash ?? this.formHash,
+      flowVersionId: flowVersionId ?? this.flowVersionId,
+      flowHash: flowHash ?? this.flowHash,
+      jobSchemaVersionId: jobSchemaVersionId ?? this.jobSchemaVersionId,
+      configVersionId: configVersionId ?? this.configVersionId,
+      contextSnapshot: contextSnapshot ?? this.contextSnapshot,
+      geofence: geofence ?? this.geofence,
+      integrity: integrity ?? this.integrity,
+      sessionTokenId: sessionTokenId ?? this.sessionTokenId,
+      sessionToken: sessionToken ?? this.sessionToken,
+      startedAtDevice: startedAtDevice ?? this.startedAtDevice,
+      draft: draft ?? this.draft,
+      currentStep: currentStep ?? this.currentStep,
+      submittedAtDevice: submittedAtDevice ?? this.submittedAtDevice,
+      startedEnvelopeId: startedEnvelopeId ?? this.startedEnvelopeId,
+      submissionEnvelopeId: submissionEnvelopeId ?? this.submissionEnvelopeId,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (jobId.present) {
+      map['job_id'] = Variable<String>(jobId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (attempt.present) {
+      map['attempt'] = Variable<int>(attempt.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (formVersionId.present) {
+      map['form_version_id'] = Variable<String>(formVersionId.value);
+    }
+    if (formHash.present) {
+      map['form_hash'] = Variable<String>(formHash.value);
+    }
+    if (flowVersionId.present) {
+      map['flow_version_id'] = Variable<String>(flowVersionId.value);
+    }
+    if (flowHash.present) {
+      map['flow_hash'] = Variable<String>(flowHash.value);
+    }
+    if (jobSchemaVersionId.present) {
+      map['job_schema_version_id'] = Variable<String>(jobSchemaVersionId.value);
+    }
+    if (configVersionId.present) {
+      map['config_version_id'] = Variable<String>(configVersionId.value);
+    }
+    if (contextSnapshot.present) {
+      map['context_snapshot'] = Variable<String>(contextSnapshot.value);
+    }
+    if (geofence.present) {
+      map['geofence'] = Variable<String>(geofence.value);
+    }
+    if (integrity.present) {
+      map['integrity'] = Variable<String>(integrity.value);
+    }
+    if (sessionTokenId.present) {
+      map['session_token_id'] = Variable<String>(sessionTokenId.value);
+    }
+    if (sessionToken.present) {
+      map['session_token'] = Variable<String>(sessionToken.value);
+    }
+    if (startedAtDevice.present) {
+      map['started_at_device'] = Variable<String>(startedAtDevice.value);
+    }
+    if (draft.present) {
+      map['draft'] = Variable<String>(draft.value);
+    }
+    if (currentStep.present) {
+      map['current_step'] = Variable<int>(currentStep.value);
+    }
+    if (submittedAtDevice.present) {
+      map['submitted_at_device'] = Variable<String>(submittedAtDevice.value);
+    }
+    if (startedEnvelopeId.present) {
+      map['started_envelope_id'] = Variable<String>(startedEnvelopeId.value);
+    }
+    if (submissionEnvelopeId.present) {
+      map['submission_envelope_id'] = Variable<String>(
+        submissionEnvelopeId.value,
+      );
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InspectionsCompanion(')
+          ..write('id: $id, ')
+          ..write('jobId: $jobId, ')
+          ..write('userId: $userId, ')
+          ..write('attempt: $attempt, ')
+          ..write('status: $status, ')
+          ..write('formVersionId: $formVersionId, ')
+          ..write('formHash: $formHash, ')
+          ..write('flowVersionId: $flowVersionId, ')
+          ..write('flowHash: $flowHash, ')
+          ..write('jobSchemaVersionId: $jobSchemaVersionId, ')
+          ..write('configVersionId: $configVersionId, ')
+          ..write('contextSnapshot: $contextSnapshot, ')
+          ..write('geofence: $geofence, ')
+          ..write('integrity: $integrity, ')
+          ..write('sessionTokenId: $sessionTokenId, ')
+          ..write('sessionToken: $sessionToken, ')
+          ..write('startedAtDevice: $startedAtDevice, ')
+          ..write('draft: $draft, ')
+          ..write('currentStep: $currentStep, ')
+          ..write('submittedAtDevice: $submittedAtDevice, ')
+          ..write('startedEnvelopeId: $startedEnvelopeId, ')
+          ..write('submissionEnvelopeId: $submissionEnvelopeId, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EvidenceTable extends Evidence
+    with TableInfo<$EvidenceTable, EvidenceRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EvidenceTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _inspectionIdMeta = const VerificationMeta(
+    'inspectionId',
+  );
+  @override
+  late final GeneratedColumn<String> inspectionId = GeneratedColumn<String>(
+    'inspection_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _jobIdMeta = const VerificationMeta('jobId');
+  @override
+  late final GeneratedColumn<String> jobId = GeneratedColumn<String>(
+    'job_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fieldKeyMeta = const VerificationMeta(
+    'fieldKey',
+  );
+  @override
+  late final GeneratedColumn<String> fieldKey = GeneratedColumn<String>(
+    'field_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mimeMeta = const VerificationMeta('mime');
+  @override
+  late final GeneratedColumn<String> mime = GeneratedColumn<String>(
+    'mime',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sha256Meta = const VerificationMeta('sha256');
+  @override
+  late final GeneratedColumn<String> sha256 = GeneratedColumn<String>(
+    'sha256',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sizeMeta = const VerificationMeta('size');
+  @override
+  late final GeneratedColumn<int> size = GeneratedColumn<int>(
+    'size',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _widthMeta = const VerificationMeta('width');
+  @override
+  late final GeneratedColumn<int> width = GeneratedColumn<int>(
+    'width',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _heightMeta = const VerificationMeta('height');
+  @override
+  late final GeneratedColumn<int> height = GeneratedColumn<int>(
+    'height',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _capturedAtDeviceMeta = const VerificationMeta(
+    'capturedAtDevice',
+  );
+  @override
+  late final GeneratedColumn<String> capturedAtDevice = GeneratedColumn<String>(
+    'captured_at_device',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _capturedMonotonicMsMeta =
+      const VerificationMeta('capturedMonotonicMs');
+  @override
+  late final GeneratedColumn<int> capturedMonotonicMs = GeneratedColumn<int>(
+    'captured_monotonic_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _locationMeta = const VerificationMeta(
+    'location',
+  );
+  @override
+  late final GeneratedColumn<String> location = GeneratedColumn<String>(
+    'location',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isMockedMeta = const VerificationMeta(
+    'isMocked',
+  );
+  @override
+  late final GeneratedColumn<bool> isMocked = GeneratedColumn<bool>(
+    'is_mocked',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_mocked" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _metaMeta = const VerificationMeta('meta');
+  @override
+  late final GeneratedColumn<String> meta = GeneratedColumn<String>(
+    'meta',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _bytesMeta = const VerificationMeta('bytes');
+  @override
+  late final GeneratedColumn<Uint8List> bytes = GeneratedColumn<Uint8List>(
+    'bytes',
+    aliasedName,
+    true,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _stateMeta = const VerificationMeta('state');
+  @override
+  late final GeneratedColumn<String> state = GeneratedColumn<String>(
+    'state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMsMeta = const VerificationMeta(
+    'createdAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> createdAtMs = GeneratedColumn<int>(
+    'created_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    inspectionId,
+    jobId,
+    userId,
+    fieldKey,
+    category,
+    type,
+    mime,
+    sha256,
+    size,
+    width,
+    height,
+    capturedAtDevice,
+    capturedMonotonicMs,
+    location,
+    isMocked,
+    meta,
+    bytes,
+    state,
+    createdAtMs,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'evidence';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EvidenceRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('inspection_id')) {
+      context.handle(
+        _inspectionIdMeta,
+        inspectionId.isAcceptableOrUnknown(
+          data['inspection_id']!,
+          _inspectionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_inspectionIdMeta);
+    }
+    if (data.containsKey('job_id')) {
+      context.handle(
+        _jobIdMeta,
+        jobId.isAcceptableOrUnknown(data['job_id']!, _jobIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_jobIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('field_key')) {
+      context.handle(
+        _fieldKeyMeta,
+        fieldKey.isAcceptableOrUnknown(data['field_key']!, _fieldKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fieldKeyMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('mime')) {
+      context.handle(
+        _mimeMeta,
+        mime.isAcceptableOrUnknown(data['mime']!, _mimeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mimeMeta);
+    }
+    if (data.containsKey('sha256')) {
+      context.handle(
+        _sha256Meta,
+        sha256.isAcceptableOrUnknown(data['sha256']!, _sha256Meta),
+      );
+    } else if (isInserting) {
+      context.missing(_sha256Meta);
+    }
+    if (data.containsKey('size')) {
+      context.handle(
+        _sizeMeta,
+        size.isAcceptableOrUnknown(data['size']!, _sizeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sizeMeta);
+    }
+    if (data.containsKey('width')) {
+      context.handle(
+        _widthMeta,
+        width.isAcceptableOrUnknown(data['width']!, _widthMeta),
+      );
+    }
+    if (data.containsKey('height')) {
+      context.handle(
+        _heightMeta,
+        height.isAcceptableOrUnknown(data['height']!, _heightMeta),
+      );
+    }
+    if (data.containsKey('captured_at_device')) {
+      context.handle(
+        _capturedAtDeviceMeta,
+        capturedAtDevice.isAcceptableOrUnknown(
+          data['captured_at_device']!,
+          _capturedAtDeviceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_capturedAtDeviceMeta);
+    }
+    if (data.containsKey('captured_monotonic_ms')) {
+      context.handle(
+        _capturedMonotonicMsMeta,
+        capturedMonotonicMs.isAcceptableOrUnknown(
+          data['captured_monotonic_ms']!,
+          _capturedMonotonicMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_capturedMonotonicMsMeta);
+    }
+    if (data.containsKey('location')) {
+      context.handle(
+        _locationMeta,
+        location.isAcceptableOrUnknown(data['location']!, _locationMeta),
+      );
+    }
+    if (data.containsKey('is_mocked')) {
+      context.handle(
+        _isMockedMeta,
+        isMocked.isAcceptableOrUnknown(data['is_mocked']!, _isMockedMeta),
+      );
+    }
+    if (data.containsKey('meta')) {
+      context.handle(
+        _metaMeta,
+        meta.isAcceptableOrUnknown(data['meta']!, _metaMeta),
+      );
+    }
+    if (data.containsKey('bytes')) {
+      context.handle(
+        _bytesMeta,
+        bytes.isAcceptableOrUnknown(data['bytes']!, _bytesMeta),
+      );
+    }
+    if (data.containsKey('state')) {
+      context.handle(
+        _stateMeta,
+        state.isAcceptableOrUnknown(data['state']!, _stateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stateMeta);
+    }
+    if (data.containsKey('created_at_ms')) {
+      context.handle(
+        _createdAtMsMeta,
+        createdAtMs.isAcceptableOrUnknown(
+          data['created_at_ms']!,
+          _createdAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMsMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EvidenceRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EvidenceRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      inspectionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}inspection_id'],
+      )!,
+      jobId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}job_id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      fieldKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}field_key'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      mime: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mime'],
+      )!,
+      sha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sha256'],
+      )!,
+      size: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}size'],
+      )!,
+      width: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}width'],
+      ),
+      height: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}height'],
+      ),
+      capturedAtDevice: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}captured_at_device'],
+      )!,
+      capturedMonotonicMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}captured_monotonic_ms'],
+      )!,
+      location: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location'],
+      ),
+      isMocked: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_mocked'],
+      )!,
+      meta: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}meta'],
+      )!,
+      bytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}bytes'],
+      ),
+      state: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state'],
+      )!,
+      createdAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at_ms'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $EvidenceTable createAlias(String alias) {
+    return $EvidenceTable(attachedDatabase, alias);
+  }
+}
+
+class EvidenceRow extends DataClass implements Insertable<EvidenceRow> {
+  final String id;
+  final String inspectionId;
+  final String jobId;
+  final String userId;
+  final String fieldKey;
+  final String category;
+
+  /// `photo` or `signature`.
+  final String type;
+  final String mime;
+
+  /// SHA-256 of [bytes], lower-case hex.
+  final String sha256;
+  final int size;
+  final int? width;
+  final int? height;
+  final String capturedAtDevice;
+  final int capturedMonotonicMs;
+
+  /// `{lat, lng, accuracy_m}` when a fix was available, as JSON.
+  final String? location;
+  final bool isMocked;
+
+  /// The `evidence_meta` payload's `meta`, as JSON.
+  final String meta;
+
+  /// The canonical bytes; null once the server verified them.
+  final Uint8List? bytes;
+
+  /// `local_only`, `uploaded`, `verified` or `quarantined` (docs/08 §1).
+  final String state;
+  final int createdAtMs;
+  final String updatedAt;
+  const EvidenceRow({
+    required this.id,
+    required this.inspectionId,
+    required this.jobId,
+    required this.userId,
+    required this.fieldKey,
+    required this.category,
+    required this.type,
+    required this.mime,
+    required this.sha256,
+    required this.size,
+    this.width,
+    this.height,
+    required this.capturedAtDevice,
+    required this.capturedMonotonicMs,
+    this.location,
+    required this.isMocked,
+    required this.meta,
+    this.bytes,
+    required this.state,
+    required this.createdAtMs,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['inspection_id'] = Variable<String>(inspectionId);
+    map['job_id'] = Variable<String>(jobId);
+    map['user_id'] = Variable<String>(userId);
+    map['field_key'] = Variable<String>(fieldKey);
+    map['category'] = Variable<String>(category);
+    map['type'] = Variable<String>(type);
+    map['mime'] = Variable<String>(mime);
+    map['sha256'] = Variable<String>(sha256);
+    map['size'] = Variable<int>(size);
+    if (!nullToAbsent || width != null) {
+      map['width'] = Variable<int>(width);
+    }
+    if (!nullToAbsent || height != null) {
+      map['height'] = Variable<int>(height);
+    }
+    map['captured_at_device'] = Variable<String>(capturedAtDevice);
+    map['captured_monotonic_ms'] = Variable<int>(capturedMonotonicMs);
+    if (!nullToAbsent || location != null) {
+      map['location'] = Variable<String>(location);
+    }
+    map['is_mocked'] = Variable<bool>(isMocked);
+    map['meta'] = Variable<String>(meta);
+    if (!nullToAbsent || bytes != null) {
+      map['bytes'] = Variable<Uint8List>(bytes);
+    }
+    map['state'] = Variable<String>(state);
+    map['created_at_ms'] = Variable<int>(createdAtMs);
+    map['updated_at'] = Variable<String>(updatedAt);
+    return map;
+  }
+
+  EvidenceCompanion toCompanion(bool nullToAbsent) {
+    return EvidenceCompanion(
+      id: Value(id),
+      inspectionId: Value(inspectionId),
+      jobId: Value(jobId),
+      userId: Value(userId),
+      fieldKey: Value(fieldKey),
+      category: Value(category),
+      type: Value(type),
+      mime: Value(mime),
+      sha256: Value(sha256),
+      size: Value(size),
+      width: width == null && nullToAbsent
+          ? const Value.absent()
+          : Value(width),
+      height: height == null && nullToAbsent
+          ? const Value.absent()
+          : Value(height),
+      capturedAtDevice: Value(capturedAtDevice),
+      capturedMonotonicMs: Value(capturedMonotonicMs),
+      location: location == null && nullToAbsent
+          ? const Value.absent()
+          : Value(location),
+      isMocked: Value(isMocked),
+      meta: Value(meta),
+      bytes: bytes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bytes),
+      state: Value(state),
+      createdAtMs: Value(createdAtMs),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory EvidenceRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EvidenceRow(
+      id: serializer.fromJson<String>(json['id']),
+      inspectionId: serializer.fromJson<String>(json['inspectionId']),
+      jobId: serializer.fromJson<String>(json['jobId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      fieldKey: serializer.fromJson<String>(json['fieldKey']),
+      category: serializer.fromJson<String>(json['category']),
+      type: serializer.fromJson<String>(json['type']),
+      mime: serializer.fromJson<String>(json['mime']),
+      sha256: serializer.fromJson<String>(json['sha256']),
+      size: serializer.fromJson<int>(json['size']),
+      width: serializer.fromJson<int?>(json['width']),
+      height: serializer.fromJson<int?>(json['height']),
+      capturedAtDevice: serializer.fromJson<String>(json['capturedAtDevice']),
+      capturedMonotonicMs: serializer.fromJson<int>(
+        json['capturedMonotonicMs'],
+      ),
+      location: serializer.fromJson<String?>(json['location']),
+      isMocked: serializer.fromJson<bool>(json['isMocked']),
+      meta: serializer.fromJson<String>(json['meta']),
+      bytes: serializer.fromJson<Uint8List?>(json['bytes']),
+      state: serializer.fromJson<String>(json['state']),
+      createdAtMs: serializer.fromJson<int>(json['createdAtMs']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'inspectionId': serializer.toJson<String>(inspectionId),
+      'jobId': serializer.toJson<String>(jobId),
+      'userId': serializer.toJson<String>(userId),
+      'fieldKey': serializer.toJson<String>(fieldKey),
+      'category': serializer.toJson<String>(category),
+      'type': serializer.toJson<String>(type),
+      'mime': serializer.toJson<String>(mime),
+      'sha256': serializer.toJson<String>(sha256),
+      'size': serializer.toJson<int>(size),
+      'width': serializer.toJson<int?>(width),
+      'height': serializer.toJson<int?>(height),
+      'capturedAtDevice': serializer.toJson<String>(capturedAtDevice),
+      'capturedMonotonicMs': serializer.toJson<int>(capturedMonotonicMs),
+      'location': serializer.toJson<String?>(location),
+      'isMocked': serializer.toJson<bool>(isMocked),
+      'meta': serializer.toJson<String>(meta),
+      'bytes': serializer.toJson<Uint8List?>(bytes),
+      'state': serializer.toJson<String>(state),
+      'createdAtMs': serializer.toJson<int>(createdAtMs),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+    };
+  }
+
+  EvidenceRow copyWith({
+    String? id,
+    String? inspectionId,
+    String? jobId,
+    String? userId,
+    String? fieldKey,
+    String? category,
+    String? type,
+    String? mime,
+    String? sha256,
+    int? size,
+    Value<int?> width = const Value.absent(),
+    Value<int?> height = const Value.absent(),
+    String? capturedAtDevice,
+    int? capturedMonotonicMs,
+    Value<String?> location = const Value.absent(),
+    bool? isMocked,
+    String? meta,
+    Value<Uint8List?> bytes = const Value.absent(),
+    String? state,
+    int? createdAtMs,
+    String? updatedAt,
+  }) => EvidenceRow(
+    id: id ?? this.id,
+    inspectionId: inspectionId ?? this.inspectionId,
+    jobId: jobId ?? this.jobId,
+    userId: userId ?? this.userId,
+    fieldKey: fieldKey ?? this.fieldKey,
+    category: category ?? this.category,
+    type: type ?? this.type,
+    mime: mime ?? this.mime,
+    sha256: sha256 ?? this.sha256,
+    size: size ?? this.size,
+    width: width.present ? width.value : this.width,
+    height: height.present ? height.value : this.height,
+    capturedAtDevice: capturedAtDevice ?? this.capturedAtDevice,
+    capturedMonotonicMs: capturedMonotonicMs ?? this.capturedMonotonicMs,
+    location: location.present ? location.value : this.location,
+    isMocked: isMocked ?? this.isMocked,
+    meta: meta ?? this.meta,
+    bytes: bytes.present ? bytes.value : this.bytes,
+    state: state ?? this.state,
+    createdAtMs: createdAtMs ?? this.createdAtMs,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  EvidenceRow copyWithCompanion(EvidenceCompanion data) {
+    return EvidenceRow(
+      id: data.id.present ? data.id.value : this.id,
+      inspectionId: data.inspectionId.present
+          ? data.inspectionId.value
+          : this.inspectionId,
+      jobId: data.jobId.present ? data.jobId.value : this.jobId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      fieldKey: data.fieldKey.present ? data.fieldKey.value : this.fieldKey,
+      category: data.category.present ? data.category.value : this.category,
+      type: data.type.present ? data.type.value : this.type,
+      mime: data.mime.present ? data.mime.value : this.mime,
+      sha256: data.sha256.present ? data.sha256.value : this.sha256,
+      size: data.size.present ? data.size.value : this.size,
+      width: data.width.present ? data.width.value : this.width,
+      height: data.height.present ? data.height.value : this.height,
+      capturedAtDevice: data.capturedAtDevice.present
+          ? data.capturedAtDevice.value
+          : this.capturedAtDevice,
+      capturedMonotonicMs: data.capturedMonotonicMs.present
+          ? data.capturedMonotonicMs.value
+          : this.capturedMonotonicMs,
+      location: data.location.present ? data.location.value : this.location,
+      isMocked: data.isMocked.present ? data.isMocked.value : this.isMocked,
+      meta: data.meta.present ? data.meta.value : this.meta,
+      bytes: data.bytes.present ? data.bytes.value : this.bytes,
+      state: data.state.present ? data.state.value : this.state,
+      createdAtMs: data.createdAtMs.present
+          ? data.createdAtMs.value
+          : this.createdAtMs,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EvidenceRow(')
+          ..write('id: $id, ')
+          ..write('inspectionId: $inspectionId, ')
+          ..write('jobId: $jobId, ')
+          ..write('userId: $userId, ')
+          ..write('fieldKey: $fieldKey, ')
+          ..write('category: $category, ')
+          ..write('type: $type, ')
+          ..write('mime: $mime, ')
+          ..write('sha256: $sha256, ')
+          ..write('size: $size, ')
+          ..write('width: $width, ')
+          ..write('height: $height, ')
+          ..write('capturedAtDevice: $capturedAtDevice, ')
+          ..write('capturedMonotonicMs: $capturedMonotonicMs, ')
+          ..write('location: $location, ')
+          ..write('isMocked: $isMocked, ')
+          ..write('meta: $meta, ')
+          ..write('bytes: $bytes, ')
+          ..write('state: $state, ')
+          ..write('createdAtMs: $createdAtMs, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    inspectionId,
+    jobId,
+    userId,
+    fieldKey,
+    category,
+    type,
+    mime,
+    sha256,
+    size,
+    width,
+    height,
+    capturedAtDevice,
+    capturedMonotonicMs,
+    location,
+    isMocked,
+    meta,
+    $driftBlobEquality.hash(bytes),
+    state,
+    createdAtMs,
+    updatedAt,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EvidenceRow &&
+          other.id == this.id &&
+          other.inspectionId == this.inspectionId &&
+          other.jobId == this.jobId &&
+          other.userId == this.userId &&
+          other.fieldKey == this.fieldKey &&
+          other.category == this.category &&
+          other.type == this.type &&
+          other.mime == this.mime &&
+          other.sha256 == this.sha256 &&
+          other.size == this.size &&
+          other.width == this.width &&
+          other.height == this.height &&
+          other.capturedAtDevice == this.capturedAtDevice &&
+          other.capturedMonotonicMs == this.capturedMonotonicMs &&
+          other.location == this.location &&
+          other.isMocked == this.isMocked &&
+          other.meta == this.meta &&
+          $driftBlobEquality.equals(other.bytes, this.bytes) &&
+          other.state == this.state &&
+          other.createdAtMs == this.createdAtMs &&
+          other.updatedAt == this.updatedAt);
+}
+
+class EvidenceCompanion extends UpdateCompanion<EvidenceRow> {
+  final Value<String> id;
+  final Value<String> inspectionId;
+  final Value<String> jobId;
+  final Value<String> userId;
+  final Value<String> fieldKey;
+  final Value<String> category;
+  final Value<String> type;
+  final Value<String> mime;
+  final Value<String> sha256;
+  final Value<int> size;
+  final Value<int?> width;
+  final Value<int?> height;
+  final Value<String> capturedAtDevice;
+  final Value<int> capturedMonotonicMs;
+  final Value<String?> location;
+  final Value<bool> isMocked;
+  final Value<String> meta;
+  final Value<Uint8List?> bytes;
+  final Value<String> state;
+  final Value<int> createdAtMs;
+  final Value<String> updatedAt;
+  final Value<int> rowid;
+  const EvidenceCompanion({
+    this.id = const Value.absent(),
+    this.inspectionId = const Value.absent(),
+    this.jobId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.fieldKey = const Value.absent(),
+    this.category = const Value.absent(),
+    this.type = const Value.absent(),
+    this.mime = const Value.absent(),
+    this.sha256 = const Value.absent(),
+    this.size = const Value.absent(),
+    this.width = const Value.absent(),
+    this.height = const Value.absent(),
+    this.capturedAtDevice = const Value.absent(),
+    this.capturedMonotonicMs = const Value.absent(),
+    this.location = const Value.absent(),
+    this.isMocked = const Value.absent(),
+    this.meta = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.state = const Value.absent(),
+    this.createdAtMs = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EvidenceCompanion.insert({
+    required String id,
+    required String inspectionId,
+    required String jobId,
+    required String userId,
+    required String fieldKey,
+    required String category,
+    required String type,
+    required String mime,
+    required String sha256,
+    required int size,
+    this.width = const Value.absent(),
+    this.height = const Value.absent(),
+    required String capturedAtDevice,
+    required int capturedMonotonicMs,
+    this.location = const Value.absent(),
+    this.isMocked = const Value.absent(),
+    this.meta = const Value.absent(),
+    this.bytes = const Value.absent(),
+    required String state,
+    required int createdAtMs,
+    required String updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       inspectionId = Value(inspectionId),
+       jobId = Value(jobId),
+       userId = Value(userId),
+       fieldKey = Value(fieldKey),
+       category = Value(category),
+       type = Value(type),
+       mime = Value(mime),
+       sha256 = Value(sha256),
+       size = Value(size),
+       capturedAtDevice = Value(capturedAtDevice),
+       capturedMonotonicMs = Value(capturedMonotonicMs),
+       state = Value(state),
+       createdAtMs = Value(createdAtMs),
+       updatedAt = Value(updatedAt);
+  static Insertable<EvidenceRow> custom({
+    Expression<String>? id,
+    Expression<String>? inspectionId,
+    Expression<String>? jobId,
+    Expression<String>? userId,
+    Expression<String>? fieldKey,
+    Expression<String>? category,
+    Expression<String>? type,
+    Expression<String>? mime,
+    Expression<String>? sha256,
+    Expression<int>? size,
+    Expression<int>? width,
+    Expression<int>? height,
+    Expression<String>? capturedAtDevice,
+    Expression<int>? capturedMonotonicMs,
+    Expression<String>? location,
+    Expression<bool>? isMocked,
+    Expression<String>? meta,
+    Expression<Uint8List>? bytes,
+    Expression<String>? state,
+    Expression<int>? createdAtMs,
+    Expression<String>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (inspectionId != null) 'inspection_id': inspectionId,
+      if (jobId != null) 'job_id': jobId,
+      if (userId != null) 'user_id': userId,
+      if (fieldKey != null) 'field_key': fieldKey,
+      if (category != null) 'category': category,
+      if (type != null) 'type': type,
+      if (mime != null) 'mime': mime,
+      if (sha256 != null) 'sha256': sha256,
+      if (size != null) 'size': size,
+      if (width != null) 'width': width,
+      if (height != null) 'height': height,
+      if (capturedAtDevice != null) 'captured_at_device': capturedAtDevice,
+      if (capturedMonotonicMs != null)
+        'captured_monotonic_ms': capturedMonotonicMs,
+      if (location != null) 'location': location,
+      if (isMocked != null) 'is_mocked': isMocked,
+      if (meta != null) 'meta': meta,
+      if (bytes != null) 'bytes': bytes,
+      if (state != null) 'state': state,
+      if (createdAtMs != null) 'created_at_ms': createdAtMs,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EvidenceCompanion copyWith({
+    Value<String>? id,
+    Value<String>? inspectionId,
+    Value<String>? jobId,
+    Value<String>? userId,
+    Value<String>? fieldKey,
+    Value<String>? category,
+    Value<String>? type,
+    Value<String>? mime,
+    Value<String>? sha256,
+    Value<int>? size,
+    Value<int?>? width,
+    Value<int?>? height,
+    Value<String>? capturedAtDevice,
+    Value<int>? capturedMonotonicMs,
+    Value<String?>? location,
+    Value<bool>? isMocked,
+    Value<String>? meta,
+    Value<Uint8List?>? bytes,
+    Value<String>? state,
+    Value<int>? createdAtMs,
+    Value<String>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return EvidenceCompanion(
+      id: id ?? this.id,
+      inspectionId: inspectionId ?? this.inspectionId,
+      jobId: jobId ?? this.jobId,
+      userId: userId ?? this.userId,
+      fieldKey: fieldKey ?? this.fieldKey,
+      category: category ?? this.category,
+      type: type ?? this.type,
+      mime: mime ?? this.mime,
+      sha256: sha256 ?? this.sha256,
+      size: size ?? this.size,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      capturedAtDevice: capturedAtDevice ?? this.capturedAtDevice,
+      capturedMonotonicMs: capturedMonotonicMs ?? this.capturedMonotonicMs,
+      location: location ?? this.location,
+      isMocked: isMocked ?? this.isMocked,
+      meta: meta ?? this.meta,
+      bytes: bytes ?? this.bytes,
+      state: state ?? this.state,
+      createdAtMs: createdAtMs ?? this.createdAtMs,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (inspectionId.present) {
+      map['inspection_id'] = Variable<String>(inspectionId.value);
+    }
+    if (jobId.present) {
+      map['job_id'] = Variable<String>(jobId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (fieldKey.present) {
+      map['field_key'] = Variable<String>(fieldKey.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (mime.present) {
+      map['mime'] = Variable<String>(mime.value);
+    }
+    if (sha256.present) {
+      map['sha256'] = Variable<String>(sha256.value);
+    }
+    if (size.present) {
+      map['size'] = Variable<int>(size.value);
+    }
+    if (width.present) {
+      map['width'] = Variable<int>(width.value);
+    }
+    if (height.present) {
+      map['height'] = Variable<int>(height.value);
+    }
+    if (capturedAtDevice.present) {
+      map['captured_at_device'] = Variable<String>(capturedAtDevice.value);
+    }
+    if (capturedMonotonicMs.present) {
+      map['captured_monotonic_ms'] = Variable<int>(capturedMonotonicMs.value);
+    }
+    if (location.present) {
+      map['location'] = Variable<String>(location.value);
+    }
+    if (isMocked.present) {
+      map['is_mocked'] = Variable<bool>(isMocked.value);
+    }
+    if (meta.present) {
+      map['meta'] = Variable<String>(meta.value);
+    }
+    if (bytes.present) {
+      map['bytes'] = Variable<Uint8List>(bytes.value);
+    }
+    if (state.present) {
+      map['state'] = Variable<String>(state.value);
+    }
+    if (createdAtMs.present) {
+      map['created_at_ms'] = Variable<int>(createdAtMs.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EvidenceCompanion(')
+          ..write('id: $id, ')
+          ..write('inspectionId: $inspectionId, ')
+          ..write('jobId: $jobId, ')
+          ..write('userId: $userId, ')
+          ..write('fieldKey: $fieldKey, ')
+          ..write('category: $category, ')
+          ..write('type: $type, ')
+          ..write('mime: $mime, ')
+          ..write('sha256: $sha256, ')
+          ..write('size: $size, ')
+          ..write('width: $width, ')
+          ..write('height: $height, ')
+          ..write('capturedAtDevice: $capturedAtDevice, ')
+          ..write('capturedMonotonicMs: $capturedMonotonicMs, ')
+          ..write('location: $location, ')
+          ..write('isMocked: $isMocked, ')
+          ..write('meta: $meta, ')
+          ..write('bytes: $bytes, ')
+          ..write('state: $state, ')
+          ..write('createdAtMs: $createdAtMs, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$PosDatabase extends GeneratedDatabase {
   _$PosDatabase(QueryExecutor e) : super(e);
   $PosDatabaseManager get managers => $PosDatabaseManager(this);
@@ -4249,6 +6727,8 @@ abstract class _$PosDatabase extends GeneratedDatabase {
   late final $ActiveDefinitionsTable activeDefinitions =
       $ActiveDefinitionsTable(this);
   late final $TileCacheIndexTable tileCacheIndex = $TileCacheIndexTable(this);
+  late final $InspectionsTable inspections = $InspectionsTable(this);
+  late final $EvidenceTable evidence = $EvidenceTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4263,6 +6743,8 @@ abstract class _$PosDatabase extends GeneratedDatabase {
     definitionVersions,
     activeDefinitions,
     tileCacheIndex,
+    inspections,
+    evidence,
   ];
   @override
   DriftDatabaseOptions get options =>
@@ -6446,6 +8928,1081 @@ typedef $$TileCacheIndexTableProcessedTableManager =
       TileRow,
       PrefetchHooks Function()
     >;
+typedef $$InspectionsTableCreateCompanionBuilder =
+    InspectionsCompanion Function({
+      required String id,
+      required String jobId,
+      required String userId,
+      required int attempt,
+      required String status,
+      required String formVersionId,
+      required String formHash,
+      required String flowVersionId,
+      required String flowHash,
+      Value<String?> jobSchemaVersionId,
+      Value<String?> configVersionId,
+      required String contextSnapshot,
+      required String geofence,
+      required String integrity,
+      Value<String?> sessionTokenId,
+      Value<String?> sessionToken,
+      required String startedAtDevice,
+      Value<String> draft,
+      Value<int> currentStep,
+      Value<String?> submittedAtDevice,
+      Value<String?> startedEnvelopeId,
+      Value<String?> submissionEnvelopeId,
+      required String updatedAt,
+      Value<int> rowid,
+    });
+typedef $$InspectionsTableUpdateCompanionBuilder =
+    InspectionsCompanion Function({
+      Value<String> id,
+      Value<String> jobId,
+      Value<String> userId,
+      Value<int> attempt,
+      Value<String> status,
+      Value<String> formVersionId,
+      Value<String> formHash,
+      Value<String> flowVersionId,
+      Value<String> flowHash,
+      Value<String?> jobSchemaVersionId,
+      Value<String?> configVersionId,
+      Value<String> contextSnapshot,
+      Value<String> geofence,
+      Value<String> integrity,
+      Value<String?> sessionTokenId,
+      Value<String?> sessionToken,
+      Value<String> startedAtDevice,
+      Value<String> draft,
+      Value<int> currentStep,
+      Value<String?> submittedAtDevice,
+      Value<String?> startedEnvelopeId,
+      Value<String?> submissionEnvelopeId,
+      Value<String> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$InspectionsTableFilterComposer
+    extends Composer<_$PosDatabase, $InspectionsTable> {
+  $$InspectionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get jobId => $composableBuilder(
+    column: $table.jobId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attempt => $composableBuilder(
+    column: $table.attempt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get formVersionId => $composableBuilder(
+    column: $table.formVersionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get formHash => $composableBuilder(
+    column: $table.formHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get flowVersionId => $composableBuilder(
+    column: $table.flowVersionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get flowHash => $composableBuilder(
+    column: $table.flowHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get jobSchemaVersionId => $composableBuilder(
+    column: $table.jobSchemaVersionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get configVersionId => $composableBuilder(
+    column: $table.configVersionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get contextSnapshot => $composableBuilder(
+    column: $table.contextSnapshot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get geofence => $composableBuilder(
+    column: $table.geofence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get integrity => $composableBuilder(
+    column: $table.integrity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionTokenId => $composableBuilder(
+    column: $table.sessionTokenId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionToken => $composableBuilder(
+    column: $table.sessionToken,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get startedAtDevice => $composableBuilder(
+    column: $table.startedAtDevice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get draft => $composableBuilder(
+    column: $table.draft,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get currentStep => $composableBuilder(
+    column: $table.currentStep,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get submittedAtDevice => $composableBuilder(
+    column: $table.submittedAtDevice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get startedEnvelopeId => $composableBuilder(
+    column: $table.startedEnvelopeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get submissionEnvelopeId => $composableBuilder(
+    column: $table.submissionEnvelopeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$InspectionsTableOrderingComposer
+    extends Composer<_$PosDatabase, $InspectionsTable> {
+  $$InspectionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get jobId => $composableBuilder(
+    column: $table.jobId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attempt => $composableBuilder(
+    column: $table.attempt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get formVersionId => $composableBuilder(
+    column: $table.formVersionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get formHash => $composableBuilder(
+    column: $table.formHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get flowVersionId => $composableBuilder(
+    column: $table.flowVersionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get flowHash => $composableBuilder(
+    column: $table.flowHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get jobSchemaVersionId => $composableBuilder(
+    column: $table.jobSchemaVersionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get configVersionId => $composableBuilder(
+    column: $table.configVersionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get contextSnapshot => $composableBuilder(
+    column: $table.contextSnapshot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get geofence => $composableBuilder(
+    column: $table.geofence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get integrity => $composableBuilder(
+    column: $table.integrity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionTokenId => $composableBuilder(
+    column: $table.sessionTokenId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionToken => $composableBuilder(
+    column: $table.sessionToken,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get startedAtDevice => $composableBuilder(
+    column: $table.startedAtDevice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get draft => $composableBuilder(
+    column: $table.draft,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get currentStep => $composableBuilder(
+    column: $table.currentStep,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get submittedAtDevice => $composableBuilder(
+    column: $table.submittedAtDevice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get startedEnvelopeId => $composableBuilder(
+    column: $table.startedEnvelopeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get submissionEnvelopeId => $composableBuilder(
+    column: $table.submissionEnvelopeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$InspectionsTableAnnotationComposer
+    extends Composer<_$PosDatabase, $InspectionsTable> {
+  $$InspectionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get jobId =>
+      $composableBuilder(column: $table.jobId, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<int> get attempt =>
+      $composableBuilder(column: $table.attempt, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get formVersionId => $composableBuilder(
+    column: $table.formVersionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get formHash =>
+      $composableBuilder(column: $table.formHash, builder: (column) => column);
+
+  GeneratedColumn<String> get flowVersionId => $composableBuilder(
+    column: $table.flowVersionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get flowHash =>
+      $composableBuilder(column: $table.flowHash, builder: (column) => column);
+
+  GeneratedColumn<String> get jobSchemaVersionId => $composableBuilder(
+    column: $table.jobSchemaVersionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get configVersionId => $composableBuilder(
+    column: $table.configVersionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get contextSnapshot => $composableBuilder(
+    column: $table.contextSnapshot,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get geofence =>
+      $composableBuilder(column: $table.geofence, builder: (column) => column);
+
+  GeneratedColumn<String> get integrity =>
+      $composableBuilder(column: $table.integrity, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionTokenId => $composableBuilder(
+    column: $table.sessionTokenId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sessionToken => $composableBuilder(
+    column: $table.sessionToken,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get startedAtDevice => $composableBuilder(
+    column: $table.startedAtDevice,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get draft =>
+      $composableBuilder(column: $table.draft, builder: (column) => column);
+
+  GeneratedColumn<int> get currentStep => $composableBuilder(
+    column: $table.currentStep,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get submittedAtDevice => $composableBuilder(
+    column: $table.submittedAtDevice,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get startedEnvelopeId => $composableBuilder(
+    column: $table.startedEnvelopeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get submissionEnvelopeId => $composableBuilder(
+    column: $table.submissionEnvelopeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$InspectionsTableTableManager
+    extends
+        RootTableManager<
+          _$PosDatabase,
+          $InspectionsTable,
+          InspectionRow,
+          $$InspectionsTableFilterComposer,
+          $$InspectionsTableOrderingComposer,
+          $$InspectionsTableAnnotationComposer,
+          $$InspectionsTableCreateCompanionBuilder,
+          $$InspectionsTableUpdateCompanionBuilder,
+          (
+            InspectionRow,
+            BaseReferences<_$PosDatabase, $InspectionsTable, InspectionRow>,
+          ),
+          InspectionRow,
+          PrefetchHooks Function()
+        > {
+  $$InspectionsTableTableManager(_$PosDatabase db, $InspectionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$InspectionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$InspectionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$InspectionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> jobId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<int> attempt = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> formVersionId = const Value.absent(),
+                Value<String> formHash = const Value.absent(),
+                Value<String> flowVersionId = const Value.absent(),
+                Value<String> flowHash = const Value.absent(),
+                Value<String?> jobSchemaVersionId = const Value.absent(),
+                Value<String?> configVersionId = const Value.absent(),
+                Value<String> contextSnapshot = const Value.absent(),
+                Value<String> geofence = const Value.absent(),
+                Value<String> integrity = const Value.absent(),
+                Value<String?> sessionTokenId = const Value.absent(),
+                Value<String?> sessionToken = const Value.absent(),
+                Value<String> startedAtDevice = const Value.absent(),
+                Value<String> draft = const Value.absent(),
+                Value<int> currentStep = const Value.absent(),
+                Value<String?> submittedAtDevice = const Value.absent(),
+                Value<String?> startedEnvelopeId = const Value.absent(),
+                Value<String?> submissionEnvelopeId = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => InspectionsCompanion(
+                id: id,
+                jobId: jobId,
+                userId: userId,
+                attempt: attempt,
+                status: status,
+                formVersionId: formVersionId,
+                formHash: formHash,
+                flowVersionId: flowVersionId,
+                flowHash: flowHash,
+                jobSchemaVersionId: jobSchemaVersionId,
+                configVersionId: configVersionId,
+                contextSnapshot: contextSnapshot,
+                geofence: geofence,
+                integrity: integrity,
+                sessionTokenId: sessionTokenId,
+                sessionToken: sessionToken,
+                startedAtDevice: startedAtDevice,
+                draft: draft,
+                currentStep: currentStep,
+                submittedAtDevice: submittedAtDevice,
+                startedEnvelopeId: startedEnvelopeId,
+                submissionEnvelopeId: submissionEnvelopeId,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String jobId,
+                required String userId,
+                required int attempt,
+                required String status,
+                required String formVersionId,
+                required String formHash,
+                required String flowVersionId,
+                required String flowHash,
+                Value<String?> jobSchemaVersionId = const Value.absent(),
+                Value<String?> configVersionId = const Value.absent(),
+                required String contextSnapshot,
+                required String geofence,
+                required String integrity,
+                Value<String?> sessionTokenId = const Value.absent(),
+                Value<String?> sessionToken = const Value.absent(),
+                required String startedAtDevice,
+                Value<String> draft = const Value.absent(),
+                Value<int> currentStep = const Value.absent(),
+                Value<String?> submittedAtDevice = const Value.absent(),
+                Value<String?> startedEnvelopeId = const Value.absent(),
+                Value<String?> submissionEnvelopeId = const Value.absent(),
+                required String updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => InspectionsCompanion.insert(
+                id: id,
+                jobId: jobId,
+                userId: userId,
+                attempt: attempt,
+                status: status,
+                formVersionId: formVersionId,
+                formHash: formHash,
+                flowVersionId: flowVersionId,
+                flowHash: flowHash,
+                jobSchemaVersionId: jobSchemaVersionId,
+                configVersionId: configVersionId,
+                contextSnapshot: contextSnapshot,
+                geofence: geofence,
+                integrity: integrity,
+                sessionTokenId: sessionTokenId,
+                sessionToken: sessionToken,
+                startedAtDevice: startedAtDevice,
+                draft: draft,
+                currentStep: currentStep,
+                submittedAtDevice: submittedAtDevice,
+                startedEnvelopeId: startedEnvelopeId,
+                submissionEnvelopeId: submissionEnvelopeId,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$InspectionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PosDatabase,
+      $InspectionsTable,
+      InspectionRow,
+      $$InspectionsTableFilterComposer,
+      $$InspectionsTableOrderingComposer,
+      $$InspectionsTableAnnotationComposer,
+      $$InspectionsTableCreateCompanionBuilder,
+      $$InspectionsTableUpdateCompanionBuilder,
+      (
+        InspectionRow,
+        BaseReferences<_$PosDatabase, $InspectionsTable, InspectionRow>,
+      ),
+      InspectionRow,
+      PrefetchHooks Function()
+    >;
+typedef $$EvidenceTableCreateCompanionBuilder =
+    EvidenceCompanion Function({
+      required String id,
+      required String inspectionId,
+      required String jobId,
+      required String userId,
+      required String fieldKey,
+      required String category,
+      required String type,
+      required String mime,
+      required String sha256,
+      required int size,
+      Value<int?> width,
+      Value<int?> height,
+      required String capturedAtDevice,
+      required int capturedMonotonicMs,
+      Value<String?> location,
+      Value<bool> isMocked,
+      Value<String> meta,
+      Value<Uint8List?> bytes,
+      required String state,
+      required int createdAtMs,
+      required String updatedAt,
+      Value<int> rowid,
+    });
+typedef $$EvidenceTableUpdateCompanionBuilder =
+    EvidenceCompanion Function({
+      Value<String> id,
+      Value<String> inspectionId,
+      Value<String> jobId,
+      Value<String> userId,
+      Value<String> fieldKey,
+      Value<String> category,
+      Value<String> type,
+      Value<String> mime,
+      Value<String> sha256,
+      Value<int> size,
+      Value<int?> width,
+      Value<int?> height,
+      Value<String> capturedAtDevice,
+      Value<int> capturedMonotonicMs,
+      Value<String?> location,
+      Value<bool> isMocked,
+      Value<String> meta,
+      Value<Uint8List?> bytes,
+      Value<String> state,
+      Value<int> createdAtMs,
+      Value<String> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$EvidenceTableFilterComposer
+    extends Composer<_$PosDatabase, $EvidenceTable> {
+  $$EvidenceTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get inspectionId => $composableBuilder(
+    column: $table.inspectionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get jobId => $composableBuilder(
+    column: $table.jobId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fieldKey => $composableBuilder(
+    column: $table.fieldKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mime => $composableBuilder(
+    column: $table.mime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sha256 => $composableBuilder(
+    column: $table.sha256,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get size => $composableBuilder(
+    column: $table.size,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get width => $composableBuilder(
+    column: $table.width,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get height => $composableBuilder(
+    column: $table.height,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get capturedAtDevice => $composableBuilder(
+    column: $table.capturedAtDevice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get capturedMonotonicMs => $composableBuilder(
+    column: $table.capturedMonotonicMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isMocked => $composableBuilder(
+    column: $table.isMocked,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get meta => $composableBuilder(
+    column: $table.meta,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAtMs => $composableBuilder(
+    column: $table.createdAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EvidenceTableOrderingComposer
+    extends Composer<_$PosDatabase, $EvidenceTable> {
+  $$EvidenceTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get inspectionId => $composableBuilder(
+    column: $table.inspectionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get jobId => $composableBuilder(
+    column: $table.jobId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fieldKey => $composableBuilder(
+    column: $table.fieldKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mime => $composableBuilder(
+    column: $table.mime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sha256 => $composableBuilder(
+    column: $table.sha256,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get size => $composableBuilder(
+    column: $table.size,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get width => $composableBuilder(
+    column: $table.width,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get height => $composableBuilder(
+    column: $table.height,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get capturedAtDevice => $composableBuilder(
+    column: $table.capturedAtDevice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get capturedMonotonicMs => $composableBuilder(
+    column: $table.capturedMonotonicMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isMocked => $composableBuilder(
+    column: $table.isMocked,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get meta => $composableBuilder(
+    column: $table.meta,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAtMs => $composableBuilder(
+    column: $table.createdAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EvidenceTableAnnotationComposer
+    extends Composer<_$PosDatabase, $EvidenceTable> {
+  $$EvidenceTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get inspectionId => $composableBuilder(
+    column: $table.inspectionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get jobId =>
+      $composableBuilder(column: $table.jobId, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get fieldKey =>
+      $composableBuilder(column: $table.fieldKey, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get mime =>
+      $composableBuilder(column: $table.mime, builder: (column) => column);
+
+  GeneratedColumn<String> get sha256 =>
+      $composableBuilder(column: $table.sha256, builder: (column) => column);
+
+  GeneratedColumn<int> get size =>
+      $composableBuilder(column: $table.size, builder: (column) => column);
+
+  GeneratedColumn<int> get width =>
+      $composableBuilder(column: $table.width, builder: (column) => column);
+
+  GeneratedColumn<int> get height =>
+      $composableBuilder(column: $table.height, builder: (column) => column);
+
+  GeneratedColumn<String> get capturedAtDevice => $composableBuilder(
+    column: $table.capturedAtDevice,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get capturedMonotonicMs => $composableBuilder(
+    column: $table.capturedMonotonicMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get location =>
+      $composableBuilder(column: $table.location, builder: (column) => column);
+
+  GeneratedColumn<bool> get isMocked =>
+      $composableBuilder(column: $table.isMocked, builder: (column) => column);
+
+  GeneratedColumn<String> get meta =>
+      $composableBuilder(column: $table.meta, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get bytes =>
+      $composableBuilder(column: $table.bytes, builder: (column) => column);
+
+  GeneratedColumn<String> get state =>
+      $composableBuilder(column: $table.state, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAtMs => $composableBuilder(
+    column: $table.createdAtMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$EvidenceTableTableManager
+    extends
+        RootTableManager<
+          _$PosDatabase,
+          $EvidenceTable,
+          EvidenceRow,
+          $$EvidenceTableFilterComposer,
+          $$EvidenceTableOrderingComposer,
+          $$EvidenceTableAnnotationComposer,
+          $$EvidenceTableCreateCompanionBuilder,
+          $$EvidenceTableUpdateCompanionBuilder,
+          (
+            EvidenceRow,
+            BaseReferences<_$PosDatabase, $EvidenceTable, EvidenceRow>,
+          ),
+          EvidenceRow,
+          PrefetchHooks Function()
+        > {
+  $$EvidenceTableTableManager(_$PosDatabase db, $EvidenceTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EvidenceTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EvidenceTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EvidenceTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> inspectionId = const Value.absent(),
+                Value<String> jobId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> fieldKey = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> mime = const Value.absent(),
+                Value<String> sha256 = const Value.absent(),
+                Value<int> size = const Value.absent(),
+                Value<int?> width = const Value.absent(),
+                Value<int?> height = const Value.absent(),
+                Value<String> capturedAtDevice = const Value.absent(),
+                Value<int> capturedMonotonicMs = const Value.absent(),
+                Value<String?> location = const Value.absent(),
+                Value<bool> isMocked = const Value.absent(),
+                Value<String> meta = const Value.absent(),
+                Value<Uint8List?> bytes = const Value.absent(),
+                Value<String> state = const Value.absent(),
+                Value<int> createdAtMs = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EvidenceCompanion(
+                id: id,
+                inspectionId: inspectionId,
+                jobId: jobId,
+                userId: userId,
+                fieldKey: fieldKey,
+                category: category,
+                type: type,
+                mime: mime,
+                sha256: sha256,
+                size: size,
+                width: width,
+                height: height,
+                capturedAtDevice: capturedAtDevice,
+                capturedMonotonicMs: capturedMonotonicMs,
+                location: location,
+                isMocked: isMocked,
+                meta: meta,
+                bytes: bytes,
+                state: state,
+                createdAtMs: createdAtMs,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String inspectionId,
+                required String jobId,
+                required String userId,
+                required String fieldKey,
+                required String category,
+                required String type,
+                required String mime,
+                required String sha256,
+                required int size,
+                Value<int?> width = const Value.absent(),
+                Value<int?> height = const Value.absent(),
+                required String capturedAtDevice,
+                required int capturedMonotonicMs,
+                Value<String?> location = const Value.absent(),
+                Value<bool> isMocked = const Value.absent(),
+                Value<String> meta = const Value.absent(),
+                Value<Uint8List?> bytes = const Value.absent(),
+                required String state,
+                required int createdAtMs,
+                required String updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => EvidenceCompanion.insert(
+                id: id,
+                inspectionId: inspectionId,
+                jobId: jobId,
+                userId: userId,
+                fieldKey: fieldKey,
+                category: category,
+                type: type,
+                mime: mime,
+                sha256: sha256,
+                size: size,
+                width: width,
+                height: height,
+                capturedAtDevice: capturedAtDevice,
+                capturedMonotonicMs: capturedMonotonicMs,
+                location: location,
+                isMocked: isMocked,
+                meta: meta,
+                bytes: bytes,
+                state: state,
+                createdAtMs: createdAtMs,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EvidenceTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PosDatabase,
+      $EvidenceTable,
+      EvidenceRow,
+      $$EvidenceTableFilterComposer,
+      $$EvidenceTableOrderingComposer,
+      $$EvidenceTableAnnotationComposer,
+      $$EvidenceTableCreateCompanionBuilder,
+      $$EvidenceTableUpdateCompanionBuilder,
+      (EvidenceRow, BaseReferences<_$PosDatabase, $EvidenceTable, EvidenceRow>),
+      EvidenceRow,
+      PrefetchHooks Function()
+    >;
 
 class $PosDatabaseManager {
   final _$PosDatabase _db;
@@ -6467,4 +10024,8 @@ class $PosDatabaseManager {
       $$ActiveDefinitionsTableTableManager(_db, _db.activeDefinitions);
   $$TileCacheIndexTableTableManager get tileCacheIndex =>
       $$TileCacheIndexTableTableManager(_db, _db.tileCacheIndex);
+  $$InspectionsTableTableManager get inspections =>
+      $$InspectionsTableTableManager(_db, _db.inspections);
+  $$EvidenceTableTableManager get evidence =>
+      $$EvidenceTableTableManager(_db, _db.evidence);
 }

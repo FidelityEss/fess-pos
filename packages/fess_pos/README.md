@@ -146,9 +146,29 @@ data). Deep links `/pos`, `/pos/job/<id>` and `/pos/card` open their page once t
 already showing or opens with the link. The host's push token is kept registered with the POS API as it changes,
 and cleared at sign-out. Push delivery itself waits on FESS's channel (D-06).
 
-Tested: 445 unit and widget tests; the live test against QA; 5 device tests against QA (SQLCipher, store recovery,
-camera, QA sign-in, and the QA job list, which also opens the agent card, a job's map and card, and a reason form
-without submitting), last run on the Android emulator on 2026-09-14 (the iPhone 17 simulator ran them before T2-15).
+In review, not merged yet (T4-27, batch M1; D-65): **the walking-skeleton inspection.**
+- *Begin inspection* pins the versions in force, freezes the context and uses the job's session token.
+- The flow's form, declaration and submit steps run over the pinned form. The answers and the step are kept as they
+  change, so a restarted app resumes where it was.
+- **Photo:** the camera page (camera captures only). **Signature:** a pad; the PNG and a hash of the strokes are
+  kept. **Declaration:** the pulled wording, kept only if it matches its hash; the answer names the exact version
+  accepted.
+- Evidence bytes are written with their record and `evidence_meta` in one transaction in the encrypted store.
+- *Submit* seals the answers, the manifest and the submission hash.
+- The upload lane sends each item once its record is held, and the phone lets its copy go once the server has
+  verified it.
+- Proven end to end on QA from the Android emulator: offline capture, a real restart, reconnect, both items verified
+  and replicated, the job under review.
+- Still thin: one non-blocking location fix (T4-07); integrity signals sent as unavailable (T4-09); the camera's
+  JPEG as taken (T4-02); a single PUT, not resumable (T4-13).
 
-Next: the inspection (Phases 3–4), starting with the remaining Wave-1 components and the flow runner. Known gap: a session refresh whose answer is lost ends the session until the next sign-in (R-44,
-backend fix T1-43).
+Tested: 483 unit and widget tests; the live test against QA; 6 device tests against QA (SQLCipher, store recovery,
+camera, QA sign-in, the QA job list, and the walking-skeleton inspection in three phases with a real restart). The QA
+job list also opens the agent card, a job's map and card, and a reason form without submitting. Last run on the
+Android emulator on 2026-09-14; the iPhone 17 simulator ran them before T2-15.
+
+Next, in batches (planning pack `docs/README.md`):
+- **M2:** every Wave-1 field and the full flow runner.
+- **M3:** the camera pipeline, the geofence and the rest of begin and submit.
+
+Known gap: a session refresh whose answer is lost ends the session until the next sign-in (R-44, backend fix T1-43).

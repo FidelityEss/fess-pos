@@ -5,6 +5,7 @@ import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
 import 'package:fess_pos/src/domain/cards/cards.dart';
 import 'package:fess_pos/src/domain/forms/reason_codes.dart';
+import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 
 /// Jobs from the local store, updated live as pulls land.
@@ -88,6 +89,14 @@ class DriftDefinitionRepository implements DefinitionRepository {
             );
     });
   }
+
+  @override
+  Future<Map<String, Object?>?> version(String versionId) async {
+    final row = await (_db.select(
+      _db.definitionVersions,
+    )..where((d) => d.versionId.equals(versionId))).getSingleOrNull();
+    return row == null ? null : _object(row.body);
+  }
 }
 
 /// `me` and the home-tile totals, from the last pull.
@@ -139,6 +148,20 @@ class DriftReferenceRepository implements ReferenceRepository {
             ..where((d) => d.key.equals(DocKeys.reasonCodes)))
           .watchSingleOrNull()
           .map((r) => r == null ? const [] : _reasonCodes(r.body));
+}
+
+/// Declarations from the last pulls (docs/07 §4).
+class DriftDeclarationRepository implements DeclarationRepository {
+  DriftDeclarationRepository(this._db);
+
+  final PosDatabase _db;
+
+  @override
+  Stream<Declaration?> watch(String key) =>
+      (_db.select(_db.cachedDocuments)
+            ..where((d) => d.key.equals('${DocKeys.declarationPrefix}$key')))
+          .watchSingleOrNull()
+          .map((r) => r == null ? null : Declaration.tryParse(_object(r.body)));
 }
 
 List<ReasonCode> _reasonCodes(String json) {

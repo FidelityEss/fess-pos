@@ -2,7 +2,9 @@ import 'dart:math' as math;
 
 import 'package:fess_pos/src/core/content/bundled_copy.dart';
 import 'package:fess_pos/src/core/theme/tokens.g.dart';
+import 'package:fess_pos/src/core/time/device_time.dart';
 import 'package:fess_pos/src/renderer/form/form_controller.dart';
+import 'package:fess_pos/src/renderer/form/form_services.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart';
 import 'package:flutter/material.dart';
 
@@ -18,11 +20,21 @@ class FormView extends StatelessWidget {
     required this.controller,
     this.copy = BundledCopy.text,
     this.sections,
+    this.services,
+    this.fieldFilter,
     this.padding = const EdgeInsets.all(16),
     super.key,
   });
 
   final FormController controller;
+
+  /// The inspection's camera, signature pad and declarations; null outside
+  /// an inspection, where evidence and legal fields can't be answered.
+  final FormFieldServices? services;
+
+  /// Only fields this accepts (a flow step's); a section left with none is
+  /// not shown.
+  final bool Function(ResolvedField field)? fieldFilter;
 
   /// Content by key: the server's `core` strings over the bundled ones.
   final String Function(String key) copy;
@@ -50,6 +62,9 @@ class FormView extends StatelessWidget {
         if (sections != null && !sections!.contains(key)) continue;
         final rs = resolved.sections[key];
         if (rs == null || !rs.visible) continue;
+        final fields = <Widget>[];
+        _addFields(fields, _maps(section['fields']), resolved);
+        if (fields.isEmpty && fieldFilter != null) continue;
         final title = rs.title;
         if (title != null && title.trim().isNotEmpty) {
           children.add(_SectionTitle(title));
@@ -63,7 +78,7 @@ class FormView extends StatelessWidget {
             ),
           );
         }
-        _addFields(children, _maps(section['fields']), resolved);
+        children.addAll(fields);
       }
       return Padding(
         padding: padding,
@@ -86,7 +101,7 @@ class FormView extends StatelessWidget {
       if (f == null || !f.visible) continue;
       if (f.type == 'group') {
         _addFields(out, _maps(def['fields']), resolved);
-      } else {
+      } else if (fieldFilter?.call(f) ?? true) {
         out.add(_field(def, f));
       }
     }
@@ -119,6 +134,17 @@ class FormView extends StatelessWidget {
         child: _Notice(text: f.text ?? '', tone: _tone(def['tone'])),
       ),
       'divider' => Divider(key: key, height: 24),
+      'photo' when services != null => _PhotoInput(b, services!, key: key),
+      'signature' when services != null => _SignatureInput(
+        b,
+        services!,
+        key: key,
+      ),
+      'declaration' when services != null => _DeclarationInput(
+        b,
+        services!,
+        key: key,
+      ),
       _ => _Frame(
         b,
         key: key,
@@ -158,6 +184,7 @@ const Set<String> _engineCodes = {
   'COMPUTED_MISMATCH',
   'PREFILL_MISMATCH',
   'INVALID_RENDERED_AS',
+  'NOT_ACCEPTED',
 };
 
 /// The copy for a problem: a definition's own `validate` message as
@@ -648,6 +675,235 @@ class _Notice extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Text(text, style: TextStyle(color: foreground)),
+      ),
+    );
+  }
+}
+
+List<String> _evidenceIds(Object? v) => [
+  if (v is List<Object?>)
+    for (final x in v)
+      if (x is String) x,
+];
+
+/// Photos (`11` §3.5): the ones taken so far and a button for the next,
+/// up to `max_count`. The camera stores each photo before it shows here.
+/// Retakes, captions and guided sequences come with T4-04.
+class _PhotoInput extends StatefulWidget {
+  const _PhotoInput(this.b, this.services, {super.key});
+
+  final _Binding b;
+  final FormFieldServices services;
+
+  @override
+  State<_PhotoInput> createState() => _PhotoInputState();
+}
+
+class _PhotoInputState extends State<_PhotoInput> {
+  bool _busy = false;
+
+  Future<void> _take() async {
+    setState(() => _busy = true);
+    try {
+      final id = await widget.services.takePhoto(context, widget.b.field);
+      if (id != null) {
+        final b = widget.b;
+        b.controller.setValue(b.key, [
+          ..._evidenceIds(b.controller.value(b.key)),
+          id,
+        ]);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final b = widget.b;
+    final ids = _evidenceIds(b.controller.value(b.key));
+    final max = b.props['max_count'];
+    final full = max is num && ids.length >= max;
+    return _Frame(
+      b,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (ids.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final id in ids)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        PosTokens.radiusControl,
+                      ),
+                      child: SizedBox.square(
+                        dimension: 88,
+                        child: widget.services.evidenceImage(id, 88),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          OutlinedButton.icon(
+            key: ValueKey('photo-take-${b.key}'),
+            onPressed: b.field.readOnly || full || _busy ? null : _take,
+            icon: const Icon(Icons.photo_camera),
+            label: Text(b.copy('inspection.take_photo')),
+          ),
+          if (_busy) _Saving(b.copy('inspection.saving')),
+        ],
+      ),
+    );
+  }
+}
+
+/// A signature (`11` §3.5): drawn on the pad, stored, then shown here.
+class _SignatureInput extends StatefulWidget {
+  const _SignatureInput(this.b, this.services, {super.key});
+
+  final _Binding b;
+  final FormFieldServices services;
+
+  @override
+  State<_SignatureInput> createState() => _SignatureInputState();
+}
+
+class _SignatureInputState extends State<_SignatureInput> {
+  bool _busy = false;
+
+  Future<void> _sign() async {
+    setState(() => _busy = true);
+    try {
+      final id = await widget.services.drawSignature(context, widget.b.field);
+      if (id != null) widget.b.controller.setValue(widget.b.key, id);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final b = widget.b;
+    final id = _string(b.controller.value(b.key));
+    return _Frame(
+      b,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (id != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SizedBox(
+                height: 120,
+                child: widget.services.evidenceImage(id, 120),
+              ),
+            ),
+          OutlinedButton.icon(
+            key: ValueKey('signature-sign-${b.key}'),
+            onPressed: b.field.readOnly || _busy ? null : _sign,
+            icon: const Icon(Icons.draw),
+            label: Text(
+              b.copy(id == null ? 'inspection.sign' : 'inspection.sign_again'),
+            ),
+          ),
+          if (_busy) _Saving(b.copy('inspection.saving')),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shown while a capture is being stored: it waits briefly for a location
+/// fix to go with it, and the answer counts only once it's stored.
+class _Saving extends StatelessWidget {
+  const _Saving(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 8),
+    child: Row(
+      children: [
+        const SizedBox.square(
+          dimension: 16,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        const SizedBox(width: 8),
+        Text(text),
+      ],
+    ),
+  );
+}
+
+/// A declaration (`11` §3.6): its exact wording, and acceptance of that
+/// version, which goes into the answers hash (docs/07 §4). A newer version
+/// must be accepted again.
+class _DeclarationInput extends StatelessWidget {
+  const _DeclarationInput(this.b, this.services, {super.key});
+
+  final _Binding b;
+  final FormFieldServices services;
+
+  @override
+  Widget build(BuildContext context) {
+    final declarationKey = _string(b.props['declaration_key']) ?? b.key;
+    final declaration = services.declaration(declarationKey);
+    if (declaration == null) {
+      return _Frame(
+        b,
+        child: _Notice(
+          text: b.copy('inspection.declaration_missing'),
+          tone: _Tone.warning,
+        ),
+      );
+    }
+    final value = b.controller.value(b.key);
+    final accepted =
+        value is Map<String, Object?> &&
+        value['accepted'] == true &&
+        value['declaration_version_id'] == declaration.id;
+    final theme = Theme.of(context);
+    return _Frame(
+      b,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(PosTokens.radiusControl),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(declaration.text),
+            ),
+          ),
+          CheckboxListTile(
+            key: ValueKey('declaration-accept-${b.key}'),
+            value: accepted,
+            onChanged: b.field.readOnly
+                ? null
+                : (on) => b.controller.setValue(
+                    b.key,
+                    on ?? false
+                        ? {
+                            'accepted': true,
+                            'declaration_version_id': declaration.id,
+                            'accepted_at': isoWithOffset(services.now()),
+                          }
+                        : null,
+                  ),
+            title: Text(b.copy('inspection.declaration_accept')),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ],
       ),
     );
   }

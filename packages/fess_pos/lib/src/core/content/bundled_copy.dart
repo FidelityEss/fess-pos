@@ -104,6 +104,42 @@ abstract final class BundledCopy {
     'form.error.multi_select.TOO_MANY': 'Choose at most {{max_select}}.',
     'form.error.photo.TOO_FEW': 'Take at least {{min_count}} photos.',
     'form.error.photo.TOO_MANY': 'Keep at most {{max_count}} photos.',
+    'form.error.photo.REQUIRED': 'Take the photos asked for.',
+    'form.error.signature.REQUIRED': 'A signature is required.',
+    'form.error.declaration.REQUIRED': 'Accept the declaration to continue.',
+    'form.error.declaration.NOT_ACCEPTED':
+        'Accept the declaration to continue.',
+    'inspection.begin': 'Begin inspection',
+    'inspection.continue': 'Continue inspection',
+    'inspection.definitions_missing':
+        "The inspection form hasn't reached your phone yet. Connect to the "
+        'internet and try again.',
+    'inspection.step': 'Step {{n}} of {{total}}',
+    'inspection.next': 'Next',
+    'inspection.back': 'Back',
+    'inspection.submit': 'Submit inspection',
+    'inspection.submit_confirm':
+        "Submit this inspection? You can't change it afterwards.",
+    'inspection.cancel': 'Cancel',
+    'inspection.fix_answers': 'Some answers need attention before you go on.',
+    'inspection.ready':
+        'Everything is answered. Submit the inspection when you are ready.',
+    'inspection.submitted': 'This inspection has been submitted.',
+    'inspection.take_photo': 'Take photo',
+    'inspection.saving': 'Saving…',
+    'inspection.sign': 'Sign',
+    'inspection.sign_again': 'Sign again',
+    'inspection.signature_title': 'Signature',
+    'inspection.signature_hint': 'Sign inside the box.',
+    'inspection.clear': 'Clear',
+    'inspection.done': 'Done',
+    'inspection.declaration_accept': 'I accept this declaration',
+    'inspection.declaration_missing':
+        "This declaration hasn't reached your phone yet. Connect to the "
+        'internet and try again.',
+    'inspection.camera_unavailable':
+        "The camera couldn't be opened. Check that FESS may use the camera.",
+    'inspection.capture_failed': "This couldn't be saved. Try again.",
     'form.error.RULE_ERROR':
         "This question couldn't be checked. Tell your administrator.",
     'form.error.VALIDATION_RULE_FAILED': 'Check this answer.',

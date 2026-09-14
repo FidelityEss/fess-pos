@@ -19,7 +19,7 @@ part 'pos_database.g.dart';
 /// version that has shipped. Tables arrive with their tasks: the outbox and
 /// cached server documents (schema 2, T1-22/T1-23), jobs, reviews and
 /// definitions (schema 3, T2-14), the map tile index (schema 4, T2-17),
-/// drafts (T3-06), evidence (T4-03).
+/// inspections and evidence (schema 5, T4-27), full drafts (T3-06).
 @DriftDatabase(
   tables: [
     ModuleMeta,
@@ -31,12 +31,14 @@ part 'pos_database.g.dart';
     DefinitionVersions,
     ActiveDefinitions,
     TileCacheIndex,
+    Inspections,
+    Evidence,
   ],
 )
 class PosDatabase extends _$PosDatabase {
   PosDatabase(super.e);
 
-  static const int currentSchemaVersion = 4;
+  static const int currentSchemaVersion = 5;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -78,6 +80,10 @@ class PosDatabase extends _$PosDatabase {
         },
         from3To4: (m, schema) async {
           await m.createTable(schema.tileCacheIndex);
+        },
+        from4To5: (m, schema) async {
+          await m.createTable(schema.inspections);
+          await m.createTable(schema.evidence);
         },
       )(m, from, to);
     },
