@@ -204,6 +204,19 @@ Future<void> _start(WidgetTester tester, ModuleRuntime runtime) async {
     'token ${inspection.sessionTokenId == null ? 'missing' : 'used'}, '
     'geofence ${inspection.geofence})',
   );
+  // Where the fix at the start didn't pass, the location check samples
+  // until a fix inside does, then moves on by itself (T4-07).
+  final checking = find.text('Location check');
+  if (checking.evaluate().isNotEmpty) {
+    _log('location check shown; waiting for a fix inside');
+    final end = DateTime.now().add(const Duration(seconds: 90));
+    while (checking.evaluate().isNotEmpty && DateTime.now().isBefore(end)) {
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+    if (checking.evaluate().isNotEmpty) _screen(tester, 'location check held');
+    expect(checking.evaluate(), isEmpty, reason: 'the location check passed');
+    _log('location check passed');
+  }
 
   await tester.enterText(find.byType(TextField).first, 'Walking Skeleton');
   await _tap(tester, find.text('Shop'));
