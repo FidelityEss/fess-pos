@@ -84,7 +84,7 @@ Flutter ≥ 3.29, with lower bounds at or below FESS's locked versions (`docs/03
 ## Status (2026-09-14)
 
 Decision numbers (D-xx) are in the planning pack's `docs/09-open-decisions.md`. Everything below is merged into
-`master` (PR #3, 2026-09-14); "in review" is the tracker's status until the work is ticked off.
+`master` (PR #3) and was accepted and closed on 2026-09-14.
 
 Done (T1-01, T1-18 to T1-20):
 - **skeleton:** the public contract, bootstrap layer, DI, error model, scoped Sentry hub and theme;
@@ -93,17 +93,17 @@ Done (T1-01, T1-18 to T1-20):
 - **local store:** drift + SQLCipher, key in secure storage, fail-closed checks, WAL + `synchronous=FULL`,
   migrations (D-52).
 
-In review (T1-41, T1-42, T2-33): the module needs nothing from the host beyond wiring it in (D-55).
+Done (T1-41, T1-42, T2-33): the module needs nothing from the host beyond wiring it in (D-55).
 - **Montserrat** is bundled (`assets/fonts/montserrat`, SIL OFL 1.1).
 - **Camera:** the camera's platform packages are used directly, so Android gets Camera2, whose `minSdk` always matches the host's Flutter default (D-54).
 - **Local store:** it lives outside Android backups, and a store that can never be opened again is moved aside intact while a new one starts (D-52).
 - **iOS:** the package is also an iOS pod with link settings only (`ios/fess_pos.podspec`). It forces SQLCipher to link even when the host links the system SQLite, as FESS does (T1-41).
 
-In review (T1-21, T1-24): the POS API client and signing in (D-56). There is no sign-in screen: `signIn` swaps
+Done (T1-21, T1-24): the POS API client and signing in (D-56). There is no sign-in screen: `signIn` swaps
 the host's token for the module's own session, works offline for a user who signed in on the phone before, and keeps
 each user's session so their captured work uploads under it. The harness app signs in to QA with the stand-in issuer.
 
-In review (T1-22, T1-23, T1-29; D-57, D-58):
+Done (T1-22, T1-23, T1-29; D-57, D-58):
 - **Outbox** (`lib/src/data/outbox/`, local schema 2): every agent action is written with its envelope in one
   transaction, guarded against double taps; sent in lane order, kept until a receipt says the server holds it,
   retried forever with backoff, parked and reported if the server can never take it.
@@ -111,37 +111,37 @@ In review (T1-22, T1-23, T1-29; D-57, D-58):
   defaults behind it, kill switches refreshed), envelope outcomes, restore re-send; the sync engine runs after sign-in,
   on the config's intervals, when the network returns and on a push hint.
 
-In review (T2-14; D-59): **jobs on the phone.** The pull keeps the agent's jobs, review outcomes and
+Done (T2-14; D-59): **jobs on the phone.** The pull keeps the agent's jobs, review outcomes and
 the definitions in force (each checked against its hash). The home page draws the server's `home` view over the
 jobs, a job opens the `job_detail` view, and bundled views cover a first run. View rules run on the Dart rules engine
 (`fess_pos_engine`, the same fixture contract as the TypeScript engine). The renderer (`lib/src/renderer/`) draws
 16 view components with T2-14; the map and the cards join them with T2-17 and T2-18 (below).
 
-In review (T2-15; D-60): **forms.** The form renderer (`lib/src/renderer/form/`) draws text, textarea, boolean,
+Done (T2-15; D-60): **forms.** The form renderer (`lib/src/renderer/form/`) draws text, textarea, boolean,
 single and multi select, info, callout, divider and group fields. Every answer re-resolves the form with the Dart form
 engine, so what shows, what is required and which options are offered follow the rules as the agent goes. The
 problems are the server's own: the engine is ported from the TypeScript one, with the same codes and the same
 fixtures. Reason codes from the pull become the options of `options_source: reason_codes`, with `requires_note` and
 `requires_photo` for `option_meta` rules.
 
-In review (T2-16; D-61): **accept, "can't take this job" and "unable to complete".** The job page offers what the
+Done (T2-16; D-61): **accept, "can't take this job" and "unable to complete".** The job page offers what the
 job allows. Accepting records at once; the other two open the bank's reason form. Each action writes the job's new
 status on the phone and its `job_event` in one transaction, once however often it's tapped, and a pull can't undo it
 until the server has it. The outcome page says whether the server has it, whether it's saved on the phone to send
 later, or why it wasn't done. Known gap: the unable reasons that need a photo wait for photo capture.
 
-In review (T2-17; D-62): **the map.** The job page shows the job's location on a small map that opens a full one,
+Done (T2-17; D-62): **the map.** The job page shows the job's location on a small map that opens a full one,
 and **Directions** hands over to the phone's maps app. Tiles come from the provider in remote config
 (`maps.tile_url`); the tiles around each job the agent may visit are kept on the phone after every sync, so the map
 works on site without signal. Until a provider is configured the pin shows without a map, and directions still work.
 `flutter_map` stays at 8.1.x until FESS moves past `http` 1.4.0 and `path_provider` 2.1.4.
 
-In review (T2-18; D-63): **authorisation cards.** The home page shows the agent's card, which opens in full: name,
+Done (T2-18; D-63): **authorisation cards.** The home page shows the agent's card, which opens in full: name,
 employee number, role, status and a QR that opens the public verify page for the token the server issued. Each job
 page shows the card for that visit. Cards work offline until their token expires, then say so and hide the QR. The
 photo waits for the server to send one (T2-34); until then the card shows initials.
 
-In review (T2-19; D-64): **push and deep links.** A forwarded POS push syncs soon and nothing more (payloads carry no
+Done (T2-19; D-64): **push and deep links.** A forwarded POS push syncs soon and nothing more (payloads carry no
 data). Deep links `/pos`, `/pos/job/<id>` and `/pos/card` open their page once the agent is signed in, whether POS is
 already showing or opens with the link. The host's push token is kept registered with the POS API as it changes,
 and cleared at sign-out. Push delivery itself waits on FESS's channel (D-06).
