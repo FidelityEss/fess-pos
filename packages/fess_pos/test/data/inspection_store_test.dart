@@ -27,6 +27,7 @@ import 'package:fess_pos_engine/fess_pos_engine.dart'
         sha256HexBytes,
         submissionHash;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 
 import '../support/fake_platform.dart';
 import '../support/fake_pos_api.dart';
@@ -359,7 +360,32 @@ void main() {
       id = (await inspections.begin(job())).inspectionId!;
     });
 
-    test('a photo is stored with its hash and its evidence_meta', () async {
+    test('a photo is made canonical: upright, fitted, stripped, then '
+        'hashed (T4-02)', () async {
+      final taken = img.Image(width: 2600, height: 1300);
+      img.fill(taken, color: img.ColorRgb8(200, 30, 30));
+      taken.exif.imageIfd.orientation = 6;
+      final evidenceId = await inspections.recordPhoto(
+        id,
+        fieldKey: 'external_photos',
+        category: 'external',
+        photo: photo(img.encodeJpg(taken)),
+      );
+      final row = await (db.select(
+        db.evidence,
+      )..where((e) => e.id.equals(evidenceId))).getSingle();
+      expect((row.width, row.height), (1024, 2048), reason: 'upright, 2048');
+      expect(row.mime, 'image/jpeg');
+      expect(row.sha256, sha256HexBytes(row.bytes!), reason: 'what is kept');
+      final stored = img.decodeJpg(row.bytes!)!;
+      expect(stored.exif.imageIfd.hasOrientation, isFalse);
+      final p = payloadOf((await envelopes('evidence_meta')).single);
+      expect((p['width'], p['height']), (1024, 2048));
+      expect(p['sha256'], row.sha256);
+      expect(p['meta'], isEmpty);
+    });
+
+    test('a capture that is no image is kept as taken, and marked', () async {
       final bytes = [1, 2, 3, 4];
       final evidenceId = await inspections.recordPhoto(
         id,
@@ -382,6 +408,7 @@ void main() {
       expect(p['session_token_id'], _tokenId);
       expect(p['location'], {'lat': -26.2042, 'lng': 28.0474});
       expect(p['is_mocked'], isFalse);
+      expect(p['meta'], {'canonical': false});
       expect(await inspections.evidenceBytes(evidenceId), bytes);
     });
 

@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:drift/drift.dart';
+import 'package:fess_pos/src/core/config/remote_config.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/time/device_time.dart';
+import 'package:fess_pos/src/data/local/photo_pipeline.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/outbox/action_recorder.dart';
 import 'package:fess_pos/src/data/outbox/envelope.dart';
@@ -300,18 +302,75 @@ class DriftInspections implements Inspections {
         'evidence comes only from the camera (docs/07 §6)',
       );
     }
+    // The location fix is awaited while the photo is processed.
+    final fix = _fix(const Duration(seconds: 5));
+    final canonical = await _canonical(inspectionId, photo);
     final id = await _recordEvidence(
       inspectionId,
       fieldKey: fieldKey,
       category: category,
       type: 'photo',
-      mime: photo.mimeType,
-      bytes: photo.bytes,
+      mime: canonical.mime,
+      bytes: canonical.bytes,
       capturedAt: photo.capturedAt,
+      width: canonical.width,
+      height: canonical.height,
+      meta: canonical.meta,
+      pendingFix: fix,
     );
     // Only now is the camera's temporary copy a spare (docs/12 §3).
     await photo.releaseSource();
     return id;
+  }
+
+  /// The canonical photo (docs/07 §4 step 2, T4-02) with the limits in
+  /// force for the job's bank. A capture that can't be read as an image is
+  /// kept as the camera took it and marked, so nothing captured is lost.
+  Future<
+    ({
+      Uint8List bytes,
+      String mime,
+      int? width,
+      int? height,
+      Map<String, Object?> meta,
+    })
+  >
+  _canonical(String inspectionId, CameraCaptureResult photo) async {
+    final row = await _row(inspectionId);
+    final job = row == null
+        ? null
+        : await (_db.select(
+            _db.jobs,
+          )..where((j) => j.id.equals(row.jobId))).getSingleOrNull();
+    final config = RemoteConfig((await _config(job?.bankId)).values);
+    CanonicalPhoto? out;
+    try {
+      out = await canonicalPhotoInBackground(
+        PhotoRequest(
+          photo.bytes,
+          maxLongEdge: config.integer('photos.max_long_edge_px'),
+          quality: config.integer('photos.jpeg_quality'),
+        ),
+      );
+    } on Object catch (e) {
+      _log.info('photo kept as taken: not readable (${e.runtimeType})');
+    }
+    if (out == null) {
+      return (
+        bytes: photo.bytes,
+        mime: photo.mimeType,
+        width: null,
+        height: null,
+        meta: const {'canonical': false},
+      );
+    }
+    return (
+      bytes: out.bytes,
+      mime: 'image/jpeg',
+      width: out.width,
+      height: out.height,
+      meta: const <String, Object?>{},
+    );
   }
 
   @override
@@ -508,6 +567,7 @@ class DriftInspections implements Inspections {
     int? width,
     int? height,
     Map<String, Object?> meta = const {},
+    Future<LocationFix?>? pendingFix,
   }) async {
     final row = await _row(inspectionId);
     if (row == null || row.status != 'in_progress') {
@@ -515,7 +575,7 @@ class DriftInspections implements Inspections {
     }
     final origin = await _origin();
     if (origin == null) throw StateError('nobody is signed in');
-    final fix = await _fix(const Duration(seconds: 5));
+    final fix = await (pendingFix ?? _fix(const Duration(seconds: 5)));
     final id = _newId();
     final now = _clock();
     final sha = sha256HexBytes(bytes);

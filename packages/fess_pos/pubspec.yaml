@@ -36,6 +36,7 @@ dependencies:
   geolocator: ^14.0.1
   # The POS API over plain HTTPS (docs/03 §7). FESS overrides http to 1.4.0.
   http: ^1.4.0
+  image: ^4.2.0
   latlong2: ^0.9.1
   meta: ^1.15.0
   package_info_plus: ^8.0.2
