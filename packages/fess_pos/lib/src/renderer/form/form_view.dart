@@ -1172,12 +1172,29 @@ class _DeclarationInput extends StatelessWidget {
         value is Map<String, Object?> &&
         value['accepted'] == true &&
         value['declaration_version_id'] == declaration.id;
+    // An earlier version was accepted: this one has to be, again.
+    final outdated =
+        value is Map<String, Object?> &&
+        value['accepted'] == true &&
+        value['declaration_version_id'] != declaration.id;
     final theme = Theme.of(context);
+    final title = declaration.title;
     return _Frame(
       b,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (outdated)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: KeyedSubtree(
+                key: ValueKey('declaration-newer-${b.key}'),
+                child: _Notice(
+                  text: b.copy('inspection.declaration_newer'),
+                  tone: _Tone.warning,
+                ),
+              ),
+            ),
           DecoratedBox(
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest,
@@ -1185,7 +1202,27 @@ class _DeclarationInput extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.all(12),
-              child: Text(declaration.text),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (title != null && title.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(title, style: theme.textTheme.titleSmall),
+                    ),
+                  Text(declaration.text),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      renderTemplate(b.copy('inspection.declaration_version'), {
+                        'version': declaration.version,
+                      }),
+                      key: ValueKey('declaration-version-${b.key}'),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           CheckboxListTile(

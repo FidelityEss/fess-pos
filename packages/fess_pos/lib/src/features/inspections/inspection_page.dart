@@ -363,16 +363,45 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
   bool get _hasDeclarationStep =>
       _runner?.steps.any((s) => s['type'] == 'declaration') ?? false;
 
-  /// The declaration fields [step] asks for.
+  /// The declaration fields [step] asks for. When its `declaration_key`
+  /// names none of them, all of them: the analyser makes a form carry
+  /// exactly one declaration field but doesn't match it to the step, and a
+  /// declaration step must never be an empty page.
   Set<String> _declarationKeys(Map<String, Object?> step) {
     final key = _string(step['declaration_key']);
-    return {
+    final all = [
       for (final fields in _sections.values)
         for (final f in fields)
-          if (f.type == 'declaration' &&
-              (key == null || (_string(f.props['declaration_key']) == key)))
-            f.key,
+          if (f.type == 'declaration') f,
+    ];
+    final named = {
+      for (final f in all)
+        if (key == null || _string(f.props['declaration_key']) == key) f.key,
     };
+    return named.isNotEmpty ? named : {for (final f in all) f.key};
+  }
+
+  /// Whether any of the declaration fields [keys] holds an acceptance of a
+  /// version other than the one on the phone now: a newer version has to
+  /// be accepted again (docs/07 §4, D-77).
+  bool _declarationOutdated(Iterable<String> keys) {
+    final form = _form!;
+    final wanted = keys.toSet();
+    for (final fields in _sections.values) {
+      for (final f in fields) {
+        if (f.type != 'declaration' || !wanted.contains(f.key)) continue;
+        final value = form.value(f.key);
+        if (value is! Map<String, Object?> || value['accepted'] != true) {
+          continue;
+        }
+        final key = _string(f.props['declaration_key']) ?? f.key;
+        final current = _data(ref.read(declarationProvider(key)));
+        if (current != null && value['declaration_version_id'] != current.id) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /// The fields page [at] shows.
@@ -421,6 +450,10 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
     _form!.touchAll(keys);
     if (_stepHasProblems(keys)) {
       setState(() => _message = copy('inspection.fix_answers'));
+      return;
+    }
+    if (_declarationOutdated(keys)) {
+      setState(() => _message = copy('inspection.declaration_changed'));
       return;
     }
     if (step['type'] == 'job_briefing' &&
@@ -534,6 +567,23 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
       setState(() {
         if (at != null) _path = [..._path, at];
         _message = copy('inspection.fix_answers');
+      });
+      return;
+    }
+    // An acceptance of an earlier declaration version is never sent.
+    final declarationKeys = [
+      for (final fields in _sections.values)
+        for (final f in fields)
+          if (f.type == 'declaration') f.key,
+    ];
+    if (_declarationOutdated(declarationKeys)) {
+      final at = _runner!
+          .shown(_flowData)
+          .where((p) => _keysAt(p).any(declarationKeys.contains))
+          .firstOrNull;
+      setState(() {
+        if (at != null) _path = [..._path, at];
+        _message = copy('inspection.declaration_changed');
       });
       return;
     }

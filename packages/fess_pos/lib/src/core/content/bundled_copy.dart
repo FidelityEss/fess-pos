@@ -142,6 +142,12 @@ abstract final class BundledCopy {
     'signature.sign_again_confirm':
         'Sign again? The earlier signature stays on record.',
     'inspection.declaration_accept': 'I accept this declaration',
+    'inspection.declaration_version': 'Version {{version}}',
+    'inspection.declaration_newer':
+        'This declaration has changed since you accepted it. Read it and '
+        'accept it again.',
+    'inspection.declaration_changed':
+        'The declaration has changed. Read the new version and accept it.',
     'inspection.declaration_missing':
         "This declaration hasn't reached your phone yet. Connect to the "
         'internet and try again.',

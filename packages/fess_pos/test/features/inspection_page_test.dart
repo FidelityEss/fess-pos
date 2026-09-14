@@ -259,11 +259,19 @@ JobRecord _job(String status) => JobRecord(
 
 void _noop() {}
 
+const Declaration _declaration = Declaration(
+  id: _declarationId,
+  key: 'agent_declaration',
+  version: 1,
+  text: 'I visited these premises myself.',
+);
+
 List<Override> _overrides(
   _FakeInspections inspections,
   JobRecord job, {
   Map<String, Object?> form = _form,
   Map<String, Object?> flow = _flow,
+  Declaration declaration = _declaration,
 }) => [
   inspectionsProvider.overrideWith((ref) async => inspections),
   jobProvider.overrideWith((ref, id) => Stream.value(job)),
@@ -278,16 +286,7 @@ List<Override> _overrides(
   ),
   // In place: a background isolate's answer never arrives in a widget test.
   formCompilerProvider.overrideWithValue((form) async => compileForm(form)),
-  declarationProvider.overrideWith(
-    (ref, key) => Stream.value(
-      const Declaration(
-        id: _declarationId,
-        key: 'agent_declaration',
-        version: 1,
-        text: 'I visited these premises myself.',
-      ),
-    ),
-  ),
+  declarationProvider.overrideWith((ref, key) => Stream.value(declaration)),
   platformServicesProvider.overrideWithValue(_platform()),
 ];
 
@@ -495,6 +494,64 @@ void main() {
       findsOneWidget,
       reason: 'the answer given before the app closed',
     );
+  });
+
+  testWidgets('an acceptance of an earlier declaration version holds the '
+      'step until the new one is accepted (T4-06)', (tester) async {
+    final record = _record();
+    final inspections = _FakeInspections(
+      InspectionRecord(
+        id: record.id,
+        jobId: record.jobId,
+        attempt: 1,
+        status: 'in_progress',
+        formVersionId: 'form-v',
+        flowVersionId: 'flow-v',
+        contextSnapshot: record.contextSnapshot,
+        values: const {
+          'merchant_confirm': 'Joe Spaza',
+          'agent_declaration': {
+            'accepted': true,
+            'declaration_version_id': '0192d4e0-7c1a-7b2e-9f00-0000000000d0',
+            'accepted_at': '2026-09-13T10:00:00+02:00',
+          },
+        },
+        otherText: const {},
+        // Among the pages shown: details, photos, the declaration, submit.
+        currentStep: 2,
+        startedAtDevice: record.startedAtDevice,
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: _overrides(inspections, _job('in_progress')),
+        child: MaterialApp(
+          home: InspectionPage(
+            job: _job('in_progress'),
+            inspectionId: 'insp-1',
+          ),
+        ),
+      ),
+    );
+    await _settle(tester);
+    expect(find.text('Step 3 of 4'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('declaration-newer-agent_declaration')),
+      findsOneWidget,
+    );
+    expect(find.text('Version 1'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('inspection-next')));
+    await _settle(tester);
+    expect(find.text(_copy('inspection.declaration_changed')), findsOneWidget);
+    expect(find.text('Step 3 of 4'), findsOneWidget, reason: 'held');
+
+    await tester.tap(
+      find.byKey(const ValueKey('declaration-accept-agent_declaration')),
+    );
+    await tester.tap(find.byKey(const ValueKey('inspection-next')));
+    await _settle(tester);
+    expect(find.text('Step 4 of 4'), findsOneWidget);
   });
 
   testWidgets('leaving the app writes the draft at once, and a failed write '
