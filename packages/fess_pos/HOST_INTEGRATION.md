@@ -31,7 +31,8 @@ generated files, so FlutterFlow regeneration can't lose it.
 |------|------|
 | Startup, after `WidgetsFlutterBinding.ensureInitialized()` | `await PosModule.initialize(PosHostConfig(bootstrap: …, onUserActivity: …, onEvent: …))` |
 | Once in `main()` | `PosModule.registerBackgroundWork()` (a no-op until T5-01) |
-| Login, and whenever the host token is refreshed | `PosModule.signIn(PosIdentity(profile: …, getIdentityToken: …))` (works once the API client lands, T1-21; until then `AUTH_UNAVAILABLE`) |
+| Only if the host already runs its own background dispatcher (D-36) | `PosModule.runBackgroundSync()` from it: one sync pass (send what is queued, pull if signed in) |
+| Login, at startup once the user is known, and whenever the host token is refreshed | `PosModule.signIn(PosIdentity(profile: …, getIdentityToken: …))` |
 | Every logout path, including forced and 401 sign-outs | `PosModule.signOut()` |
 | Showing the POS tile | only when `(await PosModule.access()).visible` |
 | Opening POS | push a route with `PosModule.entryPoint()` |
@@ -40,6 +41,10 @@ generated files, so FlutterFlow regeneration can't lose it.
 
 - **Bootstrap:** the API URL, the **publishable** key and the environment come from the build flavour
   (`--dart-define`). `initialize` refuses a non-HTTPS URL and anything that looks like a secret or service-role key.
+- **Signing in has no screen.** `signIn` hands the module the identity the host already holds; the module swaps the
+  host's token for its own session with the POS API and never needs the host again. Offline, a user who signed in on
+  the phone before gets straight in. If `access()` says `notSignedIn` while your user is signed in (the server ended
+  the session, e.g. a revoked device), call `signIn` again, e.g. when the app resumes.
 - **Idle timer (optional):** `onUserActivity` fires, at most every 5 s, while the agent uses the module, so the host can
   reset its own PIN or idle lock. If the host locks anyway, nothing is lost.
 - Don't wrap the entry point in a `ProviderScope`: the module brings its own.
@@ -72,4 +77,4 @@ generated files, so FlutterFlow regeneration can't lose it.
 |------|-------|
 | Local database (SQLCipher) | Android: `<app data>/no_backup/fess_pos/fess_pos.db`; elsewhere `<app support dir>/fess_pos/fess_pos.db`; plus `-wal` and `-shm` |
 | Stores moved aside | `…/fess_pos/quarantine/` |
-| Database key, bootstrap cache, later the session | Secure storage, keys prefixed `fess_pos.` |
+| Database key, bootstrap cache, device id, POS sessions | Secure storage, keys prefixed `fess_pos.` |

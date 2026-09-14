@@ -45,10 +45,12 @@ abstract final class PosModule {
   static Widget entryPoint() => const PosEntryPoint();
 
   /// Push messages tagged `source: fess_pos`. Returns whether the message
-  /// was the module's. Push is only a hint to sync (acted on from T2-19).
+  /// was the module's. Push is only a hint to sync soon; opening a job from
+  /// it arrives with T2-19.
   static Future<bool> handlePushPayload(Map<String, dynamic> message) async {
     if (message['source'] != 'fess_pos') return false;
     _log.debug('push hint received');
+    ModuleRuntime.current?.nudgeSync();
     return true;
   }
 
@@ -75,9 +77,12 @@ abstract final class PosModule {
     await scheduler.register();
   }
 
-  /// Runs one background sync, for a host that owns its own background
-  /// dispatcher (D-36). Not wired yet (T5-01).
-  static Future<void> runBackgroundSync() async {}
+  /// Runs one sync, for a host that owns its own background dispatcher
+  /// (D-36): sends what is queued and pulls if the user is signed in. The
+  /// module's own background scheduling is T5-01.
+  static Future<void> runBackgroundSync() async {
+    await ModuleRuntime.current?.runSync(keepRunning: false);
+  }
 
   /// What this build of the module is and supports.
   static PosModuleInfo get info => PosModuleInfo(

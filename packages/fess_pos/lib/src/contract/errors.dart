@@ -118,6 +118,30 @@ abstract final class PosErrorCodes {
   static const String notSupported = 'NOT_SUPPORTED';
   static const String authUnavailable = 'AUTH_UNAVAILABLE';
   static const String apiErrorMalformed = 'API_ERROR_MALFORMED';
+
+  /// Nothing reached the POS API: no network, or the connection failed.
+  static const String networkUnavailable = 'NETWORK_UNAVAILABLE';
+
+  /// The POS API didn't answer in time.
+  static const String requestTimeout = 'REQUEST_TIMEOUT';
+
+  /// A 2xx answer that isn't a JSON object, e.g. a captive portal's page.
+  static const String responseMalformed = 'RESPONSE_MALFORMED';
+
+  /// The POS API kept failing, so calls pause for a while (docs/08 §3).
+  static const String circuitOpen = 'CIRCUIT_OPEN';
+
+  /// No POS session on this device for that user.
+  static const String notSignedIn = 'NOT_SIGNED_IN';
+
+  /// The POS session can't be used again; the host must sign in again.
+  static const String sessionEnded = 'SESSION_ENDED';
+
+  /// The host's `getIdentityToken` callback failed.
+  static const String hostTokenUnavailable = 'HOST_TOKEN_UNAVAILABLE';
+
+  /// The module's secure storage couldn't be read or written right now.
+  static const String secureStoreUnavailable = 'SECURE_STORE_UNAVAILABLE';
   static const String localStoreNotEncrypted = 'LOCAL_STORE_NOT_ENCRYPTED';
   static const String localStoreKeyMissing = 'LOCAL_STORE_KEY_MISSING';
   static const String localStoreKeyUnreadable = 'LOCAL_STORE_KEY_UNREADABLE';

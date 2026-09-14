@@ -13,9 +13,19 @@ import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/observability/pos_observability.dart';
 import 'package:fess_pos/src/data/local/local_store.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
+import 'package:fess_pos/src/data/outbox/outbox_sender.dart';
+import 'package:fess_pos/src/data/outbox/outbox_store.dart';
+import 'package:fess_pos/src/data/remote/api_session_gateway.dart';
+import 'package:fess_pos/src/data/remote/api_transport.dart';
+import 'package:fess_pos/src/data/remote/pos_api_client.dart';
+import 'package:fess_pos/src/data/remote/session_vault.dart';
+import 'package:fess_pos/src/data/sync/pull_engine.dart';
+import 'package:fess_pos/src/data/sync/sync_engine.dart';
 import 'package:fess_pos/src/domain/session/session_gateway.dart';
+import 'package:fess_pos/src/platform/connectivity.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:fess_pos/src/platform/secure_store.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meta/meta.dart';
 import 'package:sentry/sentry.dart' show Transport;
@@ -29,25 +39,38 @@ class ModuleDependencies {
     required this.platform,
     required this.bootstrapCache,
     required this.sessionGateway,
+    this.apiClient,
     this.localStoreOpener = openLocalStore,
     this.sentryTransport,
     this.clock = DateTime.now,
   });
 
-  /// What `PosModule.initialize` uses in an app.
-  factory ModuleDependencies.production() {
+  /// What `PosModule.initialize` uses in an app. Creating it sends nothing
+  /// and touches no platform channel.
+  factory ModuleDependencies.production(PosHostConfig config) {
     final platform = PlatformServices.forCurrentPlatform();
+    final client = PosApiClient(
+      transport: ApiTransport(bootstrap: config.bootstrap),
+      vault: SessionVault(platform.secureStore),
+    );
     return ModuleDependencies(
       platform: platform,
       bootstrapCache: SecureStoreBootstrapCache(platform.secureStore),
-      // Replaced by the POS API client (T1-21).
-      sessionGateway: const UnavailableSessionGateway(),
+      apiClient: client,
+      sessionGateway: ApiSessionGateway(
+        client: client,
+        deviceInfo: platform.deviceInfo,
+        push: config.push,
+      ),
     );
   }
 
   final PlatformServices platform;
   final BootstrapCache bootstrapCache;
   final SessionGateway sessionGateway;
+
+  /// The POS API client; null in tests that don't need one.
+  final PosApiClient? apiClient;
 
   /// Opens the local database. Tests pass an in-memory one.
   final Future<PosDatabase> Function(PlatformServices platform)
@@ -62,7 +85,7 @@ class ModuleDependencies {
 final class ModuleRuntime {
   ModuleRuntime._(
     this.config,
-    this.bootstrap,
+    this._bootstrap,
     this.observability,
     this.dependencies,
   ) {
@@ -107,7 +130,7 @@ final class ModuleRuntime {
     }
     return _starting ??= _start(
       config,
-      dependencies ?? ModuleDependencies.production(),
+      dependencies ?? ModuleDependencies.production(config),
     ).whenComplete(() => _starting = null);
   }
 
@@ -154,15 +177,83 @@ final class ModuleRuntime {
   }
 
   final PosHostConfig config;
-  final BootstrapSnapshot bootstrap;
   final PosObservability observability;
   final ModuleDependencies dependencies;
   late final ProviderContainer container;
 
-  PosSessionInfo? _session;
+  BootstrapSnapshot _bootstrap;
   bool _uiAccess = false;
   DateTime? _lastActivityReport;
   Future<PosDatabase>? _localStore;
+  SyncEngine? _sync;
+  StreamSubscription<NetworkState>? _network;
+
+  /// The cached kill switches and other bootstrap keys, read at start and
+  /// refreshed by every pull that brings a config (docs/13 §6).
+  BootstrapSnapshot get bootstrap => _bootstrap;
+
+  /// The sync engine, built once the local store opens; null in builds
+  /// without the POS API client.
+  Future<SyncEngine?> syncEngine() async {
+    final built = _sync;
+    if (built != null) return built;
+    final client = dependencies.apiClient;
+    if (client == null) return null;
+    final db = await localStore();
+    return _sync ??= _newSyncEngine(client, db);
+  }
+
+  /// Syncs now and, with [keepRunning], keeps syncing on the engine's
+  /// timer and when the network comes back. Never throws: a failure waits
+  /// for the next trigger.
+  Future<SyncRunReport?> runSync({bool keepRunning = true}) async {
+    try {
+      final engine = await syncEngine();
+      if (engine == null) return null;
+      if (keepRunning && !engine.started) {
+        engine.start();
+        _network ??= dependencies.platform.connectivity.changes.listen((s) {
+          if (s.connected) engine.nudge();
+        });
+      }
+      return await engine.syncNow();
+    } on Object catch (e, st) {
+      _log.warning('sync could not run', error: e, stackTrace: st);
+      return null;
+    }
+  }
+
+  /// Something to sync (an action, a push hint): soon, if syncing runs.
+  void nudgeSync() => _sync?.nudge();
+
+  SyncEngine _newSyncEngine(PosApiClient client, PosDatabase db) {
+    final outbox = OutboxStore(db, clock: dependencies.clock);
+    const clientType = kIsWeb ? 'web' : 'native';
+    return SyncEngine(
+      sender: OutboxSender(store: outbox, client: client),
+      puller: PullEngine(
+        db: db,
+        client: client,
+        outbox: outbox,
+        bootstrapCache: dependencies.bootstrapCache,
+        capabilities: capabilityReport(clientType, null),
+        clock: dependencies.clock,
+      ),
+      outbox: outbox,
+      deviceOrigin: () async => EnvelopeOrigin(
+        deviceId: await client.vault.deviceId(),
+        clientType: clientType,
+      ),
+      canPull: () => signedIn,
+      reverify: (config) =>
+          dependencies.sessionGateway.reverifyIfDue(config.reverifyEvery),
+      onPulled: (report) {
+        final snapshot = report.bootstrap;
+        if (snapshot != null) _bootstrap = snapshot;
+      },
+      clock: dependencies.clock,
+    );
+  }
 
   /// The local store, opened on first use.
   ///
@@ -190,13 +281,22 @@ final class ModuleRuntime {
   /// The minimum gap between two `onUserActivity` calls to the host.
   static const Duration activityThrottle = Duration(seconds: 5);
 
-  bool get signedIn => _session != null && _uiAccess;
+  /// Signed in during this process, with a session that may still show the
+  /// UI. The gateway's view changes when the server ends or narrows the
+  /// session, e.g. a revoked device or a deactivated agent.
+  bool get signedIn {
+    final session = dependencies.sessionGateway.current;
+    return _uiAccess &&
+        session != null &&
+        session.uiAccess &&
+        session.scope == PosSessionScope.full;
+  }
 
   Future<PosAccess> signIn(PosIdentity identity) async {
     final session = await dependencies.sessionGateway.exchange(identity);
-    _session = session;
-    _uiAccess = session.scope == PosSessionScope.full;
-    emit(PosEvent(PosEvent.signedIn));
+    _uiAccess = session.scope == PosSessionScope.full && session.uiAccess;
+    emit(PosEvent(PosEvent.signedIn, properties: {'offline': session.offline}));
+    unawaited(runSync());
     return access();
   }
 
@@ -255,7 +355,11 @@ final class ModuleRuntime {
   }
 
   Future<void> _dispose() async {
+    _sync?.stop();
+    await _network?.cancel();
+    _network = null;
     container.dispose();
+    dependencies.apiClient?.close();
     final store = _localStore;
     _localStore = null;
     if (store != null) {

@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:fess_pos/src/contract/errors.dart';
 import 'package:fess_pos/src/core/time/device_time.dart';
 import 'package:fess_pos/src/core/version.dart';
+import 'package:fess_pos/src/data/local/pos_database.steps.dart';
 import 'package:fess_pos/src/data/local/tables.dart';
 
 part 'pos_database.g.dart';
@@ -15,15 +16,14 @@ part 'pos_database.g.dart';
 /// Changing the schema: bump [currentSchemaVersion], add the step to
 /// [migration], run `dart run drift_dev make-migrations` (it writes the
 /// schema dump in `drift_schemas/` and a migration test), and never change a
-/// version that has shipped. Until the module's first release, version 1 may
-/// still change. Tables arrive with their tasks: the outbox and receipts
-/// (T1-22), definitions and remote config (T1-23), drafts (T3-06), evidence
-/// (T4-03).
-@DriftDatabase(tables: [ModuleMeta, SyncState])
+/// version that has shipped. Tables arrive with their tasks: the outbox and
+/// cached server documents (schema 2, T1-22/T1-23), jobs (T2-14),
+/// definitions (T3-07), drafts (T3-06), evidence (T4-03).
+@DriftDatabase(tables: [ModuleMeta, SyncState, Outbox, CachedDocuments])
 class PosDatabase extends _$PosDatabase {
   PosDatabase(super.e);
 
-  static const int currentSchemaVersion = 1;
+  static const int currentSchemaVersion = 2;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -50,18 +50,24 @@ class PosDatabase extends _$PosDatabase {
     },
     onUpgrade: (m, from, to) async {
       _refuseDowngrade(from, to);
-      // Schema 1 is the first; later versions add their steps here.
-      throw PosException(
-        PosErrorCodes.localStoreUnavailable,
-        'no migration from local schema $from to $to',
-        kind: PosErrorKind.localStore,
-        retryable: false,
-      );
+      // Steps from `dart run drift_dev make-migrations`; each is checked
+      // against the schema dumps by test/drift/.
+      await stepByStep(
+        from1To2: (m, schema) async {
+          await m.createTable(schema.outbox);
+          await m.createTable(schema.cachedDocuments);
+        },
+      )(m, from, to);
     },
     beforeOpen: (details) async {
       final before = details.versionBefore;
       if (before != null) _refuseDowngrade(before, details.versionNow);
       await customStatement('PRAGMA foreign_keys = ON');
+      // An item the app was sending when it stopped goes back to queued and
+      // is sent again, same id and bytes; landing is idempotent (docs/12 §3).
+      await (update(outbox)..where((o) => o.state.equals('in_flight'))).write(
+        const OutboxCompanion(state: Value('queued')),
+      );
     },
   );
 
@@ -85,6 +91,9 @@ abstract final class MetaKeys {
 
   /// JSON list of `{name, at}`: stores moved into `quarantine/` (D-52).
   static const String quarantinedStores = 'quarantined_stores';
+
+  /// How many of [quarantinedStores] have gone out in a `client_error`.
+  static const String quarantinedStoresReported = 'quarantined_stores_reported';
 }
 
 extension QuarantineLog on PosDatabase {

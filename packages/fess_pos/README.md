@@ -37,6 +37,7 @@ What a host must declare (permissions, plist keys, ProGuard rules, minimum SDKs)
 | `lib/src/core/` | Runtime and DI (Riverpod, in a module-owned container), logging, observability, theme, bundled copy |
 | `lib/src/domain/` | Entities and interfaces (the session gateway so far) |
 | `lib/src/data/local/` | The local store: drift schema and migrations (`pos_database.dart`), opening and its failure handling |
+| `lib/src/data/remote/` | The POS API client: transport, failure classes and backoff, circuit breakers, sessions in secure storage, signing in. Nothing else talks HTTP |
 | `lib/src/platform/` | Every plugin, behind interfaces: secure storage, connectivity, location, camera, device info, module files, integrity and background work (stand-ins until T4-09 / T5-01), and opening the encrypted database. `dart:io` lives only here |
 | `lib/src/features/` | Screens: the shell and its placeholder home for now |
 | `lib/src/renderer/`, `evidence/`, `location/` | Arrive with their tasks |
@@ -54,6 +55,15 @@ dart run tool/generate_tokens.dart                     # after changing schema/d
 dart run build_runner build --delete-conflicting-outputs   # after changing the drift schema
 dart run drift_dev make-migrations                     # after bumping the schema version
 cd example && flutter test integration_test -d <device>    # on a device or emulator: SQLCipher, store recovery, camera
+```
+
+Against QA (never production), with a QA host token from `tools/scenarios/module-harness.ts` (`docs/15` §8 in the
+planning pack):
+
+```bash
+POS_LIVE_CONFIG=$HOME/.fess-pos/module-harness-qa.json flutter test test/live/qa_live_test.dart   # the API client, end to end
+cd example && flutter run --dart-define-from-file=$HOME/.fess-pos/module-harness-qa.json         # the harness, signed in
+cd example && flutter test integration_test -d <device> --dart-define-from-file=$HOME/.fess-pos/module-harness-qa.json
 cd example && flutter build apk --release --target lib/self_check.dart   # release (R8) build checks:
 # install it, start it, then read `adb logcat -d -s flutter | grep POS_SELF_CHECK` (see lib/self_check.dart)
 ```
@@ -78,4 +88,16 @@ Also built (T1-42, T2-33): the module needs nothing from the host beyond wiring 
 - **Local store:** it lives outside Android backups, and a store that can never be opened again is moved aside intact while a new one starts (D-52).
 - **iOS:** the package is also an iOS pod with link settings only (`ios/fess_pos.podspec`). It forces SQLCipher to link even when the host links the system SQLite, as FESS does (T1-41).
 
-Signing in waits for the POS API client (T1-21): until then `signIn` fails with `AUTH_UNAVAILABLE`.
+Also built (T1-21, 2026-09-14): the POS API client and signing in (D-56). There is no sign-in screen: `signIn` swaps
+the host's token for the module's own session, works offline for a user who signed in on the phone before, and keeps
+each user's session so their captured work uploads under it. The harness app signs in to QA with the stand-in issuer.
+
+Also built (T1-22, T1-23, T1-29, 2026-09-14; D-57, D-58):
+- **Outbox** (`lib/src/data/outbox/`, local schema 2): every agent action is written with its envelope in one
+  transaction, guarded against double taps; sent in lane order, kept until a receipt says the server holds it,
+  retried forever with backoff, parked and reported if the server can never take it.
+- **Pull and sync** (`lib/src/data/sync/`): the resolved remote config (checked against the config schema, bundled
+  defaults behind it, kill switches refreshed), envelope outcomes, restore re-send; the sync engine runs after sign-in,
+  on the config's intervals, when the network returns and on a push hint.
+
+Next: jobs on the phone (T2-14).

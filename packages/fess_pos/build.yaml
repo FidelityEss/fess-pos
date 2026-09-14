@@ -1,5 +1,15 @@
 targets:
   $default:
+    # The example app is its own package, and its ios/.symlinks (CocoaPods)
+    # hold plugin sources the builders can't resolve.
+    sources:
+      include:
+        - $package$
+        - pubspec.yaml
+        - lib/**
+        - test/**
+        - tool/**
+        - drift_schemas/**
     builders:
       drift_dev:
         options:

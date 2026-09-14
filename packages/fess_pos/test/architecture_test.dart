@@ -115,6 +115,31 @@ void main() {
     }
   });
 
+  test('only data/remote/ talks HTTP, and screens never reach it', () {
+    for (final f in lib) {
+      final path = _rel(f);
+      final code = _code(f);
+      if (!path.startsWith('lib/src/data/remote/')) {
+        expect(
+          code.contains("'package:http/"),
+          isFalse,
+          reason:
+              '$path imports package:http: the POS API client lives in '
+              'lib/src/data/remote/ (docs/03 §4)',
+        );
+      }
+      if (path.startsWith('lib/src/features/')) {
+        expect(
+          code.contains('src/data/remote/'),
+          isFalse,
+          reason:
+              '$path: screens never touch the API client '
+              '(DEVELOPMENT-GUIDELINES §2)',
+        );
+      }
+    }
+  });
+
   test('bootstrap/ imports no feature, data or renderer code', () {
     for (final f in _dartFiles('lib/src/bootstrap')) {
       final code = _code(f);

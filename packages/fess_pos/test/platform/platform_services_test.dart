@@ -20,7 +20,10 @@ void main() {
 
   test('the real adapters are created without touching a platform channel', () {
     expect(PlatformServices.forCurrentPlatform, returnsNormally);
-    expect(ModuleDependencies.production, returnsNormally);
+    expect(
+      () => ModuleDependencies.production(testConfig()).apiClient!.close(),
+      returnsNormally,
+    );
   });
 
   test('the runtime exposes its platform services to widgets', () async {
