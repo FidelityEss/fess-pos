@@ -14,6 +14,7 @@ import 'package:fess_pos/src/core/observability/pos_observability.dart';
 import 'package:fess_pos/src/data/local/job_actions_store.dart';
 import 'package:fess_pos/src/data/local/local_store.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
+import 'package:fess_pos/src/data/local/tile_cache.dart';
 import 'package:fess_pos/src/data/outbox/action_recorder.dart';
 import 'package:fess_pos/src/data/outbox/outbox_sender.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart';
@@ -21,10 +22,12 @@ import 'package:fess_pos/src/data/remote/api_session_gateway.dart';
 import 'package:fess_pos/src/data/remote/api_transport.dart';
 import 'package:fess_pos/src/data/remote/pos_api_client.dart';
 import 'package:fess_pos/src/data/remote/session_vault.dart';
+import 'package:fess_pos/src/data/remote/tile_fetcher.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
 import 'package:fess_pos/src/data/sync/sections.dart';
 import 'package:fess_pos/src/data/sync/sync_engine.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
+import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/domain/session/session_gateway.dart';
 import 'package:fess_pos/src/platform/connectivity.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
@@ -192,6 +195,8 @@ final class ModuleRuntime {
   SyncEngine? _sync;
   OutboxStore? _outbox;
   JobActions? _jobActions;
+  CachedTileSource? _tiles;
+  Future<void>? _prefetching;
   StreamSubscription<NetworkState>? _network;
 
   static const String _clientType = kIsWeb ? 'web' : 'native';
@@ -259,6 +264,40 @@ final class ModuleRuntime {
     );
   }
 
+  /// Map tiles (T2-17): cached on the phone, fetched from the provider in
+  /// remote config.
+  Future<TileSource> mapTiles() => _tileCache();
+
+  Future<CachedTileSource> _tileCache() async {
+    final built = _tiles;
+    if (built != null) return built;
+    final db = await localStore();
+    return _tiles ??= CachedTileSource(
+      db: db,
+      fetcher: TileFetcher(),
+      moduleDirectory: dependencies.platform.storage.moduleDirectory,
+      config: () => readRemoteConfig(db),
+      clock: dependencies.clock,
+    );
+  }
+
+  /// Keeps the map around the agent's jobs for offline use, after a pull;
+  /// one run at a time. Never throws.
+  void _prefetchTiles() {
+    _prefetching ??= () async {
+      try {
+        final tiles = await _tileCache();
+        await tiles.prefetchAssigned(
+          await dependencies.platform.connectivity.current(),
+        );
+      } on Object catch (e, st) {
+        _log.warning('map tiles were not prefetched', error: e, stackTrace: st);
+      } finally {
+        _prefetching = null;
+      }
+    }();
+  }
+
   /// One outbox for the store: the sync engine and the action recorder
   /// share it.
   OutboxStore _outboxFor(PosDatabase db) =>
@@ -289,6 +328,7 @@ final class ModuleRuntime {
       onPulled: (report) {
         final snapshot = report.bootstrap;
         if (snapshot != null) _bootstrap = snapshot;
+        _prefetchTiles();
       },
       clock: dependencies.clock,
     );

@@ -9,10 +9,11 @@ const PosLogger _log = PosLogger('renderer');
 
 /// The view components this renderer draws (`11` §7.2), with their
 /// versions for the capability report. The rest arrive with their tasks:
-/// `map_preview` (T2-17), the cards (T2-18), `action_button` and `image`
-/// (T3-05), `evidence_status` (T4-13). An item this build can't draw is
-/// left out; the rest of the view still shows.
+/// the cards (T2-18), `action_button` and `image` (T3-05),
+/// `evidence_status` (T4-13). An item this build can't draw is left out;
+/// the rest of the view still shows.
 const Map<String, int> supportedViewComponents = {
+  'map_preview': 1,
   'title': 1,
   'field_value': 1,
   'address_block': 1,
@@ -120,6 +121,7 @@ class _ItemFactory {
       'job_list' => JobList(item: item, ctx: ctx),
       'sync_status' => _syncStatus(),
       'announcement' => _badge(item),
+      'map_preview' => ctx.mapPreview?.call(item, bound(item)),
       _ => _unsupported(type),
     };
   }

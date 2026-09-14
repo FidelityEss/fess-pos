@@ -1,7 +1,9 @@
 import 'package:fess_pos/src/core/content/bundled_views.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
+import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/features/jobs/job_action_pages.dart';
+import 'package:fess_pos/src/features/maps/job_map.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:fess_pos/src/renderer/render_context.dart';
 import 'package:fess_pos/src/renderer/template.dart';
@@ -130,6 +132,14 @@ class JobDetailPage extends ConsumerWidget {
               },
               copy: copy,
               today: todayIso(),
+              mapPreview: (item, location) {
+                final height = item['height'];
+                return JobMapPreview(
+                  location: GeoPoint.tryParse(location),
+                  height: height is num ? height.toDouble() : 180,
+                  label: displayValue(found.data['merchant_name']),
+                );
+              },
             ),
           ),
         ],

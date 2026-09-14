@@ -3858,6 +3858,381 @@ class ActiveDefinitionsCompanion extends UpdateCompanion<ActiveDefinitionRow> {
   }
 }
 
+class $TileCacheIndexTable extends TileCacheIndex
+    with TableInfo<$TileCacheIndexTable, TileRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TileCacheIndexTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bytesMeta = const VerificationMeta('bytes');
+  @override
+  late final GeneratedColumn<int> bytes = GeneratedColumn<int>(
+    'bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fetchedAtMsMeta = const VerificationMeta(
+    'fetchedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> fetchedAtMs = GeneratedColumn<int>(
+    'fetched_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastUsedMsMeta = const VerificationMeta(
+    'lastUsedMs',
+  );
+  @override
+  late final GeneratedColumn<int> lastUsedMs = GeneratedColumn<int>(
+    'last_used_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    key,
+    source,
+    bytes,
+    fetchedAtMs,
+    lastUsedMs,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tile_cache_index';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TileRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('bytes')) {
+      context.handle(
+        _bytesMeta,
+        bytes.isAcceptableOrUnknown(data['bytes']!, _bytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bytesMeta);
+    }
+    if (data.containsKey('fetched_at_ms')) {
+      context.handle(
+        _fetchedAtMsMeta,
+        fetchedAtMs.isAcceptableOrUnknown(
+          data['fetched_at_ms']!,
+          _fetchedAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fetchedAtMsMeta);
+    }
+    if (data.containsKey('last_used_ms')) {
+      context.handle(
+        _lastUsedMsMeta,
+        lastUsedMs.isAcceptableOrUnknown(
+          data['last_used_ms']!,
+          _lastUsedMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastUsedMsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  TileRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TileRow(
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      bytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}bytes'],
+      )!,
+      fetchedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fetched_at_ms'],
+      )!,
+      lastUsedMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_used_ms'],
+      )!,
+    );
+  }
+
+  @override
+  $TileCacheIndexTable createAlias(String alias) {
+    return $TileCacheIndexTable(attachedDatabase, alias);
+  }
+}
+
+class TileRow extends DataClass implements Insertable<TileRow> {
+  /// `z/x/y`.
+  final String key;
+
+  /// The provider it came from (a hash of `maps.tile_url`), so a new
+  /// provider's tiles replace the old ones.
+  final String source;
+  final int bytes;
+  final int fetchedAtMs;
+  final int lastUsedMs;
+  const TileRow({
+    required this.key,
+    required this.source,
+    required this.bytes,
+    required this.fetchedAtMs,
+    required this.lastUsedMs,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['source'] = Variable<String>(source);
+    map['bytes'] = Variable<int>(bytes);
+    map['fetched_at_ms'] = Variable<int>(fetchedAtMs);
+    map['last_used_ms'] = Variable<int>(lastUsedMs);
+    return map;
+  }
+
+  TileCacheIndexCompanion toCompanion(bool nullToAbsent) {
+    return TileCacheIndexCompanion(
+      key: Value(key),
+      source: Value(source),
+      bytes: Value(bytes),
+      fetchedAtMs: Value(fetchedAtMs),
+      lastUsedMs: Value(lastUsedMs),
+    );
+  }
+
+  factory TileRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TileRow(
+      key: serializer.fromJson<String>(json['key']),
+      source: serializer.fromJson<String>(json['source']),
+      bytes: serializer.fromJson<int>(json['bytes']),
+      fetchedAtMs: serializer.fromJson<int>(json['fetchedAtMs']),
+      lastUsedMs: serializer.fromJson<int>(json['lastUsedMs']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'source': serializer.toJson<String>(source),
+      'bytes': serializer.toJson<int>(bytes),
+      'fetchedAtMs': serializer.toJson<int>(fetchedAtMs),
+      'lastUsedMs': serializer.toJson<int>(lastUsedMs),
+    };
+  }
+
+  TileRow copyWith({
+    String? key,
+    String? source,
+    int? bytes,
+    int? fetchedAtMs,
+    int? lastUsedMs,
+  }) => TileRow(
+    key: key ?? this.key,
+    source: source ?? this.source,
+    bytes: bytes ?? this.bytes,
+    fetchedAtMs: fetchedAtMs ?? this.fetchedAtMs,
+    lastUsedMs: lastUsedMs ?? this.lastUsedMs,
+  );
+  TileRow copyWithCompanion(TileCacheIndexCompanion data) {
+    return TileRow(
+      key: data.key.present ? data.key.value : this.key,
+      source: data.source.present ? data.source.value : this.source,
+      bytes: data.bytes.present ? data.bytes.value : this.bytes,
+      fetchedAtMs: data.fetchedAtMs.present
+          ? data.fetchedAtMs.value
+          : this.fetchedAtMs,
+      lastUsedMs: data.lastUsedMs.present
+          ? data.lastUsedMs.value
+          : this.lastUsedMs,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TileRow(')
+          ..write('key: $key, ')
+          ..write('source: $source, ')
+          ..write('bytes: $bytes, ')
+          ..write('fetchedAtMs: $fetchedAtMs, ')
+          ..write('lastUsedMs: $lastUsedMs')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, source, bytes, fetchedAtMs, lastUsedMs);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TileRow &&
+          other.key == this.key &&
+          other.source == this.source &&
+          other.bytes == this.bytes &&
+          other.fetchedAtMs == this.fetchedAtMs &&
+          other.lastUsedMs == this.lastUsedMs);
+}
+
+class TileCacheIndexCompanion extends UpdateCompanion<TileRow> {
+  final Value<String> key;
+  final Value<String> source;
+  final Value<int> bytes;
+  final Value<int> fetchedAtMs;
+  final Value<int> lastUsedMs;
+  final Value<int> rowid;
+  const TileCacheIndexCompanion({
+    this.key = const Value.absent(),
+    this.source = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.fetchedAtMs = const Value.absent(),
+    this.lastUsedMs = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TileCacheIndexCompanion.insert({
+    required String key,
+    required String source,
+    required int bytes,
+    required int fetchedAtMs,
+    required int lastUsedMs,
+    this.rowid = const Value.absent(),
+  }) : key = Value(key),
+       source = Value(source),
+       bytes = Value(bytes),
+       fetchedAtMs = Value(fetchedAtMs),
+       lastUsedMs = Value(lastUsedMs);
+  static Insertable<TileRow> custom({
+    Expression<String>? key,
+    Expression<String>? source,
+    Expression<int>? bytes,
+    Expression<int>? fetchedAtMs,
+    Expression<int>? lastUsedMs,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (source != null) 'source': source,
+      if (bytes != null) 'bytes': bytes,
+      if (fetchedAtMs != null) 'fetched_at_ms': fetchedAtMs,
+      if (lastUsedMs != null) 'last_used_ms': lastUsedMs,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TileCacheIndexCompanion copyWith({
+    Value<String>? key,
+    Value<String>? source,
+    Value<int>? bytes,
+    Value<int>? fetchedAtMs,
+    Value<int>? lastUsedMs,
+    Value<int>? rowid,
+  }) {
+    return TileCacheIndexCompanion(
+      key: key ?? this.key,
+      source: source ?? this.source,
+      bytes: bytes ?? this.bytes,
+      fetchedAtMs: fetchedAtMs ?? this.fetchedAtMs,
+      lastUsedMs: lastUsedMs ?? this.lastUsedMs,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (bytes.present) {
+      map['bytes'] = Variable<int>(bytes.value);
+    }
+    if (fetchedAtMs.present) {
+      map['fetched_at_ms'] = Variable<int>(fetchedAtMs.value);
+    }
+    if (lastUsedMs.present) {
+      map['last_used_ms'] = Variable<int>(lastUsedMs.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TileCacheIndexCompanion(')
+          ..write('key: $key, ')
+          ..write('source: $source, ')
+          ..write('bytes: $bytes, ')
+          ..write('fetchedAtMs: $fetchedAtMs, ')
+          ..write('lastUsedMs: $lastUsedMs, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$PosDatabase extends GeneratedDatabase {
   _$PosDatabase(QueryExecutor e) : super(e);
   $PosDatabaseManager get managers => $PosDatabaseManager(this);
@@ -3873,6 +4248,7 @@ abstract class _$PosDatabase extends GeneratedDatabase {
       $DefinitionVersionsTable(this);
   late final $ActiveDefinitionsTable activeDefinitions =
       $ActiveDefinitionsTable(this);
+  late final $TileCacheIndexTable tileCacheIndex = $TileCacheIndexTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3886,6 +4262,7 @@ abstract class _$PosDatabase extends GeneratedDatabase {
     reviews,
     definitionVersions,
     activeDefinitions,
+    tileCacheIndex,
   ];
   @override
   DriftDatabaseOptions get options =>
@@ -5866,6 +6243,209 @@ typedef $$ActiveDefinitionsTableProcessedTableManager =
       ActiveDefinitionRow,
       PrefetchHooks Function()
     >;
+typedef $$TileCacheIndexTableCreateCompanionBuilder =
+    TileCacheIndexCompanion Function({
+      required String key,
+      required String source,
+      required int bytes,
+      required int fetchedAtMs,
+      required int lastUsedMs,
+      Value<int> rowid,
+    });
+typedef $$TileCacheIndexTableUpdateCompanionBuilder =
+    TileCacheIndexCompanion Function({
+      Value<String> key,
+      Value<String> source,
+      Value<int> bytes,
+      Value<int> fetchedAtMs,
+      Value<int> lastUsedMs,
+      Value<int> rowid,
+    });
+
+class $$TileCacheIndexTableFilterComposer
+    extends Composer<_$PosDatabase, $TileCacheIndexTable> {
+  $$TileCacheIndexTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fetchedAtMs => $composableBuilder(
+    column: $table.fetchedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastUsedMs => $composableBuilder(
+    column: $table.lastUsedMs,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TileCacheIndexTableOrderingComposer
+    extends Composer<_$PosDatabase, $TileCacheIndexTable> {
+  $$TileCacheIndexTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fetchedAtMs => $composableBuilder(
+    column: $table.fetchedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastUsedMs => $composableBuilder(
+    column: $table.lastUsedMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TileCacheIndexTableAnnotationComposer
+    extends Composer<_$PosDatabase, $TileCacheIndexTable> {
+  $$TileCacheIndexTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<int> get bytes =>
+      $composableBuilder(column: $table.bytes, builder: (column) => column);
+
+  GeneratedColumn<int> get fetchedAtMs => $composableBuilder(
+    column: $table.fetchedAtMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastUsedMs => $composableBuilder(
+    column: $table.lastUsedMs,
+    builder: (column) => column,
+  );
+}
+
+class $$TileCacheIndexTableTableManager
+    extends
+        RootTableManager<
+          _$PosDatabase,
+          $TileCacheIndexTable,
+          TileRow,
+          $$TileCacheIndexTableFilterComposer,
+          $$TileCacheIndexTableOrderingComposer,
+          $$TileCacheIndexTableAnnotationComposer,
+          $$TileCacheIndexTableCreateCompanionBuilder,
+          $$TileCacheIndexTableUpdateCompanionBuilder,
+          (
+            TileRow,
+            BaseReferences<_$PosDatabase, $TileCacheIndexTable, TileRow>,
+          ),
+          TileRow,
+          PrefetchHooks Function()
+        > {
+  $$TileCacheIndexTableTableManager(
+    _$PosDatabase db,
+    $TileCacheIndexTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TileCacheIndexTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TileCacheIndexTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TileCacheIndexTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> key = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<int> bytes = const Value.absent(),
+                Value<int> fetchedAtMs = const Value.absent(),
+                Value<int> lastUsedMs = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TileCacheIndexCompanion(
+                key: key,
+                source: source,
+                bytes: bytes,
+                fetchedAtMs: fetchedAtMs,
+                lastUsedMs: lastUsedMs,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String key,
+                required String source,
+                required int bytes,
+                required int fetchedAtMs,
+                required int lastUsedMs,
+                Value<int> rowid = const Value.absent(),
+              }) => TileCacheIndexCompanion.insert(
+                key: key,
+                source: source,
+                bytes: bytes,
+                fetchedAtMs: fetchedAtMs,
+                lastUsedMs: lastUsedMs,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TileCacheIndexTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PosDatabase,
+      $TileCacheIndexTable,
+      TileRow,
+      $$TileCacheIndexTableFilterComposer,
+      $$TileCacheIndexTableOrderingComposer,
+      $$TileCacheIndexTableAnnotationComposer,
+      $$TileCacheIndexTableCreateCompanionBuilder,
+      $$TileCacheIndexTableUpdateCompanionBuilder,
+      (TileRow, BaseReferences<_$PosDatabase, $TileCacheIndexTable, TileRow>),
+      TileRow,
+      PrefetchHooks Function()
+    >;
 
 class $PosDatabaseManager {
   final _$PosDatabase _db;
@@ -5885,4 +6465,6 @@ class $PosDatabaseManager {
       $$DefinitionVersionsTableTableManager(_db, _db.definitionVersions);
   $$ActiveDefinitionsTableTableManager get activeDefinitions =>
       $$ActiveDefinitionsTableTableManager(_db, _db.activeDefinitions);
+  $$TileCacheIndexTableTableManager get tileCacheIndex =>
+      $$TileCacheIndexTableTableManager(_db, _db.tileCacheIndex);
 }

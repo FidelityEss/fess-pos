@@ -1,5 +1,5 @@
 import 'package:fess_pos/src/core/content/bundled_copy.dart';
-import 'package:meta/meta.dart';
+import 'package:flutter/widgets.dart';
 
 /// Everything a view needs to render (docs/04 §3.4, `11` §7.2). The renderer
 /// has no database or API access: screens hand it the data.
@@ -12,6 +12,7 @@ class RenderContext {
     this.copy = BundledCopy.text,
     this.onNavigate,
     this.today,
+    this.mapPreview,
   });
 
   /// What items bind to and rules read: `job`, `agent`, `stats`, `sync`.
@@ -34,6 +35,12 @@ class RenderContext {
   /// Today's date (`YYYY-MM-DD`) for the `today` operator in view rules.
   final String? today;
 
+  /// Draws a `map_preview` item for its bound location; the screen supplies
+  /// it, since the map needs tiles and the phone's maps app. Without one,
+  /// the item is left out.
+  final Widget? Function(Map<String, Object?> item, Object? location)?
+  mapPreview;
+
   /// The same context with other data, e.g. one job of a list.
   RenderContext withData(Map<String, Object?> data) => RenderContext(
     data: data,
@@ -42,5 +49,6 @@ class RenderContext {
     copy: copy,
     onNavigate: onNavigate,
     today: today,
+    mapPreview: mapPreview,
   );
 }

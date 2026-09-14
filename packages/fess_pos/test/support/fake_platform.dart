@@ -5,6 +5,7 @@ import 'package:fess_pos/src/platform/background_work.dart';
 import 'package:fess_pos/src/platform/camera.dart';
 import 'package:fess_pos/src/platform/connectivity.dart';
 import 'package:fess_pos/src/platform/device_info.dart';
+import 'package:fess_pos/src/platform/external_apps.dart';
 import 'package:fess_pos/src/platform/integrity.dart';
 import 'package:fess_pos/src/platform/location.dart';
 import 'package:fess_pos/src/platform/module_storage.dart';
@@ -85,9 +86,22 @@ class FakeModuleStorage implements ModuleStorage {
   Future<String?> moduleDirectory() async => directory;
 }
 
+/// Records the directions asked for; [opens] says whether an app took them.
+class FakeExternalApps implements ExternalApps {
+  bool opens = true;
+  final List<({double lat, double lng, String? label})> directions = [];
+
+  @override
+  Future<bool> openDirections(double lat, double lng, {String? label}) async {
+    directions.add((lat: lat, lng: lng, label: label));
+    return opens;
+  }
+}
+
 PlatformServices fakePlatform({
   SecureStore? secureStore,
   ModuleStorage? storage,
+  ExternalApps? externalApps,
 }) => PlatformServices(
   secureStore: secureStore ?? MemorySecureStore(),
   connectivity: FakeConnectivity(),
@@ -97,4 +111,5 @@ PlatformServices fakePlatform({
   storage: storage ?? FakeModuleStorage(),
   integrity: const UnavailableIntegritySignals(),
   backgroundWork: const UnavailableBackgroundWork(),
+  externalApps: externalApps ?? FakeExternalApps(),
 );

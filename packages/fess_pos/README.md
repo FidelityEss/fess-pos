@@ -45,7 +45,7 @@ What a host must declare (permissions, plist keys, ProGuard rules, minimum SDKs)
 | `lib/src/data/sync/` | The pull engine, its sections (jobs and reviews, definitions) and the sync engine that runs send → pull → purge |
 | `lib/src/platform/` | Every plugin, behind interfaces: secure storage, connectivity, location, camera, device info, module files, integrity and background work (stand-ins until T4-09 / T5-01), and opening the encrypted database. `dart:io` lives only here |
 | `lib/src/renderer/` | The view renderer: draws a `view` definition's items, with `visible` rules on the Dart rules engine. `form/`: the form renderer (`FormView`) and its state (`FormController`), resolved and validated by the Dart form engine |
-| `lib/src/features/` | Screens: the shell (entry point, header) and jobs (home, job detail) |
+| `lib/src/features/` | Screens: the shell (entry point, header), jobs (home, job detail, actions, reason forms, outcomes) and maps (preview, full map, directions) |
 | `lib/src/evidence/`, `location/` | Arrive with their tasks |
 | `drift_schemas/`, `test/drift/` | One schema dump per database version, and the generated migration tests |
 | `tool/generate_tokens.dart`, `tool/generate_config_defaults.dart` | Regenerate the design tokens and the remote-config defaults |
@@ -129,9 +129,14 @@ status on the phone and its `job_event` in one transaction, once however often i
 until the server has it. The outcome page says whether the server has it, whether it's saved on the phone to send
 later, or why it wasn't done. Known gap: the unable reasons that need a photo wait for photo capture.
 
-Tested: 378 unit and widget tests; the live test against QA; 5 device tests against QA (SQLCipher, store recovery,
+In review (T2-17; D-62): **the map.** The job page shows the job's location on a small map that opens a full one,
+and **Directions** hands over to the phone's maps app. Tiles come from the provider in remote config
+(`maps.tile_url`); the tiles around each job the agent may visit are kept on the phone after every sync, so the map
+works on site without signal. Until a provider is configured the pin shows without a map, and directions still work.
+`flutter_map` stays at 8.1.x until FESS moves past `http` 1.4.0 and `path_provider` 2.1.4.
+
+Tested: 411 unit and widget tests; the live test against QA; 5 device tests against QA (SQLCipher, store recovery,
 camera, QA sign-in, the QA job list), last run on the Android emulator and the iPhone 17 simulator on 2026-09-14.
 
-Next: the map, the cards and
-push (T2-17 to T2-19). Known gap: a session refresh whose answer is lost ends the session until the next sign-in (R-44,
+Next: the cards and push (T2-18, T2-19). Known gap: a session refresh whose answer is lost ends the session until the next sign-in (R-44,
 backend fix T1-43).

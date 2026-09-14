@@ -30,6 +30,7 @@ abstract final class BundledViews {
       'bind': 'job.scheduled',
     },
     {'type': 'address_block', 'label': 'Address', 'bind': 'job.address'},
+    {'type': 'map_preview', 'bind': 'job.location', 'height': 180},
   ];
 
   /// The bundled items of a view by key, or null when none is bundled.

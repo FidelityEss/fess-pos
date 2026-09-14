@@ -199,6 +199,28 @@ class ActiveDefinitions extends Table {
   Set<Column<Object>> get primaryKey => {context, kind, key};
 }
 
+/// Map tiles on the phone (docs/08 §4): least recently used go first once
+/// they pass `storage.tile_cache_mb`. The image is a file under the
+/// module's folder, `tiles/<z>/<x>/<y>`; this is its index.
+@DataClassName('TileRow')
+class TileCacheIndex extends Table {
+  /// `z/x/y`.
+  TextColumn get key => text()();
+
+  /// The provider it came from (a hash of `maps.tile_url`), so a new
+  /// provider's tiles replace the old ones.
+  TextColumn get source => text()();
+
+  IntColumn get bytes => integer()();
+
+  IntColumn get fetchedAtMs => integer()();
+
+  IntColumn get lastUsedMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
 /// Sync machinery: pull cursors, `server_epoch`, the clock offset
 /// (docs/08 §1–2) and the last `device_seq`.
 @DataClassName('SyncStateRow')

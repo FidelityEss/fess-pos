@@ -13,6 +13,7 @@ import 'package:fess_pos/src/data/local/repositories.dart';
 import 'package:fess_pos/src/domain/forms/reason_codes.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
+import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -123,6 +124,21 @@ final activeDefinitionVersionProvider =
 final jobActionsProvider = FutureProvider<JobActions?>(
   (ref) => ref.watch(moduleRuntimeProvider).jobActions(),
   name: 'jobActions',
+);
+
+/// Map tiles (T2-17): the phone's cache, else the provider in remote
+/// config.
+final tileSourceProvider = FutureProvider<TileSource>(
+  (ref) => ref.watch(moduleRuntimeProvider).mapTiles(),
+  name: 'tileSource',
+);
+
+/// How the map is set up (`maps.*`), read again each time a map shows, so
+/// a provider configured by the last pull takes effect.
+// ignore: specify_nonobvious_property_types
+final mapSettingsProvider = FutureProvider.autoDispose<MapSettings>(
+  (ref) async => (await ref.watch(tileSourceProvider.future)).settings(),
+  name: 'mapSettings',
 );
 
 /// `me` from the last pull.

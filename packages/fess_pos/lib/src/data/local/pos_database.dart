@@ -18,7 +18,8 @@ part 'pos_database.g.dart';
 /// schema dump in `drift_schemas/` and a migration test), and never change a
 /// version that has shipped. Tables arrive with their tasks: the outbox and
 /// cached server documents (schema 2, T1-22/T1-23), jobs, reviews and
-/// definitions (schema 3, T2-14), drafts (T3-06), evidence (T4-03).
+/// definitions (schema 3, T2-14), the map tile index (schema 4, T2-17),
+/// drafts (T3-06), evidence (T4-03).
 @DriftDatabase(
   tables: [
     ModuleMeta,
@@ -29,12 +30,13 @@ part 'pos_database.g.dart';
     Reviews,
     DefinitionVersions,
     ActiveDefinitions,
+    TileCacheIndex,
   ],
 )
 class PosDatabase extends _$PosDatabase {
   PosDatabase(super.e);
 
-  static const int currentSchemaVersion = 3;
+  static const int currentSchemaVersion = 4;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -73,6 +75,9 @@ class PosDatabase extends _$PosDatabase {
           await m.createTable(schema.reviews);
           await m.createTable(schema.definitionVersions);
           await m.createTable(schema.activeDefinitions);
+        },
+        from3To4: (m, schema) async {
+          await m.createTable(schema.tileCacheIndex);
         },
       )(m, from, to);
     },
