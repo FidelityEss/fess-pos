@@ -126,6 +126,11 @@ abstract final class MetaKeys {
 
   /// How many of [quarantinedStores] have gone out in a `client_error`.
   static const String quarantinedStoresReported = 'quarantined_stores_reported';
+
+  /// Set while an inspection is paused because the agent left the fence
+  /// (T4-07); its value is when.
+  static String geofencePaused(String inspectionId) =>
+      'geofence_paused.$inspectionId';
 }
 
 extension QuarantineLog on PosDatabase {

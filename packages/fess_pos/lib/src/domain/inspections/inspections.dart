@@ -5,6 +5,7 @@ library;
 
 import 'dart:typed_data';
 
+import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:meta/meta.dart';
@@ -124,6 +125,7 @@ class InspectionRecord {
     this.flowPath = const [],
     this.submittedAtDevice,
     this.submissionEnvelopeId,
+    this.locationPassed = true,
   });
 
   final String id;
@@ -159,6 +161,10 @@ class InspectionRecord {
   final String startedAtDevice;
   final String? submittedAtDevice;
   final String? submissionEnvelopeId;
+
+  /// Whether the location check has passed (T4-07), or there was no fence
+  /// to check. The store always sets it; left out, as in tests, it has.
+  final bool locationPassed;
 
   bool get submitted => status == 'submitted';
 }
@@ -269,6 +275,28 @@ abstract interface class Inspections implements DeliveryTracker {
 
   /// The evidence of an inspection, live.
   Stream<List<EvidenceItem>> watchEvidence(String inspectionId);
+
+  /// What the inspection's location is judged by (T4-07): the fence frozen
+  /// at its start and the config in force; null when its job has no
+  /// location to fence.
+  Future<GeofencePlan?> geofencePlan(String inspectionId);
+
+  /// Records the location check's outcome in the inspection's
+  /// `geofence_result`, which the submission carries, and in what the rules
+  /// see (`inspection.geofence`).
+  Future<void> recordLocationCheck(
+    String inspectionId, {
+    required bool passed,
+    required FixVerdict? verdict,
+    required int sampledSeconds,
+  });
+
+  /// Records the agent leaving the fence (the inspection pauses) or coming
+  /// back (it resumes) as a `job_event`, and keeps the pause on the phone.
+  Future<void> recordGeofenceChange(
+    String inspectionId,
+    GeofenceChange change,
+  );
 
   /// Seals and records the submission (docs/07 §4 step 9, docs/12 §7): the
   /// [answers] as the form validated them, their hash, the manifest of the

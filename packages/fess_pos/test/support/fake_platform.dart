@@ -44,9 +44,11 @@ class FakeLocation implements LocationProvider {
         retryable: true,
       ));
 
+  /// The fixes a test sends.
+  final StreamController<LocationFix> updates = StreamController.broadcast();
+
   @override
-  Stream<LocationFix> fixes({required Duration interval}) =>
-      const Stream.empty();
+  Stream<LocationFix> fixes({required Duration interval}) => updates.stream;
 }
 
 class FakeCamera implements CameraService {

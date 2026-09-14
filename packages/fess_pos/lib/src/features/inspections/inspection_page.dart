@@ -3,14 +3,17 @@ import 'dart:typed_data';
 
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/domain/flows/flow_runner.dart';
+import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/features/inspections/capture_page.dart';
+import 'package:fess_pos/src/features/inspections/location_check_view.dart';
 import 'package:fess_pos/src/features/inspections/signature_pad_page.dart';
 import 'package:fess_pos/src/features/jobs/job_action_pages.dart';
 import 'package:fess_pos/src/features/jobs/job_pages.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
+import 'package:fess_pos/src/platform/location.dart';
 import 'package:fess_pos/src/renderer/form/form_controller.dart';
 import 'package:fess_pos/src/renderer/form/form_services.dart';
 import 'package:fess_pos/src/renderer/form/form_view.dart';
@@ -166,9 +169,19 @@ Map<String, List<_FieldDef>> _fieldsBySection(Map<String, Object?> form) {
 
 /// What the flow reads: the form as the rules make it now.
 class _FlowData implements FlowData {
-  _FlowData(this.form, {required this.declarationStep});
+  _FlowData(
+    this.form, {
+    required this.declarationStep,
+    required this.checked,
+  });
 
   final FormController form;
+
+  /// Whether the location check has passed, as the page knows it now.
+  final bool Function() checked;
+
+  @override
+  bool get locationChecked => checked();
 
   /// Declaration fields have a step of their own, so they don't count on
   /// form pages.
@@ -232,6 +245,13 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
   bool _busy = false;
   String? _message;
 
+  /// Whether the location check has passed (T4-07).
+  bool _locationPassed = true;
+
+  /// Whether the agent left the fence and hasn't come back (B3.5).
+  bool _paused = false;
+  StreamSubscription<LocationFix>? _fixes;
+
   FlowPosition get _at => _path.last;
 
   @override
@@ -244,6 +264,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _saveTimer?.cancel();
+    unawaited(_fixes?.cancel());
     // Reads the answers before the controller goes; the write finishes on
     // its own.
     if (_unsaved) unawaited(_save());
@@ -282,11 +303,14 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
       initialUnknown: record.unknownDates,
       initialFlaggedDiffers: record.flaggedDiffers,
     )..addListener(_scheduleSave);
+    _locationPassed = record.locationPassed;
     final data = _flowData = _FlowData(
       controller,
       declarationStep: runner.steps.any((s) => s['type'] == 'declaration'),
+      checked: () => _locationPassed,
     );
     _path = _resume(record, runner, data);
+    unawaited(_watchFence(inspections));
   }
 
   /// Where a reopened inspection continues: the pages it went through, or
@@ -404,6 +428,35 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
     return false;
   }
 
+  /// The location check passed: on to the page after it, without the check
+  /// on the way back.
+  void _locationDone() {
+    if (!mounted) return;
+    _locationPassed = true;
+    final to = _runner!.firstFrom(FlowPosition(_at.step + 1), _flowData);
+    _go(to == null ? _path : [to]);
+  }
+
+  /// Watches the fence while the inspection is open (docs/07 §7 item 8):
+  /// leaving it pauses the inspection and coming back resumes it. The
+  /// answers stay as they are either way.
+  Future<void> _watchFence(Inspections inspections) async {
+    final plan = await inspections.geofencePlan(widget.inspectionId);
+    if (plan == null || !mounted) return;
+    if (plan.paused) setState(() => _paused = true);
+    final location = ref.read(platformServicesProvider).location;
+    if (!(await location.access()).granted || !mounted) return;
+    final monitor = ExitMonitor(plan.fence, paused: plan.paused);
+    _fixes = location.fixes(interval: plan.fixInterval).listen((fix) async {
+      // Until the check passes, the check itself reads the location.
+      if (!_locationPassed) return;
+      final change = monitor.add(geoFixOf(fix));
+      if (change == null) return;
+      await inspections.recordGeofenceChange(widget.inspectionId, change);
+      if (mounted) setState(() => _paused = change.paused);
+    });
+  }
+
   /// The fields page [at] shows.
   Set<String> _keysAt(FlowPosition at) {
     final runner = _runner!;
@@ -446,6 +499,10 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
     final at = _at;
     final step = runner.steps[at.step];
     final copy = ref.read(copyProvider);
+    if (step['type'] == 'location_check' && !_locationPassed) {
+      setState(() => _message = copy('inspection.location_first'));
+      return;
+    }
     final keys = _keysAt(at);
     _form!.touchAll(keys);
     if (_stepHasProblems(keys)) {
@@ -827,6 +884,12 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
     switch (step['type']) {
       case 'job_briefing':
         return _briefing(step, at.step, form, copy);
+      case 'location_check':
+        return LocationCheckView(
+          inspections: _inspections!,
+          inspectionId: widget.inspectionId,
+          onPassed: _locationDone,
+        );
       case 'form':
         return FormView(
           controller: form,
@@ -956,6 +1019,20 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
             ),
           ],
         );
+        if (_paused) {
+          // Nothing changes until the agent is back (B3.5); what was entered
+          // stays.
+          body = Column(
+            children: [
+              _PausedBanner(copy('inspection.paused')),
+              Expanded(
+                child: IgnorePointer(
+                  child: Opacity(opacity: 0.4, child: body),
+                ),
+              ),
+            ],
+          );
+        }
         bar = SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -972,7 +1049,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
                     key: ValueKey(
                       last ? 'inspection-submit' : 'inspection-next',
                     ),
-                    onPressed: _busy
+                    onPressed: _busy || _paused
                         ? null
                         : last
                         ? () => _submit(step)
@@ -1018,6 +1095,37 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
       ),
       body: body,
       bottomNavigationBar: bar,
+    );
+  }
+}
+
+/// Shown while the inspection is paused because the agent left the fence.
+class _PausedBanner extends StatelessWidget {
+  const _PausedBanner(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ColoredBox(
+      key: const ValueKey('inspection-paused'),
+      color: scheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(Icons.location_off, color: scheme.onErrorContainer),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(color: scheme.onErrorContainer),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

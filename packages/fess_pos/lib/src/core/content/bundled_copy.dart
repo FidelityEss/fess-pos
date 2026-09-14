@@ -148,6 +148,27 @@ abstract final class BundledCopy {
         'accept it again.',
     'inspection.declaration_changed':
         'The declaration has changed. Read the new version and accept it.',
+    'inspection.location_first': 'Check your location first.',
+    'inspection.paused':
+        'You have left the premises, so the inspection is paused. Go back to '
+        'carry on; your answers are kept.',
+    'location.title': 'Location check',
+    'location.checking': 'Checking that you are at the premises…',
+    'location.waiting_fix': 'Waiting for a location fix…',
+    'location.accuracy': 'Accurate to {{m}} m',
+    'location.seconds_left': '{{s}} s left',
+    'location.passed': 'You are at the premises.',
+    'location.outside':
+        'You seem to be {{m}} m from the premises. Move closer and try again.',
+    'location.no_lock':
+        "Your location isn't accurate enough here. Move to an open spot and "
+        'try again.',
+    'location.mocked': 'A mock location app is on. Turn it off and try again.',
+    'location.needs_access':
+        'POS needs your location to check that you are at the premises.',
+    'location.allow': 'Allow location',
+    'location.off': 'Location is off on this phone. Turn it on and try again.',
+    'location.try_again': 'Try again',
     'inspection.declaration_missing':
         "This declaration hasn't reached your phone yet. Connect to the "
         'internet and try again.',

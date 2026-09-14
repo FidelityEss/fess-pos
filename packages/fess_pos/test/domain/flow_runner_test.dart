@@ -3,10 +3,17 @@ import 'package:fess_pos_engine/fess_pos_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _Data implements FlowData {
-  _Data({this.answers = const {}, this.hidden = const {}});
+  _Data({
+    this.answers = const {},
+    this.hidden = const {},
+    this.locationChecked = true,
+  });
 
   final Map<String, Object?> answers;
   final Set<String> hidden;
+
+  @override
+  final bool locationChecked;
 
   @override
   bool sectionShown(String key) => !hidden.contains(key);
@@ -68,8 +75,26 @@ List<String> _positions(Iterable<FlowPosition> ps) => [
 void main() {
   final runner = FlowRunner(_flow);
 
-  test('the location check and the receipt have no page; a form step shown '
-      'a section per page has one per section', () {
+  test('the location check has a page until it has passed (T4-07), even '
+      'when a rule would hide it', () {
+    expect(_positions(runner.shown(_Data(locationChecked: false))).take(2), [
+      '0.0',
+      '1.0',
+    ]);
+    final hidden = FlowRunner({
+      'steps': [
+        {'type': 'location_check', 'visible': false},
+        {'type': 'submit'},
+      ],
+    });
+    expect(_positions(hidden.shown(_Data(locationChecked: false))), [
+      '0.0',
+      '1.0',
+    ]);
+  });
+
+  test('once passed, the location check has no page, nor has the receipt; '
+      'a form step shown a section per page has one per section', () {
     expect(_positions(runner.shown(_Data(answers: {'wants_review': true}))), [
       '0.0',
       '2.0',

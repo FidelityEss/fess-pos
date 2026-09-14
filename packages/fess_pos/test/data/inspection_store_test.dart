@@ -12,6 +12,7 @@ import 'package:fess_pos/src/data/outbox/envelope.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
 import 'package:fess_pos/src/data/sync/sections.dart';
+import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
@@ -350,6 +351,105 @@ void main() {
       await inspections.begin(job());
       await putJob();
       expect((await jobRow()).status, 'in_progress');
+    });
+  });
+
+  test('at the start a fix is inside when its distance less its accuracy '
+      'is within the radius; a mocked one never passes (T4-07)', () async {
+    location.fix = LocationFix(
+      latitude: -26.2041 + 105 / 111195,
+      longitude: 28.0473,
+      accuracyM: 10,
+      fixTime: DateTime(2026, 9, 14, 9, 59),
+      isMocked: false,
+    );
+    await inspections.begin(job());
+    final geofence =
+        payloadOf(
+              (await envelopes('inspection_started')).single,
+            )['geofence_result']!
+            as Map<String, Object?>;
+    expect(geofence['distance_m']! as num, closeTo(105, 1));
+    expect(geofence['passed'], isTrue, reason: '105 − 10 ≤ 100');
+  });
+
+  group('geofence (T4-07)', () {
+    late String id;
+
+    setUp(() async {
+      id = (await inspections.begin(job())).inspectionId!;
+    });
+
+    GeoFix at(double metres) => GeoFix(
+      lat: -26.2041 + metres / 111195,
+      lng: 28.0473,
+      accuracyM: 10,
+      at: DateTime(2026, 9, 14, 10, 1),
+      isMocked: false,
+    );
+
+    test('the plan is the fence frozen at the start and the config in '
+        'force', () async {
+      final plan = (await inspections.geofencePlan(id))!;
+      expect(plan.fence.radiusM, 100);
+      expect(plan.fence.maxAccuracyM, 30);
+      expect(plan.fence.exitConsecutiveFixes, 3);
+      expect(plan.sampleWindow, const Duration(seconds: 60));
+      expect(plan.fixInterval, const Duration(seconds: 20));
+      expect(plan.passed, isTrue, reason: 'the start fix was inside');
+      expect(plan.paused, isFalse);
+    });
+
+    test("a check's outcome goes into the geofence result and what rules "
+        'see', () async {
+      final plan = (await inspections.geofencePlan(id))!;
+      await inspections.recordLocationCheck(
+        id,
+        passed: false,
+        verdict: plan.fence.judge(at(300)),
+        sampledSeconds: 60,
+      );
+      final row = await (db.select(
+        db.inspections,
+      )..where((i) => i.id.equals(id))).getSingle();
+      final g = jsonDecode(row.geofence) as Map<String, Object?>;
+      expect(g['passed'], isFalse);
+      expect(g['sampled_seconds'], 60);
+      expect(g['distance_m']! as num, closeTo(300, 1));
+      expect(g['profile'], 'standalone', reason: 'the frozen profile stays');
+      final context = jsonDecode(row.contextSnapshot) as Map<String, Object?>;
+      expect(
+        ((context['inspection']! as Map)['geofence']! as Map)['inside'],
+        isFalse,
+      );
+      expect((await inspections.watch(id).first)!.locationPassed, isFalse);
+    });
+
+    test('leaving pauses the inspection with a job_event; coming back '
+        'resumes it', () async {
+      final plan = (await inspections.geofencePlan(id))!;
+      await inspections.recordGeofenceChange(
+        id,
+        GeofenceChange(paused: true, verdict: plan.fence.judge(at(300))),
+      );
+      expect((await inspections.geofencePlan(id))!.paused, isTrue);
+      expect((await jobRow()).status, 'paused');
+
+      await inspections.recordGeofenceChange(
+        id,
+        GeofenceChange(paused: false, verdict: plan.fence.judge(at(10))),
+      );
+      expect((await inspections.geofencePlan(id))!.paused, isFalse);
+      expect((await jobRow()).status, 'in_progress');
+      final events = [
+        for (final e in await envelopes('job_event')) payloadOf(e),
+      ];
+      expect(events.map((e) => (e['action'], e['trigger'])), [
+        ('pause', 'geofence_exit'),
+        ('resume', 'geofence_enter'),
+      ]);
+      expect(events.first['inspection_id'], id);
+      expect((events.first['fix']! as Map)['accuracy_m'], 10);
     });
   });
 

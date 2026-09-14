@@ -12,6 +12,7 @@ import 'package:fess_pos/src/data/outbox/action_recorder.dart';
 import 'package:fess_pos/src/data/outbox/envelope.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
+import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
@@ -436,6 +437,141 @@ class DriftInspections implements Inspections {
   }
 
   @override
+  Future<GeofencePlan?> geofencePlan(String inspectionId) async {
+    final row = await _row(inspectionId);
+    if (row == null) return null;
+    final result = _decode(row.geofence) ?? const <String, Object?>{};
+    final job = await _jobRow(row.jobId);
+    final config = RemoteConfig((await _config(job?.bankId)).values);
+    final fence = Fence.fromResult(
+      result,
+      blockOnMock: config.flag('integrity.block_on_mock'),
+    );
+    if (fence == null) return null;
+    final paused =
+        await (_db.select(_db.moduleMeta)..where(
+              (m) => m.key.equals(MetaKeys.geofencePaused(inspectionId)),
+            ))
+            .getSingleOrNull();
+    return GeofencePlan(
+      fence: fence,
+      sampleWindow: Duration(
+        seconds: config.integer('geofence.sample_seconds'),
+      ),
+      fixInterval: Duration(
+        seconds: config.integer('geofence.trace_interval_s'),
+      ),
+      passed: result['passed'] == true,
+      paused: paused != null,
+    );
+  }
+
+  @override
+  Future<void> recordLocationCheck(
+    String inspectionId, {
+    required bool passed,
+    required FixVerdict? verdict,
+    required int sampledSeconds,
+  }) => _db.transaction(() async {
+    final row = await _row(inspectionId);
+    if (row == null || row.status != 'in_progress') return;
+    final now = isoWithOffset(_clock());
+    // The profile and its numbers stay as frozen at the start (docs/07 §7
+    // item 10); the check adds how it went. The submission carries it.
+    final result = {
+      ...?_decode(row.geofence),
+      'method': 'inside_fix',
+      'passed': passed,
+      'fix': verdict == null ? null : _fixJson(verdict.fix),
+      'distance_m': verdict == null
+          ? null
+          : (verdict.distanceM * 10).roundToDouble() / 10,
+      'sampled_seconds': sampledSeconds,
+      'evaluated_at_device': now,
+    };
+    final context = _decode(row.contextSnapshot) ?? const <String, Object?>{};
+    final inspection = _map(context['inspection']) ?? const {};
+    final geofence = _map(inspection['geofence']) ?? const {};
+    await (_db.update(
+      _db.inspections,
+    )..where((i) => i.id.equals(inspectionId))).write(
+      InspectionsCompanion(
+        geofence: Value(jsonEncode(result)),
+        contextSnapshot: Value(
+          jsonEncode({
+            ...context,
+            'inspection': {
+              ...inspection,
+              'geofence': {
+                ...geofence,
+                'inside': passed,
+                'method': 'inside_fix',
+              },
+            },
+          }),
+        ),
+        updatedAt: Value(now),
+      ),
+    );
+  });
+
+  @override
+  Future<void> recordGeofenceChange(
+    String inspectionId,
+    GeofenceChange change,
+  ) async {
+    final origin = await _origin();
+    final row = await _row(inspectionId);
+    if (origin == null || row == null) {
+      _log.warning('a geofence change was not recorded: no session');
+      return;
+    }
+    final action = change.paused ? 'pause' : 'resume';
+    final key = MetaKeys.geofencePaused(inspectionId);
+    await _recorder.record(
+      key: '$action:inspection:$inspectionId',
+      origin: origin,
+      allowed: () async => (await _row(inspectionId))?.status == 'in_progress',
+      apply: () async {
+        final now = isoWithOffset(_clock());
+        if (change.paused) {
+          await _db
+              .into(_db.moduleMeta)
+              .insertOnConflictUpdate(
+                ModuleMetaCompanion.insert(
+                  key: key,
+                  value: now,
+                  updatedAt: now,
+                ),
+              );
+        } else {
+          await (_db.delete(
+            _db.moduleMeta,
+          )..where((m) => m.key.equals(key))).go();
+        }
+        await _setJobStatus(
+          row.jobId,
+          change.paused ? 'paused' : 'in_progress',
+        );
+        return PendingEnvelope(
+          type: 'job_event',
+          typeVersion: 1,
+          entityRef: 'job:${row.jobId}',
+          payload: {
+            'job_id': row.jobId,
+            'action': action,
+            'trigger': change.paused ? 'geofence_exit' : 'geofence_enter',
+            'inspection_id': inspectionId,
+            'fix': _fixJson(change.verdict.fix),
+            'config_version_id': row.configVersionId,
+          },
+        );
+      },
+    );
+    unawaited(_send());
+  }
+
+  @override
   Future<Uint8List?> evidenceBytes(String evidenceId) async =>
       (await (_db.select(
         _db.evidence,
@@ -785,11 +921,17 @@ class DriftInspections implements Inspections {
             (lat: fix.latitude, lng: fix.longitude),
             (lat: lat.toDouble(), lng: lng.toDouble()),
           );
+    // Inside = distance − accuracy ≤ radius, by a fix accurate enough and
+    // not a refused mocked one (docs/07 §7), as the engine judges it.
+    final blockOnMock = RemoteConfig(
+      config.values,
+    ).flag('integrity.block_on_mock');
     final passed =
         fix != null &&
         distance != null &&
-        distance <= radius &&
-        fix.accuracyM <= maxAccuracy;
+        distance - fix.accuracyM <= radius &&
+        fix.accuracyM <= maxAccuracy &&
+        !(blockOnMock && (fix.isMocked ?? false));
     final exitFixes = p['exit_consecutive_fixes'];
     return {
       'profile': profile,
@@ -805,16 +947,7 @@ class DriftInspections implements Inspections {
       'override': false,
       'override_detail': null,
       'job_location': jobPoint,
-      'fix': fix == null
-          ? null
-          : {
-              'lat': fix.latitude,
-              'lng': fix.longitude,
-              'accuracy_m': fix.accuracyM,
-              'ts': isoWithOffset(fix.fixTime),
-              'gnss_ts': null,
-              'is_mocked': fix.isMocked ?? false,
-            },
+      'fix': fix == null ? null : _geoFix(fix),
       'checkin_fix': null,
       'distance_m': distance == null
           ? null
@@ -967,8 +1100,36 @@ class DriftInspections implements Inspections {
       startedAtDevice: r.startedAtDevice,
       submittedAtDevice: r.submittedAtDevice,
       submissionEnvelopeId: r.submissionEnvelopeId,
+      locationPassed: _locationPassed(r.geofence),
     );
   }
+
+  /// Whether an inspection's location check has passed. One whose job has
+  /// no location to fence has nothing to check.
+  static bool _locationPassed(String geofence) {
+    final result = _decode(geofence) ?? const <String, Object?>{};
+    return result['passed'] == true || Fence.fromResult(result) == null;
+  }
+
+  /// A fix as `geofence_result` and `job_event` carry it.
+  static Map<String, Object?> _fixJson(GeoFix fix) => {
+    'lat': fix.lat,
+    'lng': fix.lng,
+    'accuracy_m': fix.accuracyM,
+    'ts': isoWithOffset(fix.at),
+    'gnss_ts': null,
+    'is_mocked': fix.isMocked ?? false,
+  };
+
+  static Map<String, Object?> _geoFix(LocationFix fix) => _fixJson(
+    GeoFix(
+      lat: fix.latitude,
+      lng: fix.longitude,
+      accuracyM: fix.accuracyM,
+      at: fix.fixTime,
+      isMocked: fix.isMocked,
+    ),
+  );
 
   static String _date(DateTime now) {
     final t = now.toLocal();
