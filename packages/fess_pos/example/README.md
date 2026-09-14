@@ -8,6 +8,29 @@ Point it at **fess-pos-qa** only. Nothing is compiled in: the address, key and i
 To sign in as a QA agent, first mint a host token with `tools/scenarios/module-harness.ts` (planning pack `docs/15`
 §8); it writes `~/.fess-pos/module-harness-qa.json`, which the commands below read.
 
+## Testing on your own phone
+
+The harness opens on a **simulated FESS login**: pick a QA agent, tap **Log in as …**, and POS opens. **Log out**
+signs out of POS.
+
+1. On the Mac, from `fess-pos/`, mint logins for the agents you want (each valid 24 hours). The QA seed admin's
+   credentials stay on the Mac; only the agents' host tokens go into the build:
+
+   ```bash
+   POS_PUBLISHABLE_KEY=<QA publishable key> deno run -A --node-modules-dir=none --config tools/scenarios/deno.json tools/scenarios/module-harness.ts SEED-AG01 SEED-AG02
+   ```
+
+2. Give an agent a job to work on: `tools/scenarios/skeleton.ts setup SEED-AG01` (below) adds one to the test bank.
+3. Connect the phone (Android: USB debugging on; iPhone: trust the Mac and set signing in Xcode) and run:
+
+   ```bash
+   flutter run -d <phone> --dart-define-from-file=$HOME/.fess-pos/module-harness-qa.json
+   ```
+
+When the logins expire the app says so: repeat steps 1 and 3. For an Android phone without a cable, build
+`flutter build apk --debug --dart-define-from-file=$HOME/.fess-pos/module-harness-qa.json` and send
+`build/app/outputs/flutter-apk/app-debug.apk`. It holds that day's logins, so share it like a password.
+
 ```bash
 flutter run --dart-define-from-file=$HOME/.fess-pos/module-harness-qa.json      # the harness, signed in to QA
 flutter test integration_test -d <device> --dart-define-from-file=$HOME/.fess-pos/module-harness-qa.json
