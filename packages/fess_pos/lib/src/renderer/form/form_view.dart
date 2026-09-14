@@ -189,6 +189,7 @@ class FormView extends StatelessWidget {
       'business_hours' => _BusinessHoursInput(b, key: key),
       'prefilled' => _PrefilledView(b, key: key),
       'acknowledgement' => _AcknowledgementInput(b, key: key),
+      'address' => _AddressInput(b, services, key: key),
       'info' => Padding(
         key: key,
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -207,6 +208,11 @@ class FormView extends StatelessWidget {
         key: key,
       ),
       'declaration' when services != null => _DeclarationInput(
+        b,
+        services!,
+        key: key,
+      ),
+      'location_pin' when services?.pickPin != null => _LocationPinInput(
         b,
         services!,
         key: key,
@@ -1116,6 +1122,224 @@ class _SignatureInputState extends State<_SignatureInput> {
             ),
           ),
           if (_busy) _Saving(b.copy('inspection.saving')),
+        ],
+      ),
+    );
+  }
+}
+
+Map<String, Object?>? _asMap(Object? v) => v is Map<String, Object?> ? v : null;
+
+/// Where a pin sits, shown and set (`address`, `location_pin`; T4-11).
+class _PinRow extends StatefulWidget {
+  const _PinRow({
+    required this.b,
+    required this.services,
+    required this.pin,
+    required this.onPin,
+  });
+
+  final _Binding b;
+  final FormFieldServices services;
+  final Map<String, Object?>? pin;
+  final void Function(Map<String, Object?> pin) onPin;
+
+  @override
+  State<_PinRow> createState() => _PinRowState();
+}
+
+class _PinRowState extends State<_PinRow> {
+  bool _busy = false;
+
+  Future<void> _pick() async {
+    setState(() => _busy = true);
+    try {
+      final pin = await widget.services.pickPin!(
+        context,
+        widget.b.field,
+        widget.pin,
+      );
+      if (pin != null) widget.onPin(pin);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final b = widget.b;
+    final pin = widget.pin;
+    final lat = pin?['lat'];
+    final lng = pin?['lng'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text(
+            lat is num && lng is num
+                ? renderTemplate(b.copy('pin.at'), {
+                    'lat': lat.toStringAsFixed(5),
+                    'lng': lng.toStringAsFixed(5),
+                  })
+                : b.copy('pin.none'),
+            key: ValueKey('pin-value-${b.key}'),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+        OutlinedButton.icon(
+          key: ValueKey('pin-set-${b.key}'),
+          onPressed: b.field.readOnly || _busy ? null : _pick,
+          icon: const Icon(Icons.push_pin_outlined),
+          label: Text(b.copy(pin == null ? 'pin.set' : 'pin.change')),
+        ),
+      ],
+    );
+  }
+}
+
+/// A pin (`location_pin`, `11` §3.4; T4-11): placed on the phone's cached
+/// map, or from the current location. The rules check how far it is from
+/// the job (`max_distance_from_job_m`).
+class _LocationPinInput extends StatelessWidget {
+  const _LocationPinInput(this.b, this.services, {super.key});
+
+  final _Binding b;
+  final FormFieldServices services;
+
+  @override
+  Widget build(BuildContext context) => _Frame(
+    b,
+    child: _PinRow(
+      b: b,
+      services: services,
+      pin: _asMap(b.controller.value(b.key)),
+      onPin: (pin) => b.controller.setValue(b.key, pin),
+    ),
+  );
+}
+
+/// A South African address (`address`, `11` §3.4; T4-11): typed, so it
+/// works offline, and a pin on the map where `map_pin` asks for one and a
+/// map is at hand. Geocoding (`geocode: when_online`) completes
+/// server-side (D-83).
+class _AddressInput extends StatefulWidget {
+  const _AddressInput(this.b, this.services, {super.key});
+
+  final _Binding b;
+  final FormFieldServices? services;
+
+  @override
+  State<_AddressInput> createState() => _AddressInputState();
+}
+
+class _AddressInputState extends State<_AddressInput> {
+  static const List<String> _parts = [
+    'line1',
+    'line2',
+    'suburb',
+    'city',
+    'province',
+    'postal_code',
+  ];
+
+  late final Map<String, TextEditingController> _text = {
+    for (final k in _parts)
+      k: TextEditingController(text: _string(_value?[k]) ?? ''),
+  };
+
+  _Binding get b => widget.b;
+
+  Map<String, Object?>? get _value => _asMap(b.controller.value(b.key));
+
+  @override
+  void dispose() {
+    for (final c in _text.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _changed({Map<String, Object?>? pin}) {
+    final keep = pin ?? _asMap(_value?['pin']);
+    final next = <String, Object?>{
+      for (final k in _parts)
+        if (_text[k]!.text.trim().isNotEmpty) k: _text[k]!.text.trim(),
+      'pin': ?keep,
+    };
+    b.controller.setValue(b.key, next.isEmpty ? null : next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provinces = [
+      if (b.props['provinces'] case final List<Object?> list)
+        for (final p in list)
+          if (p is String) p,
+    ];
+    final mode = _string(b.props['map_pin']) ?? 'optional';
+    final services = widget.services;
+    Widget line(String part) => Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: TextField(
+        key: ValueKey('address-$part-${b.key}'),
+        controller: _text[part],
+        readOnly: b.field.readOnly,
+        textCapitalization: TextCapitalization.words,
+        keyboardType: part == 'postal_code'
+            ? TextInputType.number
+            : TextInputType.streetAddress,
+        decoration: InputDecoration(labelText: b.copy('address.$part')),
+        onChanged: (_) => _changed(),
+      ),
+    );
+    final province = _text['province']!.text;
+    return _Frame(
+      b,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          line('line1'),
+          line('line2'),
+          line('suburb'),
+          line('city'),
+          if (provinces.isEmpty)
+            line('province')
+          else
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: b.copy('address.province'),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    key: ValueKey('address-province-${b.key}'),
+                    isExpanded: true,
+                    isDense: true,
+                    value: provinces.contains(province) ? province : null,
+                    items: [
+                      for (final p in provinces)
+                        DropdownMenuItem(value: p, child: Text(p)),
+                    ],
+                    onChanged: b.field.readOnly
+                        ? null
+                        : (p) {
+                            setState(() => _text['province']!.text = p ?? '');
+                            _changed();
+                          },
+                  ),
+                ),
+              ),
+            ),
+          line('postal_code'),
+          if (mode != 'none' && services != null && services.pickPin != null)
+            _PinRow(
+              b: b,
+              services: services,
+              pin: _asMap(_value?['pin']),
+              onPin: (pin) => _changed(pin: pin),
+            ),
         ],
       ),
     );

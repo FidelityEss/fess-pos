@@ -7,11 +7,13 @@ import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
+import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/features/inspections/capture_page.dart';
 import 'package:fess_pos/src/features/inspections/location_check_view.dart';
 import 'package:fess_pos/src/features/inspections/signature_pad_page.dart';
 import 'package:fess_pos/src/features/jobs/job_action_pages.dart';
 import 'package:fess_pos/src/features/jobs/job_pages.dart';
+import 'package:fess_pos/src/features/maps/job_map.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:fess_pos/src/platform/location.dart';
 import 'package:fess_pos/src/renderer/form/form_controller.dart';
@@ -767,6 +769,28 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
       );
     },
     evidence: (id) => evidence[id],
+    pickPin: (context, field, current) async {
+      // Where the map opens: the pin so far, else the job's location,
+      // unless the field starts from the current one (T4-11).
+      final start =
+          GeoPoint.tryParse(current) ??
+          (field.props['initial'] == 'current'
+              ? null
+              : GeoPoint.tryParse(widget.job.data['location']));
+      final pin = await Navigator.of(context)
+          .push<({GeoPoint point, String source})>(
+            MaterialPageRoute(
+              builder: (_) => PinPickerPage(initial: start, title: field.label),
+            ),
+          );
+      if (pin == null) return null;
+      double round(double v) => (v * 1e6).roundToDouble() / 1e6;
+      return {
+        'lat': round(pin.point.lat),
+        'lng': round(pin.point.lng),
+        'source': pin.source,
+      };
+    },
     drawSignature: (context, field) async {
       // Who signs, as the answers say just before (docs/07 §4).
       String? bound(String prop) {

@@ -26,6 +26,7 @@ class FormFieldServices {
     required this.evidenceImage,
     required this.declaration,
     this.evidence = _noEvidence,
+    this.pickPin,
     this.now = DateTime.now,
   });
 
@@ -51,6 +52,16 @@ class FormFieldServices {
   /// A piece of evidence as the phone recorded it (its caption, who
   /// signed); null until it shows.
   final EvidenceItem? Function(String evidenceId) evidence;
+
+  /// Opens the map to place a pin for a field (T4-11), from `current` or
+  /// where the field starts (`initial`): the pin `{lat, lng, source}`, or
+  /// null when the agent goes back. Null where no map is at hand.
+  final Future<Map<String, Object?>?> Function(
+    BuildContext context,
+    ResolvedField field,
+    Map<String, Object?>? current,
+  )?
+  pickPin;
 
   /// A declaration, by key, as on the phone; null before it arrives.
   final Declaration? Function(String key) declaration;

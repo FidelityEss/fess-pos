@@ -173,6 +173,24 @@ abstract final class BundledCopy {
         'POS needs your precise location. Turn on Precise location for this '
         "app in your phone's settings, then try again.",
     'location.open_settings': 'Open settings',
+    'address.line1': 'Street address',
+    'address.line2': 'Unit, building or complex',
+    'address.suburb': 'Suburb',
+    'address.city': 'City or town',
+    'address.province': 'Province',
+    'address.postal_code': 'Postal code',
+    'pin.title': 'Place the pin',
+    'pin.hint': 'Move the map so the pin is on the entrance.',
+    'pin.set': 'Set the pin',
+    'pin.change': 'Move the pin',
+    'pin.none': 'No pin yet.',
+    'pin.at': 'Pin at {{lat}}, {{lng}}',
+    'pin.use': 'Use this spot',
+    'pin.my_location': 'My location',
+    'form.error.address.PIN_REQUIRED': 'Set the pin on the map.',
+    'form.error.address.INVALID_OPTION': 'Choose a province from the list.',
+    'form.error.location_pin.TOO_FAR':
+        "The pin is too far from the job's location.",
     'location.no_lock_outside':
         "Your location isn't accurate enough inside. Step outside the "
         'premises and record your location there.',

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:fess_pos/src/core/di/providers.dart';
@@ -207,6 +208,181 @@ class JobMap extends ConsumerWidget {
         ),
         SimpleAttributionWidget(source: Text(copy('map.attribution'))),
       ],
+    );
+  }
+}
+
+/// Where a pin goes (`address`, `location_pin`; T4-11): the map on the
+/// phone's cached tiles under a fixed pin. The agent moves the map, or
+/// jumps to their location, then uses the spot. Returns the point and how
+/// it was set (`map_pin` or `current_location`), or null.
+class PinPickerPage extends ConsumerStatefulWidget {
+  const PinPickerPage({this.initial, this.title, super.key});
+
+  final GeoPoint? initial;
+  final String? title;
+
+  @override
+  ConsumerState<PinPickerPage> createState() => _PinPickerPageState();
+}
+
+class _PinPickerPageState extends ConsumerState<PinPickerPage> {
+  final MapController _map = MapController();
+  bool _ready = false;
+  late GeoPoint? _at = widget.initial;
+  String _source = 'map_pin';
+  bool _locating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_at == null) unawaited(_myLocation());
+  }
+
+  @override
+  void dispose() {
+    _map.dispose();
+    super.dispose();
+  }
+
+  Future<void> _myLocation() async {
+    setState(() => _locating = true);
+    try {
+      final location = ref.read(platformServicesProvider).location;
+      if (!(await location.access()).granted) await location.requestAccess();
+      final fix = await location.currentFix(
+        timeLimit: const Duration(seconds: 15),
+      );
+      if (!mounted) return;
+      final p = GeoPoint(fix.latitude, fix.longitude);
+      setState(() {
+        _at = p;
+        _source = 'current_location';
+      });
+      if (_ready) _map.move(LatLng(p.lat, p.lng), _map.camera.zoom);
+    } on Object {
+      // No fix: the pin stays where it was.
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = ref.watch(copyProvider);
+    final source = _data(ref.watch(tileSourceProvider));
+    final settings = _data(ref.watch(mapSettingsProvider));
+    final scheme = Theme.of(context).colorScheme;
+    final at = _at;
+    Widget body;
+    if (at == null) {
+      body = Center(
+        child: _locating
+            ? const CircularProgressIndicator()
+            : Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(copy('pin.none'), textAlign: TextAlign.center),
+              ),
+      );
+    } else if (source == null || settings == null || !settings.available) {
+      body = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            '${copy('map.not_configured')}\n\n'
+            '${at.lat.toStringAsFixed(5)}, ${at.lng.toStringAsFixed(5)}',
+            key: const ValueKey('pin-no-map'),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    } else {
+      body = Stack(
+        children: [
+          FlutterMap(
+            key: const ValueKey('pin-map'),
+            mapController: _map,
+            options: MapOptions(
+              initialCenter: LatLng(at.lat, at.lng),
+              initialZoom: settings.maxZoom.toDouble(),
+              minZoom: 3,
+              maxZoom: 19,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
+              onMapReady: () => _ready = true,
+              onPositionChanged: (camera, hasGesture) {
+                _at = GeoPoint(camera.center.latitude, camera.center.longitude);
+                if (hasGesture) _source = 'map_pin';
+              },
+            ),
+            children: [
+              TileLayer(
+                tileProvider: _SourceTiles(source),
+                tileDisplay: const TileDisplay.instantaneous(),
+              ),
+              SimpleAttributionWidget(source: Text(copy('map.attribution'))),
+            ],
+          ),
+          // The pin stays in the middle, its point on the centre; the map
+          // moves under it.
+          IgnorePointer(
+            child: Center(
+              child: Transform.translate(
+                offset: const Offset(0, -20),
+                child: Icon(Icons.location_on, size: 40, color: scheme.error),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            top: 16,
+            child: Material(
+              color: scheme.surface,
+              borderRadius: BorderRadius.circular(PosTokens.radiusCard),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(copy('pin.hint')),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    return Scaffold(
+      appBar: PosHeader(
+        title: widget.title ?? copy('pin.title'),
+        onBack: () => Navigator.of(context).pop(),
+      ),
+      body: body,
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Row(
+            children: [
+              OutlinedButton.icon(
+                key: const ValueKey('pin-my-location'),
+                onPressed: _locating ? null : _myLocation,
+                icon: const Icon(Icons.my_location),
+                label: Text(copy('pin.my_location')),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  key: const ValueKey('pin-use'),
+                  onPressed: at == null
+                      ? null
+                      : () => Navigator.of(
+                          context,
+                        ).pop((point: _at!, source: _source)),
+                  child: Text(copy('pin.use')),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
