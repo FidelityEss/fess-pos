@@ -3,20 +3,30 @@ import 'package:flutter/foundation.dart';
 
 /// The form components this renderer draws (`11` §3–5), with their
 /// versions for the capability report (T3-07). The rest arrive with their
-/// tasks: number, date and the other Wave-1 inputs (T3-03).
+/// tasks: address and location pin (M3), the Wave-2 components (T6-01).
 const Map<String, int> supportedFormComponents = {
   'text': 1,
   'textarea': 1,
+  'number': 1,
+  'percentage': 1,
+  'phone': 1,
   'boolean': 1,
+  'tri_state': 1,
   'single_select': 1,
   'multi_select': 1,
+  'date': 1,
+  'time': 1,
+  'duration': 1,
+  'business_hours': 1,
   'info': 1,
   'callout': 1,
   'divider': 1,
+  'prefilled': 1,
   'group': 1,
   'photo': 1,
   'signature': 1,
   'declaration': 1,
+  'acknowledgement': 1,
 };
 
 /// Components drawn only inside an inspection, which brings the camera,
@@ -45,9 +55,13 @@ class FormController extends ChangeNotifier {
     this.inspection = false,
     Map<String, Object?> initialValues = const {},
     Map<String, String> initialOtherText = const {},
+    Set<String> initialUnknown = const {},
+    Set<String> initialFlaggedDiffers = const {},
   }) {
     _values.addAll(initialValues);
     _otherText.addAll(initialOtherText);
+    _unknown.addAll(initialUnknown);
+    _flaggedDiffers.addAll(initialFlaggedDiffers);
     try {
       compileForm(definition);
     } on EngineError catch (e) {
@@ -79,6 +93,8 @@ class FormController extends ChangeNotifier {
 
   final Map<String, Object?> _values = {};
   final Map<String, String> _otherText = {};
+  final Set<String> _unknown = {};
+  final Set<String> _flaggedDiffers = {};
   final Set<String> _touched = {};
   bool _showAll = false;
   EngineError? _definitionError;
@@ -100,6 +116,16 @@ class FormController extends ChangeNotifier {
 
   /// The "other" descriptions given, by field key.
   Map<String, String> get otherTexts => Map.unmodifiable(_otherText);
+
+  /// Dates the agent said they don't know (`allow_unknown`).
+  Set<String> get unknownKeys => Set.unmodifiable(_unknown);
+
+  bool isUnknown(String key) => _unknown.contains(key);
+
+  /// Prefilled values the agent flagged as different on site.
+  Set<String> get flaggedDiffers => Set.unmodifiable(_flaggedDiffers);
+
+  bool isFlaggedDiffers(String key) => _flaggedDiffers.contains(key);
 
   /// Shows the problems of [keys] from now on, e.g. a flow step's fields
   /// when the agent tries to go on.
@@ -153,8 +179,33 @@ class FormController extends ChangeNotifier {
       _values.remove(key);
     } else {
       _values[key] = value;
+      _unknown.remove(key);
     }
     if (touch) _touched.add(key);
+    _refresh();
+  }
+
+  /// Marks a date as not known, which answers it where the field allows
+  /// that (`allow_unknown`), or takes the mark away.
+  void setUnknown(String key, {required bool unknown}) {
+    if (unknown) {
+      _unknown.add(key);
+      _values.remove(key);
+    } else {
+      _unknown.remove(key);
+    }
+    _touched.add(key);
+    _refresh();
+  }
+
+  /// Flags a prefilled value as different on site (`allow_flag_differs`).
+  void setFlaggedDiffers(String key, {required bool flagged}) {
+    if (flagged) {
+      _flaggedDiffers.add(key);
+    } else {
+      _flaggedDiffers.remove(key);
+    }
+    _touched.add(key);
     _refresh();
   }
 
@@ -233,8 +284,18 @@ class FormController extends ChangeNotifier {
             'v': f.value,
             if (f.computed) 'computed': true,
             if (f.type == 'prefilled') 'prefilled': true,
+            if (f.type == 'prefilled' &&
+                f.props['allow_flag_differs'] == true &&
+                _flaggedDiffers.contains(key))
+              'flagged_differs': true,
           };
         }
+        continue;
+      }
+      if (_unknown.contains(key) &&
+          f.type == 'date' &&
+          f.props['allow_unknown'] == true) {
+        out[key] = {'v': null, 'unknown': true};
         continue;
       }
       final v = _values[key];

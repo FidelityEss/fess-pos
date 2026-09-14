@@ -131,6 +131,8 @@ class _FakeInspections implements Inspections {
     required Map<String, Object?> values,
     required Map<String, String> otherText,
     required int currentStep,
+    Set<String> unknownDates = const {},
+    Set<String> flaggedDiffers = const {},
   }) async {
     drafts.add({'values': values, 'step': currentStep});
   }

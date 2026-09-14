@@ -262,13 +262,22 @@ class DriftInspections implements Inspections {
     required Map<String, Object?> values,
     required Map<String, String> otherText,
     required int currentStep,
+    Set<String> unknownDates = const {},
+    Set<String> flaggedDiffers = const {},
   }) async {
     await (_db.update(_db.inspections)..where(
           (i) => i.id.equals(inspectionId) & i.status.equals('in_progress'),
         ))
         .write(
           InspectionsCompanion(
-            draft: Value(jsonEncode({'values': values, 'other': otherText})),
+            draft: Value(
+              jsonEncode({
+                'values': values,
+                'other': otherText,
+                'unknown': unknownDates.toList()..sort(),
+                'flagged_differs': flaggedDiffers.toList()..sort(),
+              }),
+            ),
             currentStep: Value(currentStep),
             updatedAt: Value(isoWithOffset(_clock())),
           ),
@@ -813,6 +822,11 @@ class DriftInspections implements Inspections {
   static InspectionRecord _record(InspectionRow r) {
     final draft = _decode(r.draft);
     final other = _map(draft?['other']) ?? const {};
+    Set<String> keys(Object? v) => {
+      if (v is List<Object?>)
+        for (final k in v)
+          if (k is String) k,
+    };
     return InspectionRecord(
       id: r.id,
       jobId: r.jobId,
@@ -826,6 +840,8 @@ class DriftInspections implements Inspections {
         for (final e in other.entries)
           if (e.value is String) e.key: e.value! as String,
       },
+      unknownDates: keys(draft?['unknown']),
+      flaggedDiffers: keys(draft?['flagged_differs']),
       currentStep: r.currentStep,
       startedAtDevice: r.startedAtDevice,
       submittedAtDevice: r.submittedAtDevice,

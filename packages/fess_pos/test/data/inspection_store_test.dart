@@ -427,16 +427,20 @@ void main() {
       );
     });
 
-    test('the answers so far are kept, with the step', () async {
+    test('the answers so far are kept, with the step and the marks', () async {
       await inspections.saveDraft(
         id,
         values: {'merchant_confirm': 'Joe'},
         otherText: const {},
         currentStep: 2,
+        unknownDates: {'opened_on'},
+        flaggedDiffers: {'trading_name'},
       );
       final record = await inspections.watch(id).first;
       expect(record!.values, {'merchant_confirm': 'Joe'});
       expect(record.currentStep, 2);
+      expect(record.unknownDates, {'opened_on'});
+      expect(record.flaggedDiffers, {'trading_name'});
     });
   });
 

@@ -112,6 +112,8 @@ class InspectionRecord {
     required this.otherText,
     required this.currentStep,
     required this.startedAtDevice,
+    this.unknownDates = const {},
+    this.flaggedDiffers = const {},
     this.submittedAtDevice,
     this.submissionEnvelopeId,
   });
@@ -133,6 +135,11 @@ class InspectionRecord {
   /// The answers so far, by field key, and the "other" descriptions.
   final Map<String, Object?> values;
   final Map<String, String> otherText;
+
+  /// Dates the agent said they don't know, and prefilled values they
+  /// flagged as different on site.
+  final Set<String> unknownDates;
+  final Set<String> flaggedDiffers;
 
   /// The flow step the agent is on.
   final int currentStep;
@@ -208,6 +215,8 @@ abstract interface class Inspections implements DeliveryTracker {
     required Map<String, Object?> values,
     required Map<String, String> otherText,
     required int currentStep,
+    Set<String> unknownDates = const {},
+    Set<String> flaggedDiffers = const {},
   });
 
   /// Stores [photo] for field [fieldKey] and records its `evidence_meta`;

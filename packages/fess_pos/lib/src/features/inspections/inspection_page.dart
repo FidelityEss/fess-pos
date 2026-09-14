@@ -133,6 +133,8 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
       context: contextFromSnapshot(record.contextSnapshot),
       initialValues: record.values,
       initialOtherText: record.otherText,
+      initialUnknown: record.unknownDates,
+      initialFlaggedDiffers: record.flaggedDiffers,
     )..addListener(_scheduleSave);
   }
 
@@ -158,6 +160,8 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
         values: values,
         otherText: other,
         currentStep: step,
+        unknownDates: form.unknownKeys,
+        flaggedDiffers: form.flaggedDiffers,
       );
     } on Object {
       // The answers are still on screen; the next change saves again.
