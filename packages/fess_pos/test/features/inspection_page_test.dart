@@ -10,6 +10,7 @@ import 'package:fess_pos/src/features/inspections/inspection_page.dart';
 import 'package:fess_pos/src/features/jobs/job_pages.dart';
 import 'package:fess_pos/src/platform/camera.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
+import 'package:fess_pos_engine/fess_pos_engine.dart' show compileForm;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -251,6 +252,8 @@ List<Override> _overrides(_FakeInspections inspections, JobRecord job) => [
   definitionVersionProvider.overrideWith(
     (ref, id) async => id == 'form-v' ? _form : _flow,
   ),
+  // In place: a background isolate's answer never arrives in a widget test.
+  formCompilerProvider.overrideWithValue((form) async => compileForm(form)),
   declarationProvider.overrideWith(
     (ref, key) => Stream.value(
       const Declaration(

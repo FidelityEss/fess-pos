@@ -100,15 +100,44 @@ Map<String, Map<String, Object?>> _childMap(Map<String, Object?> def) {
 }
 
 class _Ctx {
-  _Ctx(this.errors, this.resolved, this.context);
+  _Ctx(this.errors, this.env, this.context);
 
   final List<ValidationError> errors;
-  final ResolvedForm resolved;
+  final RuleEnv env;
   final ResolveContext context;
 
   void push(String path, String code, String message) =>
       errors.add(ValidationError(path, code, message));
 }
+
+/// The problems with one field's answer entry (null when unanswered): what
+/// [validateAnswers] finds for that field, given the field as resolved and
+/// the data its `validate` rules read. The entry must be well formed.
+List<ValidationError> checkAnswerEntry(
+  Map<String, Object?> def,
+  ComponentSpec spec,
+  ResolvedField rf,
+  Map<String, Object?>? entry, {
+  required Map<String, Object?> data,
+  required RuleEnv env,
+  ResolveContext context = const ResolveContext(),
+}) {
+  final errors = <ValidationError>[];
+  _checkField(_Ctx(errors, env, context), def, spec, rf, entry, data);
+  return errors;
+}
+
+/// The rules that failed while resolving, as problems (`RULE_ERROR`),
+/// except those of hidden fields.
+List<ValidationError> ruleErrorsOf(ResolvedForm resolved) => [
+  for (final issue in resolved.errors)
+    if (resolved.fields[issue.path.split('[').first]?.visible ?? true)
+      ValidationError(
+        issue.path,
+        'RULE_ERROR',
+        '${issue.property}: ${issue.message}',
+      ),
+];
 
 /// Validates an answers map (`{key: {v, …}}`) of [form].
 ValidationResult validateAnswers(
@@ -160,23 +189,13 @@ ValidationResult validateAnswers(
     answers: raw,
     lists: lists,
   );
-  final ctx = _Ctx(errors, resolved, context);
+  final ctx = _Ctx(errors, resolved.env, context);
   for (final cf in compiled.fields) {
     if (!cf.spec.hasValue) continue;
     final rf = resolved.fields[cf.key]!;
     _checkField(ctx, cf.def, cf.spec, rf, entries[cf.key], resolved.data);
   }
-  for (final issue in resolved.errors) {
-    final field = resolved.fields[issue.path.split('[').first];
-    if (field != null && !field.visible) continue;
-    errors.add(
-      ValidationError(
-        issue.path,
-        'RULE_ERROR',
-        '${issue.property}: ${issue.message}',
-      ),
-    );
-  }
+  errors.addAll(ruleErrorsOf(resolved));
   return ValidationResult(errors, resolved: resolved);
 }
 
@@ -409,7 +428,7 @@ void _runValidateRules(
     Object? r;
     try {
       final expr = rule['rule'];
-      r = expr is bool ? expr : evaluateRule(expr, data, env: ctx.resolved.env);
+      r = expr is bool ? expr : evaluateRule(expr, data, env: ctx.env);
     } on RuleError catch (e) {
       ctx.push(path, 'RULE_ERROR', 'validate: ${e.message}');
       continue;

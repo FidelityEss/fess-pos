@@ -10,6 +10,12 @@
 /// through `answers.*` or `derived.*`), so a value is final before anything
 /// reads it; a repeatable group's children likewise on `item.*`. A cycle is
 /// refused (`RESOLVER_CYCLE`).
+///
+/// The compiled form is the render plan (docs/03 §8): the fields flattened
+/// in document order, their evaluation order, and which answers each part
+/// of each field reads. [IncrementalResolution] uses it to re-evaluate,
+/// after answers change, only what reads them; [resolveForm] runs the same
+/// steps over every field, so the two agree by construction.
 library;
 
 import 'package:fess_pos_engine/src/errors.dart';
@@ -23,6 +29,9 @@ import 'package:fess_pos_engine/src/rules/evaluate.dart';
 
 /// Marks a property the definition doesn't have (JSON has no `undefined`).
 const Object _absent = Object();
+
+/// Stands for every answer: something reads `answers` or `derived` whole.
+const String anyAnswer = '*';
 
 Object? _prop(Map<String, Object?> m, String key) =>
     m.containsKey(key) ? m[key] : _absent;
@@ -39,6 +48,7 @@ class CompiledField {
     this.section,
     this.containers,
     this.hardDeps, {
+    this.softDeps = const {},
     this.itemDeps = const {},
     this.children,
   });
@@ -50,8 +60,14 @@ class CompiledField {
   /// `visible` of the section and enclosing groups, outermost first.
   final List<Object?> containers;
 
-  /// Keys under `answers.` / `derived.` its effective value depends on.
+  /// Answer keys its visibility and effective value read (`answers.*`,
+  /// `derived.*`, [anyAnswer]), a repeatable group's children's included.
   final Set<String> hardDeps;
+
+  /// Answer keys the rest of it reads: required, read-only, labels and
+  /// text, rule-able props, the options filter, the default and `validate`
+  /// rules, a repeatable group's children's included.
+  final Set<String> softDeps;
 
   /// Keys under `item.` (a repeatable group's children only).
   final Set<String> itemDeps;
@@ -62,6 +78,7 @@ class CompiledField {
   String get key => def['key']! as String;
 }
 
+/// A compiled form: the render plan.
 class CompiledForm {
   CompiledForm._(
     this.form,
@@ -69,7 +86,9 @@ class CompiledForm {
     this.byKey,
     this.order,
     this.staticOptionMeta,
-  );
+    this.sectionDeps,
+  ) : keys = [for (final f in fields) f.key],
+      incremental = !fields.any((f) => f.hardDeps.contains(anyAnswer));
 
   final Map<String, Object?> form;
 
@@ -77,9 +96,20 @@ class CompiledForm {
   final List<CompiledField> fields;
   final Map<String, CompiledField> byKey;
 
+  /// The keys of [fields].
+  final List<String> keys;
+
   /// Evaluation order.
   final List<CompiledField> order;
   final Map<String, Map<String, Object?>> staticOptionMeta;
+
+  /// Answer keys each section's visibility and title read.
+  final Map<String, Set<String>> sectionDeps;
+
+  /// Whether an answer change can re-evaluate only what reads it. Not when
+  /// a visibility or value rule reads every answer at once, which has no
+  /// place in the evaluation order.
+  final bool incremental;
 }
 
 final Expando<CompiledForm> _compiled = Expando();
@@ -122,8 +152,77 @@ ComponentSpec _specOf(Map<String, Object?> def) {
       ));
 }
 
+List<String> _deps(Object? expr) {
+  if (expr is! Map<Object?, Object?> && expr is! List<Object?>) return const [];
+  try {
+    return ruleDependencies(expr);
+  } on RuleError {
+    return const [];
+  }
+}
+
+/// The answer keys among var paths: `answers.<key>` and `derived.<key>`
+/// (derived facts come from that field); [anyAnswer] for a path that reads
+/// them all.
+Set<String> _answerKeys(Iterable<String> paths) {
+  final out = <String>{};
+  for (final p in paths) {
+    final parts = p.split('.');
+    if (p.isEmpty) {
+      out.add(anyAnswer);
+    } else if (parts[0] == 'answers' || parts[0] == 'derived') {
+      out.add(parts.length > 1 ? parts[1] : anyAnswer);
+    }
+  }
+  return out;
+}
+
+/// The answer keys an expression reads.
+Set<String> _ruleRefs(Object? expr) => _answerKeys(_deps(expr));
+
+/// The answer keys a label, text or message reads: a template's
+/// placeholders, or an expression's vars.
+Set<String> _textRefs(Object? t) =>
+    t is String ? _answerKeys(templatePaths(t)) : _ruleRefs(t);
+
+/// The keys an expression reads under `item.`.
+Set<String> _itemRefs(Object? expr) => {
+  for (final d in _deps(expr))
+    if (d.split('.') case ['item', final key, ...]) key,
+};
+
 List<Object?> _hardExprs(Map<String, Object?> def, List<Object?> containers) =>
     [...containers, _prop(def, 'visible'), _prop(def, 'value')];
+
+Set<String> _hardRefs(Map<String, Object?> def, List<Object?> containers) => {
+  for (final e in _hardExprs(def, containers)) ..._ruleRefs(e),
+};
+
+Set<String> _softRefs(Map<String, Object?> def, ComponentSpec spec) {
+  final out = <String>{
+    for (final p in const [
+      'required',
+      'read_only',
+      'default',
+      'options_filter',
+    ])
+      ..._ruleRefs(_prop(def, p)),
+    for (final p in const ['label', 'text', 'caption'])
+      ..._textRefs(_prop(def, p)),
+  };
+  final props = def['props'];
+  if (props is Map<String, Object?>) {
+    for (final e in props.entries) {
+      if (spec.ruleableProps.containsKey(e.key)) out.addAll(_ruleRefs(e.value));
+    }
+  }
+  for (final rule in _maps(def['validate'])) {
+    out
+      ..addAll(_ruleRefs(_prop(rule, 'rule')))
+      ..addAll(_textRefs(_prop(rule, 'message')));
+  }
+  return out;
+}
 
 /// Compiles (cached per form object). Throws [EngineError]:
 /// `UNSUPPORTED_COMPONENT`, `INVALID_DEFINITION` or `RESOLVER_CYCLE`.
@@ -131,6 +230,7 @@ CompiledForm compileForm(Map<String, Object?> form) {
   final hit = _compiled[form];
   if (hit != null) return hit;
   final fields = <CompiledField>[];
+  final sectionDeps = <String, Set<String>>{};
   for (final section in _maps(form['sections'])) {
     final sectionKey = section['key'];
     if (sectionKey is! String) {
@@ -140,6 +240,10 @@ CompiledForm compileForm(Map<String, Object?> form) {
       );
     }
     final visible = _prop(section, 'visible');
+    sectionDeps[sectionKey] = {
+      ..._ruleRefs(visible),
+      ..._textRefs(_prop(section, 'title')),
+    };
     final flat = <_Flat>[];
     _flatten(
       _maps(section['fields']),
@@ -148,28 +252,28 @@ CompiledForm compileForm(Map<String, Object?> form) {
     );
     for (final (:def, :containers) in flat) {
       final spec = _specOf(def);
-      final hard = <String>{
-        for (final e in _hardExprs(def, containers)) ..._answerRefs(e),
-      };
+      final hard = _hardRefs(def, containers);
+      final soft = _softRefs(def, spec);
       List<CompiledField>? children;
       if (spec.type == 'repeatable_group') {
         final kidsFlat = <_Flat>[];
         _flatten(_maps(def['fields']), const [], kidsFlat);
         final kids = <CompiledField>[];
         for (final kid in kidsFlat) {
-          final itemDeps = <String>{};
-          for (final e in _hardExprs(kid.def, kid.containers)) {
-            itemDeps.addAll(_refsUnder(e, 'item'));
-            hard.addAll(_answerRefs(e));
-          }
+          final kidSpec = _specOf(kid.def);
+          hard.addAll(_hardRefs(kid.def, kid.containers));
+          soft.addAll(_softRefs(kid.def, kidSpec));
           kids.add(
             CompiledField(
               kid.def,
-              _specOf(kid.def),
+              kidSpec,
               sectionKey,
               kid.containers,
               const {},
-              itemDeps: itemDeps,
+              itemDeps: {
+                for (final e in _hardExprs(kid.def, kid.containers))
+                  ..._itemRefs(e),
+              },
             ),
           );
         }
@@ -186,6 +290,7 @@ CompiledForm compileForm(Map<String, Object?> form) {
           sectionKey,
           containers,
           hard,
+          softDeps: soft,
           children: children,
         ),
       );
@@ -198,32 +303,11 @@ CompiledForm compileForm(Map<String, Object?> form) {
     byKey,
     _topoSort(fields, (n) => n.hardDeps, 'fields'),
     _staticOptionMeta(_maps(form['sections'])),
+    sectionDeps,
   );
   _compiled[form] = compiled;
   return compiled;
 }
-
-/// The keys an expression reads under `root.` (`answers.x` → `x`).
-List<String> _refsUnder(Object? expr, String root) {
-  if (identical(expr, _absent)) return const [];
-  final List<String> deps;
-  try {
-    deps = ruleDependencies(expr);
-  } on RuleError {
-    return const [];
-  }
-  return [
-    for (final d in deps)
-      if (d.split('.') case [final r, final key, ...] when r == root) key,
-  ];
-}
-
-/// Field keys read through `answers.<key>` or `derived.<key>` (derived
-/// facts come from that field).
-List<String> _answerRefs(Object? expr) => [
-  ..._refsUnder(expr, 'answers'),
-  ..._refsUnder(expr, 'derived'),
-];
 
 List<CompiledField> _topoSort(
   List<CompiledField> nodes,
@@ -350,7 +434,9 @@ class _Evaluator {
   _Evaluator(this.env);
 
   final RuleEnv env;
-  final List<RuleIssue> issues = [];
+
+  /// Where the next problems go: the list of the field being evaluated.
+  List<RuleIssue> sink = [];
 
   ({bool ok, Object? value}) eval(
     Object? expr,
@@ -361,7 +447,7 @@ class _Evaluator {
     try {
       return (ok: true, value: evaluateRule(expr, data, env: env));
     } on RuleError catch (e) {
-      issues.add(RuleIssue(path, property, e.code, e.message));
+      sink.add(RuleIssue(path, property, e.code, e.message));
       return (ok: false, value: null);
     }
   }
@@ -381,7 +467,7 @@ class _Evaluator {
     final value = r.value;
     if (value == null) return false;
     if (value is bool) return value;
-    issues.add(
+    sink.add(
       RuleIssue(
         path,
         property,
@@ -400,7 +486,7 @@ class _Evaluator {
     final value = r.value;
     if (value == null) return '';
     if (value is String) return value;
-    issues.add(
+    sink.add(
       RuleIssue(
         path,
         property,
@@ -434,31 +520,149 @@ ResolvedForm resolveForm(
   ResolveContext context = const ResolveContext(),
   Map<String, Object?> answers = const {},
   FormLists lists = const FormLists(),
-}) {
-  final compiled = compileForm(form);
-  final env = RuleEnv(
-    today: context.today,
-    optionMeta: _optionMeta(compiled, lists),
-  );
-  final ev = _Evaluator(env);
-  final values = <String, Object?>{};
-  final derived = <String, Object?>{};
-  final data = <String, Object?>{
-    'answers': values,
-    'job': context.job,
-    'agent': context.agent,
-    'inspection': context.inspection,
-    'stats': context.stats,
-    'config': context.config,
-    'previous': context.previous,
-    'derived': derived,
-  };
-  final visible = <String, bool>{};
-  final itemsState = <String, List<_ItemState>>{};
+}) =>
+    (IncrementalResolution(compileForm(form), context: context, lists: lists)
+          ..raw = answers
+          ..runAll())
+        .snapshot();
 
-  bool shown(CompiledField cf, Map<String, Object?> scope, String path) =>
+/// A form's resolution kept up to date as its answers change (docs/03 §8,
+/// C2): [update] re-evaluates, in dependency order, only the fields and
+/// sections that read a changed answer. [runAll] does every one, as
+/// [resolveForm] does.
+class IncrementalResolution {
+  IncrementalResolution(
+    this.plan, {
+    this.context = const ResolveContext(),
+    FormLists lists = const FormLists(),
+  }) : env = RuleEnv(
+         today: context.today,
+         optionMeta: _optionMeta(plan, lists),
+       ),
+       _lists = lists {
+    data = {
+      'answers': values,
+      'job': context.job,
+      'agent': context.agent,
+      'inspection': context.inspection,
+      'stats': context.stats,
+      'config': context.config,
+      'previous': context.previous,
+      'derived': _derived,
+    };
+  }
+
+  final CompiledForm plan;
+  final ResolveContext context;
+  final FormLists _lists;
+  final RuleEnv env;
+
+  /// The effective answers (what `answers.*` reads); hidden fields absent.
+  final Map<String, Object?> values = {};
+  final Map<String, Object?> _derived = {};
+
+  /// What rules read.
+  late final Map<String, Object?> data;
+
+  /// The raw answers by key (a repeatable group's as a list of item
+  /// objects). A change takes effect at the next [runAll] or [update].
+  Map<String, Object?> raw = const {};
+
+  /// Every field as resolved now, by key.
+  final Map<String, ResolvedField> fields = {};
+  final Map<String, ResolvedSection> _sections = {};
+  final Map<String, bool> _visible = {};
+  final Map<String, List<_ItemState>> _items = {};
+  final Map<String, List<RuleIssue>> _valueIssues = {};
+  final Map<String, List<RuleIssue>> _fieldIssues = {};
+  final Map<String, List<RuleIssue>> _sectionIssues = {};
+  late final _Evaluator _ev = _Evaluator(env);
+
+  /// Evaluates everything.
+  void runAll() {
+    for (final cf in plan.order) {
+      _evaluateValue(cf);
+    }
+    for (final cf in plan.fields) {
+      _resolveField(cf);
+    }
+    for (final s in _maps(plan.form['sections'])) {
+      _resolveSection(s);
+    }
+  }
+
+  /// After the raw answers of [changed] changed: re-evaluates what reads
+  /// them, in dependency order. Returns the keys of the fields resolved
+  /// again.
+  Set<String> update(Set<String> changed) {
+    if (!plan.incremental) {
+      runAll();
+      return plan.byKey.keys.toSet();
+    }
+    // The keys whose visibility or effective value changed; the changed
+    // answers themselves count, whatever became of them.
+    final moved = {...changed};
+    final again = <String>{};
+    bool reads(Set<String> deps) =>
+        deps.isNotEmpty &&
+        (deps.contains(anyAnswer)
+            ? moved.isNotEmpty
+            : deps.any(moved.contains));
+    for (final cf in plan.order) {
+      final key = cf.key;
+      if (!changed.contains(key) && !reads(cf.hardDeps)) continue;
+      final wasVisible = _visible[key];
+      final had = values.containsKey(key);
+      final before = values[key];
+      _evaluateValue(cf);
+      if (wasVisible != _visible[key] ||
+          had != values.containsKey(key) ||
+          !deepEqual(before, values[key])) {
+        moved.add(key);
+      }
+      // A repeatable group's children may have changed without its value.
+      if (moved.contains(key) || cf.spec.type == 'repeatable_group') {
+        again.add(key);
+      }
+    }
+    for (final cf in plan.fields) {
+      if (again.contains(cf.key) || reads(cf.softDeps)) {
+        _resolveField(cf);
+        again.add(cf.key);
+      }
+    }
+    for (final s in _maps(plan.form['sections'])) {
+      if (reads(plan.sectionDeps[s['key']] ?? const {})) _resolveSection(s);
+    }
+    return again;
+  }
+
+  /// The form as resolved now. Its [ResolvedForm.values] and
+  /// [ResolvedForm.data] are live.
+  ResolvedForm snapshot() {
+    final seen = <String>{};
+    final issues = [
+      for (final cf in plan.order) ...?_valueIssues[cf.key],
+      for (final cf in plan.fields) ...?_fieldIssues[cf.key],
+      for (final s in _sections.keys) ...?_sectionIssues[s],
+    ];
+    return ResolvedForm(
+      sections: Map.unmodifiable(_sections),
+      fields: Map.unmodifiable(fields),
+      order: plan.keys,
+      values: values,
+      data: data,
+      env: env,
+      errors: [
+        for (final i in issues)
+          if (seen.add('${i.path} ${i.property} ${i.code}')) i,
+      ],
+    );
+  }
+
+  bool _shown(CompiledField cf, Map<String, Object?> scope, String path) =>
       cf.containers.every(
-        (c) => ev.boolean(
+        (c) => _ev.boolean(
           c,
           fallback: true,
           onError: true,
@@ -467,7 +671,7 @@ ResolvedForm resolveForm(
           property: 'container.visible',
         ),
       ) &&
-      ev.boolean(
+      _ev.boolean(
         _prop(cf.def, 'visible'),
         fallback: true,
         onError: true,
@@ -476,45 +680,48 @@ ResolvedForm resolveForm(
         property: 'visible',
       );
 
-  Object? effectiveValue(
+  Object? _effective(
     CompiledField cf,
-    Object? raw,
+    Object? rawValue,
     Map<String, Object?> scope,
     String path,
   ) {
     final valueRule = _prop(cf.def, 'value');
     if (!identical(valueRule, _absent)) {
-      return ev.eval(valueRule, scope, path, 'value').value;
+      return _ev.eval(valueRule, scope, path, 'value').value;
     }
     if (cf.spec.type == 'prefilled') {
       final props = cf.def['props'];
       final source = props is Map<String, Object?> ? props['source'] : null;
       return source is String ? readPath(scope, source) : null;
     }
-    return raw;
+    return rawValue;
   }
 
-  // Phase 1: visibility and effective values, in dependency order.
-  for (final cf in compiled.order) {
+  /// Visibility and effective value (phase 1).
+  void _evaluateValue(CompiledField cf) {
     final key = cf.key;
-    final vis = shown(cf, data, key);
-    visible[key] = vis;
-    if (!cf.spec.hasValue) continue;
+    _ev.sink = _valueIssues[key] = [];
+    final vis = _shown(cf, data, key);
+    _visible[key] = vis;
+    if (!cf.spec.hasValue) return;
+    _derived.remove(key);
+    _items.remove(key);
     if (!vis) {
       values.remove(key);
-      continue;
+      return;
     }
     if (cf.spec.type == 'repeatable_group') {
-      final raw = answers[key];
-      if (raw is! List<Object?>) {
-        values[key] = raw;
-        itemsState[key] = const [];
-        continue;
+      final rawItems = raw[key];
+      if (rawItems is! List<Object?>) {
+        values[key] = rawItems;
+        _items[key] = const [];
+        return;
       }
       final states = <_ItemState>[];
       final effective = <Object?>[];
-      for (var index = 0; index < raw.length; index++) {
-        final item = raw[index];
+      for (var index = 0; index < rawItems.length; index++) {
+        final item = rawItems[index];
         final itemValues = <String, Object?>{};
         final itemData = <String, Object?>{
           ...data,
@@ -527,10 +734,10 @@ ResolvedForm resolveForm(
             : const <String, Object?>{};
         for (final kid in cf.children ?? const <CompiledField>[]) {
           final path = '$key[$index].${kid.key}';
-          final kv = shown(kid, itemData, path);
+          final kv = _shown(kid, itemData, path);
           kidVisible[kid.key] = kv;
           if (kid.spec.hasValue && kv) {
-            itemValues[kid.key] = effectiveValue(
+            itemValues[kid.key] = _effective(
               kid,
               rawItem[kid.key],
               itemData,
@@ -541,11 +748,11 @@ ResolvedForm resolveForm(
         states.add((data: itemData, values: itemValues, visible: kidVisible));
         effective.add(itemValues);
       }
-      itemsState[key] = states;
+      _items[key] = states;
       values[key] = effective;
-      continue;
+      return;
     }
-    final v = effectiveValue(cf, answers[key], data, key);
+    final v = _effective(cf, raw[key], data, key);
     values[key] = v;
     final props = cf.def['props'];
     if (cf.spec.type == 'id_number' &&
@@ -553,12 +760,69 @@ ResolvedForm resolveForm(
         props['scheme'] == 'za_id' &&
         v is String) {
       final facts = zaIdDerived(v, context.today);
-      if (facts != null) derived[key] = facts;
+      if (facts != null) _derived[key] = facts;
     }
   }
 
-  // Phase 2: everything that reads the final values.
-  ResolvedField resolveOne(
+  /// Everything that reads the final values (phase 2).
+  void _resolveField(CompiledField cf) {
+    final key = cf.key;
+    _ev.sink = _fieldIssues[key] = [];
+    final vis = _visible[key] ?? false;
+    List<ResolvedItem>? items;
+    if (cf.spec.type == 'repeatable_group' && vis) {
+      final states = _items[key] ?? const <_ItemState>[];
+      items = [
+        for (var index = 0; index < states.length; index++)
+          ResolvedItem(
+            index: index,
+            data: states[index].data,
+            fields: {
+              for (final kid in cf.children ?? const <CompiledField>[])
+                kid.key: _resolveOne(
+                  kid,
+                  states[index].data,
+                  '$key[$index].${kid.key}',
+                  isVisible: states[index].visible[kid.key] ?? false,
+                  value:
+                      (states[index].visible[kid.key] ?? false) &&
+                          kid.spec.hasValue
+                      ? states[index].values[kid.key]
+                      : null,
+                ),
+            },
+          ),
+      ];
+    }
+    fields[key] = _resolveOne(
+      cf,
+      data,
+      key,
+      isVisible: vis,
+      value: vis && cf.spec.hasValue ? values[key] : null,
+      items: items,
+    );
+  }
+
+  void _resolveSection(Map<String, Object?> s) {
+    final key = s['key']! as String;
+    _ev.sink = _sectionIssues[key] = [];
+    final vis = _ev.boolean(
+      _prop(s, 'visible'),
+      fallback: true,
+      onError: true,
+      data: data,
+      path: '§$key',
+      property: 'visible',
+    );
+    _sections[key] = ResolvedSection(
+      key,
+      visible: vis,
+      title: vis ? _ev.text(_prop(s, 'title'), data, '§$key', 'title') : null,
+    );
+  }
+
+  ResolvedField _resolveOne(
     CompiledField cf,
     Map<String, Object?> scope,
     String path, {
@@ -587,10 +851,10 @@ ResolvedForm resolveForm(
       for (final e in rawProps.entries) {
         final kind = cf.spec.ruleableProps[e.key];
         if (kind != null && e.value is Map<String, Object?>) {
-          final r = ev.eval(e.value, scope, path, 'props.${e.key}');
+          final r = _ev.eval(e.value, scope, path, 'props.${e.key}');
           if (!r.ok) continue;
           if (!_kindMatches(kind, r.value)) {
-            ev.issues.add(
+            _ev.sink.add(
               RuleIssue(
                 path,
                 'props.${e.key}',
@@ -608,13 +872,13 @@ ResolvedForm resolveForm(
     }
     List<OptionDef>? options;
     if (cf.spec.options) {
-      final base = _baseOptions(cf.def, cf.spec, props, lists);
+      final base = _baseOptions(cf.def, cf.spec, props, _lists);
       final filter = _prop(cf.def, 'options_filter');
       options = identical(filter, _absent)
           ? List.of(base)
           : [
               for (final o in base)
-                if (ev.boolean(
+                if (_ev.boolean(
                   filter,
                   fallback: true,
                   onError: true,
@@ -628,7 +892,7 @@ ResolvedForm resolveForm(
     final defaultRule = _prop(cf.def, 'default');
     final defaultValue = identical(defaultRule, _absent)
         ? null
-        : ev.eval(defaultRule, scope, path, 'default');
+        : _ev.eval(defaultRule, scope, path, 'default');
     final text = _prop(cf.def, 'text');
     return ResolvedField(
       key: cf.key,
@@ -638,7 +902,7 @@ ResolvedForm resolveForm(
       visible: true,
       required:
           cf.spec.hasValue &&
-          ev.boolean(
+          _ev.boolean(
             _prop(cf.def, 'required'),
             fallback: false,
             onError: false,
@@ -649,7 +913,7 @@ ResolvedForm resolveForm(
       readOnly:
           computed ||
           cf.spec.type == 'prefilled' ||
-          ev.boolean(
+          _ev.boolean(
             _prop(cf.def, 'read_only'),
             fallback: false,
             onError: false,
@@ -660,8 +924,8 @@ ResolvedForm resolveForm(
       value: value,
       computed: computed,
       props: props,
-      label: ev.text(_prop(cf.def, 'label'), scope, path, 'label'),
-      text: ev.text(
+      label: _ev.text(_prop(cf.def, 'label'), scope, path, 'label'),
+      text: _ev.text(
         identical(text, _absent) ? _prop(cf.def, 'caption') : text,
         scope,
         path,
@@ -673,75 +937,4 @@ ResolvedForm resolveForm(
       items: items,
     );
   }
-
-  final fields = <String, ResolvedField>{};
-  for (final cf in compiled.fields) {
-    final key = cf.key;
-    final vis = visible[key] ?? false;
-    List<ResolvedItem>? items;
-    if (cf.spec.type == 'repeatable_group' && vis) {
-      final states = itemsState[key] ?? const <_ItemState>[];
-      items = [
-        for (var index = 0; index < states.length; index++)
-          ResolvedItem(
-            index: index,
-            data: states[index].data,
-            fields: {
-              for (final kid in cf.children ?? const <CompiledField>[])
-                kid.key: resolveOne(
-                  kid,
-                  states[index].data,
-                  '$key[$index].${kid.key}',
-                  isVisible: states[index].visible[kid.key] ?? false,
-                  value:
-                      (states[index].visible[kid.key] ?? false) &&
-                          kid.spec.hasValue
-                      ? states[index].values[kid.key]
-                      : null,
-                ),
-            },
-          ),
-      ];
-    }
-    fields[key] = resolveOne(
-      cf,
-      data,
-      key,
-      isVisible: vis,
-      value: vis && cf.spec.hasValue ? values[key] : null,
-      items: items,
-    );
-  }
-
-  final sections = <String, ResolvedSection>{};
-  for (final s in _maps(form['sections'])) {
-    final key = s['key']! as String;
-    final vis = ev.boolean(
-      _prop(s, 'visible'),
-      fallback: true,
-      onError: true,
-      data: data,
-      path: '§$key',
-      property: 'visible',
-    );
-    sections[key] = ResolvedSection(
-      key,
-      visible: vis,
-      title: vis ? ev.text(_prop(s, 'title'), data, '§$key', 'title') : null,
-    );
-  }
-
-  final seen = <String>{};
-  return ResolvedForm(
-    sections: sections,
-    fields: fields,
-    order: [for (final f in compiled.fields) f.key],
-    values: values,
-    data: data,
-    env: env,
-    errors: [
-      for (final i in ev.issues)
-        if (seen.add('${i.path} ${i.property} ${i.code}')) i,
-    ],
-  );
 }

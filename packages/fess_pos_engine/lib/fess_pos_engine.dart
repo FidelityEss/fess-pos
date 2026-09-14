@@ -9,6 +9,7 @@ export 'src/errors.dart';
 export 'src/forms/catalogue.dart';
 export 'src/forms/model.dart';
 export 'src/forms/resolver.dart' show CompiledForm, compileForm, resolveForm;
+export 'src/forms/session.dart';
 export 'src/forms/templates.dart';
 export 'src/forms/testcases.dart';
 export 'src/forms/validator.dart';

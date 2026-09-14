@@ -11,10 +11,34 @@ import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:fess_pos/src/renderer/form/form_controller.dart';
 import 'package:fess_pos/src/renderer/form/form_services.dart';
 import 'package:fess_pos/src/renderer/form/form_view.dart';
+import 'package:fess_pos/src/renderer/form/render_plans.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart'
-    show ResolvedField, contextFromSnapshot, renderTemplate;
+    show CompiledForm, ResolvedField, contextFromSnapshot, renderTemplate;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Compiles a form into its render plan; tests compile in place.
+final formCompilerProvider =
+    Provider<Future<CompiledForm> Function(Map<String, Object?> form)>(
+      (ref) => compileRenderPlan,
+      name: 'formCompiler',
+    );
+
+/// The render plan of a pinned form version: compiled once, off the UI
+/// thread, and kept while the module runs (docs/03 §8).
+// ignore: specify_nonobvious_property_types
+final renderPlanProvider = FutureProvider.family<CompiledForm, String>((
+  ref,
+  formVersionId,
+) async {
+  final form = await ref.watch(
+    definitionVersionProvider(formVersionId).future,
+  );
+  if (form == null) {
+    throw StateError('form version $formVersionId is not on this phone');
+  }
+  return ref.watch(formCompilerProvider)(form);
+}, name: 'renderPlan');
 
 T? _data<T>(AsyncValue<T> value) => switch (value) {
   AsyncData(:final value) => value,
@@ -121,6 +145,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
     Map<String, Object?> form,
     Map<String, Object?> flow,
     Inspections inspections,
+    CompiledForm plan,
   ) {
     if (_form != null) return;
     _inspections = inspections;
@@ -129,6 +154,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
     _step = _steps.isEmpty ? 0 : record.currentStep.clamp(0, _steps.length - 1);
     _form = FormController(
       definition: form,
+      plan: plan,
       inspection: true,
       context: contextFromSnapshot(record.contextSnapshot),
       initialValues: record.values,
@@ -406,6 +432,10 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
     final flow = record == null
         ? null
         : _data(ref.watch(definitionVersionProvider(record.flowVersionId)));
+    final planState = record == null
+        ? null
+        : ref.watch(renderPlanProvider(record.formVersionId));
+    final plan = planState == null ? null : _data(planState);
     final title =
         _string(widget.job.data['merchant_name']) ?? widget.job.reference;
 
@@ -415,8 +445,13 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
       body = const Center(child: CircularProgressIndicator());
     } else if (record.submitted && _form == null) {
       body = _Message(copy('inspection.submitted'));
+    } else if (_form == null && (planState?.hasError ?? false)) {
+      // A form this build can't use (docs/04 §8): nothing half-shown.
+      body = _Message(copy('form.unavailable'));
+    } else if (_form == null && plan == null) {
+      body = const Center(child: CircularProgressIndicator());
     } else {
-      _start(record, form, flow, inspections);
+      _start(record, form, flow, inspections, plan!);
       final controller = _form!;
       if (controller.definitionError != null || _steps.isEmpty) {
         body = _Message(copy('form.unavailable'));

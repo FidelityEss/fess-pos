@@ -39,10 +39,10 @@ const Set<String> inspectionOnlyComponents = {
 };
 
 /// One form being filled in (docs/04 §4–6): the answers so far and what
-/// the rules make of them. Every change re-resolves the form with the
-/// engine, so what is shown, required and offered follows the answers as
-/// the agent goes; the problems come from the same validator the server
-/// runs on arrival.
+/// the rules make of them, kept by the engine's [FormSession]. A change
+/// re-evaluates only what depends on it (docs/03 §8), so what is shown,
+/// required and offered follows the answers as the agent goes; the
+/// problems come from the same validator the server runs on arrival.
 ///
 /// Hidden ⇒ absent: an answer to a field a rule has hidden stays here (it
 /// comes back if the field does) but is never part of [answers].
@@ -53,23 +53,28 @@ class FormController extends ChangeNotifier {
     this.context = const ResolveContext(),
     this.extraChecks,
     this.inspection = false,
+    CompiledForm? plan,
     Map<String, Object?> initialValues = const {},
     Map<String, String> initialOtherText = const {},
     Set<String> initialUnknown = const {},
     Set<String> initialFlaggedDiffers = const {},
   }) {
-    _values.addAll(initialValues);
-    _otherText.addAll(initialOtherText);
-    _unknown.addAll(initialUnknown);
-    _flaggedDiffers.addAll(initialFlaggedDiffers);
     try {
-      compileForm(definition);
+      _session = FormSession(
+        plan ?? compileForm(definition),
+        context: context,
+        lists: lists,
+        values: initialValues,
+        otherText: initialOtherText,
+        unknown: initialUnknown,
+        flaggedDiffers: initialFlaggedDiffers,
+      );
     } on EngineError catch (e) {
       _definitionError = e;
       return;
     }
-    _refresh();
     _applyDefaults();
+    _check();
   }
 
   /// The `form` definition.
@@ -91,41 +96,47 @@ class FormController extends ChangeNotifier {
   /// be answered.
   final bool inspection;
 
-  final Map<String, Object?> _values = {};
-  final Map<String, String> _otherText = {};
-  final Set<String> _unknown = {};
-  final Set<String> _flaggedDiffers = {};
+  FormSession? _session;
   final Set<String> _touched = {};
   bool _showAll = false;
   EngineError? _definitionError;
-  Map<String, Object?> _answers = const {};
-  ValidationResult? _result;
+  List<ValidationError> _errors = const [];
 
   /// Why this build can't work with the form at all (a component the
   /// engine doesn't know, a rule cycle); nothing is shown or sent.
   EngineError? get definitionError => _definitionError;
 
   /// The form as the rules make it now; null when [definitionError].
-  ResolvedForm? get resolved => _result?.resolved;
+  ResolvedForm? get resolved => _session?.resolved;
 
   /// The raw value of [key], shown or not.
-  Object? value(String key) => _values[key];
+  Object? value(String key) => _session?.value(key);
 
   /// Every raw answer given, shown or not: what a draft keeps.
-  Map<String, Object?> get values => Map.unmodifiable(_values);
+  Map<String, Object?> get values => _session?.values ?? const {};
 
   /// The "other" descriptions given, by field key.
-  Map<String, String> get otherTexts => Map.unmodifiable(_otherText);
+  Map<String, String> get otherTexts => _session?.otherTexts ?? const {};
+
+  /// The "other" description given for [key].
+  String? otherText(String key) => _session?.otherText(key);
 
   /// Dates the agent said they don't know (`allow_unknown`).
-  Set<String> get unknownKeys => Set.unmodifiable(_unknown);
+  Set<String> get unknownKeys => _session?.unknownKeys ?? const {};
 
-  bool isUnknown(String key) => _unknown.contains(key);
+  bool isUnknown(String key) => _session?.isUnknown(key) ?? false;
 
   /// Prefilled values the agent flagged as different on site.
-  Set<String> get flaggedDiffers => Set.unmodifiable(_flaggedDiffers);
+  Set<String> get flaggedDiffers => _session?.flaggedDiffers ?? const {};
 
-  bool isFlaggedDiffers(String key) => _flaggedDiffers.contains(key);
+  bool isFlaggedDiffers(String key) => _session?.isFlaggedDiffers(key) ?? false;
+
+  /// The answers as the envelope carries them (docs/04 §5): one entry per
+  /// visible, answered input field.
+  Map<String, Object?> get answers => _session?.answers ?? const {};
+
+  /// Every current problem, shown or not.
+  List<ValidationError> get errors => _errors;
 
   /// Shows the problems of [keys] from now on, e.g. a flow step's fields
   /// when the agent tries to go on.
@@ -136,16 +147,6 @@ class FormController extends ChangeNotifier {
     }
     if (changed) notifyListeners();
   }
-
-  /// The "other" description given for [key].
-  String? otherText(String key) => _otherText[key];
-
-  /// The answers as the envelope carries them (docs/04 §5): one entry per
-  /// visible, answered input field.
-  Map<String, Object?> get answers => _answers;
-
-  /// Every current problem, shown or not.
-  List<ValidationError> get errors => _result?.errors ?? const [];
 
   /// Visible fields this build can't draw; the form can't be finished
   /// here while there are any.
@@ -174,51 +175,21 @@ class FormController extends ChangeNotifier {
 
   /// Sets [key]'s answer; [touch] shows its problems from now on (text
   /// fields touch on leaving the field, not on every key).
-  void setValue(String key, Object? value, {bool touch = true}) {
-    if (value == null) {
-      _values.remove(key);
-    } else {
-      _values[key] = value;
-      _unknown.remove(key);
-    }
-    if (touch) _touched.add(key);
-    _refresh();
-  }
+  void setValue(String key, Object? value, {bool touch = true}) =>
+      _change(key, (s) => s.setValue(key, value), touch: touch);
 
   /// Marks a date as not known, which answers it where the field allows
   /// that (`allow_unknown`), or takes the mark away.
-  void setUnknown(String key, {required bool unknown}) {
-    if (unknown) {
-      _unknown.add(key);
-      _values.remove(key);
-    } else {
-      _unknown.remove(key);
-    }
-    _touched.add(key);
-    _refresh();
-  }
+  void setUnknown(String key, {required bool unknown}) =>
+      _change(key, (s) => s.setUnknown(key, unknown: unknown));
 
   /// Flags a prefilled value as different on site (`allow_flag_differs`).
-  void setFlaggedDiffers(String key, {required bool flagged}) {
-    if (flagged) {
-      _flaggedDiffers.add(key);
-    } else {
-      _flaggedDiffers.remove(key);
-    }
-    _touched.add(key);
-    _refresh();
-  }
+  void setFlaggedDiffers(String key, {required bool flagged}) =>
+      _change(key, (s) => s.setFlaggedDiffers(key, flagged: flagged));
 
   /// Sets the description of an "other" choice.
-  void setOtherText(String key, String? text, {bool touch = true}) {
-    if (text == null) {
-      _otherText.remove(key);
-    } else {
-      _otherText[key] = text;
-    }
-    if (touch) _touched.add(key);
-    _refresh();
-  }
+  void setOtherText(String key, String? text, {bool touch = true}) =>
+      _change(key, (s) => s.setOtherText(key, text), touch: touch);
 
   /// Shows [key]'s problems from now on.
   void touch(String key) {
@@ -229,107 +200,46 @@ class FormController extends ChangeNotifier {
   /// could be answered here.
   bool validate() {
     _showAll = true;
-    if (_definitionError != null) return false;
-    _refresh();
-    return (_result?.ok ?? false) && unsupportedVisible.isEmpty;
+    notifyListeners();
+    return _session != null && _errors.isEmpty && unsupportedVisible.isEmpty;
   }
 
-  void _refresh() {
-    if (_definitionError != null) return;
-    // What the rules see first, so hidden fields drop out of the answers;
-    // then the answers exactly as they would be sent, checked.
-    final raw = {
-      for (final e in _values.entries)
-        if (!isEmptyAnswer(e.value)) e.key: e.value,
-    };
-    final seen = resolveForm(
-      definition,
-      context: context,
-      answers: raw,
-      lists: lists,
-    );
-    _answers = _entries(seen);
-    final checked = validateAnswers(
-      definition,
-      _answers,
-      context: context,
-      lists: lists,
-    );
-    // An extra check may find what the form's own rules already found.
-    final reported = {
-      for (final e in checked.errors) '${e.fieldKey}|${e.code}',
-    };
+  void _change(
+    String key,
+    void Function(FormSession session) apply, {
+    bool touch = true,
+  }) {
+    final s = _session;
+    if (s == null) return;
+    apply(s);
+    if (touch) _touched.add(key);
+    _check();
+  }
+
+  /// The session's problems, and those of [extraChecks] it didn't find.
+  void _check() {
+    final s = _session!;
+    final reported = {for (final e in s.errors) '${e.fieldKey}|${e.code}'};
     final extra = [
-      for (final e in extraChecks?.call(_answers) ?? const <ValidationError>[])
+      for (final e in extraChecks?.call(s.answers) ?? const <ValidationError>[])
         if (reported.add('${e.fieldKey}|${e.code}')) e,
     ];
-    _result = extra.isEmpty
-        ? checked
-        : ValidationResult([
-            ...checked.errors,
-            ...extra,
-          ], resolved: checked.resolved);
+    _errors = extra.isEmpty ? s.errors : [...s.errors, ...extra];
     notifyListeners();
   }
 
-  Map<String, Object?> _entries(ResolvedForm r) {
-    final out = <String, Object?>{};
-    for (final key in r.order) {
-      final f = r.fields[key]!;
-      final spec = formComponentSpec(f.type);
-      if (!f.visible || spec == null || !spec.hasValue) continue;
-      if (f.computed || f.type == 'prefilled') {
-        if (f.value != null) {
-          out[key] = {
-            'v': f.value,
-            if (f.computed) 'computed': true,
-            if (f.type == 'prefilled') 'prefilled': true,
-            if (f.type == 'prefilled' &&
-                f.props['allow_flag_differs'] == true &&
-                _flaggedDiffers.contains(key))
-              'flagged_differs': true,
-          };
-        }
-        continue;
-      }
-      if (_unknown.contains(key) &&
-          f.type == 'date' &&
-          f.props['allow_unknown'] == true) {
-        out[key] = {'v': null, 'unknown': true};
-        continue;
-      }
-      final v = _values[key];
-      if (isEmptyAnswer(v)) continue;
-      final other = _otherText[key];
-      final otherValue = f.props['other_value'] is String
-          ? f.props['other_value']! as String
-          : 'other';
-      final otherChosen =
-          f.props['allow_other'] == true &&
-          (v == otherValue || (v is List<Object?> && v.contains(otherValue)));
-      out[key] = {
-        'v': v,
-        if (otherChosen && other != null && other.trim().isNotEmpty)
-          'other_text': other,
-      };
-    }
-    return out;
-  }
-
+  /// Defaults fill in before the agent starts, from the form as it first
+  /// resolves.
   void _applyDefaults() {
-    final r = resolved;
-    if (r == null) return;
-    var applied = false;
-    for (final f in r.fields.values) {
+    final s = _session!;
+    for (final f in s.resolved.fields.values) {
       if (f.visible &&
           f.hasDefault &&
           f.defaultValue != null &&
           !f.computed &&
-          !_values.containsKey(f.key)) {
-        _values[f.key] = f.defaultValue;
-        applied = true;
+          !s.values.containsKey(f.key)) {
+        s.setValue(f.key, f.defaultValue);
       }
     }
-    if (applied) _refresh();
   }
 }
