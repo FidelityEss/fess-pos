@@ -105,6 +105,9 @@ class _FakeInspections implements Inspections {
   Map<String, Object?>? submitted;
   int begins = 0;
 
+  /// Draft writes to fail before one succeeds.
+  int failDrafts = 0;
+
   String _nextId() {
     final n = (captured.length + 1).toString().padLeft(12, '0');
     return '0192d4e0-7c1a-7b2e-9f00-$n';
@@ -136,6 +139,10 @@ class _FakeInspections implements Inspections {
     Set<String> flaggedDiffers = const {},
     List<List<int>> flowPath = const [],
   }) async {
+    if (failDrafts > 0) {
+      failDrafts--;
+      throw StateError('the store is busy');
+    }
     drafts.add({'values': values, 'step': currentStep, 'path': flowPath});
   }
 
@@ -460,6 +467,45 @@ void main() {
       findsOneWidget,
       reason: 'the answer given before the app closed',
     );
+  });
+
+  testWidgets('leaving the app writes the draft at once, and a failed write '
+      'is tried again (T3-06)', (tester) async {
+    final inspections = _FakeInspections(_record());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: _overrides(inspections, _job('in_progress')),
+        child: MaterialApp(
+          home: InspectionPage(
+            job: _job('in_progress'),
+            inspectionId: 'insp-1',
+          ),
+        ),
+      ),
+    );
+    await _settle(tester);
+    List<Object?> written() => [
+      for (final d in inspections.drafts) d['values'],
+    ];
+
+    await tester.enterText(find.byType(TextField), 'Joe');
+    await tester.pump();
+    expect(
+      written().where((v) => (v! as Map).isNotEmpty),
+      isEmpty,
+      reason: 'typing waits a moment',
+    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+    expect(written().last, {'merchant_confirm': 'Joe'});
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+
+    inspections.failDrafts = 1;
+    await tester.enterText(find.byType(TextField), 'Joe Spaza');
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(written().last, {'merchant_confirm': 'Joe'}, reason: 'it failed');
+    await tester.pump(const Duration(seconds: 2));
+    expect(written().last, {'merchant_confirm': 'Joe Spaza'});
   });
 
   group('the full flow runner (T3-04)', () {

@@ -144,7 +144,8 @@ class InspectionPage extends ConsumerStatefulWidget {
   ConsumerState<InspectionPage> createState() => _InspectionPageState();
 }
 
-class _InspectionPageState extends ConsumerState<InspectionPage> {
+class _InspectionPageState extends ConsumerState<InspectionPage>
+    with WidgetsBindingObserver {
   FormController? _form;
   Inspections? _inspections;
   FlowRunner? _runner;
@@ -164,13 +165,30 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
   FlowPosition get _at => _path.last;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _saveTimer?.cancel();
     // Reads the answers before the controller goes; the write finishes on
     // its own.
     if (_unsaved) unawaited(_save());
     _form?.dispose();
     super.dispose();
+  }
+
+  /// Leaving the app may be the last chance to write the draft: the system
+  /// can end a phone app in the background without warning (docs/08 §4).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed && _unsaved) {
+      _saveTimer?.cancel();
+      unawaited(_save());
+    }
   }
 
   void _start(
@@ -232,12 +250,14 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
     return (n < 0 ? (shown.length - 1).clamp(0, 1 << 30) : n, shown.length);
   }
 
-  void _scheduleSave() {
+  /// How long typing may run on before the draft is written. Moving
+  /// between pages, and leaving the page or the app, write it at once.
+  static const Duration _draftDelay = Duration(milliseconds: 300);
+
+  void _scheduleSave([Duration delay = _draftDelay]) {
     _unsaved = true;
     _saveTimer?.cancel();
-    _saveTimer = Timer(const Duration(milliseconds: 400), () {
-      unawaited(_save());
-    });
+    _saveTimer = Timer(delay, () => unawaited(_save()));
   }
 
   Future<void> _save() async {
@@ -260,8 +280,13 @@ class _InspectionPageState extends ConsumerState<InspectionPage> {
         flowPath: path,
       );
     } on Object {
-      // The answers are still on screen; the next change saves again.
-      _unsaved = true;
+      // The answers are still on screen: try again shortly, whether or not
+      // anything else changes.
+      if (mounted) {
+        _scheduleSave(const Duration(seconds: 2));
+      } else {
+        _unsaved = true;
+      }
     }
   }
 
