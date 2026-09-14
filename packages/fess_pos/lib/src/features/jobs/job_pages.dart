@@ -1,7 +1,9 @@
 import 'package:fess_pos/src/core/content/bundled_views.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
+import 'package:fess_pos/src/domain/cards/cards.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/domain/maps/map_tiles.dart';
+import 'package:fess_pos/src/features/cards/agent_card_page.dart';
 import 'package:fess_pos/src/features/jobs/job_action_pages.dart';
 import 'package:fess_pos/src/features/maps/job_map.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
@@ -35,7 +37,7 @@ T? _data<T>(AsyncValue<T> value) => switch (value) {
 
 /// The items of view [key] in force (for [bankId]), or the bundled view
 /// until one arrives.
-List<Object?> _viewItems(WidgetRef ref, String key, {String? bankId}) {
+List<Object?> viewItems(WidgetRef ref, String key, {String? bankId}) {
   final definition = _data(
     ref.watch(
       activeDefinitionProvider((kind: 'view', key: key, bankId: bankId)),
@@ -58,8 +60,8 @@ class JobsHomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final copy = ref.watch(copyProvider);
     final jobs = ref.watch(myJobsProvider);
-    final home = _viewItems(ref, 'home');
-    final jobCard = _viewItems(ref, 'job_card');
+    final home = viewItems(ref, 'home');
+    final jobCard = viewItems(ref, 'job_card');
     final agent = _data(ref.watch(agentProvider));
     final totals = _data(ref.watch(agentTotalsProvider));
     final body = switch (jobs) {
@@ -76,12 +78,25 @@ class JobsHomePage extends ConsumerWidget {
                 data: {
                   'agent': agent ?? const <String, Object?>{},
                   'stats': totals ?? const <String, Object?>{},
+                  'card': cardData(
+                    _data<CardToken?>(ref.watch(agentCardProvider)),
+                    now: DateTime.now(),
+                    url: (token) => ref.read(verifyUrlProvider)(token),
+                  ),
                 },
                 jobs: [for (final job in value) jobViewData(job)],
                 itemViews: {'job_card': jobCard},
                 copy: copy,
                 today: todayIso(),
                 onNavigate: (target, data) {
+                  if (target['page'] == 'agent_card') {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const AgentCardPage(),
+                      ),
+                    );
+                    return;
+                  }
                   final id = readPath(data, 'job.id');
                   if (target['page'] == 'job_detail' && id is String) {
                     onOpenJob(id);
@@ -116,7 +131,7 @@ class JobDetailPage extends ConsumerWidget {
     final job = ref.watch(jobProvider(jobId));
     final agent = _data(ref.watch(agentProvider));
     final record = _data(job);
-    final items = _viewItems(ref, 'job_detail', bankId: record?.bankId);
+    final items = viewItems(ref, 'job_detail', bankId: record?.bankId);
     final title = record == null
         ? copy('shell.title')
         : displayValue(record.data['merchant_name']) ?? record.reference;
@@ -129,6 +144,11 @@ class JobDetailPage extends ConsumerWidget {
               data: {
                 'job': jobViewData(found),
                 'agent': agent ?? const <String, Object?>{},
+                'job_card': cardData(
+                  _data<CardToken?>(ref.watch(jobCardProvider(jobId))),
+                  now: DateTime.now(),
+                  url: (token) => ref.read(verifyUrlProvider)(token),
+                ),
               },
               copy: copy,
               today: todayIso(),

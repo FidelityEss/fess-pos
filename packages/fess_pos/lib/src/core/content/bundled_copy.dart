@@ -33,6 +33,18 @@ abstract final class BundledCopy {
     'job.status.appointment_not_secured': 'Appointment not secured',
     'job.status.cancelled': 'Cancelled',
     'job.status.closed': 'Closed',
+    'card.title': 'My authorisation card',
+    'card.employee_number': 'Employee no. {{number}}',
+    'card.role.pos_agent': 'POS agent',
+    'card.status_active': 'Authorised Fidelity POS agent — active',
+    'card.status_expired': 'Card expired',
+    'card.status_pending': 'Card not issued yet',
+    'card.valid_until': 'Valid until {{time}}',
+    'card.expired':
+        'This card has expired. Connect to the internet to refresh it.',
+    'card.not_ready':
+        'Your card appears after the next sync. Connect to the internet.',
+    'card.job_heading': 'Authorised for this visit',
     'map.title': 'Map',
     'map.directions': 'Directions',
     'map.not_configured': "The map isn't set up yet. Directions still work.",

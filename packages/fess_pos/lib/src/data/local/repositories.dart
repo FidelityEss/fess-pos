@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
+import 'package:fess_pos/src/domain/cards/cards.dart';
 import 'package:fess_pos/src/domain/forms/reason_codes.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 
@@ -105,6 +106,25 @@ class DriftAgentRepository implements AgentRepository {
       (_db.select(_db.cachedDocuments)..where((d) => d.key.equals(key)))
           .watchSingleOrNull()
           .map((r) => r == null ? null : _object(r.body));
+}
+
+/// Authorisation card tokens from the last pull.
+class DriftCardRepository implements CardRepository {
+  DriftCardRepository(this._db);
+
+  final PosDatabase _db;
+
+  @override
+  Stream<CardToken?> watchAgentCard() => _watch(DocKeys.agentCard);
+
+  @override
+  Stream<CardToken?> watchJobCard(String jobId) =>
+      _watch('${DocKeys.jobCardPrefix}$jobId');
+
+  Stream<CardToken?> _watch(String key) =>
+      (_db.select(_db.cachedDocuments)..where((d) => d.key.equals(key)))
+          .watchSingleOrNull()
+          .map((r) => r == null ? null : CardToken.tryParse(_object(r.body)));
 }
 
 /// Reference data from the last pull.

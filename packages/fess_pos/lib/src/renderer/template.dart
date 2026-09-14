@@ -42,6 +42,12 @@ extension on String {
   String? get nullIfEmpty => isEmpty ? null : this;
 }
 
+/// A moment, e.g. `14 Sep 2026, 17:42`, in the phone's time zone.
+String? dateTimeText(
+  Object? value, {
+  required String Function(int month) month,
+}) => scheduleText(value, null, month: month);
+
 /// A visit window, e.g. `14 Sep 2026, 09:00–13:00`, in the phone's time
 /// zone. [month] names months (content, `date.month.N`).
 String? scheduleText(

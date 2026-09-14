@@ -5,6 +5,10 @@
 abstract final class BundledViews {
   static const List<Object?> home = [
     {
+      'type': 'agent_card_summary',
+      'on_tap': {'page': 'agent_card'},
+    },
+    {
       'type': 'job_list',
       'item_view': 'job_card',
       'sort': 'job.scheduled_start',
@@ -31,6 +35,11 @@ abstract final class BundledViews {
     },
     {'type': 'address_block', 'label': 'Address', 'bind': 'job.address'},
     {'type': 'map_preview', 'bind': 'job.location', 'height': 180},
+    {'type': 'job_card', 'show_photo': true, 'show_qr': true},
+  ];
+
+  static const List<Object?> agentCard = [
+    {'type': 'agent_card', 'show_photo': true, 'show_qr': true},
   ];
 
   /// The bundled items of a view by key, or null when none is bundled.
@@ -38,6 +47,7 @@ abstract final class BundledViews {
     'home' => home,
     'job_card' => jobCard,
     'job_detail' => jobDetail,
+    'agent_card' => agentCard,
     _ => null,
   };
 }

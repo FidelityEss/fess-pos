@@ -10,6 +10,7 @@ import 'package:fess_pos/src/core/runtime/module_runtime.dart';
 import 'package:fess_pos/src/core/theme/pos_theme_data.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/local/repositories.dart';
+import 'package:fess_pos/src/domain/cards/cards.dart';
 import 'package:fess_pos/src/domain/forms/reason_codes.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
@@ -125,6 +126,33 @@ final jobActionsProvider = FutureProvider<JobActions?>(
   (ref) => ref.watch(moduleRuntimeProvider).jobActions(),
   name: 'jobActions',
 );
+
+final cardRepositoryProvider = FutureProvider<CardRepository>(
+  (ref) async =>
+      DriftCardRepository(await ref.watch(localDatabaseProvider.future)),
+  name: 'cardRepository',
+);
+
+/// The agent's authorisation card token from the last pull, live.
+final agentCardProvider = StreamProvider<CardToken?>((ref) async* {
+  yield* (await ref.watch(cardRepositoryProvider.future)).watchAgentCard();
+}, name: 'agentCard');
+
+/// A job's authorisation card token, live.
+// ignore: specify_nonobvious_property_types
+final jobCardProvider = StreamProvider.family<CardToken?, String>((
+  ref,
+  jobId,
+) async* {
+  yield* (await ref.watch(cardRepositoryProvider.future)).watchJobCard(jobId);
+}, name: 'jobCard');
+
+/// The public verify page for a card token, on the POS API this module
+/// talks to (docs/07 §10).
+final verifyUrlProvider = Provider<Uri Function(String token)>((ref) {
+  final base = ref.watch(moduleRuntimeProvider).config.bootstrap.apiBaseUrl;
+  return (token) => verifyUrl(base, token);
+}, name: 'verifyUrl');
 
 /// Map tiles (T2-17): the phone's cache, else the provider in remote
 /// config.

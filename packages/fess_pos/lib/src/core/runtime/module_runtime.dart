@@ -314,7 +314,11 @@ final class ModuleRuntime {
         outbox: outbox,
         bootstrapCache: dependencies.bootstrapCache,
         capabilities: capabilityReport(clientType, null),
-        sections: [JobsSection(db), DefinitionsSection(db)],
+        sections: [
+          JobsSection(db),
+          DefinitionsSection(db),
+          CardsSection(db, clock: dependencies.clock),
+        ],
         clock: dependencies.clock,
       ),
       outbox: outbox,

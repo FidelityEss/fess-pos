@@ -57,6 +57,27 @@ void main() {
     expect(greeting, findsOneWidget, reason: "the server's home view arrived");
     debugPrint('POS_JOBS ${_jobCards.evaluate().length}');
 
+    // The agent's authorisation card, with the QR the server issued.
+    final summary = find.byKey(const ValueKey('agent-card-summary'));
+    if (summary.evaluate().isNotEmpty) {
+      await tester.tap(summary);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+      _printScreen(tester, 'agent_card');
+      expect(
+        find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == 'QrCodeView',
+        ),
+        findsOneWidget,
+        reason: 'the pull issued a card token',
+      );
+      tester.state<NavigatorState>(find.byType(Navigator).last).pop();
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+    }
+
     if (_jobCards.evaluate().isNotEmpty) {
       await tester.tap(_jobCards.first);
       for (var i = 0; i < 10; i++) {

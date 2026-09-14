@@ -38,14 +38,14 @@ What a host must declare (permissions, plist keys, ProGuard rules, minimum SDKs)
 | `lib/src/contract/` | The public types: bootstrap, identity, host config, theme, events, access, errors, module info |
 | `lib/src/bootstrap/` | Tiny defensive startup: cached kill switches and client mode, bootstrap validation. No feature imports |
 | `lib/src/core/` | Runtime and DI (Riverpod, in a module-owned container, with the providers screens use), logging, observability, theme, remote config (`config/`, with the generated bundled defaults and bounds), bundled copy and views |
-| `lib/src/domain/` | Entities and interfaces: the session gateway, jobs, definitions, the agent and reason codes (with their mapping to form options) |
-| `lib/src/data/local/` | The local store: drift schema and migrations (`pos_database.dart`, schema 3), opening and its failure handling, and the repositories screens read through |
+| `lib/src/domain/` | Entities and interfaces: the session gateway, jobs and job actions, definitions, the agent, reason codes (with their mapping to form options), map tiles and authorisation cards |
+| `lib/src/data/local/` | The local store: drift schema and migrations (`pos_database.dart`, schema 4), opening and its failure handling, the repositories screens read through, job actions and the map tile cache |
 | `lib/src/data/remote/` | The POS API client: transport, failure classes and backoff, circuit breakers, sessions in secure storage, signing in |
 | `lib/src/data/outbox/` | The transactional outbox: envelopes, the sender, receipts, parking, and the single-flight action recorder |
-| `lib/src/data/sync/` | The pull engine, its sections (jobs and reviews, definitions) and the sync engine that runs send → pull → purge |
+| `lib/src/data/sync/` | The pull engine, its sections (jobs and reviews, definitions, job cards) and the sync engine that runs send → pull → purge |
 | `lib/src/platform/` | Every plugin, behind interfaces: secure storage, connectivity, location, camera, device info, module files, integrity and background work (stand-ins until T4-09 / T5-01), and opening the encrypted database. `dart:io` lives only here |
-| `lib/src/renderer/` | The view renderer: draws a `view` definition's items, with `visible` rules on the Dart rules engine. `form/`: the form renderer (`FormView`) and its state (`FormController`), resolved and validated by the Dart form engine |
-| `lib/src/features/` | Screens: the shell (entry point, header), jobs (home, job detail, actions, reason forms, outcomes) and maps (preview, full map, directions) |
+| `lib/src/renderer/` | The view renderer: draws a `view` definition's items, with `visible` rules on the Dart rules engine. `form/`: the form renderer (`FormView`) and its state (`FormController`), resolved and validated by the Dart form engine. `cards.dart`: the authorisation cards and their QR |
+| `lib/src/features/` | Screens: the shell (entry point, header), jobs (home, job detail, actions, reason forms, outcomes), maps (preview, full map, directions) and cards (the agent card page) |
 | `lib/src/evidence/`, `location/` | Arrive with their tasks |
 | `drift_schemas/`, `test/drift/` | One schema dump per database version, and the generated migration tests |
 | `tool/generate_tokens.dart`, `tool/generate_config_defaults.dart` | Regenerate the design tokens and the remote-config defaults |
@@ -135,8 +135,13 @@ and **Directions** hands over to the phone's maps app. Tiles come from the provi
 works on site without signal. Until a provider is configured the pin shows without a map, and directions still work.
 `flutter_map` stays at 8.1.x until FESS moves past `http` 1.4.0 and `path_provider` 2.1.4.
 
-Tested: 411 unit and widget tests; the live test against QA; 5 device tests against QA (SQLCipher, store recovery,
+In review (T2-18; D-63): **authorisation cards.** The home page shows the agent's card, which opens in full: name,
+employee number, role, status and a QR that opens the public verify page for the token the server issued. Each job
+page shows the card for that visit. Cards work offline until their token expires, then say so and hide the QR. The
+photo waits for the server to send one (T2-34); until then the card shows initials.
+
+Tested: 427 unit and widget tests; the live test against QA; 5 device tests against QA (SQLCipher, store recovery,
 camera, QA sign-in, the QA job list), last run on the Android emulator and the iPhone 17 simulator on 2026-09-14.
 
-Next: the cards and push (T2-18, T2-19). Known gap: a session refresh whose answer is lost ends the session until the next sign-in (R-44,
+Next: push and deep links (T2-19). Known gap: a session refresh whose answer is lost ends the session until the next sign-in (R-44,
 backend fix T1-43).

@@ -1,5 +1,6 @@
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/theme/tokens.g.dart';
+import 'package:fess_pos/src/renderer/cards.dart';
 import 'package:fess_pos/src/renderer/render_context.dart';
 import 'package:fess_pos/src/renderer/template.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart';
@@ -9,10 +10,12 @@ const PosLogger _log = PosLogger('renderer');
 
 /// The view components this renderer draws (`11` §7.2), with their
 /// versions for the capability report. The rest arrive with their tasks:
-/// the cards (T2-18), `action_button` and `image` (T3-05),
-/// `evidence_status` (T4-13). An item this build can't draw is left out;
-/// the rest of the view still shows.
+/// `action_button` and `image` (T3-05), `evidence_status` (T4-13). An item
+/// this build can't draw is left out; the rest of the view still shows.
 const Map<String, int> supportedViewComponents = {
+  'agent_card': 1,
+  'agent_card_summary': 1,
+  'job_card': 1,
   'map_preview': 1,
   'title': 1,
   'field_value': 1,
@@ -122,6 +125,9 @@ class _ItemFactory {
       'sync_status' => _syncStatus(),
       'announcement' => _badge(item),
       'map_preview' => ctx.mapPreview?.call(item, bound(item)),
+      'agent_card' => AuthorisationCard(item: item, ctx: ctx),
+      'job_card' => AuthorisationCard(item: item, ctx: ctx, forJob: true),
+      'agent_card_summary' => AgentCardSummary(item: item, ctx: ctx),
       _ => _unsupported(type),
     };
   }

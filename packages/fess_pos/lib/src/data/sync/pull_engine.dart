@@ -36,6 +36,9 @@ abstract final class DocKeys {
   static const String agentTotals = 'agent_totals';
   static const String reasonCodes = 'reason_codes';
   static const String agentCard = 'agent_card';
+
+  /// A job's authorisation card token: `job_card:<job id>`.
+  static const String jobCardPrefix = 'job_card:';
 }
 
 /// `sync_state` keys the pull keeps.

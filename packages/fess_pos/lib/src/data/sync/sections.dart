@@ -2,9 +2,11 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
+import 'package:fess_pos/src/core/time/device_time.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/outbox/envelope.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
+import 'package:fess_pos/src/domain/cards/cards.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart' show definitionHash;
 
 const PosLogger _log = PosLogger('pull');
@@ -104,6 +106,76 @@ class JobsSection implements PullSection {
               body: jsonEncode(review),
             ),
           );
+    }
+  }
+}
+
+/// Job authorisation cards (T2-18, docs/07 §10): the token the server
+/// issues per job, kept as `job_card:<job id>`. Every card still valid is
+/// reported in `have.job_card_job_ids`, so the server issues a new one only
+/// for a job without one. Its expiry is the job window's (at least an hour
+/// from issue), so reporting only cards with time to spare would have the
+/// server issue a fresh token on every pull. Lapsed cards are dropped, and
+/// the next pull brings a new one.
+class CardsSection implements PullSection {
+  CardsSection(this.db, {DateTime Function()? clock})
+    : _clock = clock ?? DateTime.now;
+
+  final PosDatabase db;
+  final DateTime Function() _clock;
+
+  @override
+  Set<String> get streams => const {};
+
+  Future<List<CachedDocumentRow>> _cards() => (db.select(
+    db.cachedDocuments,
+  )..where((d) => d.key.like('${DocKeys.jobCardPrefix}%'))).get();
+
+  @override
+  Future<void> describeHave(Map<String, Object?> have) async {
+    final now = _clock();
+    have['job_card_job_ids'] = [
+      for (final row in await _cards())
+        if (CardToken.tryParse(_decode(row.body))?.validAt(now) ?? false)
+          row.key.substring(DocKeys.jobCardPrefix.length),
+    ];
+  }
+
+  @override
+  Future<void> apply(Map<String, Object?> page) async {
+    final now = _clock();
+    final cards = page['job_cards'];
+    for (final item in cards is List<Object?> ? cards : const <Object?>[]) {
+      final card = CardToken.tryParse(item);
+      final jobId = item is Map<String, Object?> ? item['job_id'] : null;
+      if (card == null || jobId is! String) {
+        _log.error('a pulled job card lacks its job, token or expiry');
+        continue;
+      }
+      await db
+          .into(db.cachedDocuments)
+          .insertOnConflictUpdate(
+            CachedDocumentsCompanion.insert(
+              key: '${DocKeys.jobCardPrefix}$jobId',
+              body: jsonEncode(card.toJson()),
+              updatedAt: isoWithOffset(now),
+            ),
+          );
+    }
+    for (final row in await _cards()) {
+      if (!(CardToken.tryParse(_decode(row.body))?.validAt(now) ?? false)) {
+        await (db.delete(
+          db.cachedDocuments,
+        )..where((d) => d.key.equals(row.key))).go();
+      }
+    }
+  }
+
+  static Object? _decode(String body) {
+    try {
+      return jsonDecode(body);
+    } on FormatException {
+      return null;
     }
   }
 }
