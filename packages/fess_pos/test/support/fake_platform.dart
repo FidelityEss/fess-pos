@@ -96,6 +96,14 @@ class FakeExternalApps implements ExternalApps {
     directions.add((lat: lat, lng: lng, label: label));
     return opens;
   }
+
+  int settingsOpened = 0;
+
+  @override
+  Future<bool> openAppSettings() async {
+    settingsOpened++;
+    return true;
+  }
 }
 
 PlatformServices fakePlatform({

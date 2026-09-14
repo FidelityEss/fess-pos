@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:fess_pos/src/contract/errors.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/platform/io/files.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show DeviceOrientation;
 import 'package:flutter/widgets.dart';
 
 enum PosLens { back, front, external }
@@ -101,8 +104,7 @@ abstract interface class CameraService {
 /// An open camera. The capture screen (T4-01) shows [preview] and calls
 /// [capture]; [close] releases the camera.
 abstract interface class CameraSession {
-  /// The live preview. On Android it isn't rotated for the device's
-  /// orientation; the capture screen handles that (T4-01).
+  /// The live preview, the right way up and in proportion.
   Widget preview();
 
   Future<CameraCaptureResult> capture();
@@ -162,29 +164,38 @@ class PluginCameraService implements CameraService {
     } on CameraException catch (e) {
       throw _failed(e);
     }
+    final CameraInitializedEvent ready;
     try {
       // Listen before initialising: the event can arrive before the call
       // returns.
       final initialized = _platform.onCameraInitialized(id).first;
       await _platform.initializeCamera(id);
-      await initialized;
+      ready = await initialized;
     } on CameraException catch (e) {
       await _platform.dispose(id);
       throw _failed(e);
     }
-    return _PluginCameraSession(_platform, id, camera);
+    return _PluginCameraSession(
+      _platform,
+      id,
+      camera,
+      ready.previewHeight > 0 ? ready.previewWidth / ready.previewHeight : 0,
+    );
   }
 }
 
 class _PluginCameraSession implements CameraSession {
-  _PluginCameraSession(this._platform, this._id, this._camera);
+  _PluginCameraSession(this._platform, this._id, this._camera, this._ratio);
 
   final CameraPlatform _platform;
   final int _id;
   final PosCamera _camera;
 
+  /// The preview's width over its height, as the sensor delivers it.
+  final double _ratio;
+
   @override
-  Widget preview() => _platform.buildPreview(_id);
+  Widget preview() => _Preview(_platform, _id, _ratio);
 
   @override
   Future<CameraCaptureResult> capture() async {
@@ -209,10 +220,85 @@ class _PluginCameraSession implements CameraSession {
   Future<void> close() => _platform.dispose(_id);
 }
 
-PosException _failed(CameraException e) => PosException(
-  PosErrorCodes.cameraFailed,
-  'camera error ${e.code}',
-  kind: PosErrorKind.platform,
-  retryable: true,
-  cause: e,
-);
+/// The codes the camera plugins use when the user hasn't allowed the
+/// camera: Camera2 on Android, AVFoundation on iOS, the browser on the web.
+const Set<String> _permissionCodes = {
+  'CameraAccessDenied',
+  'CameraAccessDeniedWithoutPrompt',
+  'CameraAccessRestricted',
+  'cameraPermission',
+};
+
+PosException _failed(CameraException e) => _permissionCodes.contains(e.code)
+    ? PosException(
+        PosErrorCodes.cameraPermissionDenied,
+        'camera access is not allowed (${e.code})',
+        kind: PosErrorKind.platform,
+        retryable: false,
+        cause: e,
+      )
+    : PosException(
+        PosErrorCodes.cameraFailed,
+        'camera error ${e.code}',
+        kind: PosErrorKind.platform,
+        retryable: true,
+        cause: e,
+      );
+
+/// The live preview, the right way up. On Android the plugin's texture
+/// isn't turned with the phone, so it is turned here as the phone turns,
+/// as the `camera` package does; elsewhere the platform does it. The box
+/// keeps the sensor's proportions, so nothing is stretched.
+class _Preview extends StatefulWidget {
+  const _Preview(this.platform, this.id, this.ratio);
+
+  final CameraPlatform platform;
+  final int id;
+  final double ratio;
+
+  @override
+  State<_Preview> createState() => _PreviewState();
+}
+
+class _PreviewState extends State<_Preview> {
+  DeviceOrientation _orientation = DeviceOrientation.portraitUp;
+  StreamSubscription<DeviceOrientationChangedEvent>? _turns;
+
+  @override
+  void initState() {
+    super.initState();
+    _turns = widget.platform.onDeviceOrientationChanged().listen(
+      (e) => setState(() => _orientation = e.orientation),
+    );
+  }
+
+  @override
+  void dispose() {
+    unawaited(_turns?.cancel());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final texture = widget.platform.buildPreview(widget.id);
+    if (widget.ratio <= 0) return texture;
+    final landscape =
+        _orientation == DeviceOrientation.landscapeLeft ||
+        _orientation == DeviceOrientation.landscapeRight;
+    final turned = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    return AspectRatio(
+      aspectRatio: landscape ? widget.ratio : 1 / widget.ratio,
+      child: turned
+          ? RotatedBox(
+              quarterTurns: switch (_orientation) {
+                DeviceOrientation.portraitUp => 0,
+                DeviceOrientation.landscapeRight => 1,
+                DeviceOrientation.portraitDown => 2,
+                DeviceOrientation.landscapeLeft => 3,
+              },
+              child: texture,
+            )
+          : texture,
+    );
+  }
+}

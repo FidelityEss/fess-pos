@@ -140,6 +140,17 @@ abstract final class BundledCopy {
     'inspection.camera_unavailable':
         "The camera couldn't be opened. Check that FESS may use the camera.",
     'inspection.capture_failed': "This couldn't be saved. Try again.",
+    'camera.explain.title': 'Photos for this inspection',
+    'camera.explain.body':
+        "POS takes the inspection's photos with the camera, here in the app. "
+        "They're never taken from your gallery. Next, your phone asks whether "
+        'FESS may use the camera: choose Allow.',
+    'camera.explain.continue': 'Continue',
+    'camera.denied':
+        "FESS isn't allowed to use the camera. Turn camera access on in your "
+        "phone's settings, then come back.",
+    'camera.open_settings': 'Open settings',
+    'camera.try_again': 'Try again',
     'form.error.RULE_ERROR':
         "This question couldn't be checked. Tell your administrator.",
     'form.error.VALIDATION_RULE_FAILED': 'Check this answer.',

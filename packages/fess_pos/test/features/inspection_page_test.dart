@@ -375,6 +375,9 @@ void main() {
     // A photo through the camera.
     await tester.tap(find.byKey(const ValueKey('photo-take-external_photos')));
     await _settle(tester);
+    // The first photo explains the camera before the phone asks (T4-01).
+    await tester.tap(find.byKey(const ValueKey('camera-explain-continue')));
+    await _settle(tester);
     await tester.tap(find.byKey(const ValueKey('capture-shutter')));
     await _settle(tester);
     expect(inspections.captured.single.type, 'photo');

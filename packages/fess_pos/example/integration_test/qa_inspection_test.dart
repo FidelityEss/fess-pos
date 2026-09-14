@@ -214,6 +214,16 @@ Future<void> _start(WidgetTester tester, ModuleRuntime runtime) async {
   );
 
   await _tap(tester, find.byKey(const ValueKey('photo-take-external_photos')));
+  // The first photo on a phone explains the camera before the system asks
+  // (T4-01); the app remembers it after that.
+  const explain = ValueKey('camera-explain-continue');
+  if (await _waitFor(
+    tester,
+    find.byKey(explain),
+    timeout: const Duration(seconds: 5),
+  )) {
+    await _tap(tester, find.byKey(explain));
+  }
   expect(
     await _waitFor(
       tester,
