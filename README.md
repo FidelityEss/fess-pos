@@ -52,7 +52,7 @@ To call the module API by hand, use the Postman collection in `tools/postman/` (
 Every change goes to QA first. Production gets the same migrations, functions and admin build later, on purpose and with approval. The release flow, the rebuild runbook and the Vercel setup are in the planning pack (`docs/15-environments.md`).
 
 - **Keys:** nothing secret needs typing in. The access-token signing key, the stand-in identity-issuer key and the worker key are generated in each project's Vault by the migrations.
-- **Function settings:** each project needs `POS_ENV` and `POS_ADMIN_ORIGINS` set as function secrets (planning pack `docs/15` §2). `POS_ENV` is `qa` or `production`. **Production must say `production`:** that value is what makes the API refuse the stand-in issuer.
+- **Function settings:** each project needs `POS_ENV` and `POS_ADMIN_ORIGINS` set as function secrets (planning pack `docs/15` §2). `POS_ENV` is `qa` or `production`. **Production must say `production`:** that value is what makes the API refuse the stand-in issuer. Always set it: today a missing `POS_ENV` falls back to `staging`, which the API treats as non-production (T1-40 makes it fail closed).
 
 ## Rules that shape the code
 
