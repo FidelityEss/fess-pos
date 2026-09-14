@@ -112,6 +112,9 @@ class InspectionRecord {
     required this.otherText,
     required this.currentStep,
     required this.startedAtDevice,
+    this.unknownDates = const {},
+    this.flaggedDiffers = const {},
+    this.flowPath = const [],
     this.submittedAtDevice,
     this.submissionEnvelopeId,
   });
@@ -134,7 +137,17 @@ class InspectionRecord {
   final Map<String, Object?> values;
   final Map<String, String> otherText;
 
-  /// The flow step the agent is on.
+  /// Dates the agent said they don't know, and prefilled values they
+  /// flagged as different on site.
+  final Set<String> unknownDates;
+  final Set<String> flaggedDiffers;
+
+  /// The flow pages the agent went through to where they are, each
+  /// `[step, page]`, so Back retraces a branch; empty in drafts from
+  /// before the full flow runner (T3-04).
+  final List<List<int>> flowPath;
+
+  /// The flow step the agent is on: its place among the pages shown.
   final int currentStep;
   final String startedAtDevice;
   final String? submittedAtDevice;
@@ -208,6 +221,9 @@ abstract interface class Inspections implements DeliveryTracker {
     required Map<String, Object?> values,
     required Map<String, String> otherText,
     required int currentStep,
+    Set<String> unknownDates = const {},
+    Set<String> flaggedDiffers = const {},
+    List<List<int>> flowPath = const [],
   });
 
   /// Stores [photo] for field [fieldKey] and records its `evidence_meta`;

@@ -1,7 +1,6 @@
-/// Answer validation (docs/04 §5–6), the Dart twin of `src/validator.ts`
-/// for the components in `formComponents`. The module runs it before
-/// anything is sent; the server runs the TypeScript one again on arrival,
-/// with the same codes:
+/// Answer validation (docs/04 §5–6), the Dart twin of `src/validator.ts`.
+/// The module runs it before anything is sent; the server runs the
+/// TypeScript one again on arrival, with the same codes:
 ///
 /// - unknown keys are rejected; display components and groups carry no
 ///   answers;
@@ -12,7 +11,9 @@
 /// - choices must be among the (filtered) options, or the declared "other"
 ///   value with `other_text`;
 /// - `validate[]` rules run on visible, non-empty answers;
-/// - computed values must match their rule; prefilled values their source.
+/// - computed values must match their rule; prefilled values their source;
+/// - a repeatable group's items are checked the same way, each with its
+///   own `item.*`, and their count against `min_items` / `max_items`.
 library;
 
 import 'package:fess_pos_engine/src/errors.dart';
@@ -42,6 +43,12 @@ const List<String> _boolEntryKeys = [
   'unknown',
 ];
 
+const Set<String> _displayTypes = {'info', 'callout', 'divider', 'image'};
+
+List<Map<String, Object?>> _maps(Object? v) => v is List<Object?>
+    ? v.whereType<Map<String, Object?>>().toList()
+    : const [];
+
 bool _isJsonValue(Object? v, [int depth = 0]) {
   if (depth > 256) return false;
   return switch (v) {
@@ -63,18 +70,74 @@ String? _entryProblem(Object? entry) {
   for (final k in entry.keys) {
     if (!_entryKeys.contains(k)) return 'unknown answer entry property "$k"';
   }
+  // Present means set: `"other_text": null` is refused, as in TypeScript.
   for (final k in _boolEntryKeys) {
-    if (entry[k] != null && entry[k] is! bool) return '$k must be boolean';
+    if (entry.containsKey(k) && entry[k] is! bool) return '$k must be boolean';
   }
-  if (entry['rendered_as'] != null && entry['rendered_as'] is! String) {
+  if (entry.containsKey('rendered_as') && entry['rendered_as'] is! String) {
     return 'rendered_as must be a string';
   }
-  if (entry['other_text'] != null && entry['other_text'] is! String) {
+  if (entry.containsKey('other_text') && entry['other_text'] is! String) {
     return 'other_text must be a string';
   }
   if (!_isJsonValue(entry['v'])) return 'v must be a JSON value';
   return null;
 }
+
+/// A repeatable group's child fields by key, groups opened.
+Map<String, Map<String, Object?>> _childMap(Map<String, Object?> def) {
+  final out = <String, Map<String, Object?>>{};
+  void visit(List<Map<String, Object?>> fields) {
+    for (final f in fields) {
+      final key = f['key'];
+      if (key is String) out[key] = f;
+      if (f['type'] == 'group') visit(_maps(f['fields']));
+    }
+  }
+
+  visit(_maps(def['fields']));
+  return out;
+}
+
+class _Ctx {
+  _Ctx(this.errors, this.env, this.context);
+
+  final List<ValidationError> errors;
+  final RuleEnv env;
+  final ResolveContext context;
+
+  void push(String path, String code, String message) =>
+      errors.add(ValidationError(path, code, message));
+}
+
+/// The problems with one field's answer entry (null when unanswered): what
+/// [validateAnswers] finds for that field, given the field as resolved and
+/// the data its `validate` rules read. The entry must be well formed.
+List<ValidationError> checkAnswerEntry(
+  Map<String, Object?> def,
+  ComponentSpec spec,
+  ResolvedField rf,
+  Map<String, Object?>? entry, {
+  required Map<String, Object?> data,
+  required RuleEnv env,
+  ResolveContext context = const ResolveContext(),
+}) {
+  final errors = <ValidationError>[];
+  _checkField(_Ctx(errors, env, context), def, spec, rf, entry, data);
+  return errors;
+}
+
+/// The rules that failed while resolving, as problems (`RULE_ERROR`),
+/// except those of hidden fields.
+List<ValidationError> ruleErrorsOf(ResolvedForm resolved) => [
+  for (final issue in resolved.errors)
+    if (resolved.fields[issue.path.split('[').first]?.visible ?? true)
+      ValidationError(
+        issue.path,
+        'RULE_ERROR',
+        '${issue.property}: ${issue.message}',
+      ),
+];
 
 /// Validates an answers map (`{key: {v, …}}`) of [form].
 ValidationResult validateAnswers(
@@ -115,7 +178,9 @@ ValidationResult validateAnswers(
     }
     final entry = e.value! as Map<String, Object?>;
     entries[e.key] = entry;
-    raw[e.key] = entry['v'];
+    raw[e.key] = cf.spec.type == 'repeatable_group'
+        ? _itemsToRaw(entry['v'], cf.def, e.key, errors)
+        : entry['v'];
   }
 
   final resolved = resolveForm(
@@ -124,42 +189,77 @@ ValidationResult validateAnswers(
     answers: raw,
     lists: lists,
   );
+  final ctx = _Ctx(errors, resolved.env, context);
   for (final cf in compiled.fields) {
     if (!cf.spec.hasValue) continue;
-    _checkField(
-      errors,
-      resolved,
-      cf.def,
-      cf.spec,
-      resolved.fields[cf.key]!,
-      entries[cf.key],
-    );
+    final rf = resolved.fields[cf.key]!;
+    _checkField(ctx, cf.def, cf.spec, rf, entries[cf.key], resolved.data);
   }
-  for (final issue in resolved.errors) {
-    final field = resolved.fields[issue.path];
-    if (field != null && !field.visible) continue;
-    errors.add(
-      ValidationError(
-        issue.path,
-        'RULE_ERROR',
-        '${issue.property}: ${issue.message}',
-      ),
-    );
-  }
+  errors.addAll(ruleErrorsOf(resolved));
   return ValidationResult(errors, resolved: resolved);
 }
 
-void _checkField(
+/// A repeatable group's items as raw values, their entries checked.
+Object? _itemsToRaw(
+  Object? v,
+  Map<String, Object?> def,
+  String key,
   List<ValidationError> errors,
-  ResolvedForm resolved,
+) {
+  if (v is! List<Object?>) return v;
+  final kids = _childMap(def);
+  final items = <Object?>[];
+  for (var i = 0; i < v.length; i++) {
+    final item = v[i];
+    if (item is! Map<String, Object?>) {
+      errors.add(
+        ValidationError(
+          '$key[$i]',
+          'INVALID_ENTRY',
+          'each item must be an object of answer entries',
+        ),
+      );
+      items.add(<String, Object?>{});
+      continue;
+    }
+    final out = <String, Object?>{};
+    for (final e in item.entries) {
+      final kid = kids[e.key];
+      final path = '$key[$i].${e.key}';
+      if (kid == null ||
+          kid['type'] == 'group' ||
+          _displayTypes.contains(kid['type'])) {
+        errors.add(
+          ValidationError(
+            path,
+            'UNKNOWN_FIELD',
+            '"${e.key}" is not an input field of this group',
+          ),
+        );
+        continue;
+      }
+      final problem = _entryProblem(e.value);
+      if (problem != null) {
+        errors.add(ValidationError(path, 'INVALID_ENTRY', problem));
+        continue;
+      }
+      out[e.key] = (e.value! as Map<String, Object?>)['v'];
+    }
+    items.add(out);
+  }
+  return items;
+}
+
+void _checkField(
+  _Ctx ctx,
   Map<String, Object?> def,
   ComponentSpec spec,
   ResolvedField rf,
   Map<String, Object?>? entry,
+  Map<String, Object?> data,
 ) {
-  final path = rf.key;
-  void push(String code, String message) =>
-      errors.add(ValidationError(path, code, message));
+  final path = rf.path;
+  void push(String code, String message) => ctx.push(path, code, message);
   final present = entry != null;
   if (!rf.visible) {
     if (present) {
@@ -196,12 +296,21 @@ void _checkField(
     }
     return;
   }
-  if (present && entry['unknown'] == true) {
-    // Only a date with allow_unknown may be unknown; no date here yet.
+
+  final unknown = present && entry['unknown'] == true;
+  final unknownOk =
+      unknown && spec.type == 'date' && rf.props['allow_unknown'] == true;
+  if (unknown && !unknownOk) {
     push(
       'INVALID_ENTRY',
       '`unknown` is only allowed on date fields with allow_unknown',
     );
+    return;
+  }
+  if (unknownOk) {
+    if (entry['v'] != null) {
+      push('INVALID_ENTRY', 'an unknown date must have v = null');
+    }
     return;
   }
   if (isEmptyAnswer(v)) {
@@ -228,14 +337,20 @@ void _checkField(
     final fallbackProps = fallback['props'];
     props = fallbackProps is Map<String, Object?> ? fallbackProps : const {};
   }
-  final issues = validateValue(type, v, props);
+  final issues = validateValue(
+    type,
+    v,
+    props,
+    job: ctx.context.job,
+    today: ctx.context.today,
+  );
   for (final i in issues) {
     push(i.code, i.message);
   }
 
   final otherText = present ? entry['other_text'] : null;
   if (type == spec.type &&
-      (type == 'single_select' || type == 'multi_select')) {
+      (type == 'single_select' || type == 'multi_select' || type == 'lookup')) {
     final allowed = {for (final o in rf.options ?? <OptionDef>[]) o.value};
     final otherValue = props['other_value'] is String
         ? props['other_value']! as String
@@ -263,14 +378,49 @@ void _checkField(
     push('INVALID_ENTRY', 'other_text is only allowed on choice fields');
   }
 
-  if (issues.isEmpty) _runValidateRules(errors, resolved, def, path);
+  if (spec.type == 'repeatable_group' && v is List<Object?>) {
+    final min = rf.props['min_items'];
+    final max = rf.props['max_items'];
+    if (min is num && v.length < min) {
+      push('TOO_FEW_ITEMS', 'add at least $min');
+    }
+    if (max is num && v.length > max) {
+      push('TOO_MANY_ITEMS', 'at most $max allowed');
+    }
+    final kids = _childMap(def);
+    for (final item in rf.items ?? const <ResolvedItem>[]) {
+      final rawItem = item.index < v.length ? v[item.index] : null;
+      final itemEntries = rawItem is Map<String, Object?>
+          ? rawItem
+          : const <String, Object?>{};
+      for (final e in item.fields.entries) {
+        final kidDef = kids[e.key];
+        final kidType = kidDef?['type'];
+        final kidSpec = kidType is String ? formComponentSpec(kidType) : null;
+        if (kidDef == null || kidSpec == null || !kidSpec.hasValue) continue;
+        final kidEntry = itemEntries[e.key];
+        _checkField(
+          ctx,
+          kidDef,
+          kidSpec,
+          e.value,
+          kidEntry != null && _entryProblem(kidEntry) == null
+              ? kidEntry as Map<String, Object?>
+              : null,
+          item.data,
+        );
+      }
+    }
+  }
+
+  if (issues.isEmpty) _runValidateRules(ctx, def, path, data);
 }
 
 void _runValidateRules(
-  List<ValidationError> errors,
-  ResolvedForm resolved,
+  _Ctx ctx,
   Map<String, Object?> def,
   String path,
+  Map<String, Object?> data,
 ) {
   final rules = def['validate'];
   if (rules is! List<Object?>) return;
@@ -278,32 +428,22 @@ void _runValidateRules(
     Object? r;
     try {
       final expr = rule['rule'];
-      r = expr is bool
-          ? expr
-          : evaluateRule(expr, resolved.data, env: resolved.env);
+      r = expr is bool ? expr : evaluateRule(expr, data, env: ctx.env);
     } on RuleError catch (e) {
-      errors.add(ValidationError(path, 'RULE_ERROR', 'validate: ${e.message}'));
+      ctx.push(path, 'RULE_ERROR', 'validate: ${e.message}');
       continue;
     }
     if (r != null && r is! bool) {
-      errors.add(
-        ValidationError(
-          path,
-          'RULE_ERROR',
-          'validate rule must evaluate to a boolean',
-        ),
-      );
+      ctx.push(path, 'RULE_ERROR', 'validate rule must evaluate to a boolean');
       continue;
     }
     if (r != true) {
       final code = rule['code'];
       final message = rule['message'];
-      errors.add(
-        ValidationError(
-          path,
-          code is String ? code : 'VALIDATION_RULE_FAILED',
-          message is String ? renderTemplate(message, resolved.data) : '',
-        ),
+      ctx.push(
+        path,
+        code is String ? code : 'VALIDATION_RULE_FAILED',
+        message is String ? renderTemplate(message, data) : '',
       );
     }
   }
@@ -339,8 +479,8 @@ ValidationResult validateSubmission(
     lists: lists,
   );
   final errors = [...res.errors];
-  final expected = document['answers_hash'];
-  if (expected != null) {
+  if (document.containsKey('answers_hash')) {
+    final expected = document['answers_hash'];
     String? hash;
     try {
       hash = answersHash(document['answers']);

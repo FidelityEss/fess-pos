@@ -22,3 +22,8 @@ String renderTemplate(String s, Object? data) => s.replaceAllMapped(
   _placeholder,
   (m) => renderScalar(readPath(data, m[1]!)),
 );
+
+/// The paths a template reads, e.g. `answers.other_business_name`.
+List<String> templatePaths(String s) => [
+  for (final m in _placeholder.allMatches(s)) m[1]!,
+];

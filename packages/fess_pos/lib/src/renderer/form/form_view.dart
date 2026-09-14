@@ -7,6 +7,10 @@ import 'package:fess_pos/src/renderer/form/form_controller.dart';
 import 'package:fess_pos/src/renderer/form/form_services.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+part 'form_inputs.dart';
+part 'form_summary.dart';
 
 /// Draws a `form` definition (docs/04 §3.2, `11` §3–5) from its
 /// [FormController]: each visible section's title and visible fields, in
@@ -99,30 +103,92 @@ class FormView extends StatelessWidget {
     for (final def in defs) {
       final f = resolved.fields[def['key']];
       if (f == null || !f.visible) continue;
-      if (f.type == 'group') {
-        _addFields(out, _maps(def['fields']), resolved);
-      } else if (fieldFilter?.call(f) ?? true) {
-        out.add(_field(def, f));
+      if (f.type != 'group') {
+        if (fieldFilter?.call(f) ?? true) out.add(_field(def, f));
+        continue;
+      }
+      final inner = <Widget>[];
+      _addFields(inner, _maps(def['fields']), resolved);
+      if (inner.isEmpty) continue;
+      final label = f.label;
+      if (label != null && label.trim().isNotEmpty) {
+        out.add(_GroupTitle(label));
+      }
+      final props = def['props'];
+      if (props is Map<String, Object?> && props['layout'] == 'two_column') {
+        out.add(_TwoColumn(key: ValueKey('form-group-${f.key}'), inner));
+      } else {
+        out.addAll(inner);
       }
     }
   }
 
+  /// [f] as drawn: as its declared fallback when this build can't draw its
+  /// own type (docs/04 §8), with the fallback's display and props.
   Widget _field(Map<String, Object?> def, ResolvedField f) {
+    final type = controller.renderedAs[f.key];
+    final fallback = def['fallback'];
+    if (type == null || fallback is! Map<String, Object?>) {
+      return _drawField(def, f);
+    }
+    final props = fallback['props'] is Map<String, Object?>
+        ? fallback['props']! as Map<String, Object?>
+        : const <String, Object?>{};
+    return _drawField(
+      {...def, 'type': type, 'display': fallback['display'], 'props': props},
+      ResolvedField(
+        key: f.key,
+        path: f.path,
+        type: type,
+        section: f.section,
+        visible: f.visible,
+        required: f.required,
+        readOnly: f.readOnly,
+        value: f.value,
+        computed: f.computed,
+        props: props,
+        label: f.label,
+        text: f.text,
+        hasDefault: f.hasDefault,
+        defaultValue: f.defaultValue,
+      ),
+    );
+  }
+
+  Widget _drawField(Map<String, Object?> def, ResolvedField f) {
     final b = _Binding(
       field: f,
       def: def,
       controller: controller,
       copy: copy,
       errors: [
-        for (final e in controller.errorsFor(f.key)) _errorText(e, f, copy),
+        for (final e in controller.errorsFor(f.key))
+          _errorText(e, f, def, copy),
       ],
     );
     final key = ValueKey('form-field-${f.key}');
+    // A value a rule works out is shown, not asked for.
+    if (f.computed && supportedFormComponents.containsKey(f.type)) {
+      return _Frame(
+        b,
+        key: key,
+        child: _ReadOnlyBox(_displayValue(f.value, copy)),
+      );
+    }
     return switch (f.type) {
       'text' || 'textarea' => _TextInput(b, key: key),
+      'number' || 'percentage' => _NumberInput(b, key: key),
+      'phone' => _PhoneInput(b, key: key),
       'boolean' => _BooleanInput(b, key: key),
+      'tri_state' => _TriStateInput(b, key: key),
       'single_select' => _SingleSelect(b, key: key),
       'multi_select' => _MultiSelect(b, key: key),
+      'date' => _DateInput(b, key: key),
+      'time' => _TimeInput(b, key: key),
+      'duration' => _DurationInput(b, key: key),
+      'business_hours' => _BusinessHoursInput(b, key: key),
+      'prefilled' => _PrefilledView(b, key: key),
+      'acknowledgement' => _AcknowledgementInput(b, key: key),
       'info' => Padding(
         key: key,
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -163,41 +229,22 @@ List<Map<String, Object?>> _maps(Object? v) => v is List<Object?>
 
 String? _string(Object? v) => v is String ? v : null;
 
-/// The codes the engine's validator produces; any other code (and
-/// `VALIDATION_RULE_FAILED`) comes from a definition's own `validate` rule.
-const Set<String> _engineCodes = {
-  'REQUIRED',
-  'INVALID_TYPE',
-  'INVALID_ENTRY',
-  'INVALID_OPTION',
-  'OTHER_TEXT_REQUIRED',
-  'TOO_SHORT',
-  'TOO_LONG',
-  'PATTERN_MISMATCH',
-  'DUPLICATE_VALUE',
-  'TOO_FEW',
-  'TOO_MANY',
-  'EXCLUSIVE_OPTION_COMBINED',
-  'RULE_ERROR',
-  'UNKNOWN_FIELD',
-  'HIDDEN_FIELD_PRESENT',
-  'COMPUTED_MISMATCH',
-  'PREFILL_MISMATCH',
-  'INVALID_RENDERED_AS',
-  'NOT_ACCEPTED',
-};
-
 /// The copy for a problem: a definition's own `validate` message as
-/// written; otherwise `form.error.<type>.<code>`, then `form.error.<code>`,
-/// filled from the field's props.
+/// written (`VALIDATION_RULE_FAILED`, or the rule's own `code`); otherwise
+/// `form.error.<type>.<code>`, then `form.error.<code>`, filled from the
+/// field's props; otherwise the message as given.
 String _errorText(
   ValidationError e,
   ResolvedField f,
+  Map<String, Object?> def,
   String Function(String key) copy,
 ) {
-  if (!_engineCodes.contains(e.code) && e.message.isNotEmpty) {
-    return e.message;
-  }
+  final ruleCodes = {
+    'VALIDATION_RULE_FAILED',
+    for (final rule in _maps(def['validate']))
+      if (rule['code'] case final String code) code,
+  };
+  if (ruleCodes.contains(e.code) && e.message.isNotEmpty) return e.message;
   for (final key in [
     'form.error.${f.type}.${e.code}',
     'form.error.${e.code}',
@@ -228,6 +275,12 @@ class _Binding {
   Map<String, Object?> get props => field.props;
   Object? get display => def['display'];
   String? get helpText => _string(def['help_text']);
+
+  /// What the rules see: the answers, `job`, `agent`, …
+  Map<String, Object?> get data => controller.resolved?.data ?? const {};
+
+  /// A template (e.g. a prop) filled in from [data]; null when absent.
+  String? template(Object? t) => t is String ? renderTemplate(t, data) : null;
 
   String get otherValue => _string(props['other_value']) ?? 'other';
   bool get allowOther => props['allow_other'] == true;

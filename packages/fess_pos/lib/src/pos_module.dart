@@ -1,4 +1,5 @@
 import 'package:fess_pos/src/contract/access.dart';
+import 'package:fess_pos/src/contract/capabilities.dart';
 import 'package:fess_pos/src/contract/events.dart';
 import 'package:fess_pos/src/contract/host_config.dart';
 import 'package:fess_pos/src/contract/identity.dart';
@@ -108,5 +109,6 @@ abstract final class PosModule {
     moduleVersion: PosVersions.module,
     apiVersion: PosVersions.api,
     specVersion: PosVersions.spec,
+    components: supportedFormComponents,
   );
 }

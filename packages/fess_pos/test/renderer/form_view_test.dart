@@ -369,6 +369,39 @@ void main() {
     c.dispose();
   });
 
+  test("a draft's hidden answer comes back with its field", () {
+    final c = FormController(
+      definition: {
+        'sections': [
+          {
+            'key': 's',
+            'fields': [
+              {
+                'key': 'reason_code',
+                'type': 'single_select',
+                'options': [
+                  {'value': 'a', 'label': 'A'},
+                  {'value': 'other', 'label': 'Other'},
+                ],
+              },
+              {
+                'key': 'detail',
+                'type': 'text',
+                'visible': _in('reason_code', ['other']),
+              },
+            ],
+          },
+        ],
+      },
+      initialValues: {'reason_code': 'a', 'detail': 'Kept aside'},
+    );
+    expect(c.answers.keys, ['reason_code'], reason: 'hidden ⇒ not sent');
+    expect(c.values['detail'], 'Kept aside');
+    c.setValue('reason_code', 'other');
+    expect(c.answers['detail'], {'v': 'Kept aside'});
+    c.dispose();
+  });
+
   testWidgets("a form this build can't read shows a notice, not half a form", (
     tester,
   ) async {
@@ -377,7 +410,8 @@ void main() {
         {
           'key': 's',
           'fields': [
-            {'key': 'visit', 'type': 'date', 'label': 'Visit date'},
+            // From a newer spec: the engine knows every 1.0 component.
+            {'key': 'visit', 'type': 'hologram', 'label': 'Visit date'},
           ],
         },
       ],

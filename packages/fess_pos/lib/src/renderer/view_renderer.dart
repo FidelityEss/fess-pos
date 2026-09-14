@@ -6,34 +6,10 @@ import 'package:fess_pos/src/renderer/template.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart';
 import 'package:flutter/material.dart';
 
-const PosLogger _log = PosLogger('renderer');
+export 'package:fess_pos/src/contract/capabilities.dart'
+    show supportedViewComponents;
 
-/// The view components this renderer draws (`11` §7.2), with their
-/// versions for the capability report. The rest arrive with their tasks:
-/// `action_button` and `image` (T3-05), `evidence_status` (T4-13). An item
-/// this build can't draw is left out; the rest of the view still shows.
-const Map<String, int> supportedViewComponents = {
-  'agent_card': 1,
-  'agent_card_summary': 1,
-  'job_card': 1,
-  'map_preview': 1,
-  'title': 1,
-  'field_value': 1,
-  'address_block': 1,
-  'schedule_window': 1,
-  'status_chip': 1,
-  'badge': 1,
-  'markdown': 1,
-  'divider': 1,
-  'contact': 1,
-  'greeting': 1,
-  'section_title': 1,
-  'stat_row': 1,
-  'stat_tile': 1,
-  'job_list': 1,
-  'sync_status': 1,
-  'announcement': 1,
-};
+const PosLogger _log = PosLogger('renderer');
 
 /// Draws a `view` definition's items (docs/04 §3.4): each item in order,
 /// shown only while its `visible` rule holds. Rules are evaluated by the
