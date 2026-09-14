@@ -206,13 +206,27 @@ extension on JobsSection {
 
 /// Definitions of every kind (docs/04 §7, docs/08 §2): the bodies the
 /// device lacks, each stored only if its `definition_hash` matches its
-/// content, and the manifest of what is in force per context. Pinning,
-/// eviction and capability fallbacks come with T3-07.
+/// content, and the manifest of what is in force per context. A version
+/// stays while it is in force or pinned by an inspection on the phone;
+/// anything else goes once a pull's manifest has been applied (docs/08 §4).
 class DefinitionsSection implements PullSection {
   DefinitionsSection(this.db);
 
   /// The API takes up to 2000 ids in `have.definition_version_ids`.
   static const int maxHave = 2000;
+
+  /// And up to 500 in `have.pinned_version_ids`.
+  static const int maxPinned = 500;
+
+  /// Versions an inspection on the phone began with: never evicted, and
+  /// reported so the server sends any the phone lacks.
+  Future<Set<String>> _pinned() async => {
+    for (final i in await db.select(db.inspections).get()) ...[
+      i.formVersionId,
+      i.flowVersionId,
+      ?i.jobSchemaVersionId,
+    ],
+  };
 
   final PosDatabase db;
 
@@ -229,6 +243,10 @@ class DefinitionsSection implements PullSection {
             .map((r) => r.read(column)!)
             .get();
     if (ids.isNotEmpty) have['definition_version_ids'] = ids;
+    final pinned = (await _pinned()).toList()..sort();
+    if (pinned.isNotEmpty) {
+      have['pinned_version_ids'] = pinned.take(maxPinned).toList();
+    }
   }
 
   @override
@@ -299,6 +317,15 @@ class DefinitionsSection implements PullSection {
             ),
           );
     }
+    // What's neither in force nor pinned by an inspection on the phone
+    // goes; the server sends it again if it's ever in force again.
+    final keep = {
+      for (final a in await db.select(db.activeDefinitions).get()) a.versionId,
+      ...await _pinned(),
+    };
+    await (db.delete(
+      db.definitionVersions,
+    )..where((d) => d.versionId.isNotIn(keep))).go();
   }
 }
 

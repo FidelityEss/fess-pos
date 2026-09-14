@@ -1,3 +1,4 @@
+import 'package:fess_pos/src/contract/capabilities.dart';
 import 'package:fess_pos/src/contract/errors.dart';
 import 'package:fess_pos/src/contract/host_config.dart';
 import 'package:fess_pos/src/contract/identity.dart';
@@ -227,12 +228,17 @@ Map<String, Object?> exchangeRequestBody({
   return body;
 }
 
-/// What this build of the module supports (docs/04 §8). Component, page,
-/// step and view versions join it as the renderer arrives (T3-07).
+/// What this build of the module supports (docs/04 §8): its versions, and
+/// the form components, view components, flow steps and page types it can
+/// show, each with its version.
 Map<String, Object?> capabilityReport(String clientType, String? platform) => {
   'module_version': PosVersions.module,
   'api_versions': [PosVersions.api],
   'spec_versions': [PosVersions.spec],
   'client_type': clientType,
   if (platform != null && platform.length <= 40) 'platform': platform,
+  'components': supportedFormComponents,
+  'view_components': supportedViewComponents,
+  'flow_steps': supportedFlowSteps,
+  'page_types': supportedPageTypes,
 };

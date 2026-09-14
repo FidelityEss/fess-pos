@@ -123,7 +123,39 @@ class FormView extends StatelessWidget {
     }
   }
 
+  /// [f] as drawn: as its declared fallback when this build can't draw its
+  /// own type (docs/04 §8), with the fallback's display and props.
   Widget _field(Map<String, Object?> def, ResolvedField f) {
+    final type = controller.renderedAs[f.key];
+    final fallback = def['fallback'];
+    if (type == null || fallback is! Map<String, Object?>) {
+      return _drawField(def, f);
+    }
+    final props = fallback['props'] is Map<String, Object?>
+        ? fallback['props']! as Map<String, Object?>
+        : const <String, Object?>{};
+    return _drawField(
+      {...def, 'type': type, 'display': fallback['display'], 'props': props},
+      ResolvedField(
+        key: f.key,
+        path: f.path,
+        type: type,
+        section: f.section,
+        visible: f.visible,
+        required: f.required,
+        readOnly: f.readOnly,
+        value: f.value,
+        computed: f.computed,
+        props: props,
+        label: f.label,
+        text: f.text,
+        hasDefault: f.hasDefault,
+        defaultValue: f.defaultValue,
+      ),
+    );
+  }
+
+  Widget _drawField(Map<String, Object?> def, ResolvedField f) {
     final b = _Binding(
       field: f,
       def: def,

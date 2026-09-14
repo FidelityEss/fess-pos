@@ -378,6 +378,33 @@ void main() {
     expect(first.dy, lessThan(second.dy));
   });
 
+  testWidgets('a field this build cannot draw shows as its fallback, and the '
+      'answer says so', (tester) async {
+    final c = await _show(tester, [
+      {
+        'key': 'addr',
+        'type': 'address',
+        'label': 'Street address',
+        'required': true,
+        'fallback': {
+          'type': 'textarea',
+          'props': {'rows': 2, 'max_length': 200},
+        },
+      },
+      {'key': 'stars', 'type': 'rating', 'label': 'Rating'},
+    ]);
+    expect(c.unsupportedVisible, ['stars'], reason: 'no fallback declared');
+    expect(find.text(_copy('form.unsupported_field')), findsOneWidget);
+    expect(find.text('Street address *'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), '12 Main Road, Soweto');
+    await tester.pump();
+    expect(c.answers['addr'], {
+      'v': '12 Main Road, Soweto',
+      'rendered_as': 'textarea',
+    });
+    expect(c.errors.where((e) => e.fieldKey == 'addr'), isEmpty);
+  });
+
   testWidgets('a computed value is shown, not asked for', (tester) async {
     final c = await _show(tester, [
       {'key': 'n', 'type': 'number', 'label': 'Tills'},

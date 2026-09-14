@@ -286,9 +286,79 @@ void main() {
       );
       expect(
         await db.select(db.definitionVersions).get(),
-        hasLength(1),
-        reason: 'kept until T3-07 decides what to evict',
+        isEmpty,
+        reason: 'neither in force nor pinned: it goes (T3-07)',
       );
+    });
+
+    test("an inspection's versions stay, and are reported as pinned", () async {
+      Map<String, Object?> definitions(
+        List<String> active,
+        List<String> held,
+      ) => {
+        'manifest': [
+          _manifest(active[0], 'form', 'site_inspection'),
+          _manifest(active[1], 'flow', 'site_inspection_flow'),
+        ],
+        'bodies': [
+          for (final id in held) _body(id, 'form', 'k$id', home),
+        ],
+      };
+      answer(
+        (p) => p
+          ..['jobs'] = {
+            'items': [_job('j1')],
+            'next_cursor': null,
+            'has_more': false,
+          }
+          ..['definitions'] = definitions(['v1', 'v2'], ['v1', 'v2']),
+      );
+      await engine.pull();
+      await db
+          .into(db.inspections)
+          .insert(
+            InspectionsCompanion.insert(
+              id: 'insp-1',
+              jobId: 'j1',
+              userId: 'u1',
+              attempt: 1,
+              status: 'in_progress',
+              formVersionId: 'v1',
+              formHash: 'h',
+              flowVersionId: 'v2',
+              flowHash: 'h',
+              contextSnapshot: '{}',
+              geofence: '{}',
+              integrity: '{}',
+              startedAtDevice: '2026-09-14T10:00:00.000+02:00',
+              updatedAt: '2026-09-14T10:00:00.000+02:00',
+            ),
+          );
+
+      // Newer versions come into force, and one nobody needs arrives.
+      api
+        ..reset('/sync/pull')
+        ..on(
+          '/sync/pull',
+          (_) => jsonResponse(
+            200,
+            pullPage(serverTime: clock.now)
+              ..['definitions'] = definitions(
+                ['v3', 'v4'],
+                ['v3', 'v4', 'v5'],
+              ),
+          ),
+        );
+      await engine.pull();
+      final kept = {
+        for (final d in await db.select(db.definitionVersions).get())
+          d.versionId,
+      };
+      expect(kept, {'v1', 'v2', 'v3', 'v4'});
+
+      await engine.pull();
+      final have = bodyOf(api.calls('/sync/pull').last)['have']! as Map;
+      expect(have['pinned_version_ids'], ['v1', 'v2']);
     });
   });
 }

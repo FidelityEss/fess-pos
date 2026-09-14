@@ -1,42 +1,9 @@
+import 'package:fess_pos/src/contract/capabilities.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart';
 import 'package:flutter/foundation.dart';
 
-/// The form components this renderer draws (`11` §3–5), with their
-/// versions for the capability report (T3-07). The rest arrive with their
-/// tasks: address and location pin (M3), the Wave-2 components (T6-01).
-const Map<String, int> supportedFormComponents = {
-  'text': 1,
-  'textarea': 1,
-  'number': 1,
-  'percentage': 1,
-  'phone': 1,
-  'boolean': 1,
-  'tri_state': 1,
-  'single_select': 1,
-  'multi_select': 1,
-  'date': 1,
-  'time': 1,
-  'duration': 1,
-  'business_hours': 1,
-  'info': 1,
-  'callout': 1,
-  'divider': 1,
-  'prefilled': 1,
-  'group': 1,
-  'photo': 1,
-  'signature': 1,
-  'declaration': 1,
-  'acknowledgement': 1,
-};
-
-/// Components drawn only inside an inspection, which brings the camera,
-/// the signature pad and the declarations (T4-27). Elsewhere, e.g. an
-/// unable reason that needs a photo, they hold the form as unsupported.
-const Set<String> inspectionOnlyComponents = {
-  'photo',
-  'signature',
-  'declaration',
-};
+export 'package:fess_pos/src/contract/capabilities.dart'
+    show inspectionOnlyComponents, supportedFormComponents;
 
 /// One form being filled in (docs/04 §4–6): the answers so far and what
 /// the rules make of them, kept by the engine's [FormSession]. A change
@@ -60,14 +27,25 @@ class FormController extends ChangeNotifier {
     Set<String> initialFlaggedDiffers = const {},
   }) {
     try {
+      final compiled = plan ?? compileForm(definition);
       _session = FormSession(
-        plan ?? compileForm(definition),
+        compiled,
         context: context,
         lists: lists,
         values: initialValues,
         otherText: initialOtherText,
         unknown: initialUnknown,
         flaggedDiffers: initialFlaggedDiffers,
+        // A field this build can't draw is drawn as its declared fallback
+        // when it can draw that (docs/04 §8); the answer says so.
+        renderedAs: {
+          for (final cf in compiled.fields)
+            if (!_drawable(cf.spec.type))
+              if (cf.def['fallback'] case {
+                'type': final String type,
+              } when _drawable(type))
+                cf.key: type,
+        },
       );
     } on EngineError catch (e) {
       _definitionError = e;
@@ -135,6 +113,9 @@ class FormController extends ChangeNotifier {
   /// visible, answered input field.
   Map<String, Object?> get answers => _session?.answers ?? const {};
 
+  /// Fields drawn as their declared fallback: its type by field key.
+  Map<String, String> get renderedAs => _session?.renderedAs ?? const {};
+
   /// Every current problem, shown or not.
   List<ValidationError> get errors => _errors;
 
@@ -153,9 +134,13 @@ class FormController extends ChangeNotifier {
   List<String> get unsupportedVisible {
     final r = resolved;
     if (r == null) return const [];
+    final fallbacks = renderedAs;
     return [
       for (final key in r.order)
-        if (r.fields[key]!.visible && !_drawable(r.fields[key]!.type)) key,
+        if (r.fields[key]!.visible &&
+            !_drawable(r.fields[key]!.type) &&
+            !fallbacks.containsKey(key))
+          key,
     ];
   }
 
