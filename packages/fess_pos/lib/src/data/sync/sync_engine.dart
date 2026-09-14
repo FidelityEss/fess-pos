@@ -48,12 +48,14 @@ class SyncEngine {
     required bool Function() canPull,
     Future<void> Function(RemoteConfig config)? reverify,
     void Function(PullReport report)? onPulled,
+    Future<int> Function()? uploadEvidence,
     DateTime Function()? clock,
     this.nudgeDelay = const Duration(seconds: 2),
   }) : _deviceOrigin = deviceOrigin,
        _canPull = canPull,
        _reverify = reverify,
        _onPulled = onPulled,
+       _uploadEvidence = uploadEvidence,
        _clock = clock ?? DateTime.now;
 
   final OutboxSender sender;
@@ -64,6 +66,10 @@ class SyncEngine {
   final bool Function() _canPull;
   final Future<void> Function(RemoteConfig config)? _reverify;
   final void Function(PullReport report)? _onPulled;
+
+  /// The evidence upload lane (docs/12 §6); returns how many uploads it
+  /// recorded, which then go out as `evidence_uploaded`.
+  final Future<int> Function()? _uploadEvidence;
   final DateTime Function() _clock;
 
   RemoteConfig _config = RemoteConfig.bundled;
@@ -131,6 +137,14 @@ class SyncEngine {
       if (origin != null) await outbox.reportQuarantinedStores(origin);
 
       drained = await sender.drain();
+      final upload = _uploadEvidence;
+      if (upload != null) {
+        try {
+          if (await upload() > 0) drained = await sender.drain();
+        } on Object catch (e, st) {
+          _log.warning('evidence uploads stopped', error: e, stackTrace: st);
+        }
+      }
       if (_canPull()) {
         try {
           pulled = await puller.pull();

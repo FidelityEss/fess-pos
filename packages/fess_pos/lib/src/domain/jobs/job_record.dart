@@ -73,6 +73,10 @@ abstract interface class DefinitionRepository {
     String key, {
     String? bankId,
   });
+
+  /// Definition version [versionId] if the phone holds it, active or not:
+  /// what an inspection pinned (docs/04 §7).
+  Future<Map<String, Object?>?> version(String versionId);
 }
 
 /// What the server says about the signed-in agent.

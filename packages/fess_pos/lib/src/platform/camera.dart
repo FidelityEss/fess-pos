@@ -1,5 +1,6 @@
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:fess_pos/src/contract/errors.dart';
+import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/platform/io/files.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -39,7 +40,7 @@ enum PosCameraResolution { high, veryHigh, max }
 /// can therefore only come from the camera, never from a file or the
 /// gallery (docs/07 §6), and the evidence pipeline's only intake type is
 /// this class (docs/DEVELOPMENT-GUIDELINES.md §2).
-final class CameraCaptureResult {
+final class CameraCaptureResult implements CapturedPhoto {
   CameraCaptureResult._({
     required this.bytes,
     required this.mimeType,
@@ -65,12 +66,15 @@ final class CameraCaptureResult {
     sourcePath: null,
   );
 
+  @override
   final Uint8List bytes;
+  @override
   final String mimeType;
   final String cameraId;
   final PosLens lens;
 
   /// Device wall time when the shutter fired.
+  @override
   final DateTime capturedAt;
 
   final String? _sourcePath;
@@ -78,6 +82,7 @@ final class CameraCaptureResult {
   /// Deletes the camera plugin's temporary plaintext file. The evidence
   /// store calls this only once its encrypted copy is durable (docs/12 §3):
   /// until then the temporary file is a second copy, not litter.
+  @override
   Future<void> releaseSource() async {
     final path = _sourcePath;
     if (path != null) await deleteFileIfExists(path);

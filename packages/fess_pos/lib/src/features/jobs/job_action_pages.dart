@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/domain/forms/reason_codes.dart';
 import 'package:fess_pos/src/domain/forms/reason_form.dart';
+import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
+import 'package:fess_pos/src/features/inspections/inspection_page.dart';
 import 'package:fess_pos/src/features/jobs/job_pages.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:fess_pos/src/renderer/form/form_controller.dart';
@@ -155,16 +157,55 @@ class _JobActionBarState extends ConsumerState<JobActionBar> {
         ),
       );
 
+  /// Begins the inspection, or opens the one in progress (T4-27).
+  Future<void> _inspect(
+    Inspections inspections,
+    String Function(String key) copy,
+  ) async {
+    setState(() => _busy = true);
+    final result = await inspections.begin(widget.job);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    final id = result.inspectionId;
+    if (result.status == BeginStatus.begun && id != null) {
+      // The start goes to the server now if it can; otherwise it waits.
+      unawaited(inspections.sendNow());
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => InspectionPage(job: widget.job, inspectionId: id),
+        ),
+      );
+      return;
+    }
+    final message = switch (result.status) {
+      BeginStatus.definitionsMissing => copy('inspection.definitions_missing'),
+      BeginStatus.unavailable => copy('job.action.unavailable'),
+      _ => copy('job.action.not_allowed'),
+    };
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final copy = ref.watch(copyProvider);
     final actions = _data(ref.watch(jobActionsProvider));
+    final inspections = _data(ref.watch(inspectionsProvider));
+    final latest = _data(ref.watch(latestInspectionProvider(widget.job.id)));
     final app = _app(ref, widget.job.bankId);
     final allowed = [
       for (final a in JobAction.values)
         if (jobActionAllowed(a, widget.job)) a,
     ];
-    if (actions == null || allowed.isEmpty) return const SizedBox.shrink();
+    final open = latest != null && latest.status == 'in_progress';
+    final canInspect =
+        widget.job.assignedToMe &&
+        (open || inspectionBeginStatuses.contains(widget.job.status));
+    final showActions = actions != null && allowed.isNotEmpty;
+    if (!showActions && (inspections == null || !canInspect)) {
+      return const SizedBox.shrink();
+    }
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -172,11 +213,25 @@ class _JobActionBarState extends ConsumerState<JobActionBar> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            for (final a in allowed)
+            if (inspections != null && canInspect)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: _button(a, actions, JobActionConfig.of(app, a), copy),
+                child: FilledButton(
+                  key: ValueKey(
+                    open ? 'job-action-continue' : 'job-action-begin',
+                  ),
+                  onPressed: _busy ? null : () => _inspect(inspections, copy),
+                  child: Text(
+                    copy(open ? 'inspection.continue' : 'inspection.begin'),
+                  ),
+                ),
               ),
+            if (actions != null)
+              for (final a in allowed)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: _button(a, actions, JobActionConfig.of(app, a), copy),
+                ),
           ],
         ),
       ),
@@ -375,7 +430,9 @@ class ActionOutcomePage extends ConsumerStatefulWidget {
   });
 
   final JobActionResult result;
-  final JobActions actions;
+
+  /// Follows the envelope: a job action's, or an inspection's submission.
+  final DeliveryTracker actions;
   final String? bankId;
 
   @override

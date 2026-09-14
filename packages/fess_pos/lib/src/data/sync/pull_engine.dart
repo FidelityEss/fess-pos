@@ -39,6 +39,13 @@ abstract final class DocKeys {
 
   /// A job's authorisation card token: `job_card:<job id>`.
   static const String jobCardPrefix = 'job_card:';
+
+  /// A job's inspection session token (docs/07 §3):
+  /// `session_token:<job id>`.
+  static const String sessionTokenPrefix = 'session_token:';
+
+  /// The latest version of a declaration: `declaration:<key>`.
+  static const String declarationPrefix = 'declaration:';
 }
 
 /// `sync_state` keys the pull keeps.

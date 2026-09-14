@@ -11,6 +11,8 @@ import 'package:fess_pos/src/contract/identity.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/observability/pos_observability.dart';
+import 'package:fess_pos/src/core/version.dart';
+import 'package:fess_pos/src/data/local/inspection_store.dart';
 import 'package:fess_pos/src/data/local/job_actions_store.dart';
 import 'package:fess_pos/src/data/local/local_store.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
@@ -20,13 +22,16 @@ import 'package:fess_pos/src/data/outbox/outbox_sender.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart';
 import 'package:fess_pos/src/data/remote/api_session_gateway.dart';
 import 'package:fess_pos/src/data/remote/api_transport.dart';
+import 'package:fess_pos/src/data/remote/evidence_uploader.dart';
 import 'package:fess_pos/src/data/remote/pos_api_client.dart';
 import 'package:fess_pos/src/data/remote/push_registration.dart';
 import 'package:fess_pos/src/data/remote/session_vault.dart';
 import 'package:fess_pos/src/data/remote/tile_fetcher.dart';
+import 'package:fess_pos/src/data/sync/evidence_uploads.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
 import 'package:fess_pos/src/data/sync/sections.dart';
 import 'package:fess_pos/src/data/sync/sync_engine.dart';
+import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/domain/navigation/pos_link.dart';
@@ -197,6 +202,9 @@ final class ModuleRuntime {
   SyncEngine? _sync;
   OutboxStore? _outbox;
   JobActions? _jobActions;
+  Inspections? _inspections;
+  ActionRecorder? _recorder;
+  EvidenceUploader? _uploader;
   CachedTileSource? _tiles;
   Future<void>? _prefetching;
   PushRegistration? _pushRegistration;
@@ -295,19 +303,68 @@ final class ModuleRuntime {
     final db = await localStore();
     return _jobActions ??= DriftJobActions(
       db: db,
-      recorder: ActionRecorder(_outboxFor(db)),
-      origin: () async {
-        final session = (await client.vault.read()).active;
-        if (session == null) return null;
-        return EnvelopeOrigin(
-          deviceId: await client.vault.deviceId(),
-          clientType: _clientType,
-          userId: session.user.id,
-          sessionId: session.sessionId,
-        );
-      },
+      recorder: _recorderFor(db),
+      origin: () => _activeOrigin(client),
       send: runSync,
     );
+  }
+
+  /// Inspections (T4-27), recorded under the signed-in user's session;
+  /// null in builds without the POS API client.
+  Future<Inspections?> inspections() async {
+    final built = _inspections;
+    if (built != null) return built;
+    final client = dependencies.apiClient;
+    if (client == null) return null;
+    final db = await localStore();
+    final platform = dependencies.platform;
+    return _inspections ??= DriftInspections(
+      outbox: _outboxFor(db),
+      recorder: _recorderFor(db),
+      origin: () => _activeOrigin(client),
+      send: runSync,
+      location: platform.location,
+      integrity: platform.integrity,
+      diagnostics: _diagnostics,
+      clock: dependencies.clock,
+    );
+  }
+
+  /// Who records an agent action now: the signed-in user.
+  Future<EnvelopeOrigin?> _activeOrigin(PosApiClient client) async {
+    final session = (await client.vault.read()).active;
+    if (session == null) return null;
+    return EnvelopeOrigin(
+      deviceId: await client.vault.deviceId(),
+      clientType: _clientType,
+      userId: session.user.id,
+      sessionId: session.sessionId,
+    );
+  }
+
+  /// One action recorder, so its double-tap guard spans every action.
+  ActionRecorder _recorderFor(PosDatabase db) =>
+      _recorder ??= ActionRecorder(_outboxFor(db));
+
+  /// The `diagnostics` a submission carries (`schema/api` common).
+  Future<Map<String, Object?>> _diagnostics() async {
+    const platforms = {'android', 'ios', 'web'};
+    const fallback = kIsWeb ? 'web' : 'android';
+    String cut(String s, int max) => s.length > max ? s.substring(0, max) : s;
+    try {
+      final d = await dependencies.platform.deviceInfo.describe();
+      final host = d.hostAppVersion;
+      return {
+        'module_version': PosVersions.module,
+        'platform': platforms.contains(d.os) ? d.os : fallback,
+        'host_app_version': ?host == null ? null : cut(host, 60),
+        'os_version': cut(d.osVersion, 60),
+        'model': cut(d.model, 120),
+        'extra': {'os': d.os},
+      };
+    } on Object {
+      return {'module_version': PosVersions.module, 'platform': fallback};
+    }
   }
 
   /// Map tiles (T2-17): cached on the phone, fetched from the provider in
@@ -364,9 +421,26 @@ final class ModuleRuntime {
           JobsSection(db),
           DefinitionsSection(db),
           CardsSection(db, clock: dependencies.clock),
+          SessionTokensSection(db, clock: dependencies.clock),
+          DeclarationsSection(db, clock: dependencies.clock),
+          EvidenceSection(db, clock: dependencies.clock),
         ],
         clock: dependencies.clock,
       ),
+      uploadEvidence: EvidenceUploads(
+        outbox: outbox,
+        client: client,
+        uploader: _uploader ??= EvidenceUploader(
+          publishableKey: config.bootstrap.publishableKey,
+        ),
+        originFor: (userId) async => EnvelopeOrigin(
+          deviceId: await client.vault.deviceId(),
+          clientType: clientType,
+          userId: userId,
+          sessionId: (await client.vault.read()).sessions[userId]?.sessionId,
+        ),
+        clock: dependencies.clock,
+      ).run,
       outbox: outbox,
       deviceOrigin: () async => EnvelopeOrigin(
         deviceId: await client.vault.deviceId(),
@@ -495,6 +569,7 @@ final class ModuleRuntime {
     container.dispose();
     pendingLink.dispose();
     dependencies.apiClient?.close();
+    _uploader?.close();
     final store = _localStore;
     _localStore = null;
     if (store != null) {

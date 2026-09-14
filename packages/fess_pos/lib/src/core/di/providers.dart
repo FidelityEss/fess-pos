@@ -12,6 +12,7 @@ import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/local/repositories.dart';
 import 'package:fess_pos/src/domain/cards/cards.dart';
 import 'package:fess_pos/src/domain/forms/reason_codes.dart';
+import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/domain/maps/map_tiles.dart';
@@ -126,6 +127,63 @@ final jobActionsProvider = FutureProvider<JobActions?>(
   (ref) => ref.watch(moduleRuntimeProvider).jobActions(),
   name: 'jobActions',
 );
+
+/// Inspections (T4-27); null in builds without the POS API client.
+final inspectionsProvider = FutureProvider<Inspections?>(
+  (ref) => ref.watch(moduleRuntimeProvider).inspections(),
+  name: 'inspections',
+);
+
+/// The latest inspection of a job on this phone, live.
+// ignore: specify_nonobvious_property_types
+final latestInspectionProvider =
+    StreamProvider.family<InspectionRecord?, String>((ref, jobId) async* {
+      final inspections = await ref.watch(inspectionsProvider.future);
+      if (inspections == null) {
+        yield null;
+        return;
+      }
+      yield* inspections.watchLatest(jobId);
+    }, name: 'latestInspection');
+
+/// One inspection, live.
+// ignore: specify_nonobvious_property_types
+final inspectionProvider = StreamProvider.family<InspectionRecord?, String>((
+  ref,
+  id,
+) async* {
+  final inspections = await ref.watch(inspectionsProvider.future);
+  if (inspections == null) {
+    yield null;
+    return;
+  }
+  yield* inspections.watch(id);
+}, name: 'inspection');
+
+/// A definition version the phone holds, by id: what an inspection pinned.
+// ignore: specify_nonobvious_property_types
+final definitionVersionProvider =
+    FutureProvider.family<Map<String, Object?>?, String>(
+      (ref, versionId) async => (await ref.watch(
+        definitionRepositoryProvider.future,
+      )).version(versionId),
+      name: 'definitionVersion',
+    );
+
+final declarationRepositoryProvider = FutureProvider<DeclarationRepository>(
+  (ref) async =>
+      DriftDeclarationRepository(await ref.watch(localDatabaseProvider.future)),
+  name: 'declarationRepository',
+);
+
+/// The latest version of a declaration, live.
+// ignore: specify_nonobvious_property_types
+final declarationProvider = StreamProvider.family<Declaration?, String>((
+  ref,
+  key,
+) async* {
+  yield* (await ref.watch(declarationRepositoryProvider.future)).watch(key);
+}, name: 'declaration');
 
 final cardRepositoryProvider = FutureProvider<CardRepository>(
   (ref) async =>

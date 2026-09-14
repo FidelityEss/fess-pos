@@ -3,6 +3,7 @@
 library;
 
 import 'package:fess_pos_engine/src/errors.dart';
+import 'package:fess_pos_engine/src/rules/dates.dart';
 import 'package:fess_pos_engine/src/rules/regex.dart';
 import 'package:meta/meta.dart';
 
@@ -27,6 +28,10 @@ bool isEmptyAnswer(Object? v) =>
     (v is Map<Object?, Object?> && v.isEmpty);
 
 num? _num(Object? v) => v is num ? v : null;
+
+/// Every key of [o] is one of [allowed] (`strictKeys` in `src/values.ts`).
+bool _strictKeys(Map<String, Object?> o, List<String> allowed) =>
+    o.keys.every(allowed.contains);
 
 /// Checks one non-empty answer [value] of a component [type].
 List<ValueIssue> validateValue(
@@ -119,6 +124,27 @@ List<ValueIssue> validateValue(
       return value is String && _uuid.hasMatch(value)
           ? out
           : bad('an evidence id');
+    case 'declaration':
+      if (value is! Map<String, Object?> ||
+          !_strictKeys(value, const [
+            'accepted',
+            'declaration_version_id',
+            'accepted_at',
+          ])) {
+        return bad('{accepted, declaration_version_id, accepted_at}');
+      }
+      final version = value['declaration_version_id'];
+      if (version is! String || !_uuid.hasMatch(version)) {
+        return bad('declaration_version_id uuid');
+      }
+      final at = value['accepted_at'];
+      if (at is! String || !isIsoDateTime(at)) {
+        return bad('accepted_at ISO datetime');
+      }
+      if (value['accepted'] != true) {
+        push('NOT_ACCEPTED', 'the declaration must be accepted');
+      }
+      return out;
     default:
       return out;
   }

@@ -7,7 +7,8 @@ import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/outbox/envelope.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
 import 'package:fess_pos/src/domain/cards/cards.dart';
-import 'package:fess_pos_engine/fess_pos_engine.dart' show definitionHash;
+import 'package:fess_pos_engine/fess_pos_engine.dart'
+    show definitionHash, sha256Hex;
 
 const PosLogger _log = PosLogger('pull');
 
@@ -181,12 +182,17 @@ class CardsSection implements PullSection {
 }
 
 extension on JobsSection {
-  /// Jobs with a `job_event` still on the phone, not yet sent.
+  /// Jobs with an action still on the phone, not yet sent: a `job_event`,
+  /// a begun inspection or a submission.
   Future<Set<String>> _jobsWithWaitingActions() async {
     final rows =
         await (db.select(db.outbox)..where(
               (o) =>
-                  o.type.equals('job_event') &
+                  o.type.isIn(const [
+                    'job_event',
+                    'inspection_started',
+                    'submission',
+                  ]) &
                   o.state.isIn([OutboxState.queued, OutboxState.inFlight]),
             ))
             .get();
@@ -293,6 +299,213 @@ class DefinitionsSection implements PullSection {
             ),
           );
     }
+  }
+}
+
+/// Inspection session tokens (docs/07 §3): one per job the agent may still
+/// begin, kept as `session_token:<job id>` in the encrypted store. Every
+/// token held and still valid is reported in `have.session_token_job_ids`.
+/// The server issues a new token only for a job missing from that list,
+/// and revokes the old one when it does, so a token an inspection has used
+/// but not yet sent keeps being reported. Lapsed tokens are dropped.
+class SessionTokensSection implements PullSection {
+  SessionTokensSection(this.db, {DateTime Function()? clock})
+    : _clock = clock ?? DateTime.now;
+
+  final PosDatabase db;
+  final DateTime Function() _clock;
+
+  @override
+  Set<String> get streams => const {};
+
+  Future<List<CachedDocumentRow>> _tokens() => (db.select(
+    db.cachedDocuments,
+  )..where((d) => d.key.like('${DocKeys.sessionTokenPrefix}%'))).get();
+
+  @override
+  Future<void> describeHave(Map<String, Object?> have) async {
+    final now = _clock();
+    have['session_token_job_ids'] = [
+      for (final row in await _tokens())
+        if (_validTo(row.body)?.isAfter(now) ?? false)
+          row.key.substring(DocKeys.sessionTokenPrefix.length),
+    ];
+  }
+
+  @override
+  Future<void> apply(Map<String, Object?> page) async {
+    final now = _clock();
+    for (final t in _items(page['session_tokens'])) {
+      final jobId = t['job_id'];
+      if (jobId is! String ||
+          t['token_id'] is! String ||
+          t['token'] is! String ||
+          t['valid_from'] is! String ||
+          t['valid_to'] is! String) {
+        _log.error('a pulled session token lacks one of its fields');
+        continue;
+      }
+      await db
+          .into(db.cachedDocuments)
+          .insertOnConflictUpdate(
+            CachedDocumentsCompanion.insert(
+              key: '${DocKeys.sessionTokenPrefix}$jobId',
+              body: jsonEncode({
+                'job_id': jobId,
+                'token_id': t['token_id'],
+                'token': t['token'],
+                'valid_from': t['valid_from'],
+                'valid_to': t['valid_to'],
+              }),
+              updatedAt: isoWithOffset(now),
+            ),
+          );
+    }
+    for (final row in await _tokens()) {
+      if (!(_validTo(row.body)?.isAfter(now) ?? false)) {
+        await (db.delete(
+          db.cachedDocuments,
+        )..where((d) => d.key.equals(row.key))).go();
+      }
+    }
+  }
+
+  static DateTime? _validTo(String body) {
+    final validTo = _map(_decodeJson(body))?['valid_to'];
+    return validTo is String ? DateTime.tryParse(validTo) : null;
+  }
+}
+
+/// Declarations (docs/07 §4): the latest version of each, kept as
+/// `declaration:<key>` once its text matches its hash. Held versions are
+/// reported in `have.declaration_ids`, so only new ones are sent.
+class DeclarationsSection implements PullSection {
+  DeclarationsSection(this.db, {DateTime Function()? clock})
+    : _clock = clock ?? DateTime.now;
+
+  final PosDatabase db;
+  final DateTime Function() _clock;
+
+  @override
+  Set<String> get streams => const {};
+
+  Future<List<CachedDocumentRow>> _held() => (db.select(
+    db.cachedDocuments,
+  )..where((d) => d.key.like('${DocKeys.declarationPrefix}%'))).get();
+
+  @override
+  Future<void> describeHave(Map<String, Object?> have) async {
+    final ids = [
+      for (final row in await _held())
+        if (_map(_decodeJson(row.body))?['id'] case final String id) id,
+    ];
+    if (ids.isNotEmpty) have['declaration_ids'] = ids;
+  }
+
+  @override
+  Future<void> apply(Map<String, Object?> page) async {
+    final declarations = _map(page['declarations']);
+    if (declarations == null) return;
+    final held = {
+      for (final row in await _held())
+        row.key: _map(_decodeJson(row.body))?['version'],
+    };
+    for (final body in _items(declarations['bodies'])) {
+      final id = body['id'];
+      final key = body['key'];
+      final version = body['version'];
+      final hash = body['hash'];
+      final text = body['text'];
+      if (id is! String ||
+          key is! String ||
+          version is! int ||
+          hash is! String ||
+          text is! String) {
+        _log.error('a pulled declaration lacks one of its required fields');
+        continue;
+      }
+      if (sha256Hex(text) != hash) {
+        // An agent never accepts wording that isn't what was published.
+        _log.error('declaration $key v$version failed its hash check');
+        continue;
+      }
+      final docKey = '${DocKeys.declarationPrefix}$key';
+      final current = held[docKey];
+      if (current is int && current >= version) continue;
+      await db
+          .into(db.cachedDocuments)
+          .insertOnConflictUpdate(
+            CachedDocumentsCompanion.insert(
+              key: docKey,
+              body: jsonEncode({
+                'id': id,
+                'key': key,
+                'version': version,
+                'hash': hash,
+                'title': body['title'],
+                'text': text,
+              }),
+              hash: Value(hash),
+              updatedAt: isoWithOffset(_clock()),
+            ),
+          );
+      held[docKey] = version;
+    }
+  }
+}
+
+/// Evidence states (docs/12 §6, docs/08 §4): the `evidence` stream says
+/// what the server holds. Verified bytes leave the phone; the record and
+/// its hash stay. Quarantined evidence keeps its bytes.
+class EvidenceSection implements PullSection {
+  EvidenceSection(this.db, {DateTime Function()? clock})
+    : _clock = clock ?? DateTime.now;
+
+  final PosDatabase db;
+  final DateTime Function() _clock;
+
+  @override
+  Set<String> get streams => const {'evidence'};
+
+  @override
+  Future<void> describeHave(Map<String, Object?> have) async {}
+
+  @override
+  Future<void> apply(Map<String, Object?> page) async {
+    for (final item in _items(_map(page['evidence'])?['items'])) {
+      final id = item['id'];
+      final state = item['upload_state'];
+      if (id is! String || state is! String) continue;
+      final row = await (db.select(
+        db.evidence,
+      )..where((e) => e.id.equals(id))).getSingleOrNull();
+      if (row == null || row.state == state) continue;
+      final EvidenceCompanion change;
+      switch (state) {
+        case 'verified':
+          change = const EvidenceCompanion(
+            state: Value('verified'),
+            bytes: Value(null),
+          );
+        case 'quarantined':
+          change = const EvidenceCompanion(state: Value('quarantined'));
+        case 'uploaded' when row.state == 'local_only':
+          change = const EvidenceCompanion(state: Value('uploaded'));
+        default:
+          continue;
+      }
+      await (db.update(db.evidence)..where((e) => e.id.equals(id))).write(
+        change.copyWith(updatedAt: Value(isoWithOffset(_clock()))),
+      );
+    }
+  }
+}
+
+Object? _decodeJson(String body) {
+  try {
+    return jsonDecode(body);
+  } on FormatException {
+    return null;
   }
 }
 

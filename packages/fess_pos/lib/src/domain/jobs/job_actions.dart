@@ -111,8 +111,17 @@ enum DeliveryState {
   needsAttention,
 }
 
+/// Follows envelopes to the server, for outcome pages.
+abstract interface class DeliveryTracker {
+  /// Sends now if it can: one sync pass. Never throws.
+  Future<void> sendNow();
+
+  /// The delivery of envelope [envelopeId], live.
+  Stream<DeliveryState> watchDelivery(String envelopeId);
+}
+
 /// Records job actions and follows their envelopes.
-abstract interface class JobActions {
+abstract interface class JobActions implements DeliveryTracker {
   /// Records [action] on [job]: the job's status on the phone and its
   /// `job_event` envelope, in one transaction, once however often it's
   /// tapped. Reject and unable need [reason].
@@ -121,10 +130,4 @@ abstract interface class JobActions {
     JobAction action, {
     ReasonSubmission? reason,
   });
-
-  /// Sends now if it can: one sync pass. Never throws.
-  Future<void> sendNow();
-
-  /// The delivery of envelope [envelopeId], live.
-  Stream<DeliveryState> watchDelivery(String envelopeId);
 }
