@@ -21,6 +21,9 @@ dependencies:
 - The module builds on FESS's toolchain floor (Dart ≥ 3.8, Flutter ≥ 3.29) and accepts FESS's pinned and overridden
   versions (`geolocator 14.0.1`, `flutter_secure_storage 9.2.4`, `device_info_plus 11.5.0`, `package_info_plus 8.0.2`,
   `http 1.4.0`, `uuid ^4`). No `dependency_overrides` are needed.
+- Packages the module brings that FESS doesn't have: `flutter_map` (held at 8.1.x so it accepts FESS's `http 1.4.0`
+  and `path_provider 2.1.4`), `latlong2` and `qr` (pure Dart). Directions use `url_launcher`, which FESS already ships
+  (6.3.1). None of them needs host code, permissions or plist keys.
 
 ## 2. Wiring (the only host code)
 

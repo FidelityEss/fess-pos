@@ -83,7 +83,8 @@ Flutter ≥ 3.29, with lower bounds at or below FESS's locked versions (`docs/03
 
 ## Status (2026-09-14)
 
-Decision numbers (D-xx) are in the planning pack's `docs/09-open-decisions.md`.
+Decision numbers (D-xx) are in the planning pack's `docs/09-open-decisions.md`. Everything below is merged into
+`master` (PR #3, 2026-09-14); "in review" is the tracker's status until the work is ticked off.
 
 Done (T1-01, T1-18 to T1-20):
 - **skeleton:** the public contract, bootstrap layer, DI, error model, scoped Sentry hub and theme;
@@ -114,7 +115,7 @@ In review (T2-14; D-59): **jobs on the phone.** The pull keeps the agent's jobs,
 the definitions in force (each checked against its hash). The home page draws the server's `home` view over the
 jobs, a job opens the `job_detail` view, and bundled views cover a first run. View rules run on the Dart rules engine
 (`fess_pos_engine`, the same fixture contract as the TypeScript engine). The renderer (`lib/src/renderer/`) draws
-16 view components so far; maps, cards and actions come with T2-16 to T2-18.
+16 view components with T2-14; the map and the cards join them with T2-17 and T2-18 (below).
 
 In review (T2-15; D-60): **forms.** The form renderer (`lib/src/renderer/form/`) draws text, textarea, boolean,
 single and multi select, info, callout, divider and group fields. Every answer re-resolves the form with the Dart form
@@ -146,7 +147,8 @@ already showing or opens with the link. The host's push token is kept registered
 and cleared at sign-out. Push delivery itself waits on FESS's channel (D-06).
 
 Tested: 445 unit and widget tests; the live test against QA; 5 device tests against QA (SQLCipher, store recovery,
-camera, QA sign-in, the QA job list), last run on the Android emulator and the iPhone 17 simulator on 2026-09-14.
+camera, QA sign-in, and the QA job list, which also opens the agent card, a job's map and card, and a reason form
+without submitting), last run on the Android emulator on 2026-09-14 (the iPhone 17 simulator ran them before T2-15).
 
 Next: the inspection (Phases 3–4), starting with the remaining Wave-1 components and the flow runner. Known gap: a session refresh whose answer is lost ends the session until the next sign-in (R-44,
 backend fix T1-43).
