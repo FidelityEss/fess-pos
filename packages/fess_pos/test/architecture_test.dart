@@ -140,6 +140,23 @@ void main() {
     }
   });
 
+  test('screens and the renderer never import the data layer', () {
+    for (final f in lib) {
+      final path = _rel(f);
+      if (!path.startsWith('lib/src/features/') &&
+          !path.startsWith('lib/src/renderer/')) {
+        continue;
+      }
+      expect(
+        _code(f).contains('src/data/'),
+        isFalse,
+        reason:
+            '$path: UI reaches data through domain interfaces and providers '
+            '(DEVELOPMENT-GUIDELINES §2)',
+      );
+    }
+  });
+
   test('bootstrap/ imports no feature, data or renderer code', () {
     for (final f in _dartFiles('lib/src/bootstrap')) {
       final code = _code(f);

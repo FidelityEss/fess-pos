@@ -20,6 +20,7 @@ import 'package:fess_pos/src/data/remote/api_transport.dart';
 import 'package:fess_pos/src/data/remote/pos_api_client.dart';
 import 'package:fess_pos/src/data/remote/session_vault.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
+import 'package:fess_pos/src/data/sync/sections.dart';
 import 'package:fess_pos/src/data/sync/sync_engine.dart';
 import 'package:fess_pos/src/domain/session/session_gateway.dart';
 import 'package:fess_pos/src/platform/connectivity.dart';
@@ -237,6 +238,7 @@ final class ModuleRuntime {
         outbox: outbox,
         bootstrapCache: dependencies.bootstrapCache,
         capabilities: capabilityReport(clientType, null),
+        sections: [JobsSection(db), DefinitionsSection(db)],
         clock: dependencies.clock,
       ),
       outbox: outbox,

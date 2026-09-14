@@ -99,6 +99,106 @@ class CachedDocuments extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
+/// The jobs the server sends this agent (docs/08 §2), each kept whole as
+/// pulled, with the few fields lists sort and filter on. A job reassigned
+/// to someone else keeps coming (its status changes), so `assigned_to_me`
+/// says whose it is now.
+@DataClassName('JobRow')
+class Jobs extends Table {
+  TextColumn get id => text()();
+
+  TextColumn get reference => text()();
+
+  TextColumn get status => text()();
+
+  /// The server's `updated_at`.
+  TextColumn get updatedAt => text()();
+
+  BoolColumn get assignedToMe => boolean().withDefault(const Constant(false))();
+
+  TextColumn get bankId => text().nullable()();
+
+  /// `scheduled_start` in epoch ms, for sorting; null when unscheduled.
+  IntColumn get scheduledStartMs => integer().nullable()();
+
+  /// The job as pulled (`schema/api/sync-pull-response.schema.json`).
+  TextColumn get body => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Review outcomes of this agent's inspections (docs/08 §2).
+@DataClassName('ReviewRow')
+class Reviews extends Table {
+  TextColumn get id => text()();
+
+  TextColumn get jobId => text()();
+
+  TextColumn get inspectionId => text()();
+
+  IntColumn get attempt => integer()();
+
+  /// `approved`, `returned` or `rejected`.
+  TextColumn get decision => text()();
+
+  TextColumn get decidedAt => text()();
+
+  /// The review as pulled.
+  TextColumn get body => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Definition versions the device holds (docs/04 §7): immutable, stored once
+/// each and only after their hash checks out. Which one is in force is
+/// [ActiveDefinitions]. Pinning and eviction come with T3-07.
+@DataClassName('DefinitionVersionRow')
+class DefinitionVersions extends Table {
+  TextColumn get versionId => text()();
+
+  TextColumn get familyId => text()();
+
+  /// `form`, `flow`, `view`, `content`, `app`, `job_schema`.
+  TextColumn get kind => text()();
+
+  TextColumn get key => text()();
+
+  TextColumn get bankId => text().nullable()();
+
+  IntColumn get version => integer()();
+
+  TextColumn get specVersion => text()();
+
+  /// `definition_hash`: SHA-256 of the definition's canonical JSON.
+  TextColumn get hash => text()();
+
+  /// The definition as JSON.
+  TextColumn get body => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {versionId};
+}
+
+/// Which definition version is in force, per context: the default (`''`)
+/// and each bank the agent has live jobs for (docs/04 §7). Every pull
+/// replaces the whole set.
+@DataClassName('ActiveDefinitionRow')
+class ActiveDefinitions extends Table {
+  /// `''` for the default context, otherwise the bank id.
+  TextColumn get context => text()();
+
+  TextColumn get kind => text()();
+
+  TextColumn get key => text()();
+
+  TextColumn get versionId => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {context, kind, key};
+}
+
 /// Sync machinery: pull cursors, `server_epoch`, the clock offset
 /// (docs/08 §1–2) and the last `device_seq`.
 @DataClassName('SyncStateRow')

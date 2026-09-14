@@ -11,6 +11,12 @@ class EngineError implements Exception {
   String toString() => '$code: $message';
 }
 
+/// Errors raised while checking or evaluating a rule expression (docs/04
+/// §4). Codes are listed in `ruleErrorCodes`.
+class RuleError extends EngineError {
+  const RuleError(super.code, super.message, {super.details});
+}
+
 /// Errors raised by RFC 8785 canonicalisation.
 ///
 /// Codes: `JCS_NON_FINITE_NUMBER`, `JCS_LONE_SURROGATE`,

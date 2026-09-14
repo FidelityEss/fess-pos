@@ -24,6 +24,10 @@ class Fixture {
       (data['cases']! as List<Object?>).cast<Map<String, Object?>>();
 }
 
+/// A JSON file under `schema/`, e.g. `rules/operators.json`.
+Map<String, Object?> schemaJson(String path) =>
+    jsonDecode(impl.readText('../../schema/$path')) as Map<String, Object?>;
+
 /// Every `*.json` file in `schema/fixtures/<dir>`, sorted by name.
 List<Fixture> fixtures(String dir) => [
   for (final name in impl.listJsonFiles('$fixturesRoot/$dir'))

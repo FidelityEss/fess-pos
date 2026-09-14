@@ -17,13 +17,24 @@ part 'pos_database.g.dart';
 /// [migration], run `dart run drift_dev make-migrations` (it writes the
 /// schema dump in `drift_schemas/` and a migration test), and never change a
 /// version that has shipped. Tables arrive with their tasks: the outbox and
-/// cached server documents (schema 2, T1-22/T1-23), jobs (T2-14),
-/// definitions (T3-07), drafts (T3-06), evidence (T4-03).
-@DriftDatabase(tables: [ModuleMeta, SyncState, Outbox, CachedDocuments])
+/// cached server documents (schema 2, T1-22/T1-23), jobs, reviews and
+/// definitions (schema 3, T2-14), drafts (T3-06), evidence (T4-03).
+@DriftDatabase(
+  tables: [
+    ModuleMeta,
+    SyncState,
+    Outbox,
+    CachedDocuments,
+    Jobs,
+    Reviews,
+    DefinitionVersions,
+    ActiveDefinitions,
+  ],
+)
 class PosDatabase extends _$PosDatabase {
   PosDatabase(super.e);
 
-  static const int currentSchemaVersion = 2;
+  static const int currentSchemaVersion = 3;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -56,6 +67,12 @@ class PosDatabase extends _$PosDatabase {
         from1To2: (m, schema) async {
           await m.createTable(schema.outbox);
           await m.createTable(schema.cachedDocuments);
+        },
+        from2To3: (m, schema) async {
+          await m.createTable(schema.jobs);
+          await m.createTable(schema.reviews);
+          await m.createTable(schema.definitionVersions);
+          await m.createTable(schema.activeDefinitions);
         },
       )(m, from, to);
     },

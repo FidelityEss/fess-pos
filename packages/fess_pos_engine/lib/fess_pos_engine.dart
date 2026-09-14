@@ -8,4 +8,23 @@ library;
 export 'src/errors.dart';
 export 'src/hash.dart';
 export 'src/jcs.dart';
+export 'src/json.dart' show deepEqual, jsonTypeOf, readPath;
+export 'src/rules/check.dart'
+    show
+        ExpressionInfo,
+        checkRuleExpression,
+        isValidRuleExpression,
+        operatorOf,
+        ruleDependencies;
+export 'src/rules/dates.dart' show isIsoDate, isIsoDateTime;
+export 'src/rules/evaluate.dart'
+    show RuleEnv, evaluateRule, evaluateRuleBoolean, haversineM, roundHalfAway;
+export 'src/rules/spec.dart'
+    show
+        LiteralKind,
+        OperatorSpec,
+        RuleLimits,
+        dateUnits,
+        ruleErrorCodes,
+        ruleOperators;
 export 'src/submission_hash.dart';

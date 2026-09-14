@@ -100,4 +100,8 @@ Also built (T1-22, T1-23, T1-29, 2026-09-14; D-57, D-58):
   defaults behind it, kill switches refreshed), envelope outcomes, restore re-send; the sync engine runs after sign-in,
   on the config's intervals, when the network returns and on a push hint.
 
-Next: jobs on the phone (T2-14).
+Also built (T2-14, 2026-09-14; D-59): **jobs on the phone.** The pull keeps the agent's jobs, review outcomes and
+the definitions in force (each checked against its hash). The home page draws the server's `home` view over the
+jobs, a job opens the `job_detail` view, and bundled views cover a first run. View rules run on the Dart rules engine
+(`fess_pos_engine`, the same fixture contract as the TypeScript engine). The renderer (`lib/src/renderer/`) draws
+16 view components so far; maps, cards and actions come with T2-16 to T2-18.

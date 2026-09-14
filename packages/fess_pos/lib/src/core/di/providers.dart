@@ -5,9 +5,12 @@
 library;
 
 import 'package:fess_pos/src/bootstrap/bootstrap_snapshot.dart';
+import 'package:fess_pos/src/core/content/bundled_copy.dart';
 import 'package:fess_pos/src/core/runtime/module_runtime.dart';
 import 'package:fess_pos/src/core/theme/pos_theme_data.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
+import 'package:fess_pos/src/data/local/repositories.dart';
+import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,3 +49,77 @@ final posThemeDataProvider = Provider<ThemeData>(
   (ref) => buildPosThemeData(ref.watch(posBrandProvider)),
   name: 'posThemeData',
 );
+
+final jobRepositoryProvider = FutureProvider<JobRepository>(
+  (ref) async =>
+      DriftJobRepository(await ref.watch(localDatabaseProvider.future)),
+  name: 'jobRepository',
+);
+
+final definitionRepositoryProvider = FutureProvider<DefinitionRepository>(
+  (ref) async =>
+      DriftDefinitionRepository(await ref.watch(localDatabaseProvider.future)),
+  name: 'definitionRepository',
+);
+
+final agentRepositoryProvider = FutureProvider<AgentRepository>(
+  (ref) async =>
+      DriftAgentRepository(await ref.watch(localDatabaseProvider.future)),
+  name: 'agentRepository',
+);
+
+/// The agent's own jobs, live.
+final myJobsProvider = StreamProvider<List<JobRecord>>((ref) async* {
+  yield* (await ref.watch(jobRepositoryProvider.future)).watchMine();
+}, name: 'myJobs');
+
+/// One job, live; null once it's gone from the device.
+// ignore: specify_nonobvious_property_types
+final jobProvider = StreamProvider.family<JobRecord?, String>((ref, id) async* {
+  yield* (await ref.watch(jobRepositoryProvider.future)).watchJob(id);
+}, name: 'job');
+
+/// Which definition: its kind and key, and the bank whose own takes
+/// precedence (null: the default).
+typedef DefinitionKey = ({String kind, String key, String? bankId});
+
+/// The definition in force for a [DefinitionKey], live; null before one
+/// arrives.
+// ignore: specify_nonobvious_property_types
+final activeDefinitionProvider =
+    StreamProvider.family<Map<String, Object?>?, DefinitionKey>((
+      ref,
+      key,
+    ) async* {
+      final repo = await ref.watch(definitionRepositoryProvider.future);
+      yield* repo.watchActive(key.kind, key.key, bankId: key.bankId);
+    }, name: 'activeDefinition');
+
+/// `me` from the last pull.
+final agentProvider = StreamProvider<Map<String, Object?>?>((ref) async* {
+  yield* (await ref.watch(agentRepositoryProvider.future)).watchMe();
+}, name: 'agent');
+
+/// The home-tile totals from the last pull.
+final agentTotalsProvider = StreamProvider<Map<String, Object?>?>((
+  ref,
+) async* {
+  yield* (await ref.watch(agentRepositoryProvider.future)).watchTotals();
+}, name: 'agentTotals');
+
+/// Copy by key: the server's `core` content strings over the bundled
+/// defaults (docs/04 §3.5).
+final copyProvider = Provider<String Function(String key)>((ref) {
+  final content = switch (ref.watch(
+    activeDefinitionProvider((kind: 'content', key: 'core', bankId: null)),
+  )) {
+    AsyncData(:final value) => value,
+    _ => null,
+  };
+  final strings = content?['strings'];
+  final server = strings is Map<String, Object?> ? strings : null;
+  return (key) {
+    final s = server?[key];
+    return s is String ? s : BundledCopy.text(key);
+  };
+}, name: 'copy');

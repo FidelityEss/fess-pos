@@ -1989,6 +1989,1875 @@ class CachedDocumentsCompanion extends UpdateCompanion<CachedDocumentRow> {
   }
 }
 
+class $JobsTable extends Jobs with TableInfo<$JobsTable, JobRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $JobsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _referenceMeta = const VerificationMeta(
+    'reference',
+  );
+  @override
+  late final GeneratedColumn<String> reference = GeneratedColumn<String>(
+    'reference',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _assignedToMeMeta = const VerificationMeta(
+    'assignedToMe',
+  );
+  @override
+  late final GeneratedColumn<bool> assignedToMe = GeneratedColumn<bool>(
+    'assigned_to_me',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("assigned_to_me" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _bankIdMeta = const VerificationMeta('bankId');
+  @override
+  late final GeneratedColumn<String> bankId = GeneratedColumn<String>(
+    'bank_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _scheduledStartMsMeta = const VerificationMeta(
+    'scheduledStartMs',
+  );
+  @override
+  late final GeneratedColumn<int> scheduledStartMs = GeneratedColumn<int>(
+    'scheduled_start_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    reference,
+    status,
+    updatedAt,
+    assignedToMe,
+    bankId,
+    scheduledStartMs,
+    body,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'jobs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<JobRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('reference')) {
+      context.handle(
+        _referenceMeta,
+        reference.isAcceptableOrUnknown(data['reference']!, _referenceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_referenceMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('assigned_to_me')) {
+      context.handle(
+        _assignedToMeMeta,
+        assignedToMe.isAcceptableOrUnknown(
+          data['assigned_to_me']!,
+          _assignedToMeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('bank_id')) {
+      context.handle(
+        _bankIdMeta,
+        bankId.isAcceptableOrUnknown(data['bank_id']!, _bankIdMeta),
+      );
+    }
+    if (data.containsKey('scheduled_start_ms')) {
+      context.handle(
+        _scheduledStartMsMeta,
+        scheduledStartMs.isAcceptableOrUnknown(
+          data['scheduled_start_ms']!,
+          _scheduledStartMsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  JobRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return JobRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      reference: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reference'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      assignedToMe: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}assigned_to_me'],
+      )!,
+      bankId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bank_id'],
+      ),
+      scheduledStartMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}scheduled_start_ms'],
+      ),
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+    );
+  }
+
+  @override
+  $JobsTable createAlias(String alias) {
+    return $JobsTable(attachedDatabase, alias);
+  }
+}
+
+class JobRow extends DataClass implements Insertable<JobRow> {
+  final String id;
+  final String reference;
+  final String status;
+
+  /// The server's `updated_at`.
+  final String updatedAt;
+  final bool assignedToMe;
+  final String? bankId;
+
+  /// `scheduled_start` in epoch ms, for sorting; null when unscheduled.
+  final int? scheduledStartMs;
+
+  /// The job as pulled (`schema/api/sync-pull-response.schema.json`).
+  final String body;
+  const JobRow({
+    required this.id,
+    required this.reference,
+    required this.status,
+    required this.updatedAt,
+    required this.assignedToMe,
+    this.bankId,
+    this.scheduledStartMs,
+    required this.body,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['reference'] = Variable<String>(reference);
+    map['status'] = Variable<String>(status);
+    map['updated_at'] = Variable<String>(updatedAt);
+    map['assigned_to_me'] = Variable<bool>(assignedToMe);
+    if (!nullToAbsent || bankId != null) {
+      map['bank_id'] = Variable<String>(bankId);
+    }
+    if (!nullToAbsent || scheduledStartMs != null) {
+      map['scheduled_start_ms'] = Variable<int>(scheduledStartMs);
+    }
+    map['body'] = Variable<String>(body);
+    return map;
+  }
+
+  JobsCompanion toCompanion(bool nullToAbsent) {
+    return JobsCompanion(
+      id: Value(id),
+      reference: Value(reference),
+      status: Value(status),
+      updatedAt: Value(updatedAt),
+      assignedToMe: Value(assignedToMe),
+      bankId: bankId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bankId),
+      scheduledStartMs: scheduledStartMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scheduledStartMs),
+      body: Value(body),
+    );
+  }
+
+  factory JobRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return JobRow(
+      id: serializer.fromJson<String>(json['id']),
+      reference: serializer.fromJson<String>(json['reference']),
+      status: serializer.fromJson<String>(json['status']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      assignedToMe: serializer.fromJson<bool>(json['assignedToMe']),
+      bankId: serializer.fromJson<String?>(json['bankId']),
+      scheduledStartMs: serializer.fromJson<int?>(json['scheduledStartMs']),
+      body: serializer.fromJson<String>(json['body']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'reference': serializer.toJson<String>(reference),
+      'status': serializer.toJson<String>(status),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'assignedToMe': serializer.toJson<bool>(assignedToMe),
+      'bankId': serializer.toJson<String?>(bankId),
+      'scheduledStartMs': serializer.toJson<int?>(scheduledStartMs),
+      'body': serializer.toJson<String>(body),
+    };
+  }
+
+  JobRow copyWith({
+    String? id,
+    String? reference,
+    String? status,
+    String? updatedAt,
+    bool? assignedToMe,
+    Value<String?> bankId = const Value.absent(),
+    Value<int?> scheduledStartMs = const Value.absent(),
+    String? body,
+  }) => JobRow(
+    id: id ?? this.id,
+    reference: reference ?? this.reference,
+    status: status ?? this.status,
+    updatedAt: updatedAt ?? this.updatedAt,
+    assignedToMe: assignedToMe ?? this.assignedToMe,
+    bankId: bankId.present ? bankId.value : this.bankId,
+    scheduledStartMs: scheduledStartMs.present
+        ? scheduledStartMs.value
+        : this.scheduledStartMs,
+    body: body ?? this.body,
+  );
+  JobRow copyWithCompanion(JobsCompanion data) {
+    return JobRow(
+      id: data.id.present ? data.id.value : this.id,
+      reference: data.reference.present ? data.reference.value : this.reference,
+      status: data.status.present ? data.status.value : this.status,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      assignedToMe: data.assignedToMe.present
+          ? data.assignedToMe.value
+          : this.assignedToMe,
+      bankId: data.bankId.present ? data.bankId.value : this.bankId,
+      scheduledStartMs: data.scheduledStartMs.present
+          ? data.scheduledStartMs.value
+          : this.scheduledStartMs,
+      body: data.body.present ? data.body.value : this.body,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JobRow(')
+          ..write('id: $id, ')
+          ..write('reference: $reference, ')
+          ..write('status: $status, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('assignedToMe: $assignedToMe, ')
+          ..write('bankId: $bankId, ')
+          ..write('scheduledStartMs: $scheduledStartMs, ')
+          ..write('body: $body')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    reference,
+    status,
+    updatedAt,
+    assignedToMe,
+    bankId,
+    scheduledStartMs,
+    body,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is JobRow &&
+          other.id == this.id &&
+          other.reference == this.reference &&
+          other.status == this.status &&
+          other.updatedAt == this.updatedAt &&
+          other.assignedToMe == this.assignedToMe &&
+          other.bankId == this.bankId &&
+          other.scheduledStartMs == this.scheduledStartMs &&
+          other.body == this.body);
+}
+
+class JobsCompanion extends UpdateCompanion<JobRow> {
+  final Value<String> id;
+  final Value<String> reference;
+  final Value<String> status;
+  final Value<String> updatedAt;
+  final Value<bool> assignedToMe;
+  final Value<String?> bankId;
+  final Value<int?> scheduledStartMs;
+  final Value<String> body;
+  final Value<int> rowid;
+  const JobsCompanion({
+    this.id = const Value.absent(),
+    this.reference = const Value.absent(),
+    this.status = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.assignedToMe = const Value.absent(),
+    this.bankId = const Value.absent(),
+    this.scheduledStartMs = const Value.absent(),
+    this.body = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  JobsCompanion.insert({
+    required String id,
+    required String reference,
+    required String status,
+    required String updatedAt,
+    this.assignedToMe = const Value.absent(),
+    this.bankId = const Value.absent(),
+    this.scheduledStartMs = const Value.absent(),
+    required String body,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       reference = Value(reference),
+       status = Value(status),
+       updatedAt = Value(updatedAt),
+       body = Value(body);
+  static Insertable<JobRow> custom({
+    Expression<String>? id,
+    Expression<String>? reference,
+    Expression<String>? status,
+    Expression<String>? updatedAt,
+    Expression<bool>? assignedToMe,
+    Expression<String>? bankId,
+    Expression<int>? scheduledStartMs,
+    Expression<String>? body,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (reference != null) 'reference': reference,
+      if (status != null) 'status': status,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (assignedToMe != null) 'assigned_to_me': assignedToMe,
+      if (bankId != null) 'bank_id': bankId,
+      if (scheduledStartMs != null) 'scheduled_start_ms': scheduledStartMs,
+      if (body != null) 'body': body,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  JobsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? reference,
+    Value<String>? status,
+    Value<String>? updatedAt,
+    Value<bool>? assignedToMe,
+    Value<String?>? bankId,
+    Value<int?>? scheduledStartMs,
+    Value<String>? body,
+    Value<int>? rowid,
+  }) {
+    return JobsCompanion(
+      id: id ?? this.id,
+      reference: reference ?? this.reference,
+      status: status ?? this.status,
+      updatedAt: updatedAt ?? this.updatedAt,
+      assignedToMe: assignedToMe ?? this.assignedToMe,
+      bankId: bankId ?? this.bankId,
+      scheduledStartMs: scheduledStartMs ?? this.scheduledStartMs,
+      body: body ?? this.body,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (reference.present) {
+      map['reference'] = Variable<String>(reference.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (assignedToMe.present) {
+      map['assigned_to_me'] = Variable<bool>(assignedToMe.value);
+    }
+    if (bankId.present) {
+      map['bank_id'] = Variable<String>(bankId.value);
+    }
+    if (scheduledStartMs.present) {
+      map['scheduled_start_ms'] = Variable<int>(scheduledStartMs.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JobsCompanion(')
+          ..write('id: $id, ')
+          ..write('reference: $reference, ')
+          ..write('status: $status, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('assignedToMe: $assignedToMe, ')
+          ..write('bankId: $bankId, ')
+          ..write('scheduledStartMs: $scheduledStartMs, ')
+          ..write('body: $body, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, ReviewRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReviewsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _jobIdMeta = const VerificationMeta('jobId');
+  @override
+  late final GeneratedColumn<String> jobId = GeneratedColumn<String>(
+    'job_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _inspectionIdMeta = const VerificationMeta(
+    'inspectionId',
+  );
+  @override
+  late final GeneratedColumn<String> inspectionId = GeneratedColumn<String>(
+    'inspection_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _attemptMeta = const VerificationMeta(
+    'attempt',
+  );
+  @override
+  late final GeneratedColumn<int> attempt = GeneratedColumn<int>(
+    'attempt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _decisionMeta = const VerificationMeta(
+    'decision',
+  );
+  @override
+  late final GeneratedColumn<String> decision = GeneratedColumn<String>(
+    'decision',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _decidedAtMeta = const VerificationMeta(
+    'decidedAt',
+  );
+  @override
+  late final GeneratedColumn<String> decidedAt = GeneratedColumn<String>(
+    'decided_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    jobId,
+    inspectionId,
+    attempt,
+    decision,
+    decidedAt,
+    body,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reviews';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReviewRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('job_id')) {
+      context.handle(
+        _jobIdMeta,
+        jobId.isAcceptableOrUnknown(data['job_id']!, _jobIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_jobIdMeta);
+    }
+    if (data.containsKey('inspection_id')) {
+      context.handle(
+        _inspectionIdMeta,
+        inspectionId.isAcceptableOrUnknown(
+          data['inspection_id']!,
+          _inspectionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_inspectionIdMeta);
+    }
+    if (data.containsKey('attempt')) {
+      context.handle(
+        _attemptMeta,
+        attempt.isAcceptableOrUnknown(data['attempt']!, _attemptMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_attemptMeta);
+    }
+    if (data.containsKey('decision')) {
+      context.handle(
+        _decisionMeta,
+        decision.isAcceptableOrUnknown(data['decision']!, _decisionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_decisionMeta);
+    }
+    if (data.containsKey('decided_at')) {
+      context.handle(
+        _decidedAtMeta,
+        decidedAt.isAcceptableOrUnknown(data['decided_at']!, _decidedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_decidedAtMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ReviewRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReviewRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      jobId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}job_id'],
+      )!,
+      inspectionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}inspection_id'],
+      )!,
+      attempt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt'],
+      )!,
+      decision: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}decision'],
+      )!,
+      decidedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}decided_at'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+    );
+  }
+
+  @override
+  $ReviewsTable createAlias(String alias) {
+    return $ReviewsTable(attachedDatabase, alias);
+  }
+}
+
+class ReviewRow extends DataClass implements Insertable<ReviewRow> {
+  final String id;
+  final String jobId;
+  final String inspectionId;
+  final int attempt;
+
+  /// `approved`, `returned` or `rejected`.
+  final String decision;
+  final String decidedAt;
+
+  /// The review as pulled.
+  final String body;
+  const ReviewRow({
+    required this.id,
+    required this.jobId,
+    required this.inspectionId,
+    required this.attempt,
+    required this.decision,
+    required this.decidedAt,
+    required this.body,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['job_id'] = Variable<String>(jobId);
+    map['inspection_id'] = Variable<String>(inspectionId);
+    map['attempt'] = Variable<int>(attempt);
+    map['decision'] = Variable<String>(decision);
+    map['decided_at'] = Variable<String>(decidedAt);
+    map['body'] = Variable<String>(body);
+    return map;
+  }
+
+  ReviewsCompanion toCompanion(bool nullToAbsent) {
+    return ReviewsCompanion(
+      id: Value(id),
+      jobId: Value(jobId),
+      inspectionId: Value(inspectionId),
+      attempt: Value(attempt),
+      decision: Value(decision),
+      decidedAt: Value(decidedAt),
+      body: Value(body),
+    );
+  }
+
+  factory ReviewRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReviewRow(
+      id: serializer.fromJson<String>(json['id']),
+      jobId: serializer.fromJson<String>(json['jobId']),
+      inspectionId: serializer.fromJson<String>(json['inspectionId']),
+      attempt: serializer.fromJson<int>(json['attempt']),
+      decision: serializer.fromJson<String>(json['decision']),
+      decidedAt: serializer.fromJson<String>(json['decidedAt']),
+      body: serializer.fromJson<String>(json['body']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'jobId': serializer.toJson<String>(jobId),
+      'inspectionId': serializer.toJson<String>(inspectionId),
+      'attempt': serializer.toJson<int>(attempt),
+      'decision': serializer.toJson<String>(decision),
+      'decidedAt': serializer.toJson<String>(decidedAt),
+      'body': serializer.toJson<String>(body),
+    };
+  }
+
+  ReviewRow copyWith({
+    String? id,
+    String? jobId,
+    String? inspectionId,
+    int? attempt,
+    String? decision,
+    String? decidedAt,
+    String? body,
+  }) => ReviewRow(
+    id: id ?? this.id,
+    jobId: jobId ?? this.jobId,
+    inspectionId: inspectionId ?? this.inspectionId,
+    attempt: attempt ?? this.attempt,
+    decision: decision ?? this.decision,
+    decidedAt: decidedAt ?? this.decidedAt,
+    body: body ?? this.body,
+  );
+  ReviewRow copyWithCompanion(ReviewsCompanion data) {
+    return ReviewRow(
+      id: data.id.present ? data.id.value : this.id,
+      jobId: data.jobId.present ? data.jobId.value : this.jobId,
+      inspectionId: data.inspectionId.present
+          ? data.inspectionId.value
+          : this.inspectionId,
+      attempt: data.attempt.present ? data.attempt.value : this.attempt,
+      decision: data.decision.present ? data.decision.value : this.decision,
+      decidedAt: data.decidedAt.present ? data.decidedAt.value : this.decidedAt,
+      body: data.body.present ? data.body.value : this.body,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReviewRow(')
+          ..write('id: $id, ')
+          ..write('jobId: $jobId, ')
+          ..write('inspectionId: $inspectionId, ')
+          ..write('attempt: $attempt, ')
+          ..write('decision: $decision, ')
+          ..write('decidedAt: $decidedAt, ')
+          ..write('body: $body')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, jobId, inspectionId, attempt, decision, decidedAt, body);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReviewRow &&
+          other.id == this.id &&
+          other.jobId == this.jobId &&
+          other.inspectionId == this.inspectionId &&
+          other.attempt == this.attempt &&
+          other.decision == this.decision &&
+          other.decidedAt == this.decidedAt &&
+          other.body == this.body);
+}
+
+class ReviewsCompanion extends UpdateCompanion<ReviewRow> {
+  final Value<String> id;
+  final Value<String> jobId;
+  final Value<String> inspectionId;
+  final Value<int> attempt;
+  final Value<String> decision;
+  final Value<String> decidedAt;
+  final Value<String> body;
+  final Value<int> rowid;
+  const ReviewsCompanion({
+    this.id = const Value.absent(),
+    this.jobId = const Value.absent(),
+    this.inspectionId = const Value.absent(),
+    this.attempt = const Value.absent(),
+    this.decision = const Value.absent(),
+    this.decidedAt = const Value.absent(),
+    this.body = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ReviewsCompanion.insert({
+    required String id,
+    required String jobId,
+    required String inspectionId,
+    required int attempt,
+    required String decision,
+    required String decidedAt,
+    required String body,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       jobId = Value(jobId),
+       inspectionId = Value(inspectionId),
+       attempt = Value(attempt),
+       decision = Value(decision),
+       decidedAt = Value(decidedAt),
+       body = Value(body);
+  static Insertable<ReviewRow> custom({
+    Expression<String>? id,
+    Expression<String>? jobId,
+    Expression<String>? inspectionId,
+    Expression<int>? attempt,
+    Expression<String>? decision,
+    Expression<String>? decidedAt,
+    Expression<String>? body,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (jobId != null) 'job_id': jobId,
+      if (inspectionId != null) 'inspection_id': inspectionId,
+      if (attempt != null) 'attempt': attempt,
+      if (decision != null) 'decision': decision,
+      if (decidedAt != null) 'decided_at': decidedAt,
+      if (body != null) 'body': body,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ReviewsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? jobId,
+    Value<String>? inspectionId,
+    Value<int>? attempt,
+    Value<String>? decision,
+    Value<String>? decidedAt,
+    Value<String>? body,
+    Value<int>? rowid,
+  }) {
+    return ReviewsCompanion(
+      id: id ?? this.id,
+      jobId: jobId ?? this.jobId,
+      inspectionId: inspectionId ?? this.inspectionId,
+      attempt: attempt ?? this.attempt,
+      decision: decision ?? this.decision,
+      decidedAt: decidedAt ?? this.decidedAt,
+      body: body ?? this.body,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (jobId.present) {
+      map['job_id'] = Variable<String>(jobId.value);
+    }
+    if (inspectionId.present) {
+      map['inspection_id'] = Variable<String>(inspectionId.value);
+    }
+    if (attempt.present) {
+      map['attempt'] = Variable<int>(attempt.value);
+    }
+    if (decision.present) {
+      map['decision'] = Variable<String>(decision.value);
+    }
+    if (decidedAt.present) {
+      map['decided_at'] = Variable<String>(decidedAt.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReviewsCompanion(')
+          ..write('id: $id, ')
+          ..write('jobId: $jobId, ')
+          ..write('inspectionId: $inspectionId, ')
+          ..write('attempt: $attempt, ')
+          ..write('decision: $decision, ')
+          ..write('decidedAt: $decidedAt, ')
+          ..write('body: $body, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DefinitionVersionsTable extends DefinitionVersions
+    with TableInfo<$DefinitionVersionsTable, DefinitionVersionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DefinitionVersionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _versionIdMeta = const VerificationMeta(
+    'versionId',
+  );
+  @override
+  late final GeneratedColumn<String> versionId = GeneratedColumn<String>(
+    'version_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _familyIdMeta = const VerificationMeta(
+    'familyId',
+  );
+  @override
+  late final GeneratedColumn<String> familyId = GeneratedColumn<String>(
+    'family_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bankIdMeta = const VerificationMeta('bankId');
+  @override
+  late final GeneratedColumn<String> bankId = GeneratedColumn<String>(
+    'bank_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _specVersionMeta = const VerificationMeta(
+    'specVersion',
+  );
+  @override
+  late final GeneratedColumn<String> specVersion = GeneratedColumn<String>(
+    'spec_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hashMeta = const VerificationMeta('hash');
+  @override
+  late final GeneratedColumn<String> hash = GeneratedColumn<String>(
+    'hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    versionId,
+    familyId,
+    kind,
+    key,
+    bankId,
+    version,
+    specVersion,
+    hash,
+    body,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'definition_versions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DefinitionVersionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('version_id')) {
+      context.handle(
+        _versionIdMeta,
+        versionId.isAcceptableOrUnknown(data['version_id']!, _versionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versionIdMeta);
+    }
+    if (data.containsKey('family_id')) {
+      context.handle(
+        _familyIdMeta,
+        familyId.isAcceptableOrUnknown(data['family_id']!, _familyIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_familyIdMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('bank_id')) {
+      context.handle(
+        _bankIdMeta,
+        bankId.isAcceptableOrUnknown(data['bank_id']!, _bankIdMeta),
+      );
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versionMeta);
+    }
+    if (data.containsKey('spec_version')) {
+      context.handle(
+        _specVersionMeta,
+        specVersion.isAcceptableOrUnknown(
+          data['spec_version']!,
+          _specVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_specVersionMeta);
+    }
+    if (data.containsKey('hash')) {
+      context.handle(
+        _hashMeta,
+        hash.isAcceptableOrUnknown(data['hash']!, _hashMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_hashMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {versionId};
+  @override
+  DefinitionVersionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DefinitionVersionRow(
+      versionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}version_id'],
+      )!,
+      familyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}family_id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      bankId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bank_id'],
+      ),
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      specVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}spec_version'],
+      )!,
+      hash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hash'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+    );
+  }
+
+  @override
+  $DefinitionVersionsTable createAlias(String alias) {
+    return $DefinitionVersionsTable(attachedDatabase, alias);
+  }
+}
+
+class DefinitionVersionRow extends DataClass
+    implements Insertable<DefinitionVersionRow> {
+  final String versionId;
+  final String familyId;
+
+  /// `form`, `flow`, `view`, `content`, `app`, `job_schema`.
+  final String kind;
+  final String key;
+  final String? bankId;
+  final int version;
+  final String specVersion;
+
+  /// `definition_hash`: SHA-256 of the definition's canonical JSON.
+  final String hash;
+
+  /// The definition as JSON.
+  final String body;
+  const DefinitionVersionRow({
+    required this.versionId,
+    required this.familyId,
+    required this.kind,
+    required this.key,
+    this.bankId,
+    required this.version,
+    required this.specVersion,
+    required this.hash,
+    required this.body,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['version_id'] = Variable<String>(versionId);
+    map['family_id'] = Variable<String>(familyId);
+    map['kind'] = Variable<String>(kind);
+    map['key'] = Variable<String>(key);
+    if (!nullToAbsent || bankId != null) {
+      map['bank_id'] = Variable<String>(bankId);
+    }
+    map['version'] = Variable<int>(version);
+    map['spec_version'] = Variable<String>(specVersion);
+    map['hash'] = Variable<String>(hash);
+    map['body'] = Variable<String>(body);
+    return map;
+  }
+
+  DefinitionVersionsCompanion toCompanion(bool nullToAbsent) {
+    return DefinitionVersionsCompanion(
+      versionId: Value(versionId),
+      familyId: Value(familyId),
+      kind: Value(kind),
+      key: Value(key),
+      bankId: bankId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bankId),
+      version: Value(version),
+      specVersion: Value(specVersion),
+      hash: Value(hash),
+      body: Value(body),
+    );
+  }
+
+  factory DefinitionVersionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DefinitionVersionRow(
+      versionId: serializer.fromJson<String>(json['versionId']),
+      familyId: serializer.fromJson<String>(json['familyId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      key: serializer.fromJson<String>(json['key']),
+      bankId: serializer.fromJson<String?>(json['bankId']),
+      version: serializer.fromJson<int>(json['version']),
+      specVersion: serializer.fromJson<String>(json['specVersion']),
+      hash: serializer.fromJson<String>(json['hash']),
+      body: serializer.fromJson<String>(json['body']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'versionId': serializer.toJson<String>(versionId),
+      'familyId': serializer.toJson<String>(familyId),
+      'kind': serializer.toJson<String>(kind),
+      'key': serializer.toJson<String>(key),
+      'bankId': serializer.toJson<String?>(bankId),
+      'version': serializer.toJson<int>(version),
+      'specVersion': serializer.toJson<String>(specVersion),
+      'hash': serializer.toJson<String>(hash),
+      'body': serializer.toJson<String>(body),
+    };
+  }
+
+  DefinitionVersionRow copyWith({
+    String? versionId,
+    String? familyId,
+    String? kind,
+    String? key,
+    Value<String?> bankId = const Value.absent(),
+    int? version,
+    String? specVersion,
+    String? hash,
+    String? body,
+  }) => DefinitionVersionRow(
+    versionId: versionId ?? this.versionId,
+    familyId: familyId ?? this.familyId,
+    kind: kind ?? this.kind,
+    key: key ?? this.key,
+    bankId: bankId.present ? bankId.value : this.bankId,
+    version: version ?? this.version,
+    specVersion: specVersion ?? this.specVersion,
+    hash: hash ?? this.hash,
+    body: body ?? this.body,
+  );
+  DefinitionVersionRow copyWithCompanion(DefinitionVersionsCompanion data) {
+    return DefinitionVersionRow(
+      versionId: data.versionId.present ? data.versionId.value : this.versionId,
+      familyId: data.familyId.present ? data.familyId.value : this.familyId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      key: data.key.present ? data.key.value : this.key,
+      bankId: data.bankId.present ? data.bankId.value : this.bankId,
+      version: data.version.present ? data.version.value : this.version,
+      specVersion: data.specVersion.present
+          ? data.specVersion.value
+          : this.specVersion,
+      hash: data.hash.present ? data.hash.value : this.hash,
+      body: data.body.present ? data.body.value : this.body,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DefinitionVersionRow(')
+          ..write('versionId: $versionId, ')
+          ..write('familyId: $familyId, ')
+          ..write('kind: $kind, ')
+          ..write('key: $key, ')
+          ..write('bankId: $bankId, ')
+          ..write('version: $version, ')
+          ..write('specVersion: $specVersion, ')
+          ..write('hash: $hash, ')
+          ..write('body: $body')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    versionId,
+    familyId,
+    kind,
+    key,
+    bankId,
+    version,
+    specVersion,
+    hash,
+    body,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DefinitionVersionRow &&
+          other.versionId == this.versionId &&
+          other.familyId == this.familyId &&
+          other.kind == this.kind &&
+          other.key == this.key &&
+          other.bankId == this.bankId &&
+          other.version == this.version &&
+          other.specVersion == this.specVersion &&
+          other.hash == this.hash &&
+          other.body == this.body);
+}
+
+class DefinitionVersionsCompanion
+    extends UpdateCompanion<DefinitionVersionRow> {
+  final Value<String> versionId;
+  final Value<String> familyId;
+  final Value<String> kind;
+  final Value<String> key;
+  final Value<String?> bankId;
+  final Value<int> version;
+  final Value<String> specVersion;
+  final Value<String> hash;
+  final Value<String> body;
+  final Value<int> rowid;
+  const DefinitionVersionsCompanion({
+    this.versionId = const Value.absent(),
+    this.familyId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.key = const Value.absent(),
+    this.bankId = const Value.absent(),
+    this.version = const Value.absent(),
+    this.specVersion = const Value.absent(),
+    this.hash = const Value.absent(),
+    this.body = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DefinitionVersionsCompanion.insert({
+    required String versionId,
+    required String familyId,
+    required String kind,
+    required String key,
+    this.bankId = const Value.absent(),
+    required int version,
+    required String specVersion,
+    required String hash,
+    required String body,
+    this.rowid = const Value.absent(),
+  }) : versionId = Value(versionId),
+       familyId = Value(familyId),
+       kind = Value(kind),
+       key = Value(key),
+       version = Value(version),
+       specVersion = Value(specVersion),
+       hash = Value(hash),
+       body = Value(body);
+  static Insertable<DefinitionVersionRow> custom({
+    Expression<String>? versionId,
+    Expression<String>? familyId,
+    Expression<String>? kind,
+    Expression<String>? key,
+    Expression<String>? bankId,
+    Expression<int>? version,
+    Expression<String>? specVersion,
+    Expression<String>? hash,
+    Expression<String>? body,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (versionId != null) 'version_id': versionId,
+      if (familyId != null) 'family_id': familyId,
+      if (kind != null) 'kind': kind,
+      if (key != null) 'key': key,
+      if (bankId != null) 'bank_id': bankId,
+      if (version != null) 'version': version,
+      if (specVersion != null) 'spec_version': specVersion,
+      if (hash != null) 'hash': hash,
+      if (body != null) 'body': body,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DefinitionVersionsCompanion copyWith({
+    Value<String>? versionId,
+    Value<String>? familyId,
+    Value<String>? kind,
+    Value<String>? key,
+    Value<String?>? bankId,
+    Value<int>? version,
+    Value<String>? specVersion,
+    Value<String>? hash,
+    Value<String>? body,
+    Value<int>? rowid,
+  }) {
+    return DefinitionVersionsCompanion(
+      versionId: versionId ?? this.versionId,
+      familyId: familyId ?? this.familyId,
+      kind: kind ?? this.kind,
+      key: key ?? this.key,
+      bankId: bankId ?? this.bankId,
+      version: version ?? this.version,
+      specVersion: specVersion ?? this.specVersion,
+      hash: hash ?? this.hash,
+      body: body ?? this.body,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (versionId.present) {
+      map['version_id'] = Variable<String>(versionId.value);
+    }
+    if (familyId.present) {
+      map['family_id'] = Variable<String>(familyId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (bankId.present) {
+      map['bank_id'] = Variable<String>(bankId.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (specVersion.present) {
+      map['spec_version'] = Variable<String>(specVersion.value);
+    }
+    if (hash.present) {
+      map['hash'] = Variable<String>(hash.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DefinitionVersionsCompanion(')
+          ..write('versionId: $versionId, ')
+          ..write('familyId: $familyId, ')
+          ..write('kind: $kind, ')
+          ..write('key: $key, ')
+          ..write('bankId: $bankId, ')
+          ..write('version: $version, ')
+          ..write('specVersion: $specVersion, ')
+          ..write('hash: $hash, ')
+          ..write('body: $body, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ActiveDefinitionsTable extends ActiveDefinitions
+    with TableInfo<$ActiveDefinitionsTable, ActiveDefinitionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ActiveDefinitionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _contextMeta = const VerificationMeta(
+    'context',
+  );
+  @override
+  late final GeneratedColumn<String> context = GeneratedColumn<String>(
+    'context',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versionIdMeta = const VerificationMeta(
+    'versionId',
+  );
+  @override
+  late final GeneratedColumn<String> versionId = GeneratedColumn<String>(
+    'version_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [context, kind, key, versionId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'active_definitions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ActiveDefinitionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('context')) {
+      context.handle(
+        _contextMeta,
+        this.context.isAcceptableOrUnknown(data['context']!, _contextMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contextMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('version_id')) {
+      context.handle(
+        _versionIdMeta,
+        versionId.isAcceptableOrUnknown(data['version_id']!, _versionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versionIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {context, kind, key};
+  @override
+  ActiveDefinitionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ActiveDefinitionRow(
+      context: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}context'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      versionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}version_id'],
+      )!,
+    );
+  }
+
+  @override
+  $ActiveDefinitionsTable createAlias(String alias) {
+    return $ActiveDefinitionsTable(attachedDatabase, alias);
+  }
+}
+
+class ActiveDefinitionRow extends DataClass
+    implements Insertable<ActiveDefinitionRow> {
+  /// `''` for the default context, otherwise the bank id.
+  final String context;
+  final String kind;
+  final String key;
+  final String versionId;
+  const ActiveDefinitionRow({
+    required this.context,
+    required this.kind,
+    required this.key,
+    required this.versionId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['context'] = Variable<String>(context);
+    map['kind'] = Variable<String>(kind);
+    map['key'] = Variable<String>(key);
+    map['version_id'] = Variable<String>(versionId);
+    return map;
+  }
+
+  ActiveDefinitionsCompanion toCompanion(bool nullToAbsent) {
+    return ActiveDefinitionsCompanion(
+      context: Value(context),
+      kind: Value(kind),
+      key: Value(key),
+      versionId: Value(versionId),
+    );
+  }
+
+  factory ActiveDefinitionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ActiveDefinitionRow(
+      context: serializer.fromJson<String>(json['context']),
+      kind: serializer.fromJson<String>(json['kind']),
+      key: serializer.fromJson<String>(json['key']),
+      versionId: serializer.fromJson<String>(json['versionId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'context': serializer.toJson<String>(context),
+      'kind': serializer.toJson<String>(kind),
+      'key': serializer.toJson<String>(key),
+      'versionId': serializer.toJson<String>(versionId),
+    };
+  }
+
+  ActiveDefinitionRow copyWith({
+    String? context,
+    String? kind,
+    String? key,
+    String? versionId,
+  }) => ActiveDefinitionRow(
+    context: context ?? this.context,
+    kind: kind ?? this.kind,
+    key: key ?? this.key,
+    versionId: versionId ?? this.versionId,
+  );
+  ActiveDefinitionRow copyWithCompanion(ActiveDefinitionsCompanion data) {
+    return ActiveDefinitionRow(
+      context: data.context.present ? data.context.value : this.context,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      key: data.key.present ? data.key.value : this.key,
+      versionId: data.versionId.present ? data.versionId.value : this.versionId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ActiveDefinitionRow(')
+          ..write('context: $context, ')
+          ..write('kind: $kind, ')
+          ..write('key: $key, ')
+          ..write('versionId: $versionId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(context, kind, key, versionId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ActiveDefinitionRow &&
+          other.context == this.context &&
+          other.kind == this.kind &&
+          other.key == this.key &&
+          other.versionId == this.versionId);
+}
+
+class ActiveDefinitionsCompanion extends UpdateCompanion<ActiveDefinitionRow> {
+  final Value<String> context;
+  final Value<String> kind;
+  final Value<String> key;
+  final Value<String> versionId;
+  final Value<int> rowid;
+  const ActiveDefinitionsCompanion({
+    this.context = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.key = const Value.absent(),
+    this.versionId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ActiveDefinitionsCompanion.insert({
+    required String context,
+    required String kind,
+    required String key,
+    required String versionId,
+    this.rowid = const Value.absent(),
+  }) : context = Value(context),
+       kind = Value(kind),
+       key = Value(key),
+       versionId = Value(versionId);
+  static Insertable<ActiveDefinitionRow> custom({
+    Expression<String>? context,
+    Expression<String>? kind,
+    Expression<String>? key,
+    Expression<String>? versionId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (context != null) 'context': context,
+      if (kind != null) 'kind': kind,
+      if (key != null) 'key': key,
+      if (versionId != null) 'version_id': versionId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ActiveDefinitionsCompanion copyWith({
+    Value<String>? context,
+    Value<String>? kind,
+    Value<String>? key,
+    Value<String>? versionId,
+    Value<int>? rowid,
+  }) {
+    return ActiveDefinitionsCompanion(
+      context: context ?? this.context,
+      kind: kind ?? this.kind,
+      key: key ?? this.key,
+      versionId: versionId ?? this.versionId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (context.present) {
+      map['context'] = Variable<String>(context.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (versionId.present) {
+      map['version_id'] = Variable<String>(versionId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ActiveDefinitionsCompanion(')
+          ..write('context: $context, ')
+          ..write('kind: $kind, ')
+          ..write('key: $key, ')
+          ..write('versionId: $versionId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$PosDatabase extends GeneratedDatabase {
   _$PosDatabase(QueryExecutor e) : super(e);
   $PosDatabaseManager get managers => $PosDatabaseManager(this);
@@ -1998,6 +3867,12 @@ abstract class _$PosDatabase extends GeneratedDatabase {
   late final $CachedDocumentsTable cachedDocuments = $CachedDocumentsTable(
     this,
   );
+  late final $JobsTable jobs = $JobsTable(this);
+  late final $ReviewsTable reviews = $ReviewsTable(this);
+  late final $DefinitionVersionsTable definitionVersions =
+      $DefinitionVersionsTable(this);
+  late final $ActiveDefinitionsTable activeDefinitions =
+      $ActiveDefinitionsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2007,6 +3882,10 @@ abstract class _$PosDatabase extends GeneratedDatabase {
     syncState,
     outbox,
     cachedDocuments,
+    jobs,
+    reviews,
+    definitionVersions,
+    activeDefinitions,
   ];
   @override
   DriftDatabaseOptions get options =>
@@ -3015,6 +4894,978 @@ typedef $$CachedDocumentsTableProcessedTableManager =
       CachedDocumentRow,
       PrefetchHooks Function()
     >;
+typedef $$JobsTableCreateCompanionBuilder =
+    JobsCompanion Function({
+      required String id,
+      required String reference,
+      required String status,
+      required String updatedAt,
+      Value<bool> assignedToMe,
+      Value<String?> bankId,
+      Value<int?> scheduledStartMs,
+      required String body,
+      Value<int> rowid,
+    });
+typedef $$JobsTableUpdateCompanionBuilder =
+    JobsCompanion Function({
+      Value<String> id,
+      Value<String> reference,
+      Value<String> status,
+      Value<String> updatedAt,
+      Value<bool> assignedToMe,
+      Value<String?> bankId,
+      Value<int?> scheduledStartMs,
+      Value<String> body,
+      Value<int> rowid,
+    });
+
+class $$JobsTableFilterComposer extends Composer<_$PosDatabase, $JobsTable> {
+  $$JobsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reference => $composableBuilder(
+    column: $table.reference,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get assignedToMe => $composableBuilder(
+    column: $table.assignedToMe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bankId => $composableBuilder(
+    column: $table.bankId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get scheduledStartMs => $composableBuilder(
+    column: $table.scheduledStartMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$JobsTableOrderingComposer extends Composer<_$PosDatabase, $JobsTable> {
+  $$JobsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reference => $composableBuilder(
+    column: $table.reference,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get assignedToMe => $composableBuilder(
+    column: $table.assignedToMe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bankId => $composableBuilder(
+    column: $table.bankId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get scheduledStartMs => $composableBuilder(
+    column: $table.scheduledStartMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$JobsTableAnnotationComposer
+    extends Composer<_$PosDatabase, $JobsTable> {
+  $$JobsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get reference =>
+      $composableBuilder(column: $table.reference, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get assignedToMe => $composableBuilder(
+    column: $table.assignedToMe,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bankId =>
+      $composableBuilder(column: $table.bankId, builder: (column) => column);
+
+  GeneratedColumn<int> get scheduledStartMs => $composableBuilder(
+    column: $table.scheduledStartMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+}
+
+class $$JobsTableTableManager
+    extends
+        RootTableManager<
+          _$PosDatabase,
+          $JobsTable,
+          JobRow,
+          $$JobsTableFilterComposer,
+          $$JobsTableOrderingComposer,
+          $$JobsTableAnnotationComposer,
+          $$JobsTableCreateCompanionBuilder,
+          $$JobsTableUpdateCompanionBuilder,
+          (JobRow, BaseReferences<_$PosDatabase, $JobsTable, JobRow>),
+          JobRow,
+          PrefetchHooks Function()
+        > {
+  $$JobsTableTableManager(_$PosDatabase db, $JobsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$JobsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$JobsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$JobsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> reference = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<bool> assignedToMe = const Value.absent(),
+                Value<String?> bankId = const Value.absent(),
+                Value<int?> scheduledStartMs = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => JobsCompanion(
+                id: id,
+                reference: reference,
+                status: status,
+                updatedAt: updatedAt,
+                assignedToMe: assignedToMe,
+                bankId: bankId,
+                scheduledStartMs: scheduledStartMs,
+                body: body,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String reference,
+                required String status,
+                required String updatedAt,
+                Value<bool> assignedToMe = const Value.absent(),
+                Value<String?> bankId = const Value.absent(),
+                Value<int?> scheduledStartMs = const Value.absent(),
+                required String body,
+                Value<int> rowid = const Value.absent(),
+              }) => JobsCompanion.insert(
+                id: id,
+                reference: reference,
+                status: status,
+                updatedAt: updatedAt,
+                assignedToMe: assignedToMe,
+                bankId: bankId,
+                scheduledStartMs: scheduledStartMs,
+                body: body,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$JobsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PosDatabase,
+      $JobsTable,
+      JobRow,
+      $$JobsTableFilterComposer,
+      $$JobsTableOrderingComposer,
+      $$JobsTableAnnotationComposer,
+      $$JobsTableCreateCompanionBuilder,
+      $$JobsTableUpdateCompanionBuilder,
+      (JobRow, BaseReferences<_$PosDatabase, $JobsTable, JobRow>),
+      JobRow,
+      PrefetchHooks Function()
+    >;
+typedef $$ReviewsTableCreateCompanionBuilder =
+    ReviewsCompanion Function({
+      required String id,
+      required String jobId,
+      required String inspectionId,
+      required int attempt,
+      required String decision,
+      required String decidedAt,
+      required String body,
+      Value<int> rowid,
+    });
+typedef $$ReviewsTableUpdateCompanionBuilder =
+    ReviewsCompanion Function({
+      Value<String> id,
+      Value<String> jobId,
+      Value<String> inspectionId,
+      Value<int> attempt,
+      Value<String> decision,
+      Value<String> decidedAt,
+      Value<String> body,
+      Value<int> rowid,
+    });
+
+class $$ReviewsTableFilterComposer
+    extends Composer<_$PosDatabase, $ReviewsTable> {
+  $$ReviewsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get jobId => $composableBuilder(
+    column: $table.jobId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get inspectionId => $composableBuilder(
+    column: $table.inspectionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attempt => $composableBuilder(
+    column: $table.attempt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get decision => $composableBuilder(
+    column: $table.decision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ReviewsTableOrderingComposer
+    extends Composer<_$PosDatabase, $ReviewsTable> {
+  $$ReviewsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get jobId => $composableBuilder(
+    column: $table.jobId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get inspectionId => $composableBuilder(
+    column: $table.inspectionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attempt => $composableBuilder(
+    column: $table.attempt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get decision => $composableBuilder(
+    column: $table.decision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ReviewsTableAnnotationComposer
+    extends Composer<_$PosDatabase, $ReviewsTable> {
+  $$ReviewsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get jobId =>
+      $composableBuilder(column: $table.jobId, builder: (column) => column);
+
+  GeneratedColumn<String> get inspectionId => $composableBuilder(
+    column: $table.inspectionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get attempt =>
+      $composableBuilder(column: $table.attempt, builder: (column) => column);
+
+  GeneratedColumn<String> get decision =>
+      $composableBuilder(column: $table.decision, builder: (column) => column);
+
+  GeneratedColumn<String> get decidedAt =>
+      $composableBuilder(column: $table.decidedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+}
+
+class $$ReviewsTableTableManager
+    extends
+        RootTableManager<
+          _$PosDatabase,
+          $ReviewsTable,
+          ReviewRow,
+          $$ReviewsTableFilterComposer,
+          $$ReviewsTableOrderingComposer,
+          $$ReviewsTableAnnotationComposer,
+          $$ReviewsTableCreateCompanionBuilder,
+          $$ReviewsTableUpdateCompanionBuilder,
+          (ReviewRow, BaseReferences<_$PosDatabase, $ReviewsTable, ReviewRow>),
+          ReviewRow,
+          PrefetchHooks Function()
+        > {
+  $$ReviewsTableTableManager(_$PosDatabase db, $ReviewsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReviewsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReviewsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReviewsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> jobId = const Value.absent(),
+                Value<String> inspectionId = const Value.absent(),
+                Value<int> attempt = const Value.absent(),
+                Value<String> decision = const Value.absent(),
+                Value<String> decidedAt = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ReviewsCompanion(
+                id: id,
+                jobId: jobId,
+                inspectionId: inspectionId,
+                attempt: attempt,
+                decision: decision,
+                decidedAt: decidedAt,
+                body: body,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String jobId,
+                required String inspectionId,
+                required int attempt,
+                required String decision,
+                required String decidedAt,
+                required String body,
+                Value<int> rowid = const Value.absent(),
+              }) => ReviewsCompanion.insert(
+                id: id,
+                jobId: jobId,
+                inspectionId: inspectionId,
+                attempt: attempt,
+                decision: decision,
+                decidedAt: decidedAt,
+                body: body,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ReviewsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PosDatabase,
+      $ReviewsTable,
+      ReviewRow,
+      $$ReviewsTableFilterComposer,
+      $$ReviewsTableOrderingComposer,
+      $$ReviewsTableAnnotationComposer,
+      $$ReviewsTableCreateCompanionBuilder,
+      $$ReviewsTableUpdateCompanionBuilder,
+      (ReviewRow, BaseReferences<_$PosDatabase, $ReviewsTable, ReviewRow>),
+      ReviewRow,
+      PrefetchHooks Function()
+    >;
+typedef $$DefinitionVersionsTableCreateCompanionBuilder =
+    DefinitionVersionsCompanion Function({
+      required String versionId,
+      required String familyId,
+      required String kind,
+      required String key,
+      Value<String?> bankId,
+      required int version,
+      required String specVersion,
+      required String hash,
+      required String body,
+      Value<int> rowid,
+    });
+typedef $$DefinitionVersionsTableUpdateCompanionBuilder =
+    DefinitionVersionsCompanion Function({
+      Value<String> versionId,
+      Value<String> familyId,
+      Value<String> kind,
+      Value<String> key,
+      Value<String?> bankId,
+      Value<int> version,
+      Value<String> specVersion,
+      Value<String> hash,
+      Value<String> body,
+      Value<int> rowid,
+    });
+
+class $$DefinitionVersionsTableFilterComposer
+    extends Composer<_$PosDatabase, $DefinitionVersionsTable> {
+  $$DefinitionVersionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get versionId => $composableBuilder(
+    column: $table.versionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get familyId => $composableBuilder(
+    column: $table.familyId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bankId => $composableBuilder(
+    column: $table.bankId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get specVersion => $composableBuilder(
+    column: $table.specVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hash => $composableBuilder(
+    column: $table.hash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DefinitionVersionsTableOrderingComposer
+    extends Composer<_$PosDatabase, $DefinitionVersionsTable> {
+  $$DefinitionVersionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get versionId => $composableBuilder(
+    column: $table.versionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get familyId => $composableBuilder(
+    column: $table.familyId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bankId => $composableBuilder(
+    column: $table.bankId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get specVersion => $composableBuilder(
+    column: $table.specVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hash => $composableBuilder(
+    column: $table.hash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DefinitionVersionsTableAnnotationComposer
+    extends Composer<_$PosDatabase, $DefinitionVersionsTable> {
+  $$DefinitionVersionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get versionId =>
+      $composableBuilder(column: $table.versionId, builder: (column) => column);
+
+  GeneratedColumn<String> get familyId =>
+      $composableBuilder(column: $table.familyId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get bankId =>
+      $composableBuilder(column: $table.bankId, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<String> get specVersion => $composableBuilder(
+    column: $table.specVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get hash =>
+      $composableBuilder(column: $table.hash, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+}
+
+class $$DefinitionVersionsTableTableManager
+    extends
+        RootTableManager<
+          _$PosDatabase,
+          $DefinitionVersionsTable,
+          DefinitionVersionRow,
+          $$DefinitionVersionsTableFilterComposer,
+          $$DefinitionVersionsTableOrderingComposer,
+          $$DefinitionVersionsTableAnnotationComposer,
+          $$DefinitionVersionsTableCreateCompanionBuilder,
+          $$DefinitionVersionsTableUpdateCompanionBuilder,
+          (
+            DefinitionVersionRow,
+            BaseReferences<
+              _$PosDatabase,
+              $DefinitionVersionsTable,
+              DefinitionVersionRow
+            >,
+          ),
+          DefinitionVersionRow,
+          PrefetchHooks Function()
+        > {
+  $$DefinitionVersionsTableTableManager(
+    _$PosDatabase db,
+    $DefinitionVersionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DefinitionVersionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DefinitionVersionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DefinitionVersionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> versionId = const Value.absent(),
+                Value<String> familyId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> key = const Value.absent(),
+                Value<String?> bankId = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<String> specVersion = const Value.absent(),
+                Value<String> hash = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DefinitionVersionsCompanion(
+                versionId: versionId,
+                familyId: familyId,
+                kind: kind,
+                key: key,
+                bankId: bankId,
+                version: version,
+                specVersion: specVersion,
+                hash: hash,
+                body: body,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String versionId,
+                required String familyId,
+                required String kind,
+                required String key,
+                Value<String?> bankId = const Value.absent(),
+                required int version,
+                required String specVersion,
+                required String hash,
+                required String body,
+                Value<int> rowid = const Value.absent(),
+              }) => DefinitionVersionsCompanion.insert(
+                versionId: versionId,
+                familyId: familyId,
+                kind: kind,
+                key: key,
+                bankId: bankId,
+                version: version,
+                specVersion: specVersion,
+                hash: hash,
+                body: body,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DefinitionVersionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PosDatabase,
+      $DefinitionVersionsTable,
+      DefinitionVersionRow,
+      $$DefinitionVersionsTableFilterComposer,
+      $$DefinitionVersionsTableOrderingComposer,
+      $$DefinitionVersionsTableAnnotationComposer,
+      $$DefinitionVersionsTableCreateCompanionBuilder,
+      $$DefinitionVersionsTableUpdateCompanionBuilder,
+      (
+        DefinitionVersionRow,
+        BaseReferences<
+          _$PosDatabase,
+          $DefinitionVersionsTable,
+          DefinitionVersionRow
+        >,
+      ),
+      DefinitionVersionRow,
+      PrefetchHooks Function()
+    >;
+typedef $$ActiveDefinitionsTableCreateCompanionBuilder =
+    ActiveDefinitionsCompanion Function({
+      required String context,
+      required String kind,
+      required String key,
+      required String versionId,
+      Value<int> rowid,
+    });
+typedef $$ActiveDefinitionsTableUpdateCompanionBuilder =
+    ActiveDefinitionsCompanion Function({
+      Value<String> context,
+      Value<String> kind,
+      Value<String> key,
+      Value<String> versionId,
+      Value<int> rowid,
+    });
+
+class $$ActiveDefinitionsTableFilterComposer
+    extends Composer<_$PosDatabase, $ActiveDefinitionsTable> {
+  $$ActiveDefinitionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get context => $composableBuilder(
+    column: $table.context,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get versionId => $composableBuilder(
+    column: $table.versionId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ActiveDefinitionsTableOrderingComposer
+    extends Composer<_$PosDatabase, $ActiveDefinitionsTable> {
+  $$ActiveDefinitionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get context => $composableBuilder(
+    column: $table.context,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get versionId => $composableBuilder(
+    column: $table.versionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ActiveDefinitionsTableAnnotationComposer
+    extends Composer<_$PosDatabase, $ActiveDefinitionsTable> {
+  $$ActiveDefinitionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get context =>
+      $composableBuilder(column: $table.context, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get versionId =>
+      $composableBuilder(column: $table.versionId, builder: (column) => column);
+}
+
+class $$ActiveDefinitionsTableTableManager
+    extends
+        RootTableManager<
+          _$PosDatabase,
+          $ActiveDefinitionsTable,
+          ActiveDefinitionRow,
+          $$ActiveDefinitionsTableFilterComposer,
+          $$ActiveDefinitionsTableOrderingComposer,
+          $$ActiveDefinitionsTableAnnotationComposer,
+          $$ActiveDefinitionsTableCreateCompanionBuilder,
+          $$ActiveDefinitionsTableUpdateCompanionBuilder,
+          (
+            ActiveDefinitionRow,
+            BaseReferences<
+              _$PosDatabase,
+              $ActiveDefinitionsTable,
+              ActiveDefinitionRow
+            >,
+          ),
+          ActiveDefinitionRow,
+          PrefetchHooks Function()
+        > {
+  $$ActiveDefinitionsTableTableManager(
+    _$PosDatabase db,
+    $ActiveDefinitionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ActiveDefinitionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ActiveDefinitionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ActiveDefinitionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> context = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> key = const Value.absent(),
+                Value<String> versionId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ActiveDefinitionsCompanion(
+                context: context,
+                kind: kind,
+                key: key,
+                versionId: versionId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String context,
+                required String kind,
+                required String key,
+                required String versionId,
+                Value<int> rowid = const Value.absent(),
+              }) => ActiveDefinitionsCompanion.insert(
+                context: context,
+                kind: kind,
+                key: key,
+                versionId: versionId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ActiveDefinitionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PosDatabase,
+      $ActiveDefinitionsTable,
+      ActiveDefinitionRow,
+      $$ActiveDefinitionsTableFilterComposer,
+      $$ActiveDefinitionsTableOrderingComposer,
+      $$ActiveDefinitionsTableAnnotationComposer,
+      $$ActiveDefinitionsTableCreateCompanionBuilder,
+      $$ActiveDefinitionsTableUpdateCompanionBuilder,
+      (
+        ActiveDefinitionRow,
+        BaseReferences<
+          _$PosDatabase,
+          $ActiveDefinitionsTable,
+          ActiveDefinitionRow
+        >,
+      ),
+      ActiveDefinitionRow,
+      PrefetchHooks Function()
+    >;
 
 class $PosDatabaseManager {
   final _$PosDatabase _db;
@@ -3027,4 +5878,11 @@ class $PosDatabaseManager {
       $$OutboxTableTableManager(_db, _db.outbox);
   $$CachedDocumentsTableTableManager get cachedDocuments =>
       $$CachedDocumentsTableTableManager(_db, _db.cachedDocuments);
+  $$JobsTableTableManager get jobs => $$JobsTableTableManager(_db, _db.jobs);
+  $$ReviewsTableTableManager get reviews =>
+      $$ReviewsTableTableManager(_db, _db.reviews);
+  $$DefinitionVersionsTableTableManager get definitionVersions =>
+      $$DefinitionVersionsTableTableManager(_db, _db.definitionVersions);
+  $$ActiveDefinitionsTableTableManager get activeDefinitions =>
+      $$ActiveDefinitionsTableTableManager(_db, _db.activeDefinitions);
 }
