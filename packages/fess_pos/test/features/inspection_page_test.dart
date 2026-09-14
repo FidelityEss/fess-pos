@@ -653,6 +653,7 @@ void main() {
       WidgetTester tester, {
       required bool passed,
       GeoFix? checkin,
+      bool? precise = true,
     }) async {
       final record = _record();
       final inspections = _FakeInspections(
@@ -671,7 +672,7 @@ void main() {
           locationPassed: passed,
         ),
       )..plan = _plan(passed: passed, checkin: checkin);
-      final location = FakeLocation();
+      final location = FakeLocation()..preciseState = precise;
       await tester.pumpWidget(
         ProviderScope(
           overrides: _overrides(
@@ -791,6 +792,16 @@ void main() {
       await tester.pump();
       expect(find.byKey(const ValueKey('location-override')), findsNothing);
       expect(find.text(_copy('location.override_too_far')), findsOneWidget);
+    });
+
+    testWidgets('only approximate location: it says how to allow the precise '
+        'one (B3.7, T4-12)', (tester) async {
+      await open(tester, passed: false, precise: false);
+      expect(find.text(_copy('location.approximate')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('location-open-settings')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('leaving the fence pauses the inspection; coming back '

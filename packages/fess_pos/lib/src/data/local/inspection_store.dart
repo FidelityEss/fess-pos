@@ -59,8 +59,8 @@ const Map<String, Object> _defaultProfile = {
 /// Inspections on the local store (T4-27): each change and the envelope
 /// that records it in one transaction (docs/12 §3).
 ///
-/// - the location check is one fix at the start that never blocks
-///   (the geofence engine is T4-07);
+/// - the location is judged at the start and, where that fix didn't pass,
+///   by the location step (T4-07, D-78); breadcrumbs are kept (T4-08);
 /// - a photo is made canonical before it is hashed (T4-02, D-73);
 /// - evidence bytes live in the encrypted store itself, read one item at a
 ///   time (D-65, D-74).

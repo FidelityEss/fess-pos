@@ -20,7 +20,7 @@ GeoFix geoFixOf(LocationFix fix) => GeoFix(
   isMocked: fix.isMocked,
 );
 
-enum _Stage { loading, access, off, sampling, done }
+enum _Stage { loading, access, off, approximate, sampling, done }
 
 /// Samples the location against [fence] for up to [window] (docs/07 §7),
 /// showing how accurate it is and the time left, then reports how it went
@@ -96,6 +96,13 @@ class _FixSamplerState extends ConsumerState<FixSampler> {
       });
       return;
     }
+    // Only the precise location will do (B3.7); where the phone can't
+    // tell, the accuracy threshold still refuses vague fixes.
+    if (await _location.precise() == false) {
+      if (mounted) setState(() => _stage = _Stage.approximate);
+      return;
+    }
+    if (!mounted) return;
     _stop();
     final check = _check = LocationCheck(
       widget.fence,
@@ -169,6 +176,18 @@ class _FixSamplerState extends ConsumerState<FixSampler> {
           key: const ValueKey('location-allow'),
           onPressed: _allow,
           child: Text(copy('location.allow')),
+        ),
+        const SizedBox(height: 8),
+        retry,
+      ],
+      _Stage.approximate => [
+        Text(copy('location.approximate')),
+        const SizedBox(height: 12),
+        FilledButton(
+          key: const ValueKey('location-open-settings'),
+          onPressed: () =>
+              ref.read(platformServicesProvider).externalApps.openAppSettings(),
+          child: Text(copy('location.open_settings')),
         ),
         const SizedBox(height: 8),
         retry,

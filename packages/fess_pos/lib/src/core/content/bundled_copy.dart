@@ -169,6 +169,10 @@ abstract final class BundledCopy {
     'location.allow': 'Allow location',
     'location.off': 'Location is off on this phone. Turn it on and try again.',
     'location.try_again': 'Try again',
+    'location.approximate':
+        'POS needs your precise location. Turn on Precise location for this '
+        "app in your phone's settings, then try again.",
+    'location.open_settings': 'Open settings',
     'location.no_lock_outside':
         "Your location isn't accurate enough inside. Step outside the "
         'premises and record your location there.',

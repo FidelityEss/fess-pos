@@ -87,6 +87,10 @@ abstract interface class LocationProvider {
 
   /// A stream of fixes, roughly every [interval].
   Stream<LocationFix> fixes({required Duration interval});
+
+  /// Whether the app has the precise location (B3.7): false when only the
+  /// approximate one is allowed, null when the platform can't tell.
+  Future<bool?> precise();
 }
 
 /// geolocator, on Android, iOS and the web. Foreground only: background
@@ -118,6 +122,20 @@ class GeolocatorLocationProvider implements LocationProvider {
         ),
         web: kIsWeb,
       );
+
+  @override
+  Future<bool?> precise() async {
+    if (kIsWeb) return null;
+    try {
+      return switch (await Geolocator.getLocationAccuracy()) {
+        LocationAccuracyStatus.precise => true,
+        LocationAccuracyStatus.reduced => false,
+        LocationAccuracyStatus.unknown => null,
+      };
+    } on Object {
+      return null;
+    }
+  }
 
   @override
   Stream<LocationFix> fixes({required Duration interval}) =>

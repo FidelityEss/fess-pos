@@ -34,6 +34,12 @@ class FakeLocation implements LocationProvider {
   @override
   Future<LocationAccess> requestAccess() async => accessState;
 
+  /// What [precise] answers.
+  bool? preciseState = true;
+
+  @override
+  Future<bool?> precise() async => preciseState;
+
   @override
   Future<LocationFix> currentFix({Duration? timeLimit}) async =>
       fix ??
