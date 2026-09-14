@@ -448,9 +448,17 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
     if (!(await location.access()).granted || !mounted) return;
     final monitor = ExitMonitor(plan.fence, paused: plan.paused);
     _fixes = location.fixes(interval: plan.fixInterval).listen((fix) async {
+      final geo = geoFixOf(fix);
+      final verdict = plan.fence.judge(geo);
+      // Every fix watched is a breadcrumb (B3.4, T4-08).
+      await inspections.recordTrace(
+        widget.inspectionId,
+        geo,
+        inside: verdict.qualifies ? verdict.inside : null,
+      );
       // Until the check passes, the check itself reads the location.
       if (!_locationPassed) return;
-      final change = monitor.add(geoFixOf(fix));
+      final change = monitor.add(geo);
       if (change == null) return;
       await inspections.recordGeofenceChange(widget.inspectionId, change);
       if (mounted) setState(() => _paused = change.paused);

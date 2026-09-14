@@ -39,6 +39,14 @@ final Stopwatch _monotonic = Stopwatch()..start();
 /// the form.
 const String _flowKey = 'site_inspection_flow';
 
+/// An inspection's breadcrumbs waiting to go, how many batches went, and
+/// the time of the last fix sent (T4-08).
+typedef _Traces = ({
+  List<Map<String, Object?>> pending,
+  int batches,
+  String? lastAt,
+});
+
 /// The geofence profile when remote config names none for the job's
 /// location type (docs/07 §7).
 const Map<String, Object> _defaultProfile = {
@@ -486,53 +494,68 @@ class DriftInspections implements Inspections {
     String method = 'inside_fix',
     GeoFix? checkin,
     Map<String, Object?>? override,
-  }) => _db.transaction(() async {
-    final row = await _row(inspectionId);
-    if (row == null || row.status != 'in_progress') return;
-    final now = isoWithOffset(_clock());
-    // The profile and its numbers stay as frozen at the start (docs/07 §7
-    // item 10); the check adds how it went. The submission carries it.
-    final result = {
-      ...?_decode(row.geofence),
-      'method': method,
-      'passed': passed,
-      'fix': verdict == null ? null : _fixJson(verdict.fix),
-      if (checkin != null) 'checkin_fix': _fixJson(checkin),
-      if (override != null) ...{'override': true, 'override_detail': override},
-      'distance_m': verdict == null
-          ? null
-          : (verdict.distanceM * 10).roundToDouble() / 10,
-      'sampled_seconds': sampledSeconds,
-      'evaluated_at_device': now,
-    };
-    final context = _decode(row.contextSnapshot) ?? const <String, Object?>{};
-    final inspection = _map(context['inspection']) ?? const {};
-    final geofence = _map(inspection['geofence']) ?? const {};
-    await (_db.update(
-      _db.inspections,
-    )..where((i) => i.id.equals(inspectionId))).write(
-      InspectionsCompanion(
-        geofence: Value(jsonEncode(result)),
-        contextSnapshot: Value(
-          jsonEncode({
-            ...context,
-            'inspection': {
-              ...inspection,
-              'geofence': {
-                ...geofence,
-                // Proven from outside, or overridden: the agent wasn't
-                // seen inside.
-                'inside': passed && method == 'inside_fix' && override == null,
-                'method': method,
-                if (override != null) 'override': true,
+  }) async {
+    await _db.transaction(() async {
+      final row = await _row(inspectionId);
+      if (row == null || row.status != 'in_progress') return;
+      final now = isoWithOffset(_clock());
+      // The profile and its numbers stay as frozen at the start (docs/07 §7
+      // item 10); the check adds how it went. The submission carries it.
+      final result = {
+        ...?_decode(row.geofence),
+        'method': method,
+        'passed': passed,
+        'fix': verdict == null ? null : _fixJson(verdict.fix),
+        if (checkin != null) 'checkin_fix': _fixJson(checkin),
+        if (override != null) ...{
+          'override': true,
+          'override_detail': override,
+        },
+        'distance_m': verdict == null
+            ? null
+            : (verdict.distanceM * 10).roundToDouble() / 10,
+        'sampled_seconds': sampledSeconds,
+        'evaluated_at_device': now,
+      };
+      final context = _decode(row.contextSnapshot) ?? const <String, Object?>{};
+      final inspection = _map(context['inspection']) ?? const {};
+      final geofence = _map(inspection['geofence']) ?? const {};
+      await (_db.update(
+        _db.inspections,
+      )..where((i) => i.id.equals(inspectionId))).write(
+        InspectionsCompanion(
+          geofence: Value(jsonEncode(result)),
+          contextSnapshot: Value(
+            jsonEncode({
+              ...context,
+              'inspection': {
+                ...inspection,
+                'geofence': {
+                  ...geofence,
+                  // Proven from outside, or overridden: the agent wasn't
+                  // seen inside.
+                  'inside':
+                      passed && method == 'inside_fix' && override == null,
+                  'method': method,
+                  if (override != null) 'override': true,
+                },
               },
-            },
-          }),
+            }),
+          ),
+          updatedAt: Value(now),
         ),
-        updatedAt: Value(now),
-      ),
-    );
-  });
+      );
+    });
+    // The way in, among the breadcrumbs (T4-08).
+    if (passed && verdict != null && override == null) {
+      await recordTrace(
+        inspectionId,
+        checkin ?? verdict.fix,
+        inside: true,
+        event: checkin != null ? 'checkin' : 'enter',
+      );
+    }
+  }
 
   @override
   Future<void> recordGeofenceChange(
@@ -587,7 +610,132 @@ class DriftInspections implements Inspections {
         );
       },
     );
+    await recordTrace(
+      inspectionId,
+      change.verdict.fix,
+      inside: change.verdict.inside,
+      event: change.paused ? 'pause' : 'resume',
+    );
     unawaited(_send());
+  }
+
+  /// Breadcrumbs wait on the phone until this many are waiting, the oldest
+  /// is [_traceMaxAge] old, or an event comes (D-81).
+  static const int _traceBatchSize = 30;
+  static const Duration _traceMaxAge = Duration(minutes: 5);
+
+  @override
+  Future<void> recordTrace(
+    String inspectionId,
+    GeoFix fix, {
+    bool? inside,
+    String event = 'fix',
+  }) async {
+    final origin = await _origin();
+    await _db.transaction(() async {
+      final row = await _row(inspectionId);
+      if (row == null || row.status != 'in_progress') return;
+      final state = await _traceState(inspectionId);
+      final pending = [
+        ...state.pending,
+        <String, Object?>{
+          'fix_id': _newId(),
+          'ts_device': isoWithOffset(fix.at),
+          'ts_monotonic_ms': _monotonic.elapsedMilliseconds,
+          'gnss_ts': null,
+          'lat': fix.lat,
+          'lng': fix.lng,
+          'accuracy_m': fix.accuracyM,
+          'is_mocked': fix.isMocked ?? false,
+          'inside_fence': inside,
+          'event': event,
+        },
+      ];
+      final oldest = DateTime.tryParse(
+        _string(pending.first['ts_device']) ?? '',
+      );
+      final due =
+          event != 'fix' ||
+          pending.length >= _traceBatchSize ||
+          (oldest != null && fix.at.difference(oldest) >= _traceMaxAge);
+      final next = (
+        pending: pending,
+        batches: state.batches,
+        lastAt: state.lastAt,
+      );
+      // Signed out, they keep waiting; they go with the next one.
+      await _saveTraces(
+        inspectionId,
+        due && origin != null
+            ? await _sendTraces(row, _originFor(origin, row.userId), next)
+            : next,
+      );
+    });
+  }
+
+  Future<_Traces> _traceState(String inspectionId) async {
+    final row =
+        await (_db.select(_db.moduleMeta)
+              ..where((m) => m.key.equals(MetaKeys.traces(inspectionId))))
+            .getSingleOrNull();
+    final json = _decode(row?.value);
+    return (
+      pending: [
+        if (json?['pending'] case final List<Object?> list)
+          for (final f in list)
+            if (f is Map<String, Object?>) f,
+      ],
+      batches: switch (json?['batches']) {
+        final int n => n,
+        _ => 0,
+      },
+      lastAt: _string(json?['last_at']),
+    );
+  }
+
+  Future<void> _saveTraces(String inspectionId, _Traces traces) {
+    final now = isoWithOffset(_clock());
+    return _db
+        .into(_db.moduleMeta)
+        .insertOnConflictUpdate(
+          ModuleMetaCompanion.insert(
+            key: MetaKeys.traces(inspectionId),
+            value: jsonEncode({
+              'pending': traces.pending,
+              'batches': traces.batches,
+              'last_at': traces.lastAt,
+            }),
+            updatedAt: now,
+          ),
+        );
+  }
+
+  /// Sends what waits as one `traces_batch` (docs/12 §4). Called inside the
+  /// caller's transaction, so the envelope and the emptied wait are stored
+  /// together.
+  Future<_Traces> _sendTraces(
+    InspectionRow row,
+    EnvelopeOrigin origin,
+    _Traces traces,
+  ) async {
+    if (traces.pending.isEmpty) return traces;
+    await _outbox.add(
+      origin,
+      type: 'traces_batch',
+      typeVersion: 1,
+      entityRef: 'inspection:${row.id}',
+      payload: {
+        'inspection_id': row.id,
+        'job_id': row.jobId,
+        'batch_seq': traces.batches,
+        'fixes': traces.pending,
+      },
+    );
+    return (
+      pending: const <Map<String, Object?>>[],
+      batches: traces.batches + 1,
+      lastAt: _string(traces.pending.last['ts_device']),
+    );
   }
 
   @override
@@ -759,6 +907,14 @@ class DriftInspections implements Inspections {
           ),
         );
         await _setJobStatus(row.jobId, 'submitted');
+        // What waits of the breadcrumbs goes first, and the submission
+        // counts the batches (T4-08).
+        final traces = await _sendTraces(
+          row,
+          _originFor(origin, row.userId),
+          await _traceState(row.id),
+        );
+        await _saveTraces(row.id, traces);
         return PendingEnvelope(
           type: 'submission',
           typeVersion: 1,
@@ -780,8 +936,8 @@ class DriftInspections implements Inspections {
             'answers_hash': hash,
             'manifest': {
               'items': items,
-              'trace_batch_count': 0,
-              'last_trace_at': null,
+              'trace_batch_count': traces.batches,
+              'last_trace_at': traces.lastAt,
             },
             'session_token_id': row.sessionTokenId,
             'session_token': row.sessionToken,

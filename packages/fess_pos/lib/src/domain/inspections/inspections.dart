@@ -313,6 +313,17 @@ abstract interface class Inspections implements DeliveryTracker {
     GeofenceChange change,
   );
 
+  /// Keeps [fix] as one of the inspection's breadcrumbs (B3.4, T4-08):
+  /// [inside] the fence, when it could be judged; [event] is `fix`, or
+  /// `checkin`, `enter`, `exit`, `pause` or `resume`. They go to the server
+  /// in batches.
+  Future<void> recordTrace(
+    String inspectionId,
+    GeoFix fix, {
+    bool? inside,
+    String event = 'fix',
+  });
+
   /// Seals and records the submission (docs/07 §4 step 9, docs/12 §7): the
   /// [answers] as the form validated them, their hash, the manifest of the
   /// evidence they name and the submission hash.

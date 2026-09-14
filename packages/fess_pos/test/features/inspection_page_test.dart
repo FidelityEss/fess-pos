@@ -230,6 +230,16 @@ class _FakeInspections implements Inspections {
   Future<void> recordCheckin(String jobId, GeoFix fix) async =>
       checkins.add(fix);
 
+  final List<({GeoFix fix, bool? inside, String event})> traces = [];
+
+  @override
+  Future<void> recordTrace(
+    String inspectionId,
+    GeoFix fix, {
+    bool? inside,
+    String event = 'fix',
+  }) async => traces.add((fix: fix, inside: inside, event: event));
+
   @override
   Future<void> recordGeofenceChange(
     String inspectionId,
@@ -808,6 +818,13 @@ void main() {
       await _settle(tester);
       expect(find.byKey(const ValueKey('inspection-paused')), findsNothing);
       expect(inspections.changes.last.paused, isFalse);
+      // Every fix watched is a breadcrumb (T4-08).
+      expect(inspections.traces.map((t) => t.inside), [
+        false,
+        false,
+        false,
+        true,
+      ]);
     });
   });
 

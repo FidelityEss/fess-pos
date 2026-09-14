@@ -590,6 +590,81 @@ void main() {
     });
   });
 
+  group('breadcrumbs (T4-08)', () {
+    late String id;
+
+    setUp(() async {
+      id = (await inspections.begin(job())).inspectionId!;
+    });
+
+    GeoFix fixAt(int minute, {int second = 0}) => GeoFix(
+      lat: -26.2041,
+      lng: 28.0473,
+      accuracyM: 10,
+      at: DateTime(2026, 9, 14, 10, minute, second),
+      isMocked: false,
+    );
+
+    Future<List<Map<String, Object?>>> batches() async => [
+      for (final e in await envelopes('traces_batch')) payloadOf(e),
+    ];
+
+    test('fixes wait on the phone, then go thirty to a batch', () async {
+      for (var i = 0; i < 29; i++) {
+        await inspections.recordTrace(id, fixAt(0, second: i), inside: true);
+      }
+      expect(await batches(), isEmpty);
+      await inspections.recordTrace(id, fixAt(0, second: 29), inside: true);
+      final b = (await batches()).single;
+      expect((b['inspection_id'], b['job_id'], b['batch_seq']), (id, 'j1', 0));
+      final fixes = b['fixes']! as List<Object?>;
+      expect(fixes, hasLength(30));
+      final first = fixes.first! as Map<String, Object?>;
+      expect(
+        (first['event'], first['inside_fence'], first['accuracy_m']),
+        (
+          'fix',
+          true,
+          10,
+        ),
+      );
+    });
+
+    test('a fix five minutes after the first waiting, or an event, sends '
+        'them', () async {
+      await inspections.recordTrace(id, fixAt(0));
+      await inspections.recordTrace(id, fixAt(6));
+      expect((await batches()).single['fixes'], hasLength(2));
+
+      await inspections.recordTrace(id, fixAt(7));
+      await inspections.recordTrace(id, fixAt(7, second: 20), event: 'pause');
+      final second = (await batches()).last;
+      expect(second['batch_seq'], 1);
+      final fixes = second['fixes']! as List<Object?>;
+      expect((fixes.last! as Map<String, Object?>)['event'], 'pause');
+    });
+
+    test(
+      'the submission sends what waits first, and counts the batches',
+      () async {
+        await inspections.recordTrace(id, fixAt(1));
+        await inspections.recordTrace(id, fixAt(2));
+        await inspections.submit(id, answers: const {});
+        final sent = (await batches()).single;
+        final fixes = sent['fixes']! as List<Object?>;
+        expect(fixes, hasLength(2));
+        final manifest =
+            payloadOf((await envelopes('submission')).single)['manifest']!
+                as Map<String, Object?>;
+        expect(manifest['trace_batch_count'], 1);
+        expect(
+          manifest['last_trace_at'],
+          (fixes.last! as Map<String, Object?>)['ts_device'],
+        );
+      },
+    );
+  });
+
   group('evidence', () {
     late String id;
 

@@ -135,6 +135,10 @@ abstract final class MetaKeys {
   /// A job's check-in on arrival (T4-23): the fix, as `geofence_result`
   /// carries one.
   static String checkin(String jobId) => 'checkin.$jobId';
+
+  /// An inspection's breadcrumbs waiting to go, and how many batches went
+  /// (T4-08).
+  static String traces(String inspectionId) => 'traces.$inspectionId';
 }
 
 extension QuarantineLog on PosDatabase {
