@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:fess_pos/src/contract/errors.dart';
 import 'package:fess_pos/src/core/time/device_time.dart';
@@ -80,4 +82,31 @@ class PosDatabase extends _$PosDatabase {
 abstract final class MetaKeys {
   static const String createdAt = 'store_created_at';
   static const String createdByModule = 'store_created_by_module';
+
+  /// JSON list of `{name, at}`: stores moved into `quarantine/` (D-52).
+  static const String quarantinedStores = 'quarantined_stores';
+}
+
+extension QuarantineLog on PosDatabase {
+  /// Records stores moved aside because they could never be opened again
+  /// (D-52), for the sync layer to report (T1-22).
+  Future<void> recordQuarantine(List<String> names) async {
+    final now = isoWithOffset(DateTime.now());
+    final existing =
+        await (select(
+              moduleMeta,
+            )..where((m) => m.key.equals(MetaKeys.quarantinedStores)))
+            .getSingleOrNull();
+    final log = <Object?>[
+      if (existing != null) ...(jsonDecode(existing.value) as List<Object?>),
+      ...names.map((n) => {'name': n, 'at': now}),
+    ];
+    await into(moduleMeta).insertOnConflictUpdate(
+      ModuleMetaCompanion.insert(
+        key: MetaKeys.quarantinedStores,
+        value: jsonEncode(log),
+        updatedAt: now,
+      ),
+    );
+  }
 }

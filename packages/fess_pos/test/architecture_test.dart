@@ -51,10 +51,15 @@ void main() {
     '.deleteAll(': 'never wipe secure storage the host shares (findings/03 §2)',
   };
 
+  // The one place allowed to delete all: FlutterSecureStore.reset, whose
+  // fixed options confine it to the module's own namespace (D-52).
+  const deleteAllAllowedIn = 'lib/src/platform/secure_store.dart';
+
   for (final f in lib) {
     test('${_rel(f)} uses no forbidden API', () {
       final code = _code(f);
       for (final e in forbidden.entries) {
+        if (e.key == '.deleteAll(' && _rel(f) == deleteAllAllowedIn) continue;
         expect(
           code.contains(e.key),
           isFalse,
@@ -80,7 +85,10 @@ void main() {
 
   test('plugins and native database code are used only under platform/', () {
     const platformOnly = [
-      'package:camera/',
+      'package:camera_platform_interface/',
+      'package:camera_android/',
+      'package:camera_avfoundation/',
+      'package:camera_web/',
       'package:connectivity_plus/',
       'package:device_info_plus/',
       'package:flutter_secure_storage/',
@@ -144,6 +152,8 @@ void main() {
       'firebase_messaging',
       // Would ship plain SQLite beside SQLCipher (docs/03 §7).
       'sqlite3_flutter_libs',
+      // Brings CameraX, which can need a higher minSdk than the host (D-54).
+      'camera',
     ]) {
       expect(
         RegExp('^\\s+$name:', multiLine: true).hasMatch(pubspec),

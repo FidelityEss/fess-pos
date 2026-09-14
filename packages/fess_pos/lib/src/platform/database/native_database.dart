@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:fess_pos/src/contract/errors.dart';
+import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/platform/database/key_policy.dart';
+import 'package:fess_pos/src/platform/database/local_executor.dart';
 import 'package:fess_pos/src/platform/module_storage.dart';
 import 'package:fess_pos/src/platform/secure_store.dart';
 import 'package:flutter/foundation.dart';
@@ -15,12 +16,17 @@ import 'package:sqlite3/sqlite3.dart';
 
 const String databaseFileName = 'fess_pos.db';
 
+/// Where stores that can never be opened again are kept (D-52).
+const String quarantineFolder = 'quarantine';
+
 /// Native builds encrypt the store with SQLCipher.
 const bool localStoreEncrypted = true;
 
+const PosLogger _log = PosLogger('local_store');
+
 /// The encrypted store, in the module's own folder, served by drift from a
 /// background isolate (docs/03 §8).
-Future<QueryExecutor> openLocalExecutor({
+Future<LocalExecutor> openLocalExecutor({
   required SecureStore secureStore,
   required ModuleStorage storage,
   Random? random,
@@ -35,22 +41,69 @@ Future<QueryExecutor> openLocalExecutor({
     );
   }
   final file = File(p.join(dir, databaseFileName));
-  final key = await resolveDatabaseKey(
-    store: secureStore,
-    databaseExists: file.existsSync(),
-    random: random,
-  );
+  final quarantined = <String>[];
+  String key;
+  try {
+    key = await resolveDatabaseKey(
+      store: secureStore,
+      databaseExists: file.existsSync(),
+      random: random,
+    );
+  } on PosException catch (e) {
+    if (e.code != PosErrorCodes.localStoreKeyMissing &&
+        e.code != PosErrorCodes.localStoreKeyRejected) {
+      rethrow;
+    }
+    // The store can never be opened again: its key is gone for good (the
+    // files came back from a backup on another phone, or the key was lost)
+    // or is corrupt. Keep it, intact, out of the way, and start a new store
+    // so the module keeps working.
+    quarantined.add(await quarantineLocalDatabase(dir, reason: e.code));
+    key = await resolveDatabaseKey(
+      store: secureStore,
+      databaseExists: false,
+      random: random,
+    );
+  }
   if (defaultTargetPlatform == TargetPlatform.android) {
     // Loads libsqlcipher through Java on old Android versions, where
     // loading it straight from Dart fails. Process-wide, but it only loads a
     // library; it changes no Dart global.
     await applyWorkaroundToOpenSqlCipherOnOldAndroidVersions();
   }
-  return NativeDatabase.createInBackground(
-    file,
-    isolateSetup: useSqlCipher,
-    setup: (db) => configureEncryptedDatabase(db, key),
+  return LocalExecutor(
+    NativeDatabase.createInBackground(
+      file,
+      isolateSetup: useSqlCipher,
+      setup: (db) => configureEncryptedDatabase(db, key),
+    ),
+    quarantined: quarantined,
   );
+}
+
+/// Moves the store's files (`.db`, `-wal`, `-shm`) together into
+/// `quarantine/`, intact, and returns the name they now share. Nothing is
+/// ever deleted: the data stays on the device, for recovery if the key ever
+/// turns up, and the move is recorded and reported.
+Future<String> quarantineLocalDatabase(
+  String dir, {
+  required String reason,
+}) async {
+  final stamp = DateTime.now().toUtc().toIso8601String().replaceAll(
+    RegExp('[:.]'),
+    '-',
+  );
+  final name = 'fess_pos-$stamp';
+  final target = Directory(p.join(dir, quarantineFolder))
+    ..createSync(recursive: true);
+  for (final suffix in ['', '-wal', '-shm']) {
+    final source = File(p.join(dir, '$databaseFileName$suffix'));
+    if (source.existsSync()) {
+      source.renameSync(p.join(target.path, '$name.db$suffix'));
+    }
+  }
+  _log.warning('local store moved aside as $name ($reason); a new one starts');
+  return name;
 }
 
 /// Runs in drift's database isolate: SQLCipher replaces the system SQLite

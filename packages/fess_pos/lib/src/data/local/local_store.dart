@@ -7,14 +7,32 @@ import 'package:fess_pos/src/platform/platform_services.dart';
 /// it: the right key, really encrypted, durable settings, a schema this
 /// module understands (docs/08 §1, docs/12 §3).
 ///
-/// A failure never deletes or replaces the existing database. It's reported
-/// as a [PosException] and the file stays for recovery.
+/// Nothing is ever deleted (D-52). A store whose key doesn't open it (a
+/// damaged file, or one from another install) is moved aside intact and a
+/// new store started, once; every move is recorded in `module_meta` for the
+/// sync layer to report (T1-22). Other failures fail closed as a
+/// [PosException], and the file stays.
 Future<PosDatabase> openLocalStore(PlatformServices platform) async {
-  final executor = await openLocalExecutor(
+  try {
+    return await _open(platform);
+  } on PosException catch (e) {
+    if (e.code != PosErrorCodes.localStoreKeyRejected) rethrow;
+    final dir = await platform.storage.moduleDirectory();
+    if (dir == null) rethrow;
+    final name = await quarantineLocalDatabase(dir, reason: e.code);
+    return _open(platform, alreadyQuarantined: [name]);
+  }
+}
+
+Future<PosDatabase> _open(
+  PlatformServices platform, {
+  List<String> alreadyQuarantined = const [],
+}) async {
+  final opened = await openLocalExecutor(
     secureStore: platform.secureStore,
     storage: platform.storage,
   );
-  final db = PosDatabase(executor);
+  final db = PosDatabase(opened.executor);
   try {
     // Opening is lazy; this runs the key, cipher and pragma checks and the
     // migrations now instead of on the first real write.
@@ -27,6 +45,8 @@ Future<PosDatabase> openLocalStore(PlatformServices platform) async {
     }
     Error.throwWithStackTrace(localStoreFailure(e), st);
   }
+  final quarantined = [...alreadyQuarantined, ...opened.quarantined];
+  if (quarantined.isNotEmpty) await db.recordQuarantine(quarantined);
   return db;
 }
 

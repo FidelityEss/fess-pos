@@ -9,6 +9,11 @@ abstract interface class SecureStore {
   Future<void> write(String key, String value);
 
   Future<void> delete(String key);
+
+  /// Deletes every entry the module stored, and nothing of the host's. Used
+  /// only when the store can't be read and there's no local database, so no
+  /// captured data depends on what is deleted (D-52).
+  Future<void> reset();
 }
 
 /// Prefix on every key the module stores, so it can't collide with a host's.
@@ -18,28 +23,29 @@ const String secureKeyPrefix = 'fess_pos.';
 ///
 /// The module's items live apart from the host's: in their own
 /// shared-preferences file on Android, under their own Keychain service on
-/// iOS. FESS keeps `persistent_device_id` in the default store, which the
-/// module never reads, writes or wipes (findings/03 §2). There is no
-/// "delete all" here on purpose.
+/// iOS, under their own prefix on the web. FESS keeps `persistent_device_id`
+/// in the default store, which the module never reads, writes or wipes
+/// (findings/03 §2).
 ///
 /// These options are part of the storage contract: changing them orphans
 /// every stored value, including the database key. Change them only
 /// together with a migration.
 class FlutterSecureStore implements SecureStore {
-  FlutterSecureStore({FlutterSecureStorage? storage})
-    : _storage =
-          storage ??
-          const FlutterSecureStorage(
-            aOptions: androidOptions,
-            iOptions: iosOptions,
-            webOptions: webOptions,
-          );
+  /// Always with the module's own options: [reset] relies on them to stay
+  /// inside the module's namespace, so there is no way to pass others.
+  FlutterSecureStore()
+    : _storage = const FlutterSecureStorage(
+        aOptions: androidOptions,
+        iOptions: iosOptions,
+        webOptions: webOptions,
+      );
 
   static const AndroidOptions androidOptions = AndroidOptions(
     sharedPreferencesName: 'fess_pos_secure_store',
     preferencesKeyPrefix: 'fess_pos_',
     // Stated explicitly: never wipe the store on a decryption error. That
     // would destroy the database key, and with it every unsynced record.
+    // The module decides when a reset is safe (D-52).
     // ignore: avoid_redundant_argument_values
     resetOnError: false,
   );
@@ -69,6 +75,11 @@ class FlutterSecureStore implements SecureStore {
   @override
   Future<void> delete(String key) =>
       _storage.delete(key: '$secureKeyPrefix$key');
+
+  /// Scoped by the options above: the module's own Android preferences
+  /// file, its own Keychain service, its own web namespace.
+  @override
+  Future<void> reset() => _storage.deleteAll();
 }
 
 /// Keeps secrets in memory only: tests.
@@ -83,6 +94,9 @@ class MemorySecureStore implements SecureStore {
 
   @override
   Future<void> delete(String key) async => values.remove(key);
+
+  @override
+  Future<void> reset() async => values.clear();
 }
 
 /// The bootstrap snapshot in secure storage: readable before anything else

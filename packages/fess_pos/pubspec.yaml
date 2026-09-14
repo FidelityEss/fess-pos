@@ -13,7 +13,14 @@ environment:
   flutter: ">=3.29.0"
 
 dependencies:
-  camera: ^0.11.0
+  # The camera's platform packages directly, not the app-facing `camera`:
+  # Android then uses camera_android (Camera2), whose minSdk always matches
+  # the host's Flutter default. CameraX, `camera`'s default, needs API 23 on
+  # Flutter 3.32.8–3.34, where that default is 21 (D-54).
+  camera_android: ">=0.10.10 <0.12.0"
+  camera_avfoundation: ^0.9.18
+  camera_platform_interface: ^2.10.0
+  camera_web: ^0.3.3
   connectivity_plus: ^7.0.0
   # FESS overrides device_info_plus to 11.5.0 and package_info_plus to 8.0.2.
   device_info_plus: ^11.5.0
@@ -45,3 +52,25 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # An iOS pod with link settings only (ios/fess_pos.podspec): it keeps
+  # SQLCipher linked when the host also links the system SQLite (D-55).
+  # No Dart plugin class and nothing on other platforms.
+  plugin:
+    platforms:
+      ios:
+        ffiPlugin: true
+  # Montserrat, the FESS typeface (docs/14), bundled so the module's look
+  # doesn't depend on the host. SIL Open Font License 1.1:
+  # assets/fonts/montserrat/OFL.txt. Source: github.com/JulietaUla/Montserrat.
+  # Only the weights the design tokens use.
+  fonts:
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/montserrat/Montserrat-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/montserrat/Montserrat-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/montserrat/Montserrat-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/montserrat/Montserrat-Bold.ttf
+          weight: 700

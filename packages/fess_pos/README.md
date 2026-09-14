@@ -53,7 +53,9 @@ flutter test
 dart run tool/generate_tokens.dart                     # after changing schema/design/tokens.json
 dart run build_runner build --delete-conflicting-outputs   # after changing the drift schema
 dart run drift_dev make-migrations                     # after bumping the schema version
-cd example && flutter test integration_test -d <device>    # real SQLCipher, on a device or emulator
+cd example && flutter test integration_test -d <device>    # on a device or emulator: SQLCipher, store recovery, camera
+cd example && flutter build apk --release --target lib/self_check.dart   # release (R8) build checks:
+# install it, start it, then read `adb logcat -d -s flutter | grep POS_SELF_CHECK` (see lib/self_check.dart)
 ```
 
 Generated code (`*.g.dart`) is committed: a host consumes the package from git and never runs codegen.
@@ -69,5 +71,11 @@ Built (2026-09-13, in review):
   one comes later;
 - **T1-20, local store:** drift + SQLCipher, key in secure storage, fail-closed checks, WAL + `synchronous=FULL`,
   migrations. Its policy is D-52 in the planning pack.
+
+Also built (T1-42, T2-33): the module needs nothing from the host beyond wiring it in (D-55).
+- **Montserrat** is bundled (`assets/fonts/montserrat`, SIL OFL 1.1).
+- **Camera:** the camera's platform packages are used directly, so Android gets Camera2, whose `minSdk` always matches the host's Flutter default (D-54).
+- **Local store:** it lives outside Android backups, and a store that can never be opened again is moved aside intact while a new one starts (D-52).
+- **iOS:** the package is also an iOS pod with link settings only (`ios/fess_pos.podspec`). It forces SQLCipher to link even when the host links the system SQLite, as FESS does (T1-41).
 
 Signing in waits for the POS API client (T1-21): until then `signIn` fails with `AUTH_UNAVAILABLE`.
