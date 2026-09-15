@@ -7,12 +7,14 @@ import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
+import 'package:fess_pos/src/features/app/pos_router.dart';
 import 'package:fess_pos/src/features/inspections/inspection_page.dart';
 import 'package:fess_pos/src/features/jobs/checkin_page.dart';
 import 'package:fess_pos/src/features/jobs/job_pages.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:fess_pos/src/renderer/form/form_controller.dart';
 import 'package:fess_pos/src/renderer/form/form_view.dart';
+import 'package:fess_pos/src/renderer/template.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart' show ResolveContext;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,23 +28,26 @@ String? _string(Object? v) => v is String ? v : null;
 
 Map<String, Object?>? _map(Object? v) => v is Map<String, Object?> ? v : null;
 
-/// The app definition in force (docs/04 §3.6), for [bankId]'s jobs.
-Map<String, Object?>? _app(WidgetRef ref, String? bankId) {
-  final app = ref.watch(
-    activeDefinitionProvider((kind: 'app', key: 'agent_app', bankId: bankId)),
-  );
-  return _data<Map<String, Object?>?>(app);
-}
+/// The app definition in force (docs/04 §3.6) for [bankId]'s jobs, as the
+/// router checked it; the bundled one when none can be used (T3-17).
+Map<String, Object?> _app(WidgetRef ref, String? bankId) =>
+    ref.watch(appSpecProvider(bankId)).definition;
 
 /// How the app definition configures a job action: the button's label and
-/// the form page it opens (its title and form). Until the app definition
-/// drives navigation (T3-17), the job page reads just this; without one,
-/// bundled copy and the action's default form stand in.
+/// the form page it opens (its title and form). The label comes from the
+/// job page's button that opens that form page; without one, bundled copy
+/// and the action's default form stand in.
 @immutable
 class JobActionConfig {
   const JobActionConfig({this.label, this.title, this.form});
 
-  factory JobActionConfig.of(Map<String, Object?>? app, JobAction action) {
+  /// [actions] are the job page's buttons; the app's `job_detail` page's
+  /// when null.
+  factory JobActionConfig.of(
+    Map<String, Object?>? app,
+    JobAction action, {
+    List<Object?>? actions,
+  }) {
     final pages = _map(app?['pages']) ?? const {};
     String? pageKey;
     Map<String, Object?>? page;
@@ -55,9 +60,9 @@ class JobActionConfig {
       }
     }
     String? label;
-    final actions = _map(pages['job_detail'])?['actions'];
-    if (pageKey != null && actions is List<Object?>) {
-      for (final a in actions.whereType<Map<String, Object?>>()) {
+    final buttons = actions ?? _map(pages['job_detail'])?['actions'];
+    if (pageKey != null && buttons is List<Object?>) {
+      for (final a in buttons.whereType<Map<String, Object?>>()) {
         if (_map(a['target'])?['page'] == pageKey) {
           label = _string(a['label']);
           break;
@@ -74,6 +79,44 @@ class JobActionConfig {
   final String? label;
   final String? title;
   final String? form;
+
+  /// The label of the job page's button that opens a flow, e.g. "Start
+  /// inspection"; null when there's none.
+  static String? flowLabel(
+    Map<String, Object?>? app,
+    List<Object?>? actions,
+  ) {
+    final pages = _map(app?['pages']) ?? const {};
+    final buttons = actions ?? _map(pages['job_detail'])?['actions'];
+    if (buttons is! List<Object?>) return null;
+    for (final a in buttons.whereType<Map<String, Object?>>()) {
+      final target = _map(a['target']);
+      final page = _map(pages[target?['page']]);
+      if (target?['flow'] is String || page?['type'] == 'flow') {
+        return _string(a['label']);
+      }
+    }
+    return null;
+  }
+
+  /// Whether the job's action bar shows [button] as one of its own: it
+  /// opens a flow, or a form page bound to a job action.
+  static bool handles(
+    Map<String, Object?>? app,
+    Map<String, Object?> button,
+  ) {
+    final pages = _map(app?['pages']) ?? const {};
+    final target = _map(button['target']);
+    if (target?['flow'] is String) return true;
+    final page = _map(pages[target?['page']]);
+    return switch (page?['type']) {
+      'flow' => true,
+      'form_page' => JobAction.values.any(
+        (a) => a.actionName == page?['action'],
+      ),
+      _ => false,
+    };
+  }
 }
 
 /// What an outcome page shows (docs/04 §3.7): the app definition's page
@@ -121,12 +164,59 @@ class OutcomeContent {
   final List<({String label, String action})> buttons;
 }
 
+/// Begins [job]'s inspection, or opens the one in progress (T4-27), and
+/// says why not when it can't. [onBegun] runs once the begin has settled,
+/// before the inspection opens.
+Future<void> openInspection(
+  BuildContext context,
+  Inspections inspections,
+  JobRecord job,
+  String Function(String key) copy, {
+  VoidCallback? onBegun,
+}) async {
+  final result = await inspections.begin(job);
+  onBegun?.call();
+  if (!context.mounted) return;
+  final id = result.inspectionId;
+  if (result.status == BeginStatus.begun && id != null) {
+    // The start goes to the server now if it can; otherwise it waits.
+    unawaited(inspections.sendNow());
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => InspectionPage(job: job, inspectionId: id),
+      ),
+    );
+    return;
+  }
+  final message = switch (result.status) {
+    BeginStatus.definitionsMissing => copy('inspection.definitions_missing'),
+    BeginStatus.unavailable => copy('job.action.unavailable'),
+    _ => copy('job.action.not_allowed'),
+  };
+  ScaffoldMessenger.maybeOf(
+    context,
+  )?.showSnackBar(SnackBar(content: Text(message)));
+}
+
 /// The actions [job] allows now (docs/06 §2): accept and "can't take it"
 /// while it's assigned, "unable to complete" once it's the agent's.
 class JobActionBar extends ConsumerStatefulWidget {
-  const JobActionBar({required this.job, super.key});
+  const JobActionBar({
+    required this.job,
+    this.pageActions,
+    this.onNavigate,
+    super.key,
+  });
 
   final JobRecord job;
+
+  /// The job page's buttons; the app's `job_detail` page's when null. Those
+  /// that open a flow or a job action's form label the bar's own buttons;
+  /// the rest show as they are.
+  final List<Map<String, Object?>>? pageActions;
+
+  /// Opens a button's target that isn't one of the job's own actions.
+  final PageNavigate? onNavigate;
 
   @override
   ConsumerState<JobActionBar> createState() => _JobActionBarState();
@@ -165,28 +255,15 @@ class _JobActionBarState extends ConsumerState<JobActionBar> {
     String Function(String key) copy,
   ) async {
     setState(() => _busy = true);
-    final result = await inspections.begin(widget.job);
-    if (!mounted) return;
-    setState(() => _busy = false);
-    final id = result.inspectionId;
-    if (result.status == BeginStatus.begun && id != null) {
-      // The start goes to the server now if it can; otherwise it waits.
-      unawaited(inspections.sendNow());
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => InspectionPage(job: widget.job, inspectionId: id),
-        ),
-      );
-      return;
-    }
-    final message = switch (result.status) {
-      BeginStatus.definitionsMissing => copy('inspection.definitions_missing'),
-      BeginStatus.unavailable => copy('job.action.unavailable'),
-      _ => copy('job.action.not_allowed'),
-    };
-    ScaffoldMessenger.maybeOf(
+    await openInspection(
       context,
-    )?.showSnackBar(SnackBar(content: Text(message)));
+      inspections,
+      widget.job,
+      copy,
+      onBegun: () {
+        if (mounted) setState(() => _busy = false);
+      },
+    );
   }
 
   @override
@@ -196,6 +273,13 @@ class _JobActionBarState extends ConsumerState<JobActionBar> {
     final inspections = _data(ref.watch(inspectionsProvider));
     final latest = _data(ref.watch(latestInspectionProvider(widget.job.id)));
     final app = _app(ref, widget.job.bankId);
+    final pageActions =
+        widget.pageActions ??
+        [
+          if (_map(_map(app['pages'])?['job_detail'])?['actions']
+              case final List<Object?> list)
+            ...list.whereType<Map<String, Object?>>(),
+        ];
     final allowed = [
       for (final a in JobAction.values)
         if (jobActionAllowed(a, widget.job)) a,
@@ -205,7 +289,25 @@ class _JobActionBarState extends ConsumerState<JobActionBar> {
         widget.job.assignedToMe &&
         (open || inspectionBeginStatuses.contains(widget.job.status));
     final showActions = actions != null && allowed.isNotEmpty;
-    if (!showActions && (inspections == null || !canInspect)) {
+    final jobData = {'job': jobViewData(widget.job)};
+    final navigate = widget.onNavigate;
+    final others = [
+      if (navigate != null)
+        for (final a in pageActions)
+          if (!JobActionConfig.handles(app, a))
+            if (a case {
+              'label': final String label,
+              'target': final Map<String, Object?> target,
+            })
+              OutlinedButton(
+                key: ValueKey('page-action-${a['key'] ?? label}'),
+                onPressed: () => navigate(target, jobData),
+                child: Text(fillTemplate(label, jobData)),
+              ),
+    ];
+    if (!showActions &&
+        (inspections == null || !canInspect) &&
+        others.isEmpty) {
       return const SizedBox.shrink();
     }
     return SafeArea(
@@ -226,7 +328,10 @@ class _JobActionBarState extends ConsumerState<JobActionBar> {
                   ),
                   onPressed: _busy ? null : () => _inspect(inspections, copy),
                   child: Text(
-                    copy(open ? 'inspection.continue' : 'inspection.begin'),
+                    open
+                        ? copy('inspection.continue')
+                        : JobActionConfig.flowLabel(app, pageActions) ??
+                              copy('inspection.begin'),
                   ),
                 ),
               ),
@@ -234,8 +339,15 @@ class _JobActionBarState extends ConsumerState<JobActionBar> {
               for (final a in allowed)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: _button(a, actions, JobActionConfig.of(app, a), copy),
+                  child: _button(
+                    a,
+                    actions,
+                    JobActionConfig.of(app, a, actions: pageActions),
+                    copy,
+                  ),
                 ),
+            for (final b in others)
+              Padding(padding: const EdgeInsets.only(top: 8), child: b),
           ],
         ),
       ),
@@ -549,7 +661,7 @@ class _ActionOutcomePageState extends ConsumerState<ActionOutcomePage> {
       case 'retry':
         navigator.pop();
       case 'home':
-        navigator.popUntil((route) => route.isFirst);
+        PosRouter.goHome(context);
     }
   }
 

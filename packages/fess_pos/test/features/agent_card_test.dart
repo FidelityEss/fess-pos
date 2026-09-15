@@ -1,7 +1,7 @@
 import 'package:fess_pos/src/core/content/bundled_copy.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/domain/cards/cards.dart';
-import 'package:fess_pos/src/features/cards/agent_card_page.dart';
+import 'package:fess_pos/src/features/app/pos_router.dart';
 import 'package:fess_pos/src/features/jobs/job_pages.dart';
 import 'package:fess_pos/src/renderer/cards.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +28,7 @@ Widget _home(CardToken? card) => ProviderScope(
       (token) => Uri.parse('https://pos.test/v1/public/verify/$token'),
     ),
   ],
-  child: MaterialApp(home: JobsHomePage(onOpenJob: (_) {})),
+  child: const MaterialApp(home: PosRouter()),
 );
 
 String _copy(String key) => BundledCopy.text(key);
@@ -47,7 +47,7 @@ void main() {
     expect(find.text(_copy('card.status_active')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('agent-card-summary')));
     await tester.pumpAndSettle();
-    expect(find.byType(AgentCardPage), findsOneWidget);
+    expect(find.byKey(const ValueKey('page-agent_card')), findsOneWidget);
     expect(find.text(_copy('card.title')), findsOneWidget);
     expect(
       tester.widget<QrCodeView>(find.byType(QrCodeView)).data,

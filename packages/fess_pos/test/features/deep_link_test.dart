@@ -1,8 +1,6 @@
 import 'package:fess_pos/fess_pos.dart';
 import 'package:fess_pos/src/core/content/bundled_copy.dart';
 import 'package:fess_pos/src/core/runtime/module_runtime.dart';
-import 'package:fess_pos/src/features/cards/agent_card_page.dart';
-import 'package:fess_pos/src/features/jobs/job_pages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -33,15 +31,15 @@ void main() {
   testWidgets('a link while POS is open opens its page', (tester) async {
     await _start(tester);
     await _openPos(tester);
-    expect(find.byType(JobsHomePage), findsOneWidget);
+    expect(find.byKey(const ValueKey('page-home')), findsOneWidget);
 
     await PosModule.handleDeepLink(Uri.parse('fess://pos/card'));
     await tester.pumpAndSettle();
-    expect(find.byType(AgentCardPage), findsOneWidget);
+    expect(find.byKey(const ValueKey('page-agent_card')), findsOneWidget);
 
     await PosModule.handleDeepLink(Uri.parse('fess://pos/job/$_job'));
     await tester.pumpAndSettle();
-    expect(find.byType(JobDetailPage), findsOneWidget);
+    expect(find.byKey(const ValueKey('page-job_detail')), findsOneWidget);
     expect(
       find.text(_copy('jobs.not_found')),
       findsOneWidget,
@@ -50,8 +48,8 @@ void main() {
 
     await PosModule.handleDeepLink(Uri.parse('fess://pos'));
     await tester.pumpAndSettle();
-    expect(find.byType(JobDetailPage), findsNothing);
-    expect(find.byType(JobsHomePage), findsOneWidget);
+    expect(find.byKey(const ValueKey('page-job_detail')), findsNothing);
+    expect(find.byKey(const ValueKey('page-home')), findsOneWidget);
     await tester.runAsync(ModuleRuntime.reset);
   });
 
@@ -61,7 +59,7 @@ void main() {
     await _start(tester);
     await PosModule.handleDeepLink(Uri.parse('fidelity://fess.com/pos/card'));
     await _openPos(tester);
-    expect(find.byType(AgentCardPage), findsOneWidget);
+    expect(find.byKey(const ValueKey('page-agent_card')), findsOneWidget);
     await tester.runAsync(ModuleRuntime.reset);
   });
 
@@ -72,7 +70,7 @@ void main() {
     });
     await PosModule.handleDeepLink(Uri.parse('fess://pos/card'));
     await _openPos(tester);
-    expect(find.byType(AgentCardPage), findsNothing);
+    expect(find.byKey(const ValueKey('page-agent_card')), findsNothing);
     expect(find.text(_copy('shell.not_signed_in')), findsOneWidget);
     await tester.runAsync(ModuleRuntime.reset);
   });

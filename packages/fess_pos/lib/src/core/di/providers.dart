@@ -5,12 +5,16 @@
 library;
 
 import 'package:fess_pos/src/bootstrap/bootstrap_snapshot.dart';
+import 'package:fess_pos/src/contract/capabilities.dart';
+import 'package:fess_pos/src/core/content/bundled_app.dart';
 import 'package:fess_pos/src/core/content/bundled_copy.dart';
+import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/runtime/module_runtime.dart';
 import 'package:fess_pos/src/core/theme/pos_theme_data.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/local/repositories.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart';
+import 'package:fess_pos/src/domain/app/app_spec.dart';
 import 'package:fess_pos/src/domain/cards/cards.dart';
 import 'package:fess_pos/src/domain/forms/reason_codes.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
@@ -310,3 +314,33 @@ final inspectionEvidenceProvider = StreamProvider.autoDispose
       final inspections = await ref.watch(inspectionsProvider.future);
       if (inspections != null) yield* inspections.watchEvidence(inspectionId);
     }, name: 'inspectionEvidence');
+
+const PosLogger _appLog = PosLogger('app');
+
+/// The app in force for a bank's pages (docs/04 §3.6, T3-17): the bank's
+/// own `agent_app`, else the default, checked. The bundled app stands in
+/// until one arrives, and when the one in force can't be used, which is
+/// logged.
+// ignore: specify_nonobvious_property_types
+final appSpecProvider = Provider.family<AppSpec, String?>((ref, bankId) {
+  final active = switch (ref.watch(
+    activeDefinitionProvider((kind: 'app', key: 'agent_app', bankId: bankId)),
+  )) {
+    AsyncData(:final value) => value,
+    _ => null,
+  };
+  if (active != null) {
+    try {
+      return AppSpec.parse(
+        active,
+        pageTypes: supportedPageTypes.keys.toSet(),
+      );
+    } on AppSpecError catch (e) {
+      _appLog.warning(
+        "the app definition in force can't be used "
+        '(${e.problems.join('; ')}); the bundled one stands in',
+      );
+    }
+  }
+  return BundledApp.spec;
+}, name: 'appSpec');

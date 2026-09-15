@@ -86,10 +86,11 @@ const Map<String, int> supportedFlowSteps = {
   'receipt': 1,
 };
 
-/// Page types (`11` §7.1). `list_page` comes with the app definition
-/// driving navigation (T3-17).
+/// Page types (`11` §7.1), the app definition's pages (T3-17). A
+/// `list_page` lists the agent's jobs; its other sources come later.
 const Map<String, int> supportedPageTypes = {
   'view_page': 1,
+  'list_page': 1,
   'form_page': 1,
   'flow': 1,
   'outcome_page': 1,

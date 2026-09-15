@@ -87,7 +87,12 @@ void main() {
     final opened = <String>[];
     await tester.pumpWidget(
       _app(
-        JobsHomePage(onOpenJob: opened.add),
+        ViewPage(
+          view: 'home',
+          onNavigate: (target, data) => opened.add(
+            (data['job']! as Map<String, Object?>)['id']! as String,
+          ),
+        ),
         jobs: [_job('j1', 'Joe Spaza'), _job('j2', 'Mama’s Kitchen')],
       ),
     );
@@ -102,7 +107,7 @@ void main() {
   testWidgets('no jobs: the server’s empty text', (tester) async {
     await tester.pumpWidget(
       _app(
-        JobsHomePage(onOpenJob: (_) {}),
+        const ViewPage(view: 'home'),
         content: {'jobs.empty_active': 'Nothing assigned yet.'},
       ),
     );
@@ -115,7 +120,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _app(
-        JobsHomePage(onOpenJob: (_) {}),
+        const ViewPage(view: 'home'),
         jobs: [_job('j1', 'Joe Spaza')],
         withViews: false,
       ),
@@ -129,7 +134,11 @@ void main() {
     var closed = false;
     await tester.pumpWidget(
       _app(
-        JobDetailPage(jobId: 'j1', onBack: () => closed = true),
+        ViewPage(
+          view: 'job_detail',
+          jobId: 'j1',
+          onBack: () => closed = true,
+        ),
         jobs: [_job('j1', 'Joe Spaza')],
       ),
     );
@@ -211,7 +220,7 @@ void main() {
           ),
         ],
         child: MaterialApp(
-          home: JobDetailPage(jobId: 'j1', onBack: () {}),
+          home: ViewPage(view: 'job_detail', jobId: 'j1', onBack: () {}),
         ),
       ),
     );
@@ -258,7 +267,7 @@ void main() {
           ),
         ],
         child: MaterialApp(
-          home: JobDetailPage(jobId: 'j1', onBack: () {}),
+          home: ViewPage(view: 'job_detail', jobId: 'j1', onBack: () {}),
         ),
       ),
     );
@@ -271,7 +280,7 @@ void main() {
 
   testWidgets('a job gone from the phone says so', (tester) async {
     await tester.pumpWidget(
-      _app(JobDetailPage(jobId: 'gone', onBack: () {})),
+      _app(ViewPage(view: 'job_detail', jobId: 'gone', onBack: () {})),
     );
     await tester.pumpAndSettle();
     expect(find.text('This job is no longer on this phone.'), findsOneWidget);

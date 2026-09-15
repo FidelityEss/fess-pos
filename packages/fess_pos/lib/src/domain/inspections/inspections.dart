@@ -105,6 +105,11 @@ abstract interface class DeclarationRepository {
   Stream<Declaration?> watch(String key);
 }
 
+/// The flow an inspection runs (docs/04 §3.2). The module runs this one
+/// flow for a job; a `flow` page naming another says it isn't available
+/// (D-87).
+const String inspectionFlowKey = 'site_inspection_flow';
+
 /// An inspection begun on this phone.
 @immutable
 class InspectionRecord {

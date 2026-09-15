@@ -380,6 +380,39 @@ void main() {
     expect(await shown({'total': 0}), isNull);
   });
 
+  testWidgets('job_list groups by a value, each group headed by its copy '
+      '(T3-17)', (tester) async {
+    await _render(
+      tester,
+      const [
+        {
+          'type': 'job_list',
+          'item_view': 'job_title',
+          'sort': 'job.status',
+          'group_by': 'job.status',
+        },
+      ],
+      RenderContext(
+        data: const {},
+        jobs: [
+          _job('j1', 'A'),
+          _job('j2', 'B', status: 'accepted'),
+          _job('j3', 'C'),
+        ],
+        itemViews: const {
+          'job_title': [
+            {'type': 'title', 'bind': 'job.merchant_name'},
+          ],
+        },
+      ),
+    );
+    double y(String text) => tester.getTopLeft(find.text(text)).dy;
+    expect(y('Accepted'), lessThan(y('B')));
+    expect(y('B'), lessThan(y('Assigned')));
+    expect(y('Assigned'), lessThan(y('A')));
+    expect(y('A'), lessThan(y('C')));
+  });
+
   test('templates and schedule text', () {
     expect(
       fillTemplate('Hi {{ agent.first_name }}{{missing}}', {

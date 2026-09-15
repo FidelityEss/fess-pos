@@ -633,6 +633,22 @@ class JobList extends StatelessWidget {
     final itemView = ctx.itemViews[item['item_view']] ?? const [];
     final onTap = item['on_tap'];
     final navigate = ctx.onNavigate;
+    final groupBy = item['group_by'];
+    Widget card(Map<String, Object?> job) => Card(
+      key: ValueKey('job-${job['id']}'),
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(PosTokens.radiusCard),
+        onTap: onTap is Map<String, Object?> && navigate != null
+            ? () => navigate(onTap, {...ctx.data, 'job': job})
+            : null,
+        child: ViewRenderer(
+          items: itemView,
+          context: ctx.withData({...ctx.data, 'job': job}),
+          padding: const EdgeInsets.all(12),
+        ),
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -649,24 +665,44 @@ class JobList extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Text(ctx.copy(empty), textAlign: TextAlign.center),
           ),
-        for (final job in jobs)
-          Card(
-            key: ValueKey('job-${job['id']}'),
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(PosTokens.radiusCard),
-              onTap: onTap is Map<String, Object?> && navigate != null
-                  ? () => navigate(onTap, {...ctx.data, 'job': job})
-                  : null,
-              child: ViewRenderer(
-                items: itemView,
-                context: ctx.withData({...ctx.data, 'job': job}),
-                padding: const EdgeInsets.all(12),
+        if (groupBy is String)
+          for (final (value, members) in _groups(jobs, groupBy)) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 2),
+              child: Text(
+                _groupLabel(groupBy, value),
+                style: Theme.of(context).textTheme.labelLarge,
               ),
             ),
-          ),
+            for (final job in members) card(job),
+          ]
+        else
+          for (final job in jobs) card(job),
       ],
     );
+  }
+
+  /// [jobs] grouped by the value at [path], in the order each value first
+  /// comes (the list's sort order).
+  static List<(Object?, List<Map<String, Object?>>)> _groups(
+    List<Map<String, Object?>> jobs,
+    String path,
+  ) {
+    final groups = <Object?, List<Map<String, Object?>>>{};
+    for (final job in jobs) {
+      (groups[readPath({'job': job}, path)] ??= []).add(job);
+    }
+    return [for (final e in groups.entries) (e.key, e.value)];
+  }
+
+  /// A group's heading: the copy for `<path>.<value>` where there is one
+  /// (e.g. `job.status.assigned`), else the value itself.
+  String _groupLabel(String path, Object? value) {
+    final shown = displayValue(value);
+    if (shown == null) return ctx.copy('list.group.none');
+    final key = '$path.$shown';
+    final copied = ctx.copy(key);
+    return copied == key ? shown : copied;
   }
 }
 
