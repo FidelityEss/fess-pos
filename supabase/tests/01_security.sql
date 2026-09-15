@@ -101,9 +101,17 @@ select is_empty('select 1 from pos.jobs', 'forged claims without token_use=pos_a
 set local role postgres;
 
 -- ── admins ─────────────────────────────────────────────────────────────────────────────────────
+-- admin.require_mfa (off since D-96, 2026-09-15). Checked both ways so the switch keeps working: on, a password-only
+-- (aal1) session sees nothing; off, the same session is an admin.
+update pos.settings set value = 'true'::jsonb where key = 'admin.require_mfa';
 select pg_temp.as_staff('a0000000-0000-0000-0000-000000000001', 'aal1');
 set local role authenticated;
-select is_empty('select 1 from pos.jobs', 'admin without MFA (aal1) sees nothing');
+select is_empty('select 1 from pos.jobs', 'with admin.require_mfa on, an admin without a second step (aal1) sees nothing');
+set local role postgres;
+update pos.settings set value = 'false'::jsonb where key = 'admin.require_mfa';
+select pg_temp.as_staff('a0000000-0000-0000-0000-000000000001', 'aal1');
+set local role authenticated;
+select isnt_empty('select 1 from pos.jobs', 'with admin.require_mfa off (D-96), a password-only admin session reads');
 set local role postgres;
 
 select pg_temp.as_staff('a0000000-0000-0000-0000-000000000001');

@@ -1,5 +1,5 @@
 // Scenario seeder (T2-22): realistic dummy data that exercises every flow end to end through the real APIs — the admin
-// API as signed-in staff (password + TOTP, aal2) and the POS API as simulated phones (stand-in issuer pos_dev). Nothing
+// API as signed-in staff (password; a second step only while admin.require_mfa is on) and the POS API as simulated phones (stand-in issuer pos_dev). Nothing
 // is written behind the API's back except the seed admin's own pos_users row (the bootstrap, like scripts/bootstrap-admin).
 //
 //   POS_PUBLISHABLE_KEY=<QA publishable key> SUPABASE_SERVICE_ROLE_KEY=<QA service key; first run only> \
@@ -7,12 +7,12 @@
 //   QA only (POS_TARGET=qa, the default): it refuses production, and env.ts refuses any other project.
 //
 // Re-runnable: banks, staff and agents are created once and remembered in ~/.fess-pos/seed-state-<target>.json — outside
-// the repo, because it holds the seed staff's passwords and TOTP secrets. Every run adds a fresh batch of jobs.
+// the repo, because it holds the seed staff's passwords (and TOTP secrets where one was set up). Every run adds a fresh batch of jobs.
 import { ApiError, call } from './lib/api.ts';
 import { Device, type SyncJob } from './lib/device.ts';
 import { env, refuseProduction, target } from './lib/env.ts';
 import { type InspectionOptions, reasonEvent, runInspection } from './lib/inspection.ts';
-import { createAuthUser, Staff, type StaffCreds, strongPassword } from './lib/staff.ts';
+import { createAuthUser, inviteAndRegister, Staff, type StaffCreds, strongPassword } from './lib/staff.ts';
 import { Check, isoSast, sleep } from './lib/util.ts';
 
 refuseProduction('The scenario seeder');
@@ -110,9 +110,14 @@ interface StaffSpec {
 async function ensureStaff(admin: Staff, key: string, spec: StaffSpec): Promise<Staff> {
   let creds = state.staff[key];
   if (!creds) {
-    const u = await admin.api('POST', '/users', { ...spec, bank_ids: spec.bank_ids ?? null });
-    const login = await admin.api('POST', `/users/${u.id}/admin-login`, { email: spec.email });
-    creds = { user_id: u.id, email: spec.email, password: login.temporary_password };
+    // Joins by a registration link, completed at once as the person would on the panel's /register page (D-96).
+    creds = await inviteAndRegister(admin, {
+      email: spec.email,
+      person: {
+        employee_number: spec.employee_number, first_name: spec.first_name, last_name: spec.last_name, role: spec.role,
+        permissions: spec.permissions, bank_ids: spec.bank_ids ?? null,
+      },
+    });
     state.staff[key] = creds;
     saveState();
   }
@@ -174,7 +179,7 @@ const PNG_1PX = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9
 // ── run ───────────────────────────────────────────────────────────────────────────────────────
 console.log(`── ${runLabel} → ${target} (${env.supabaseUrl})`);
 const admin = await signInSeedAdmin();
-check.ok(true, 'seed admin signed in with password + TOTP (aal2)');
+check.ok(true, `seed admin signed in (${admin.aal === 'aal2' ? 'password + second step' : 'password'})`);
 
 console.log('── banks');
 async function ensureBank(code: string, body: Record<string, unknown>): Promise<string> {
@@ -195,14 +200,14 @@ const bankB = await ensureBank('KARO', {
 });
 check.ok(bankA && bankB, 'two banks: Ubuntu Bank (four-eyes off) and Karoo Mutual (four-eyes on)');
 
-console.log('── staff (admin-login + TOTP enrolment)');
+console.log('── staff (registration links)');
 const scheduler = await ensureStaff(admin, 'scheduler', { employee_number: 'SEED-SCH01', first_name: 'Sizwe', last_name: 'Mahlangu',
   email: 'sizwe.mahlangu@fess-pos.test', role: 'pos_admin', permissions: ['schedule_jobs'] });
 const reviewer = await ensureStaff(admin, 'reviewer', { employee_number: 'SEED-REV01', first_name: 'Rethabile', last_name: 'Sithole',
   email: 'rethabile.sithole@fess-pos.test', role: 'pos_admin', permissions: ['review_inspections'] });
 const approver = await ensureStaff(admin, 'approver', { employee_number: 'SEED-APR01', first_name: 'Anele', last_name: 'Ntuli',
   email: 'anele.ntuli@fess-pos.test', role: 'pos_admin', permissions: ['approve_definitions'] });
-check.ok(scheduler.token && reviewer.token && approver.token, 'scheduler, reviewer and approver provisioned and signed in (aal2)');
+check.ok(scheduler.token && reviewer.token && approver.token, 'scheduler, reviewer and approver provisioned and signed in');
 
 console.log('── agents');
 for (const [emp, first, last, region] of AGENTS) {
@@ -672,5 +677,5 @@ for (const e of expected) {
 }
 
 saveState();
-console.log(`\nSeed staff sign-in details (passwords, TOTP secrets) are in ${statePath} — outside the repo; keep it private.`);
+console.log(`\nSeed staff sign-in details (passwords, and TOTP secrets where one was set up) are in ${statePath} — outside the repo; keep it private.`);
 Deno.exit(check.summary());

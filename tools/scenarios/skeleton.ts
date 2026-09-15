@@ -34,7 +34,7 @@ interface SkeletonState {
 }
 
 const seed = JSON.parse(Deno.readTextFileSync(seedPath)) as SeedState;
-if (!seed.admin?.totp_secret) throw new Error(`No seed admin in ${seedPath}: run the scenario seeder against ${target} first.`);
+if (!seed.admin?.password) throw new Error(`No seed admin in ${seedPath}: run the scenario seeder against ${target} first.`);
 let state: SkeletonState = { families: {}, jobs: [] };
 try {
   state = JSON.parse(Deno.readTextFileSync(statePath));

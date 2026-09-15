@@ -21,6 +21,8 @@ import { useStaff } from '@/lib/staff';
 import { fetchRows, pos } from '@/lib/supabase';
 import { POS_ROLES, type PosRole, type PosUser } from '@/lib/types';
 import { CreateUserDialog } from './_components/create-user-dialog';
+import { useWaitingInvitations } from './_components/invitations';
+import { WaitingList } from './_components/waiting-list';
 
 const LIMIT = 1000;
 const COLUMNS = 'id,employee_number,first_name,last_name,email,role,permissions,active,bank_ids,admin_auth_uid,devices(last_seen_at)';
@@ -52,6 +54,8 @@ export default function UsersPage() {
   const [status, setStatus] = useState<StatusFilter>('active');
   const [bankId, setBankId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const waiting = useWaitingInvitations(null, staff.isAdmin);
+  const waitingIds = useMemo(() => new Set((waiting.data ?? []).map((w) => w.user_id)), [waiting.data]);
 
   const users = useQuery({
     queryKey: ['users', 'list', { role, status, bankId }],
@@ -111,41 +115,43 @@ export default function UsersPage() {
       { accessorKey: 'active', header: 'Status', cell: ({ row }) => <ActiveBadge active={row.original.active} /> },
       {
         id: 'admin_login',
-        header: 'Panel login',
-        meta: { advanced: true },
-        accessorFn: (u) => (u.role === 'pos_agent' ? 'n/a' : u.admin_auth_uid ? 'linked' : 'not linked'),
+        header: 'Admin panel',
+        accessorFn: (u) => (u.role === 'pos_agent' ? 'phone app' : waitingIds.has(u.id) ? 'link sent' : u.admin_auth_uid ? 'can sign in' : 'no sign-in'),
         cell: ({ row }) =>
           row.original.role === 'pos_agent' ? (
-            <span className="text-xs text-muted-foreground">Not applicable</span>
+            <span className="text-sm text-muted-foreground">Uses the phone app</span>
+          ) : waitingIds.has(row.original.id) ? (
+            <Badge tone="warning">Link sent</Badge>
           ) : row.original.admin_auth_uid ? (
-            <Badge tone="success">Linked</Badge>
+            <Badge tone="success">Can sign in</Badge>
           ) : (
-            <Badge tone="warning">Not linked</Badge>
+            <Badge tone="muted">No sign-in yet</Badge>
           ),
       },
       {
         id: 'last_seen',
-        header: 'Last device seen',
+        header: 'Last seen on a phone',
         accessorFn: (u) => lastSeen(u) ?? '',
         cell: ({ row }) => <DateTime value={lastSeen(row.original)} mode="relative" />,
       },
     ],
-    [advanced],
+    [advanced, waitingIds],
   );
 
   return (
     <>
       <PageHeader
-        title="Users"
-        description="Agents, administrators and bank readers — roles, permissions and bank scope."
+        title="People"
+        description="Everyone who uses FESS POS: administrators and bank viewers, who sign in to this panel, and agents, who do the visits."
         actions={
           staff.isAdmin ? (
             <Button onClick={() => setCreating(true)}>
-              <Plus /> New user
+              <Plus /> Add a person
             </Button>
           ) : null
         }
       />
+      <WaitingList />
       <DataTable
         columns={columns}
         data={users.data}
@@ -156,7 +162,7 @@ export default function UsersPage() {
         onRowClick={(u) => router.push(`/users/${u.id}`)}
         searchFn={matches}
         searchPlaceholder="Employee number, name or email"
-        emptyTitle="No users match these filters"
+        emptyTitle="No one matches these filters"
         rowClassName={(u) => (u.active ? undefined : 'opacity-70')}
         toolbar={
           <>
@@ -184,7 +190,7 @@ export default function UsersPage() {
               </SelectContent>
             </Select>
             <BankSelect value={bankId} onChange={setBankId} allowAll allLabel="Any bank" includeInactive className="w-52" />
-            {bankId ? <span className="text-sm text-muted-foreground">Includes all-bank users.</span> : null}
+            {bankId ? <span className="text-sm text-muted-foreground">Includes people who work for all banks.</span> : null}
             {users.data && users.data.length >= LIMIT ? (
               <span className="text-sm text-amber-700">Showing the first {LIMIT} — narrow the filters.</span>
             ) : null}

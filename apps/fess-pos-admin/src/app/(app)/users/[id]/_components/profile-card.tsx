@@ -30,9 +30,9 @@ export function ProfileCard({ user, canManage, isSelf }: { user: PosUser; canMan
   });
   const errors: FieldErrors = { ...apiFieldErrors(mutation.error), ...clientErrors };
   const lockReason = !canManage
-    ? 'You can’t change this user’s access.'
+    ? 'You can’t change this person’s access.'
     : isSelf
-      ? 'You can’t change your own role, permissions or banks (D-44). Another administrator has to.'
+      ? 'You can’t change your own role, permissions or banks. Another administrator has to.'
       : null;
 
   function submit(e: FormEvent) {
@@ -79,7 +79,7 @@ export function ProfileCard({ user, canManage, isSelf }: { user: PosUser; canMan
     <Card>
       <CardHeader>
         <CardTitle>Profile</CardTitle>
-        <CardDescription>Name, contact details, access and attributes.</CardDescription>
+        <CardDescription>Name, contact details, what they can do and extra details.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={submit} className="space-y-5" noValidate>

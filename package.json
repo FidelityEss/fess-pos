@@ -11,7 +11,7 @@
     "db:test:docker": "node tools/ops/require-qa-link.mjs && supabase test db --linked",
     "functions:check": "cd supabase/functions/api && deno check --node-modules-dir=none index.ts && cd ../workers && deno check --node-modules-dir=none index.ts",
     "engine:vendor": "node tools/vendor-engine.mjs",
-    "functions:test": "deno test --allow-all supabase/functions",
+    "functions:test": "deno test --allow-all --node-modules-dir=none supabase/functions",
     "engine:test": "pnpm --filter @fess-pos/engine test",
     "engine:dart:test": "cd packages/fess_pos_engine && dart test && dart test -p node",
     "module:test": "cd packages/fess_pos && flutter analyze && flutter test",

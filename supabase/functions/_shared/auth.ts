@@ -1,7 +1,8 @@
 // Authentication for every caller kind (docs/07 §2, D-32):
 //   publishable key — required on module-facing routes (auth, sync, ingest, evidence)
 //   agent           — POS access token (HS256, signed with the Vault key), session re-checked in the database
-//   staff           — Supabase Auth session (email + MFA) mapped to pos_users.admin_auth_uid
+//   staff           — Supabase Auth session (email + password, from a registration link — D-96) mapped to
+//                     pos_users.admin_auth_uid; aal2 (a second step) is required only while admin.require_mfa is true
 //   worker          — pg_cron's shared key (Vault)
 import type { Context, MiddlewareHandler } from 'hono';
 import { decodeJwt, errors as joseErrors, jwtVerify, SignJWT } from 'jose';

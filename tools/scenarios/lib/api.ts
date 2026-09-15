@@ -13,9 +13,9 @@ export class ApiError extends Error {
 export async function call<T = Record<string, unknown>>(
   method: 'GET' | 'POST' | 'PATCH' | 'PUT',
   path: string,
-  opts: { bearer?: string; body?: unknown; publishable?: boolean } = {},
+  opts: { bearer?: string; body?: unknown; publishable?: boolean; headers?: Record<string, string> } = {},
 ): Promise<T> {
-  const headers: Record<string, string> = { 'x-pos-request-id': `scn-${crypto.randomUUID()}` };
+  const headers: Record<string, string> = { 'x-pos-request-id': `scn-${crypto.randomUUID()}`, ...opts.headers };
   if (opts.publishable !== false) headers.apikey = env.publishableKey;
   if (opts.bearer) headers.authorization = `Bearer ${opts.bearer}`;
   if (opts.body !== undefined) headers['content-type'] = 'application/json';

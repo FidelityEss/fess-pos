@@ -6,7 +6,7 @@ set local role postgres;
 create extension if not exists pgtap with schema extensions;
 -- pgTAP lives in extensions locally; on hosted projects `supabase test db --linked` installs it in its own schema.
 select set_config('search_path', concat_ws(', ', 'extensions', 'public', (select extnamespace::regnamespace::text from pg_extension where extname = 'pgtap')), true);
-select plan(34);
+select plan(35);
 
 create function pg_temp.err(p_sql text) returns text language plpgsql as $$
 declare v_hint text; v_state text;
@@ -134,8 +134,17 @@ select is((pos.admin_dashboard() #>> '{jobs_by_status,pending}')::int, (select a
 select ok((pos.admin_job_form_context('10000000-0000-0000-0000-00000000000a') -> 'location_types') is not null, 'job form context readable');
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000002","aal":"aal2","role":"authenticated"}', true);
 select is((pos.admin_dashboard() #>> '{jobs_by_status,pending}')::int, (select bank_a_pending from expected), 'bank-scoped admin sees only its bank');
+-- admin.require_mfa both ways (off since D-96): on, a password-only (aal1) session sees nothing; off, it is an admin.
+set local role postgres;
+update pos.settings set value = 'true'::jsonb where key = 'admin.require_mfa';
+set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","aal":"aal1","role":"authenticated"}', true);
-select is(pos.admin_dashboard() -> 'jobs_by_status', '{}'::jsonb, 'without MFA (aal1) an admin sees nothing');
+select is(pos.admin_dashboard() -> 'jobs_by_status', '{}'::jsonb, 'with admin.require_mfa on, an admin without a second step (aal1) sees nothing');
+set local role postgres;
+update pos.settings set value = 'false'::jsonb where key = 'admin.require_mfa';
+set local role authenticated;
+select is((pos.admin_dashboard() #>> '{jobs_by_status,pending}')::int, (select all_pending from expected),
+          'with admin.require_mfa off (D-96), a password-only admin sees the dashboard');
 select set_config('request.jwt.claims', '{"token_use":"pos_access","pos_user_id":"b0000000-0000-0000-0000-000000000001","pos_role":"pos_agent","scope":"full","role":"authenticated"}', true);
 select is(pos.admin_dashboard() -> 'jobs_by_status', '{}'::jsonb, 'an agent sees no admin dashboard data');
 select is((select count(*)::int from pos.admin_agent_load(current_date - 1, current_date + 30)), 0, 'agent sees no load data');

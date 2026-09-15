@@ -8,7 +8,7 @@ import { useSignOut } from '@/lib/auth';
 import { getSupabase } from '@/lib/supabase';
 import { AuthCard } from './auth-card';
 
-/** Full-page message when /me answers FORBIDDEN (signed in, but not an active POS admin/reader). */
+/** Full-page message when /me answers FORBIDDEN (signed in, but not an active admin or bank viewer). */
 export function NoAccess() {
   const signOut = useSignOut();
   const [email, setEmail] = useState<string | null>(null);
@@ -19,10 +19,13 @@ export function NoAccess() {
   }, []);
 
   return (
-    <AuthCard title="No POS admin access" wide>
+    <AuthCard title="You don’t have access to the admin panel" wide>
       <Alert variant="warning">
         <ShieldAlert />
-        <AlertDescription>This account has no active POS admin access — ask a POS administrator to provision you</AlertDescription>
+        <AlertDescription>
+          Your sign-in works, but it isn’t linked to an active administrator or bank viewer. Ask an administrator to check your
+          access on the People page, or to send you a new registration link.
+        </AlertDescription>
       </Alert>
       {email ? (
         <p className="mt-3 text-sm text-muted-foreground">
