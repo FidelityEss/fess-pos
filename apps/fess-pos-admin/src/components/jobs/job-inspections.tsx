@@ -4,7 +4,9 @@
 // label from the pinned form definition, amendments overlaid, manifest completeness, geofence result, integrity
 // flags, and the review decision / amend actions.
 import { AlertOctagon, Clock, Pencil, ShieldAlert } from 'lucide-react';
+import Link from 'next/link';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { Details } from '@/components/details';
 import { EmptyState } from '@/components/empty-state';
 import { DateTime } from '@/components/date-time';
 import { JsonView } from '@/components/json-view';
@@ -118,7 +120,7 @@ export function AnswerValue({
 
 function metaBadges(meta: Record<string, unknown>, advanced: boolean): ReactNode {
   const badges: ReactNode[] = [];
-  if (meta.flagged_differs === true) badges.push(<Badge key="f" tone="warning">Agent says this differs</Badge>);
+  if (meta.flagged_differs === true) badges.push(<Badge key="f" tone="warning">The agent says this is different</Badge>);
   if (advanced) {
     if (meta.computed === true) badges.push(<Badge key="c" tone="neutral">computed</Badge>);
     if (meta.prefilled === true) badges.push(<Badge key="p" tone="neutral">prefilled</Badge>);
@@ -165,20 +167,20 @@ function AnswerRow({ fieldKey, label, field, entry, amendments, differs, otherAt
             <AnswerValue field={field} value={entry?.v} evidenceById={evidenceById} onOpenEvidence={onOpenEvidence} />
           </div>
           {onAmend ? (
-            <Button type="button" variant="ghost" size="sm" className="shrink-0 text-muted-foreground" onClick={onAmend} title="Amend this answer" aria-label={`Amend ${label}`}>
-              <Pencil /> Amend
+            <Button type="button" variant="ghost" size="sm" className="shrink-0 text-muted-foreground" onClick={onAmend} title="Correct this answer" aria-label={`Correct ${label}`}>
+              <Pencil /> Correct
             </Button>
           ) : null}
         </div>
         {entry ? metaBadges(entry.meta, advanced) : null}
         {advanced && extraMeta.length ? <div className="text-xs text-muted-foreground">{extraMeta.map(([k, v]) => `${humanize(k)}: ${valueText(v)}`).join(' · ')}</div> : null}
-        {differs && otherAttempt !== null ? <Badge tone="warning">Different from attempt {otherAttempt}</Badge> : null}
+        {differs && otherAttempt !== null ? <Badge tone="warning">Different from visit {otherAttempt}</Badge> : null}
         {latest ? (
           <div className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-900">
-            <span className="font-medium">Amended</span> from “<span className="break-all">{valueText(latest.old_value, field)}</span>” to “
+            <span className="font-medium">Corrected</span> from “<span className="break-all">{valueText(latest.old_value, field)}</span>” to “
             <span className="break-all font-medium">{valueText(latest.new_value, field)}</span>” by {latest.author ? fullName(latest.author) : 'a reviewer'} · {formatDateTime(latest.created_at)} —{' '}
             <span className="italic">{latest.justification}</span>
-            {amendments.length > 1 ? <span className="text-violet-700"> ({amendments.length - 1} earlier amendment{amendments.length > 2 ? 's' : ''})</span> : null}
+            {amendments.length > 1 ? <span className="text-violet-700"> ({amendments.length - 1} earlier correction{amendments.length > 2 ? 's' : ''})</span> : null}
           </div>
         ) : null}
       </div>
@@ -255,7 +257,7 @@ function InspectionAnswers({
   };
 
   if (Object.keys(answers).length === 0) {
-    return <p className="text-sm text-muted-foreground">No answers have been received for this attempt yet.</p>;
+    return <p className="text-sm text-muted-foreground">No answers have arrived for this visit yet.</p>;
   }
 
   return (
@@ -263,11 +265,11 @@ function InspectionAnswers({
       {usingSnapshot ? (
         <Alert variant="info">
           <Clock />
-          <AlertDescription>Showing the latest in-progress snapshot from the device — not a submission.</AlertDescription>
+          <AlertDescription>These are the answers so far, saved by the agent’s phone during the visit. The visit hasn’t been sent in yet.</AlertDescription>
         </Alert>
       ) : null}
       {!definition ? (
-        <p className="text-sm text-muted-foreground">The form definition for this attempt could not be loaded; answers are listed by their technical names.</p>
+        <p className="text-sm text-muted-foreground">We couldn’t load the questions for this visit, so the answers are listed by their internal names.</p>
       ) : null}
       {sections.map((sec) => {
         const fields = sec.fields.filter((f) => !(DISPLAY_ONLY.includes(f.type) && !(f.key in answers)));
@@ -281,7 +283,7 @@ function InspectionAnswers({
       })}
       {unknownKeys.length ? (
         <div>
-          <h4 className="mb-1.5 text-sm font-semibold">{definition ? 'Other answers (not in the form)' : 'Answers'}</h4>
+          <h4 className="mb-1.5 text-sm font-semibold">{definition ? 'Other answers (not in the questions)' : 'Answers'}</h4>
           <div className="rounded-md border px-4">{unknownKeys.map((k) => row(k, humanize(k), null))}</div>
         </div>
       ) : null}
@@ -294,7 +296,7 @@ function InspectionAnswers({
 function Progress({ value, max, tone }: { value: number; max: number; tone: 'success' | 'info' }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 100;
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
       <div className={cn('h-full rounded-full', tone === 'success' ? 'bg-emerald-500' : 'bg-sky-500')} style={{ width: `${pct}%` }} />
     </div>
   );
@@ -318,7 +320,7 @@ function ManifestBlock({ insp }: { insp: InspectionRow }) {
         </div>
         <div>
           <div className="mb-1 flex justify-between">
-            <span>Checked (tamper-proof)</span>
+            <span>Passed the security check</span>
             <span className="tabular-nums">
               {verified} / {expected}
             </span>
@@ -327,20 +329,20 @@ function ManifestBlock({ insp }: { insp: InspectionRow }) {
         </div>
       </div>
       {expected === 0 && !insp.submitted_at_server ? (
-        <p className="text-muted-foreground">The list of expected photos arrives with the submission.</p>
+        <p className="text-muted-foreground">The list of photos to expect arrives when the visit is sent in.</p>
       ) : outstanding > 0 ? (
         <p className="text-amber-700">
           Waiting for {outstanding} of {expected} photo{expected === 1 ? '' : 's'} and file{expected === 1 ? '' : 's'} from {advanced ? `device ${shortId(insp.device_id)}` : 'the agent’s phone'}. You can read the answers meanwhile; approval waits until everything is checked.
         </p>
       ) : insp.status === 'integrity_failed' || insp.flags.includes('evidence_quarantined') ? (
         <p className="text-red-700">
-          Everything has arrived, but at least one photo or file failed the tamper check: the stored copy doesn’t match what the agent’s
-          phone captured. See the Integrity section before deciding.
+          Everything has arrived, but at least one photo or file failed the security check: the copy we hold doesn’t match what the
+          agent’s phone took. See Security checks before deciding.
         </p>
       ) : verified < expected ? (
-        <p className="text-sky-700">Everything has arrived — the tamper check is running.</p>
+        <p className="text-sky-700">Everything has arrived. The security check is running.</p>
       ) : (
-        <p className="text-emerald-700">Complete: every photo and file arrived and passed the tamper check.</p>
+        <p className="text-emerald-700">Complete: every photo and file arrived and passed the security check.</p>
       )}
     </div>
   );
@@ -348,7 +350,7 @@ function ManifestBlock({ insp }: { insp: InspectionRow }) {
 
 function GeofenceBlock({ insp, evidenceById, onOpenEvidence }: { insp: InspectionRow; evidenceById: Map<string, Evidence>; onOpenEvidence: (ids: string[]) => void }) {
   const gr = isPlainObject(insp.geofence_result) ? insp.geofence_result : null;
-  if (!gr) return <p className="text-sm text-muted-foreground">No geofence result recorded.</p>;
+  if (!gr) return <p className="text-sm text-muted-foreground">No location check was recorded.</p>;
   const params = objOf(gr, 'profile_params');
   const fix = objOf(gr, 'fix');
   const checkin = objOf(gr, 'checkin_fix');
@@ -386,28 +388,28 @@ function GeofenceDetail({
     <div className="space-y-3">
       <div className="flex flex-wrap gap-1.5">
         {gr.passed === true ? <Badge tone="success">At the site</Badge> : <Badge tone="danger">Not confirmed at the site</Badge>}
-        {advanced && method ? <Badge tone={method === 'outside_fix' ? 'warning' : 'neutral'}>{method === 'outside_fix' ? 'Outside fix' : 'Inside fix'}</Badge> : null}
-        {advanced && gr.relaxed === true ? <Badge tone="warning">Relaxed profile</Badge> : null}
+        {advanced && method ? <Badge tone={method === 'outside_fix' ? 'warning' : 'neutral'}>{method === 'outside_fix' ? 'Checked from outside' : 'Checked from inside'}</Badge> : null}
+        {advanced && gr.relaxed === true ? <Badge tone="warning">Relaxed site-area rules</Badge> : null}
         {gr.override === true ? <Badge tone="danger">Started outside the site area</Badge> : null}
       </div>
       <KeyValues
         items={[
           ['Distance from the merchant', toNumber(gr.distance_m) !== null ? `${Math.round(toNumber(gr.distance_m) ?? 0)} m` : null],
           ['Site area', params ? `${toNumber(params.radius_m) ?? '—'} m around the pin` : null],
-          ['GPS accuracy', fix && toNumber(fix.accuracy_m) !== null ? `± ${Math.round(toNumber(fix.accuracy_m) ?? 0)} m${fix.is_mocked === true ? ' (fake location!)' : ''}` : null],
+          ['GPS accuracy', fix && toNumber(fix.accuracy_m) !== null ? `± ${Math.round(toNumber(fix.accuracy_m) ?? 0)} m${fix.is_mocked === true ? ' (fake location)' : ''}` : null],
           ...(advanced
             ? ([
-                ['Profile', `${humanize(strOf(gr, 'profile'))}${params ? ` · ${toNumber(params.radius_m) ?? '—'} m fence, GPS ≤ ${toNumber(params.max_accuracy_m) ?? '—'} m` : ''}`],
-                ['Fix time', fix ? formatDateTime(strOf(fix, 'ts'), { seconds: true }) : null],
-                ['Check-in fix', checkin ? `${formatDateTime(strOf(checkin, 'ts'))} · ± ${toNumber(checkin.accuracy_m) ?? '—'} m` : null],
-                ['Sampled', toNumber(gr.sampled_seconds) !== null ? `${toNumber(gr.sampled_seconds)} s` : null],
+                ['Site-area rules', `${humanize(strOf(gr, 'profile'))}${params ? ` · ${toNumber(params.radius_m) ?? '—'} m site area, GPS accurate to ${toNumber(params.max_accuracy_m) ?? '—'} m` : ''}`],
+                ['Location taken at', fix ? formatDateTime(strOf(fix, 'ts'), { seconds: true }) : null],
+                ['Check-in location', checkin ? `${formatDateTime(strOf(checkin, 'ts'))} · ± ${toNumber(checkin.accuracy_m) ?? '—'} m` : null],
+                ['Measured for', toNumber(gr.sampled_seconds) !== null ? `${toNumber(gr.sampled_seconds)} s` : null],
               ] as [ReactNode, ReactNode][])
             : []),
         ]}
       />
       {od ? (
         <div className="space-y-2 rounded-md border border-red-200 bg-red-50/60 p-3 text-sm">
-          <div className="font-medium text-red-800">Started outside the site area (override)</div>
+          <div className="font-medium text-red-800">Started outside the site area</div>
           <KeyValues
             items={[
               ['Reason', advanced ? <code key="r">{strOf(od, 'reason_code') || '—'}</code> : humanize(strOf(od, 'reason_code'))],
@@ -439,16 +441,15 @@ function IntegrityBlock({ insp }: { insp: InspectionRow }) {
       {!advanced && signals.length ? <p className="text-red-700">The phone reported a security problem ({signals.map((s) => humanize(s).toLowerCase()).join(', ')}).</p> : null}
       {advanced && integ ? (
         <div className="flex flex-wrap items-center gap-1.5 text-sm">
-          <span className="text-muted-foreground">Device signals:</span>
+          <span className="text-muted-foreground">Warnings from the phone:</span>
           {signals.length ? signals.map((s) => <Badge key={s} tone="danger">{humanize(s)}</Badge>) : <Badge tone="success">None raised</Badge>}
           {attestation ? <span className="text-muted-foreground">· attestation {strOf(attestation, 'provider') || 'none'}{strOf(attestation, 'verdict') ? ` (${strOf(attestation, 'verdict')})` : ''}</span> : null}
         </div>
       ) : null}
       {advanced && integ ? (
-        <details>
-          <summary className="cursor-pointer text-sm text-primary">Raw integrity report</summary>
-          <JsonView value={integ} defaultExpandDepth={1} maxHeight={240} className="mt-2" />
-        </details>
+        <Details summary="Full security report from the phone">
+          <JsonView value={integ} defaultExpandDepth={1} maxHeight={240} />
+        </Details>
       ) : null}
     </div>
   );
@@ -487,11 +488,11 @@ function InspectionPanel({
   return (
     <div id={`inspection-${insp.id}`} className={cn('min-w-0 space-y-4 rounded-lg', highlighted && 'ring-2 ring-primary/40 ring-offset-2')}>
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-base font-semibold">Attempt {insp.attempt}</h3>
+        <h3 className="text-base font-semibold">Visit {insp.attempt}</h3>
         <InspectionStatusBadge status={insp.status} />
         <Advanced>
-          {gr?.relaxed === true ? <Badge tone="warning">Relaxed profile</Badge> : null}
-          {strOf(gr, 'method') === 'outside_fix' ? <Badge tone="warning">Outside fix</Badge> : null}
+          {gr?.relaxed === true ? <Badge tone="warning">Relaxed site-area rules</Badge> : null}
+          {strOf(gr, 'method') === 'outside_fix' ? <Badge tone="warning">Checked from outside</Badge> : null}
         </Advanced>
         {insp.flags.includes('geofence_override') ? <Badge tone="danger">{advanced ? 'Geofence override' : 'Started outside the site area'}</Badge> : null}
         {advanced && review ? <Badge tone={review.decision === 'approved' ? 'success' : review.decision === 'returned' ? 'warning' : 'danger'}>Reviewed: {humanize(review.decision)}</Badge> : null}
@@ -500,16 +501,16 @@ function InspectionPanel({
       {insp.status === 'integrity_failed' ? (
         <Alert variant="destructive">
           <AlertOctagon />
-          <AlertTitle>{advanced ? 'Integrity check failed' : 'Failed the tamper check'}</AlertTitle>
+          <AlertTitle>Failed a security check</AlertTitle>
           <AlertDescription>
             {advanced
-              ? 'At least one evidence item failed verification (or another integrity check failed). The inspection can still be reviewed — check the flags and evidence hashes below before deciding.'
-              : 'At least one photo or file did not match what the agent’s phone sent, so it may have been changed. You can still review this visit — check the Integrity section and the photos before deciding.'}
+              ? 'At least one photo or file failed verification, or another security check failed. You can still review the visit: check the warnings and the file hashes before deciding.'
+              : 'At least one photo or file doesn’t match what the agent’s phone sent, so it may have been changed. You can still review this visit: check Security checks and the photos before deciding.'}
           </AlertDescription>
         </Alert>
       ) : null}
 
-      <SectionCard title="Submission">
+      <SectionCard title="About this visit">
         <KeyValues
           items={[
             ['Agent', insp.agent ? fullName(insp.agent) : shortId(insp.user_id)],
@@ -517,11 +518,11 @@ function InspectionPanel({
               ? ([
                   ['Device', <span key="d" className="font-mono text-sm" title={insp.device_id}>{shortId(insp.device_id)} · {insp.client_type}</span>],
                   ['Started', <span key="s" className="text-sm">{formatDateTime(insp.started_at_device, { seconds: true })} (device)<br />{formatDateTime(insp.started_at_server, { seconds: true })} (server)</span>],
-                  ['Submitted', <span key="u" className="text-sm">{formatDateTime(insp.submitted_at_device, { seconds: true })} (device)<br />{formatDateTime(insp.submitted_at_server, { seconds: true })} (server)</span>],
+                  ['Sent in', <span key="u" className="text-sm">{formatDateTime(insp.submitted_at_device, { seconds: true })} (device)<br />{formatDateTime(insp.submitted_at_server, { seconds: true })} (server)</span>],
                 ] as [ReactNode, ReactNode][])
               : ([
                   ['Started', formatDateTime(insp.started_at_server ?? insp.started_at_device)],
-                  ['Submitted', insp.submitted_at_server || insp.submitted_at_device ? formatDateTime(insp.submitted_at_server ?? insp.submitted_at_device) : 'Not yet'],
+                  ['Sent in', insp.submitted_at_server || insp.submitted_at_device ? formatDateTime(insp.submitted_at_server ?? insp.submitted_at_device) : 'Not yet'],
                 ] as [ReactNode, ReactNode][])),
             [
               advanced ? 'Clock offset' : 'Phone clock',
@@ -536,15 +537,22 @@ function InspectionPanel({
               ),
             ],
             [
-              'Form',
+              'Questions',
               definition ? (
                 <span key="f">
-                  {definition.family?.title ?? definition.family?.key ?? 'Form'} (version {definition.version}){' '}
+                  {staff.isAdmin ? (
+                    <Link href={`/definitions/${definition.family_id}`} className="text-primary underline-offset-4 hover:underline">
+                      {definition.family?.title ?? definition.family?.key ?? 'Questions'}
+                    </Link>
+                  ) : (
+                    (definition.family?.title ?? definition.family?.key ?? 'Questions')
+                  )}{' '}
+                  (version {definition.version}){' '}
                   {advanced ? <span className="font-mono text-sm text-muted-foreground" title={insp.definition_hash ?? ''}>{shortId(insp.definition_hash, 8, 4)}</span> : null}
                   {insp.flags.includes('non_current_version') ? <Badge tone="warning" className="ml-1">{advanced ? 'not current' : 'older version'}</Badge> : null}
                 </span>
               ) : insp.form_version_id ? (
-                advanced ? shortId(insp.form_version_id) : 'Form details unavailable'
+                advanced ? shortId(insp.form_version_id) : 'Couldn’t load the questions'
               ) : null,
             ],
           ]}
@@ -552,22 +560,26 @@ function InspectionPanel({
         {insp.unable_reason_code ? (
           <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm">
             <div className="font-medium text-amber-900">
-              Unable to complete — {advanced ? <code>{insp.unable_reason_code}</code> : humanize(insp.unable_reason_code)}
+              The agent couldn’t do the visit: {advanced ? <code>{insp.unable_reason_code}</code> : humanize(insp.unable_reason_code)}
             </div>
-            {insp.unable_answers ? <JsonView value={insp.unable_answers} defaultExpandDepth={1} maxHeight={200} className="mt-2" /> : null}
+            {insp.unable_answers ? (
+              <Details summary="What the agent filled in" className="mt-2">
+                <JsonView value={insp.unable_answers} defaultExpandDepth={1} maxHeight={200} />
+              </Details>
+            ) : null}
           </div>
         ) : null}
       </SectionCard>
 
-      <SectionCard title={advanced ? 'Evidence manifest' : 'Photos and files'} description={advanced ? `${evidence.length} evidence rows received for this attempt.` : `${evidence.length} received for this attempt.`}>
+      <SectionCard title={advanced ? 'Evidence manifest' : 'Photos and files'} description={`${evidence.length} received for this visit.`}>
         <ManifestBlock insp={insp} />
       </SectionCard>
 
-      <SectionCard title="Geofence">
+      <SectionCard title="Location check">
         <GeofenceBlock insp={insp} evidenceById={evidenceById} onOpenEvidence={(ids) => lightbox.open(ids.map((id) => evidenceById.get(id)).filter((e): e is Evidence => !!e), 0)} />
       </SectionCard>
 
-      <SectionCard title={<span className="inline-flex items-center gap-1.5"><ShieldAlert className="size-4" /> Integrity</span>}>
+      <SectionCard title={<span className="inline-flex items-center gap-1.5"><ShieldAlert className="size-4" /> Security checks</span>}>
         <IntegrityBlock insp={insp} />
       </SectionCard>
 
@@ -575,7 +587,7 @@ function InspectionPanel({
         <ReviewPanel jobId={jobId} bankId={bankId} insp={insp} />
       </SectionCard>
 
-      <SectionCard title="Answers" description={canAmend ? 'Use Amend to correct an answer — the original stays untouched and the amendment is recorded.' : undefined}>
+      <SectionCard title="Answers" description={canAmend ? 'Use Correct to fix an answer. The agent’s original stays as it was, and your correction is saved next to it.' : undefined}>
         <InspectionAnswers
           insp={insp}
           definition={definition}
@@ -640,7 +652,7 @@ export function InspectionsTab({
 
   if (loading) return <Skeleton className="h-64 w-full" />;
   if (sorted.length === 0) {
-    return <EmptyState title="No inspection attempts yet" description="An attempt appears as soon as the agent starts the inspection on their device (even while offline, once it syncs)." />;
+    return <EmptyState title="No visits yet" description="A visit shows here as soon as the agent starts it on their phone (if they’re offline, once the phone can send it)." />;
   }
 
   const toggle = (id: string, on: boolean) => {
@@ -653,14 +665,14 @@ export function InspectionsTab({
     <div className="space-y-4">
       {sorted.length > 1 ? (
         <div className="rounded-lg border bg-card p-3">
-          <div className="mb-2 text-sm font-medium text-muted-foreground">All attempts — tick two to compare side by side</div>
+          <div className="mb-2 text-sm font-medium text-muted-foreground">All visits. Tick two to compare them side by side.</div>
           <div className="flex flex-wrap gap-2">
             {sorted.map((i) => {
               const on = shown.some((s) => s.id === i.id);
               return (
-                <label key={i.id} className={cn('flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm', on && 'border-primary/50 bg-blue-50/60')}>
+                <label key={i.id} className={cn('flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm', on && 'border-primary/50 bg-accent')}>
                   <Checkbox checked={on} onCheckedChange={(v) => toggle(i.id, v === true)} />
-                  Attempt {i.attempt}
+                  Visit {i.attempt}
                   <InspectionStatusBadge status={i.status} />
                   <span className="text-sm text-muted-foreground">
                     <DateTime value={i.submitted_at_server ?? i.started_at_server} />

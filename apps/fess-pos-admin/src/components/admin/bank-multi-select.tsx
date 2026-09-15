@@ -41,7 +41,7 @@ export function BankMultiSelect({
           id={id}
           disabled={disabled || isLoading}
           data-invalid={invalid || undefined}
-          className="flex min-h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-1 text-left text-sm shadow-xs focus:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 data-[invalid=true]:border-destructive"
+          className="flex min-h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-1 text-left text-sm focus:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 data-[invalid=true]:border-destructive"
         >
           <span className="flex min-w-0 flex-wrap gap-1">
             {selected.length === 0 && unknownSelected.length === 0 ? (

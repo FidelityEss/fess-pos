@@ -1,0 +1,358 @@
+import 'package:drift/drift.dart';
+
+/// Facts about this installation of the module's store: when it was created
+/// and by which module version. One row per fact.
+@DataClassName('ModuleMetaRow')
+class ModuleMeta extends Table {
+  TextColumn get key => text()();
+
+  TextColumn get value => text()();
+
+  /// ISO-8601 with the device's offset (docs/12 §11).
+  TextColumn get updatedAt => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
+/// The transactional outbox (docs/08 §3, docs/12 §3–4): one row per
+/// envelope, written with the change it records, sent until a receipt says
+/// the server holds it. Rows leave only by `OutboxStore.purgeCommitted`.
+@DataClassName('OutboxRow')
+class Outbox extends Table {
+  /// The envelope id: UUIDv7, the server's idempotency key.
+  TextColumn get id => text()();
+
+  /// The per-device counter, one per envelope (docs/12 §15).
+  IntColumn get deviceSeq => integer().unique()();
+
+  TextColumn get type => text()();
+
+  IntColumn get typeVersion => integer()();
+
+  /// The send lane, 1–4 (docs/08 §3).
+  IntColumn get lane => integer()();
+
+  /// The user whose session sends it; null for device reports, which go
+  /// with whoever is signed in.
+  TextColumn get userId => text().nullable()();
+
+  /// The envelope exactly as it is sent, fixed when the action happened.
+  TextColumn get envelope => text()();
+
+  TextColumn get payloadHash => text()();
+
+  IntColumn get bytes => integer()();
+
+  /// `queued`, `in_flight`, `durable`, `committed` or `needs_attention`
+  /// (docs/08 §1).
+  TextColumn get state => text()();
+
+  /// The last receipt's state, or `refused` / `parked`.
+  TextColumn get receiptState => text().nullable()();
+
+  /// The last receipt, as received.
+  TextColumn get receipt => text().nullable()();
+
+  TextColumn get lastError => text().nullable()();
+
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
+
+  /// Not before this time (epoch ms); null means as soon as possible.
+  IntColumn get nextAttemptMs => integer().nullable()();
+
+  /// The record it is about, e.g. `job:<id>`, for the sync screens.
+  TextColumn get entityRef => text().nullable()();
+
+  /// ISO-8601 with the device's offset (docs/12 §11).
+  TextColumn get createdAt => text()();
+
+  IntColumn get createdAtMs => integer()();
+
+  TextColumn get updatedAt => text()();
+
+  /// When a receipt or the pull said committed (epoch ms). Retention counts
+  /// from here (docs/08 §4).
+  IntColumn get committedAtMs => integer().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Server documents the module keeps whole (docs/08 §2): the resolved
+/// remote config (one per context), `me`, the home-tile totals, the reason
+/// codes and the agent card. One row per document.
+@DataClassName('CachedDocumentRow')
+class CachedDocuments extends Table {
+  TextColumn get key => text()();
+
+  /// The document as JSON.
+  TextColumn get body => text()();
+
+  /// The server's hash or version id for it, when it has one.
+  TextColumn get hash => text().nullable()();
+
+  /// ISO-8601 with the device's offset (docs/12 §11).
+  TextColumn get updatedAt => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
+/// The jobs the server sends this agent (docs/08 §2), each kept whole as
+/// pulled, with the few fields lists sort and filter on. A job reassigned
+/// to someone else keeps coming (its status changes), so `assigned_to_me`
+/// says whose it is now.
+@DataClassName('JobRow')
+class Jobs extends Table {
+  TextColumn get id => text()();
+
+  TextColumn get reference => text()();
+
+  TextColumn get status => text()();
+
+  /// The server's `updated_at`.
+  TextColumn get updatedAt => text()();
+
+  BoolColumn get assignedToMe => boolean().withDefault(const Constant(false))();
+
+  TextColumn get bankId => text().nullable()();
+
+  /// `scheduled_start` in epoch ms, for sorting; null when unscheduled.
+  IntColumn get scheduledStartMs => integer().nullable()();
+
+  /// The job as pulled (`schema/api/sync-pull-response.schema.json`).
+  TextColumn get body => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Review outcomes of this agent's inspections (docs/08 §2).
+@DataClassName('ReviewRow')
+class Reviews extends Table {
+  TextColumn get id => text()();
+
+  TextColumn get jobId => text()();
+
+  TextColumn get inspectionId => text()();
+
+  IntColumn get attempt => integer()();
+
+  /// `approved`, `returned` or `rejected`.
+  TextColumn get decision => text()();
+
+  TextColumn get decidedAt => text()();
+
+  /// The review as pulled.
+  TextColumn get body => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Definition versions the device holds (docs/04 §7): immutable, stored once
+/// each and only after their hash checks out. Which one is in force is
+/// [ActiveDefinitions]. Pinning and eviction come with T3-07.
+@DataClassName('DefinitionVersionRow')
+class DefinitionVersions extends Table {
+  TextColumn get versionId => text()();
+
+  TextColumn get familyId => text()();
+
+  /// `form`, `flow`, `view`, `content`, `app`, `job_schema`.
+  TextColumn get kind => text()();
+
+  TextColumn get key => text()();
+
+  TextColumn get bankId => text().nullable()();
+
+  IntColumn get version => integer()();
+
+  TextColumn get specVersion => text()();
+
+  /// `definition_hash`: SHA-256 of the definition's canonical JSON.
+  TextColumn get hash => text()();
+
+  /// The definition as JSON.
+  TextColumn get body => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {versionId};
+}
+
+/// Which definition version is in force, per context: the default (`''`)
+/// and each bank the agent has live jobs for (docs/04 §7). Every pull
+/// replaces the whole set.
+@DataClassName('ActiveDefinitionRow')
+class ActiveDefinitions extends Table {
+  /// `''` for the default context, otherwise the bank id.
+  TextColumn get context => text()();
+
+  TextColumn get kind => text()();
+
+  TextColumn get key => text()();
+
+  TextColumn get versionId => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {context, kind, key};
+}
+
+/// Map tiles on the phone (docs/08 §4): least recently used go first once
+/// they pass `storage.tile_cache_mb`. The image is a file under the
+/// module's folder, `tiles/<z>/<x>/<y>`; this is its index.
+@DataClassName('TileRow')
+class TileCacheIndex extends Table {
+  /// `z/x/y`.
+  TextColumn get key => text()();
+
+  /// The provider it came from (a hash of `maps.tile_url`), so a new
+  /// provider's tiles replace the old ones.
+  TextColumn get source => text()();
+
+  IntColumn get bytes => integer()();
+
+  IntColumn get fetchedAtMs => integer()();
+
+  IntColumn get lastUsedMs => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
+/// Inspections begun on this phone (docs/06 §2, docs/08 §1): the pinned
+/// versions, what rules read (frozen at the start), the answers so far and
+/// where the agent is in the flow. Written with the envelope that records
+/// each change (T4-27).
+@DataClassName('InspectionRow')
+class Inspections extends Table {
+  TextColumn get id => text()();
+
+  TextColumn get jobId => text()();
+
+  /// The user who began it; their session sends its envelopes.
+  TextColumn get userId => text()();
+
+  IntColumn get attempt => integer()();
+
+  /// `in_progress` or `submitted`.
+  TextColumn get status => text()();
+
+  TextColumn get formVersionId => text()();
+
+  TextColumn get formHash => text()();
+
+  TextColumn get flowVersionId => text()();
+
+  TextColumn get flowHash => text()();
+
+  TextColumn get jobSchemaVersionId => text().nullable()();
+
+  TextColumn get configVersionId => text().nullable()();
+
+  /// What rules read, frozen at the start (docs/04 §4.4), as JSON.
+  TextColumn get contextSnapshot => text()();
+
+  /// The geofence result at the start, as JSON.
+  TextColumn get geofence => text()();
+
+  /// The integrity snapshot at the start, as JSON.
+  TextColumn get integrity => text()();
+
+  TextColumn get sessionTokenId => text().nullable()();
+
+  TextColumn get sessionToken => text().nullable()();
+
+  TextColumn get startedAtDevice => text()();
+
+  /// The answers so far: `{values: {key: value}, other: {key: text}}`.
+  TextColumn get draft => text().withDefault(const Constant('{}'))();
+
+  /// The flow step the agent is on.
+  IntColumn get currentStep => integer().withDefault(const Constant(0))();
+
+  TextColumn get submittedAtDevice => text().nullable()();
+
+  TextColumn get startedEnvelopeId => text().nullable()();
+
+  TextColumn get submissionEnvelopeId => text().nullable()();
+
+  TextColumn get updatedAt => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Evidence captured on this phone (docs/07 §4, docs/12 §6): the canonical
+/// bytes, their hash and the capture metadata. The bytes are kept in the
+/// encrypted store itself (D-65) and cleared only once the server reports
+/// the object verified (docs/08 §4); the record stays.
+@DataClassName('EvidenceRow')
+class Evidence extends Table {
+  TextColumn get id => text()();
+
+  TextColumn get inspectionId => text()();
+
+  TextColumn get jobId => text()();
+
+  TextColumn get userId => text()();
+
+  TextColumn get fieldKey => text()();
+
+  TextColumn get category => text()();
+
+  /// `photo` or `signature`.
+  TextColumn get type => text()();
+
+  TextColumn get mime => text()();
+
+  /// SHA-256 of [bytes], lower-case hex.
+  TextColumn get sha256 => text()();
+
+  IntColumn get size => integer()();
+
+  IntColumn get width => integer().nullable()();
+
+  IntColumn get height => integer().nullable()();
+
+  TextColumn get capturedAtDevice => text()();
+
+  IntColumn get capturedMonotonicMs => integer()();
+
+  /// `{lat, lng, accuracy_m}` when a fix was available, as JSON.
+  TextColumn get location => text().nullable()();
+
+  BoolColumn get isMocked => boolean().withDefault(const Constant(false))();
+
+  /// The `evidence_meta` payload's `meta`, as JSON.
+  TextColumn get meta => text().withDefault(const Constant('{}'))();
+
+  /// The canonical bytes; null once the server verified them.
+  BlobColumn get bytes => blob().nullable()();
+
+  /// `local_only`, `uploaded`, `verified` or `quarantined` (docs/08 §1).
+  TextColumn get state => text()();
+
+  IntColumn get createdAtMs => integer()();
+
+  TextColumn get updatedAt => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Sync machinery: pull cursors, `server_epoch`, the clock offset
+/// (docs/08 §1–2) and the last `device_seq`.
+@DataClassName('SyncStateRow')
+class SyncState extends Table {
+  TextColumn get key => text()();
+
+  TextColumn get value => text()();
+
+  /// ISO-8601 with the device's offset (docs/12 §11).
+  TextColumn get updatedAt => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}

@@ -67,7 +67,7 @@ export const SAMPLE_JOB_VARIANTS: readonly { value: SampleJobVariant; label: str
   { value: 'standard_home', label: 'Standard risk · home address' },
   { value: 'high_risk_home', label: 'High risk · home address' },
   { value: 'shopping_centre', label: 'Standard risk · shopping centre' },
-  { value: 'outside_fence', label: 'Outside the fence (override)' },
+  { value: 'outside_fence', label: 'Agent away from the site' },
 ];
 
 /** The context with the sample job switched to a variant (risk tier, location type, geofence result). */

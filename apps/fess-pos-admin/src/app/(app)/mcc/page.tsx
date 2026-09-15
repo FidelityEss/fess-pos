@@ -48,8 +48,8 @@ export default function MccCodesPage() {
   const columns = useMemo<ColumnDef<MccCode>[]>(
     () => [
       { accessorKey: 'code', header: 'Code', cell: ({ row }) => <span className="whitespace-nowrap font-mono text-sm font-medium">{row.original.code}</span> },
-      { accessorKey: 'description', header: 'Description' },
-      { accessorKey: 'risk_tier', header: 'Risk tier', cell: ({ row }) => <ToneBadge value={row.original.risk_tier} tones={RISK_TONE} /> },
+      { accessorKey: 'description', header: 'Business type' },
+      { accessorKey: 'risk_tier', header: 'Risk', cell: ({ row }) => <ToneBadge value={row.original.risk_tier} tones={RISK_TONE} /> },
       { accessorKey: 'active', header: 'Status', cell: ({ row }) => <ActiveBadge active={row.original.active} /> },
     ],
     [],
@@ -58,17 +58,16 @@ export default function MccCodesPage() {
   return (
     <>
       <PageHeader
-        title="MCC codes"
-        description="Merchant category codes and their risk tiers, used when creating jobs."
+        title="Business types"
         actions={
           canWrite ? (
             <Button onClick={() => setDialog({ mcc: null })}>
-              <Plus /> New MCC code
+              <Plus /> Add a business type
             </Button>
           ) : null
         }
       />
-      {!canWrite ? <ReadOnlyNotice className="mb-4">MCC codes are global reference data, managed by all-bank administrators (D-44).</ReadOnlyNotice> : null}
+      {!canWrite ? <ReadOnlyNotice className="mb-4">Business types can only be changed by an administrator who covers all banks.</ReadOnlyNotice> : null}
       <DataTable
         columns={columns}
         data={codes.isPending ? undefined : rows}
@@ -77,17 +76,31 @@ export default function MccCodesPage() {
         onRetry={() => void codes.refetch()}
         getRowId={(c) => c.code}
         onRowClick={canWrite ? (c) => setDialog({ mcc: c }) : undefined}
-        searchPlaceholder="Code or description"
-        emptyTitle="No MCC codes"
+        searchPlaceholder="Search by code or business type"
+        emptyTitle="No business types here"
+        emptyDescription={
+          canWrite ? (
+            <>
+              Add one, or change the filters.
+              <span className="mt-3 block">
+                <Button onClick={() => setDialog({ mcc: null })}>
+                  <Plus /> Add a business type
+                </Button>
+              </span>
+            </>
+          ) : (
+            'Try changing the filters.'
+          )
+        }
         rowClassName={(c) => (c.active ? undefined : 'opacity-60')}
         toolbar={
           <>
             <Select value={tier} onValueChange={(v) => setTier(v as TierFilter)}>
-              <SelectTrigger className="w-40" aria-label="Filter by risk tier">
+              <SelectTrigger className="w-40" aria-label="Filter by risk">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Any risk tier</SelectItem>
+                <SelectItem value="all">Any risk</SelectItem>
                 {MCC_RISK_TIERS.map((t) => (
                   <SelectItem key={t} value={t}>
                     {humanize(t)}
@@ -133,7 +146,7 @@ function MccForm({ mcc, onClose }: { mcc: MccCode | null; onClose: () => void })
     mutationFn: (s: MccSave) => (s.kind === 'create' ? adminApi.mcc.create(s.body) : adminApi.mcc.update(s.code, s.body)),
     invalidate: [['mcc_codes']],
     toastErrors: false,
-    successMessage: (m, s) => (s.kind === 'create' ? `MCC ${m.code} created` : `MCC ${m.code} saved`),
+    successMessage: (m, s) => (s.kind === 'create' ? `Business type ${m.code} added.` : 'Changes saved.'),
     onSuccess: () => onClose(),
   });
   const errors: FieldErrors = { ...apiFieldErrors(save.error), ...clientErrors };
@@ -162,10 +175,14 @@ function MccForm({ mcc, onClose }: { mcc: MccCode | null; onClose: () => void })
   return (
     <form onSubmit={submit} className="grid gap-4" noValidate>
       <DialogHeader>
-        <DialogTitle>{mcc ? `MCC ${mcc.code}` : 'New MCC code'}</DialogTitle>
-        <DialogDescription>{mcc ? 'Codes are never deleted — deactivate one to stop offering it for new jobs.' : 'A four-digit merchant category code.'}</DialogDescription>
+        <DialogTitle>{mcc ? `${mcc.code} — ${mcc.description}` : 'Add a business type'}</DialogTitle>
+        <DialogDescription>
+          {mcc
+            ? 'Business types are never deleted. Turn one off to stop offering it for new jobs.'
+            : 'The four-digit card-industry code (MCC) and the kind of business it stands for.'}
+        </DialogDescription>
       </DialogHeader>
-      <FormField label="Code" htmlFor={`${uid}-code`} required={!mcc} error={errors.code} hint={mcc ? 'The code can’t be changed.' : undefined}>
+      <FormField label="Code (MCC)" htmlFor={`${uid}-code`} required={!mcc} error={errors.code} hint={mcc ? 'The code can’t be changed.' : 'Four digits. It can’t be changed later.'}>
         <Input
           id={`${uid}-code`}
           value={code}
@@ -176,10 +193,10 @@ function MccForm({ mcc, onClose }: { mcc: MccCode | null; onClose: () => void })
           aria-invalid={!!errors.code || undefined}
         />
       </FormField>
-      <FormField label="Description" htmlFor={`${uid}-description`} required error={errors.description}>
+      <FormField label="Business type" htmlFor={`${uid}-description`} required error={errors.description}>
         <Input id={`${uid}-description`} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={300} aria-invalid={!!errors.description || undefined} />
       </FormField>
-      <FormField label="Risk tier" htmlFor={`${uid}-tier`} error={errors.risk_tier}>
+      <FormField label="Risk" htmlFor={`${uid}-tier`} error={errors.risk_tier}>
         <Select value={riskTier} onValueChange={(v) => setRiskTier(v as MccRiskTier)}>
           <SelectTrigger id={`${uid}-tier`} className="w-48">
             <SelectValue />
@@ -205,7 +222,7 @@ function MccForm({ mcc, onClose }: { mcc: MccCode | null; onClose: () => void })
           Cancel
         </Button>
         <Button type="submit" loading={save.isPending}>
-          {mcc ? 'Save changes' : 'Create MCC code'}
+          {mcc ? 'Save changes' : 'Add business type'}
         </Button>
       </DialogFooter>
     </form>

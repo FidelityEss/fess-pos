@@ -1,0 +1,27 @@
+name: fess_pos_example
+description: Harness host for the fess_pos module (dev and CI only).
+publish_to: none
+version: 1.0.0+1
+
+# The same floor as the module, so the harness builds on the FESS toolchain.
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  cupertino_icons: ^1.0.8
+  fess_pos:
+    path: ../
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  camera_platform_interface: ^2.10.0
+  crypto: ^3.0.7
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  very_good_analysis: ^9.0.0
+
+flutter:
+  uses-material-design: true

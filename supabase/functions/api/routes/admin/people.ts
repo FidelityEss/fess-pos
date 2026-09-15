@@ -1,12 +1,10 @@
-// Banks, POS users (incl. admin-login provisioning, deactivation, photos), trusted issuers and identity links
-// (docs/05 §1–2, docs/07 §2, B7.1, B7.3, B7.6).
+// Banks, POS users (deactivation, photos), trusted issuers and identity links (docs/05 §1–2, docs/07 §2, B7.1, B7.3,
+// B7.6). Admin panel sign-ins are made by registration links in ./invitations.ts (D-96).
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { requirePermission } from '../../../_shared/auth.ts';
-import { randomToken } from '../../../_shared/crypto.ts';
 import { PosError } from '../../../_shared/errors.ts';
 import { readJson } from '../../../_shared/http.ts';
-import { log } from '../../../_shared/log.ts';
 import { service, signedReadUrl } from '../../../_shared/storage.ts';
 import type { AppEnv } from '../../../_shared/types.ts';
 import { adminRpc, jsonObject, reason, snakeKey, uuid, uuidParam } from './_util.ts';
@@ -79,41 +77,8 @@ peopleRoutes.post('/users/:id/reactivate', admin, async (c) => {
   return c.json(await adminRpc(c, 'admin_user_reactivate', [[uuidParam(c, 'id'), 'uuid'], [body.reason, 'text']]));
 });
 
-// Admin login (Supabase Auth, email + MFA enrolled at first sign-in). The temporary password is returned ONCE and never
-// stored or logged; the admin must enrol TOTP before any data is readable (aal2, docs/07 §2).
-function temporaryPassword(): string {
-  return `${randomToken(15)}-Aa9`;   // ~120 bits of entropy + a character from every class for password policies
-}
-
-peopleRoutes.post('/users/:id/admin-login', admin, async (c) => {
-  const userId = uuidParam(c, 'id');
-  const body = await readJson(c, z.object({ email: z.string().email().max(320) }));
-  // Scope and eligibility first, so no auth user is created for someone this admin may not provision.
-  await adminRpc(c, 'admin_user_for_login', [[userId, 'uuid']]);
-  const password = temporaryPassword();
-  const email = body.email.toLowerCase();
-  const { data, error } = await service().auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    app_metadata: { pos_user_id: userId },
-  });
-  if (error || !data.user) {
-    if (/already|exists|registered/i.test(error?.message ?? '')) throw new PosError('ALREADY_EXISTS', 'an auth account with this email already exists');
-    throw new PosError('UNAVAILABLE', 'could not create the auth account');
-  }
-  try {
-    await adminRpc(c, 'admin_user_link_auth', [[userId, 'uuid'], [data.user.id, 'uuid']]);
-  } catch (e) {
-    // Compensate: the account was created in this request, never linked and never used — remove it so no orphan
-    // credential exists. (pos rows are never deleted; this is the auth account we just made.)
-    await service().auth.admin.deleteUser(data.user.id).catch((err: unknown) =>
-      log('error', 'failed to remove unlinked auth user', { auth_uid: data.user.id, error: String(err) }));
-    throw e;
-  }
-  c.header('cache-control', 'no-store');
-  return c.json({ user_id: userId, auth_uid: data.user.id, email, temporary_password: password }, 201);
-});
+// Admin panel sign-ins are made by registration links (./invitations.ts, D-96). The temporary-password route
+// (POST /users/:id/admin-login) was removed with the authenticator-app step (T2-37).
 
 // Profile photo for the authorisation card (profiles bucket, server-derived path, never overwritten).
 const PHOTO_TYPES: Record<string, { ext: string; magic: number[] }> = {

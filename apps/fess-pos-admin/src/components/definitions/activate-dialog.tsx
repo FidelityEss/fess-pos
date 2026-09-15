@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ApiErrorAlert } from '@/components/api-error-alert';
+import { Details } from '@/components/details';
 import { apiFieldErrors, type FieldErrors, FormField, zodFieldErrors } from '@/components/form-field';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -12,11 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { adminApi, isApprovalRequired } from '@/lib/api';
 import { employeeName, formatDateTime, fromDateTimeLocalValue } from '@/lib/format';
-import { useAgents } from '@/lib/hooks';
+import { useAgents, useBankLookup } from '@/lib/hooks';
 import { useMutationWithToast } from '@/lib/mutations';
+import { useIsAdvanced } from '@/lib/preferences';
 import { activationSchema } from '@/lib/schemas';
 import { ACTIVATION_INCOMPATIBLE_POLICIES, type ActivationIncompatiblePolicy, type DefinitionFamily } from '@/lib/types';
-import { defKeys, POLICY_LABEL, type VersionLite } from './definitions-data';
+import { defKeys, liveForLabel, POLICY_LABEL, type VersionLite } from './definitions-data';
 
 export interface ActivatePreset {
   versionId?: string;
@@ -33,12 +35,12 @@ function AgentMultiSelect({ bankId, value, onChange, invalid }: { bankId: string
   return (
     <div className={`rounded-md border ${invalid ? 'border-destructive' : ''}`}>
       <div className="border-b p-1.5">
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter agents…" className="h-8" aria-label="Filter agents" />
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search agents…" className="h-8" aria-label="Search agents" />
       </div>
       <div className="max-h-44 overflow-y-auto p-1">
         {isLoading ? <p className="px-2 py-1 text-sm text-muted-foreground">Loading agents…</p> : null}
-        {error ? <p className="px-2 py-1 text-sm text-destructive">Could not load agents</p> : null}
-        {data && list.length === 0 ? <p className="px-2 py-1 text-sm text-muted-foreground">No agents match</p> : null}
+        {error ? <p className="px-2 py-1 text-sm text-destructive">Couldn’t load the agents. Close this and try again.</p> : null}
+        {data && list.length === 0 ? <p className="px-2 py-1 text-sm text-muted-foreground">No agents match your search.</p> : null}
         {list.map((a) => (
           <label key={a.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-slate-50">
             <Checkbox
@@ -49,12 +51,12 @@ function AgentMultiSelect({ bankId, value, onChange, invalid }: { bankId: string
           </label>
         ))}
       </div>
-      <p className="border-t px-2 py-1 text-xs text-muted-foreground">{value.length} selected</p>
+      <p className="border-t px-2 py-1 text-xs text-muted-foreground">{value.length} chosen</p>
     </div>
   );
 }
 
-/** Activate a version for an audience (POST /definitions/families/:id/activations): 201 activated | 202 approval. */
+/** Make a version live for some or all agents (POST /definitions/families/:id/activations): 201 live | 202 needs a second approval. */
 export function ActivateDialog({
   open,
   onOpenChange,
@@ -68,6 +70,9 @@ export function ActivateDialog({
   versions: VersionLite[];
   preset?: ActivatePreset;
 }) {
+  const advanced = useIsAdvanced();
+  const bankLookup = useBankLookup();
+  const bankName = family.scope === 'global' ? null : (bankLookup(family.bank_id)?.name ?? null);
   const [versionId, setVersionId] = useState<string>(preset?.versionId ?? versions[0]?.id ?? '');
   const [audType, setAudType] = useState<AudienceType>('all');
   const [agentIds, setAgentIds] = useState<string[]>([]);
@@ -87,10 +92,11 @@ export function ActivateDialog({
     onSuccess: (res) => {
       const v = versions.find((x) => x.id === versionId);
       if (isApprovalRequired(res.data)) {
-        toast.success('Sent for approval', { description: 'A second admin must approve this activation (four-eyes).' });
+        toast.success('Sent for a second approval', { description: 'Another admin must approve this before it goes live.' });
       } else {
-        toast.success(`Activated v${v?.version ?? '?'}`, {
-          description: `In force from ${formatDateTime(res.data.activation.effective_from)} SAST. Devices pick it up at their next sync.`,
+        const act = res.data.activation;
+        toast.success(`Version ${v?.version ?? '?'} is now ${liveForLabel(act.audience, bankName).replace(/^L/, 'l')}.`, {
+          description: `From ${formatDateTime(act.effective_from)}. Phones pick it up the next time they sync.`,
         });
       }
       onOpenChange(false);
@@ -129,7 +135,7 @@ export function ActivateDialog({
       return;
     }
     if (effectiveTo && !effectiveFrom && Date.parse(effectiveTo) <= Date.now()) {
-      setErrors({ effective_to: 'Must be in the future' });
+      setErrors({ effective_to: 'Choose a time in the future.' });
       return;
     }
     setErrors({});
@@ -142,12 +148,14 @@ export function ActivateDialog({
     <Dialog open={open} onOpenChange={(o) => (activate.isPending ? undefined : onOpenChange(o))}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>
-            Activate {family.kind}/{family.key}
-          </DialogTitle>
+          <DialogTitle>Make “{family.title}” live</DialogTitle>
           <DialogDescription>
-            Activations are append-only. The newest activation in effect whose audience matches an agent wins; in-progress inspections keep the
-            version they pinned.
+            Choose a version and who gets it. Phones pick it up the next time they sync. Visits already under way keep the version they started with.
+            {advanced ? (
+              <span className="mt-1 block font-mono text-xs">
+                {family.kind}/{family.key}
+              </span>
+            ) : null}
           </DialogDescription>
         </DialogHeader>
         <div className="grid max-h-[60vh] gap-4 overflow-y-auto pr-1">
@@ -159,71 +167,73 @@ export function ActivateDialog({
               <SelectContent>
                 {versions.map((v) => (
                   <SelectItem key={v.id} value={v.id}>
-                    v{v.version} · published {formatDateTime(v.published_at)}
-                    {v.breaking ? ' · breaking' : ''}
+                    Version {v.version} · published {formatDateTime(v.published_at)}
+                    {v.breaking ? ' · changes earlier answers' : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </FormField>
 
-          <FormField label="Audience" htmlFor="act-audience" required error={audienceError}>
+          <FormField label="Who gets it" htmlFor="act-audience" required error={audienceError}>
             <Select value={audType} onValueChange={(v) => setAudType(v as AudienceType)}>
               <SelectTrigger id="act-audience">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All agents</SelectItem>
-                <SelectItem value="agents">Named agents</SelectItem>
-                <SelectItem value="percent">Percentage of agents (stable hash)</SelectItem>
-                <SelectItem value="attribute">Agent attribute (e.g. region)</SelectItem>
+                <SelectItem value="all">{bankName ? `All agents at ${bankName}` : 'All agents'}</SelectItem>
+                <SelectItem value="agents">Only the agents I choose</SelectItem>
+                <SelectItem value="percent">A share of agents, to try it out first</SelectItem>
+                <SelectItem value="attribute">Agents with a certain detail, such as their region</SelectItem>
               </SelectContent>
             </Select>
           </FormField>
           {audType === 'agents' ? <AgentMultiSelect bankId={family.bank_id} value={agentIds} onChange={setAgentIds} invalid={!!errors['audience.user_ids']} /> : null}
           {audType === 'percent' ? (
-            <FormField label="Percent" htmlFor="act-percent" hint="1–100. The same agents stay in the group as you raise it.">
+            <FormField label="Share of agents (%)" htmlFor="act-percent" hint="From 1 to 100. The same agents stay in the group as you raise it.">
               <Input id="act-percent" type="number" min={1} max={100} value={percent} onChange={(e) => setPercent(e.target.value)} className="w-32" />
             </FormField>
           ) : null}
           {audType === 'attribute' ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField label="Attribute key" htmlFor="act-attr-key" hint="e.g. region">
+              <FormField label="Detail" htmlFor="act-attr-key" hint="The name of the detail, such as region">
                 <Input id="act-attr-key" value={attrKey} onChange={(e) => setAttrKey(e.target.value)} className="font-mono" />
               </FormField>
-              <FormField label="Values" htmlFor="act-attr-values" hint="Comma separated, e.g. GP, WC">
+              <FormField label="Values" htmlFor="act-attr-values" hint="Separate with commas, such as GP, WC">
                 <Input id="act-attr-values" value={attrValues} onChange={(e) => setAttrValues(e.target.value)} />
               </FormField>
             </div>
           ) : null}
 
-          <FormField label="When a device cannot render this version" htmlFor="act-policy" error={errors['policy.incompatible']}>
-            <Select value={policy} onValueChange={(v) => setPolicy(v as ActivationIncompatiblePolicy)}>
-              <SelectTrigger id="act-policy">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ACTIVATION_INCOMPATIBLE_POLICIES.map((p) => (
-                  <SelectItem key={p} value={p}>
-                    {POLICY_LABEL[p] ?? p}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormField>
-
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Effective from (SAST)" htmlFor="act-from" error={errors.effective_from} hint="Blank = now">
+            <FormField label="Start (SAST)" htmlFor="act-from" error={errors.effective_from} hint="Leave empty to start straight away">
               <Input id="act-from" type="datetime-local" value={from} onChange={(e) => setFrom(e.target.value)} />
             </FormField>
-            <FormField label="Effective to (SAST)" htmlFor="act-to" error={errors.effective_to} hint="Blank = open-ended">
+            <FormField label="End (SAST)" htmlFor="act-to" error={errors.effective_to} hint="Leave empty for no end date">
               <Input id="act-to" type="datetime-local" value={to} onChange={(e) => setTo(e.target.value)} />
             </FormField>
           </div>
 
-          <FormField label="Reason" htmlFor="act-reason" required error={errors.reason}>
-            <Textarea id="act-reason" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Recorded in the audit trail" />
+          <FormField label="Why are you making this change?" htmlFor="act-reason" required error={errors.reason}>
+            <Textarea id="act-reason" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Saved in the activity history" />
           </FormField>
+
+          <Details summary="More options" defaultOpen={!!errors['policy.incompatible']}>
+            <FormField label="If a phone’s app is too old for this version" htmlFor="act-policy" error={errors['policy.incompatible']}>
+              <Select value={policy} onValueChange={(v) => setPolicy(v as ActivationIncompatiblePolicy)}>
+                <SelectTrigger id="act-policy">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACTIVATION_INCOMPATIBLE_POLICIES.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {POLICY_LABEL[p] ?? p}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          </Details>
           <ApiErrorAlert error={activate.error} />
         </div>
         <DialogFooter>
@@ -231,7 +241,7 @@ export function ActivateDialog({
             Cancel
           </Button>
           <Button type="button" onClick={submit} loading={activate.isPending} disabled={!versionId}>
-            Activate
+            Make live
           </Button>
         </DialogFooter>
       </DialogContent>

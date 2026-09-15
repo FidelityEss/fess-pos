@@ -92,7 +92,7 @@ function ArrayValue({ items, depth, expandDepth }: { items: unknown[]; depth: nu
     return (
       <div className="overflow-x-auto rounded-md border">
         <table className="w-full text-sm">
-          <thead className="bg-muted/60 text-left">
+          <thead className="border-b bg-card text-left">
             <tr>
               {cols.map((c) => {
                 const { base, unit } = splitUnit(c);

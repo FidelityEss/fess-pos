@@ -19,18 +19,26 @@ import { CONFIG_LAYERS, type ConfigLayer } from '@/lib/types';
 import { DevicePicker, KillSwitchesCard, ResolvedConfigPanel } from './config-side-panels';
 import { LayerPanel } from './layer-panel';
 
+// Layers read as who a setting applies to (docs/17 §4.4): "For everyone", "For one bank", "For one agent", "For one phone".
 const LAYER_TAB: Record<ConfigLayer, string> = {
-  global: 'Everyone (global)',
-  bank: 'One bank',
-  agent: 'One agent',
-  device: 'One device',
+  global: 'For everyone',
+  bank: 'For one bank',
+  agent: 'For one agent',
+  device: 'For one phone',
 };
 
 const LAYER_HELP: Record<ConfigLayer, string> = {
-  global: 'These settings apply to every agent, unless a bank, agent or device setting says otherwise.',
-  bank: 'Settings here replace the global ones for agents working for this bank. Anything not set here is inherited.',
-  agent: 'Settings here replace the bank and global ones for one agent. Anything not set here is inherited.',
-  device: 'Settings here replace everything else for one phone. Anything not set here is inherited.',
+  global: 'These settings apply to every agent, unless their bank, the agent or their phone has a setting of its own.',
+  bank: 'A setting here replaces the one for everyone, for the agents who work for this bank. Anything you don’t set here stays as it is for everyone.',
+  agent: 'A setting here replaces the bank’s setting and the one for everyone, for this agent only. Anything you don’t set here stays as it is for their bank.',
+  device: 'A setting here replaces all the others, for one phone only. Anything you don’t set here stays as it is for the agent.',
+};
+
+const CHOOSE: Record<ConfigLayer, { title: string; description: string }> = {
+  global: { title: 'Choose who these settings are for', description: '' },
+  bank: { title: 'Choose a bank', description: 'Pick the bank whose settings you want to see or change.' },
+  agent: { title: 'Choose an agent', description: 'Pick the agent whose settings you want to see or change.' },
+  device: { title: 'Choose a phone', description: 'Pick the phone whose settings you want to see or change.' },
 };
 
 /** /config — App settings: the layered remote config (docs/13 §5–6) with a typed editor and a live phone preview. */
@@ -49,21 +57,22 @@ export function ConfigView() {
   const layers = CONFIG_LAYERS.filter((l) => advanced || l !== 'device');
   const subjectId = layer === 'global' ? null : layer === 'bank' ? bankId : layer === 'agent' ? agentId : isUuid(deviceId) ? deviceId : null;
   const canPublish = staff.isAdmin && (layer === 'global' ? staff.isGlobalAdmin : layer === 'bank' ? staff.canAccessBank(bankId) : true);
-  const subjectLabel =
+  const agent = userLookup(agentId);
+  const subjectName =
     layer === 'global'
-      ? 'Settings for everyone'
+      ? 'everyone'
       : layer === 'bank'
-        ? `Bank: ${bankLookup(bankId)?.name ?? ''}`
+        ? (bankLookup(bankId)?.name ?? 'this bank')
         : layer === 'agent'
-          ? `Agent: ${employeeName(userLookup(agentId))}`
-          : `Device ${shortId(deviceId)}`;
+          ? agent
+            ? employeeName(agent)
+            : 'this agent'
+          : 'this phone';
+  const subjectLabel = layer === 'device' ? `Settings for phone ${shortId(deviceId)}` : `Settings for ${subjectName}`;
 
   return (
     <>
-      <PageHeader
-        title="App settings"
-        description="How the phone app behaves: kill switches, location checks, photo quality, sync and more. Set them for everyone, then adjust them for a bank or an agent. The most specific setting wins."
-      />
+      <PageHeader title="App settings" />
 
       <Tabs value={layer} onValueChange={(v) => setLayer(v as ConfigLayer)}>
         <TabsList className="h-11">
@@ -88,7 +97,12 @@ export function ConfigView() {
                 <AgentSelect id="cfg-agent" value={agentId} onChange={(id) => setAgentId(id)} />
               </FormField>
             ) : (
-              <FormField label="Device" htmlFor="cfg-device" required error={deviceId && !isUuid(deviceId) ? 'Must be a UUID (the module device id)' : null}>
+              <FormField
+                label="Phone"
+                htmlFor="cfg-device"
+                required
+                error={deviceId && !isUuid(deviceId) ? 'That isn’t a whole phone ID. Pick a phone from the list, or paste its full ID.' : null}
+              >
                 <DevicePicker id="cfg-device" value={deviceId} onChange={setDeviceId} userLabel={(uid) => employeeName(userLookup(uid))} />
               </FormField>
             )}
@@ -97,16 +111,24 @@ export function ConfigView() {
       ) : null}
 
       {layer === 'global' || subjectId ? (
-        <LayerPanel key={`${layer}:${subjectId ?? ''}`} layer={layer} subjectId={subjectId} canPublish={canPublish} subjectLabel={subjectLabel} />
+        <LayerPanel
+          key={`${layer}:${subjectId ?? ''}`}
+          layer={layer}
+          subjectId={subjectId}
+          canPublish={canPublish}
+          subjectLabel={subjectLabel}
+          subjectName={subjectName}
+        />
       ) : (
         <Card>
-          <EmptyState icon={SlidersHorizontal} title={`Choose ${layer === 'agent' ? 'an agent' : `a ${layer}`}`} description={`Pick the ${layer} whose settings you want to see or change.`} />
+          <EmptyState icon={SlidersHorizontal} title={CHOOSE[layer].title} description={CHOOSE[layer].description} />
         </Card>
       )}
 
       <section className="mt-10">
         <SectionTitle>Waiting for approval</SectionTitle>
-        <ApprovalsPanel subjectTypes={['remote_config', 'block_in_progress']} emptyText="No settings changes are waiting for a second admin." />
+        <p className="-mt-1 mb-3 text-sm text-muted-foreground">Changes that affect security wait here until a second person approves them.</p>
+        <ApprovalsPanel subjectTypes={['remote_config', 'block_in_progress']} emptyText="No settings changes are waiting for a second person to approve them." />
       </section>
 
       <div className={advanced ? 'mt-8 grid gap-4 2xl:grid-cols-2' : 'mt-8 max-w-3xl'}>

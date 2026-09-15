@@ -1,12 +1,12 @@
 # schema/ — the language-agnostic contract
 
-JSON Schema (draft 2020-12) and fixtures shared by the Dart engine (`fess_pos_engine`), the TS engine (`@fess-pos/engine`), the POS API and the admin panel. **The fixtures are the contract:** CI fails if the engines disagree on any of them.
+JSON Schema (draft 2020-12) and fixtures shared by the Dart engine (`fess_pos_engine`), the TS engine (`@fess-pos/engine`), the POS API and the admin panel. **The fixtures are the contract.** Today the TS engine's tests fail on any fixture it gets wrong. Once CI (T1-02) and the Dart engine exist, CI will also fail if the two engines disagree.
 
 | Path | What |
 |------|------|
 | `definitions/` | Definition kinds for spec 1.0 (docs/04 §3): `form`, `flow`, `job_schema`, `view`, `content`, `app`, plus `components.schema.json` (every wave 1–2 component, docs/11), `common.schema.json`, and `definition.schema.json` (dispatch on `kind`) |
 | `rules/` | `operators.json` — the rules-engine operator spec (names, arity, argument types, null behaviour, semantics, error codes, limits; D-29) — and `expression.schema.json` (structure, operator names, arity, literal-only arguments) |
-| `api/` | POS API v1: envelope wrapper, receipt, error, ingest, sync pull, auth, upload grant, answers document, `payloads/<type>.v<n>.schema.json`. See `api/README.md` |
+| `api/` | POS API v1: envelope wrapper, receipt, error, ingest, sync pull, auth, upload grant, device update, answers document, `payloads/<type>.v<n>.schema.json`. See `api/README.md` |
 | `config/` | `remote-config.schema.json` (every key: type, default, bounds, `x-integrity-relevant`, `x-host-overridable`, `x-client-safe`) and `defaults.json` (the global default document) |
 | `fixtures/` | Valid and invalid examples with expected results (below) |
 

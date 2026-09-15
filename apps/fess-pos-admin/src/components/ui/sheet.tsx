@@ -22,10 +22,10 @@ export function SheetContent({
   const width = { sm: 'sm:max-w-sm', md: 'sm:max-w-lg', lg: 'sm:max-w-2xl', xl: 'sm:max-w-4xl' }[size];
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-950/40 animate-in-fade" />
+      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-950/30 animate-in-fade" />
       <DialogPrimitive.Content
         className={cn(
-          'fixed inset-y-0 z-50 flex w-full flex-col bg-card shadow-xl focus:outline-none',
+          'fixed inset-y-0 z-50 flex w-full flex-col bg-card focus:outline-none',
           side === 'right' ? 'right-0 border-l animate-slide-in-right' : 'left-0 border-r animate-slide-in-left',
           width,
           className,

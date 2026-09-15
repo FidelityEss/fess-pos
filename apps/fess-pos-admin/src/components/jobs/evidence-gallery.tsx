@@ -61,7 +61,7 @@ function useInView<T extends Element>(): [RefCallback<T>, boolean] {
 }
 
 /** Plain labels for the upload state badge on thumbnails. */
-const UPLOAD_STATE_LABEL: Record<Evidence['upload_state'], string> = { pending: 'Not uploaded', uploaded: 'Checking', verified: 'Checked', quarantined: 'Failed' };
+const UPLOAD_STATE_LABEL: Record<Evidence['upload_state'], string> = { pending: 'Not received', uploaded: 'Checking', verified: 'Checked', quarantined: 'Failed' };
 
 function isImage(e: Pick<Evidence, 'mime' | 'type'> | undefined): boolean {
   if (!e) return true;
@@ -69,10 +69,10 @@ function isImage(e: Pick<Evidence, 'mime' | 'type'> | undefined): boolean {
   return ['photo', 'signature', 'override_photo', 'unable_photo'].includes(e.type);
 }
 
-/** "Photo · external_photos 2" style label. */
+/** "Photo · External photos 2" style label. */
 export function evidenceLabel(e: Evidence, index?: number): string {
   const what = e.field_key ?? e.category ?? e.type;
-  return `${humanize(e.type)} · ${what}${index !== undefined ? ` ${index + 1}` : ''}`;
+  return `${humanize(e.type)} · ${humanize(what)}${index !== undefined ? ` ${index + 1}` : ''}`;
 }
 
 /** Lazily loaded thumbnail; click to open. `evidence` may be unknown (id only) while rows load. */
@@ -100,7 +100,7 @@ export function EvidenceThumb({
       type="button"
       onClick={onOpen}
       title={evidence ? evidenceLabel(evidence) : evidenceId}
-      className={cn('group relative size-24 shrink-0 overflow-hidden rounded-md border bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', className)}
+      className={cn('group relative size-24 shrink-0 overflow-hidden rounded-md border bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', className)}
     >
       {!image ? (
         <span className="flex size-full flex-col items-center justify-center gap-1 text-xs text-muted-foreground">
@@ -111,7 +111,7 @@ export function EvidenceThumb({
         // eslint-disable-next-line @next/next/no-img-element -- short-lived signed Storage URL; next/image can't optimise it
         <img
           src={url.data.url}
-          alt={evidence ? evidenceLabel(evidence) : 'Evidence'}
+          alt={evidence ? evidenceLabel(evidence) : 'Photo'}
           className="size-full object-cover transition group-hover:scale-105"
           loading="lazy"
           onError={() => {
@@ -124,7 +124,7 @@ export function EvidenceThumb({
       ) : url.isError || failed ? (
         <span className="flex size-full flex-col items-center justify-center gap-1 text-xs text-muted-foreground">
           <ImageOff className="size-5" />
-          {state === 'pending' ? 'Not uploaded yet' : 'Unavailable'}
+          {state === 'pending' ? 'Not received yet' : 'Can’t show'}
         </span>
       ) : (
         <Skeleton className="size-full rounded-none" />
@@ -169,9 +169,9 @@ export function EvidenceMeta({ e }: { e: Evidence }) {
           ['Where', point ? `${formatLatLng(point)}${acc !== null ? ` (± ${Math.round(acc)} m)` : ''}` : 'Not recorded'],
           ...(e.is_mocked ? ([['Location', <Badge key="m" tone="danger">Fake GPS location</Badge>]] as [ReactNode, ReactNode][]) : []),
           [
-            'Tamper check',
+            'Security check',
             e.upload_state === 'quarantined' || checked === false ? (
-              <Badge key="t" tone="danger">Failed — the file may have been changed</Badge>
+              <Badge key="t" tone="danger">Failed: the file may have been changed</Badge>
             ) : checked === true ? (
               <Badge key="t" tone="success">Passed</Badge>
             ) : e.upload_state === 'pending' ? (
@@ -228,14 +228,14 @@ function LightboxBody({ e }: { e: Evidence }) {
           )
         ) : (
           <span className="flex items-center gap-2 p-6 text-sm text-slate-300">
-            <ImageOff className="size-5" /> {e.upload_state === 'pending' ? 'The file has not been uploaded yet.' : 'Could not get a link to this file.'}
+            <ImageOff className="size-5" /> {e.upload_state === 'pending' ? 'The phone hasn’t sent this file yet.' : 'We couldn’t open this file. Try again in a moment.'}
           </span>
         )}
       </div>
       <div className="space-y-3">
         {url.data ? (
           <a href={url.data.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
-            <ExternalLink className="size-4" /> Open original (link valid {Math.round(url.data.expires_in_s / 60)} min)
+            <ExternalLink className="size-4" /> Open the full-size file
           </a>
         ) : null}
         <EvidenceMeta e={e} />
@@ -276,7 +276,7 @@ export function EvidenceLightbox({
             <DialogHeader>
               <DialogTitle>{evidenceLabel(current)}</DialogTitle>
               <DialogDescription>
-                {index !== null ? `${index + 1} of ${items.length}` : null} · use ← → to browse
+                {index !== null ? `${index + 1} of ${items.length}. ` : null}Use the arrow keys to move between them.
               </DialogDescription>
             </DialogHeader>
             <LightboxBody e={current} />
@@ -292,7 +292,7 @@ export function EvidenceLightbox({
             ) : null}
           </>
         ) : (
-          <DialogTitle className="sr-only">Evidence</DialogTitle>
+          <DialogTitle className="sr-only">Photo</DialogTitle>
         )}
       </DialogContent>
     </Dialog>
@@ -355,7 +355,7 @@ export function EvidenceGallery({
 
   if (isLoading) return <Skeleton className="h-48 w-full" />;
   if (rows.length === 0) {
-    return <EmptyState title="No evidence yet" description="Photos, signatures and documents appear here as the agent's device uploads them." />;
+    return <EmptyState title="No photos yet" description="Photos, signatures and documents show here as the agent’s phone sends them." />;
   }
 
   return (
@@ -365,18 +365,18 @@ export function EvidenceGallery({
         <Badge tone="success">{counts.verified} {advanced ? 'verified' : 'checked'}</Badge>
         {counts.uploaded ? <Badge tone="info">{counts.uploaded} {advanced ? 'uploaded, verifying' : 'being checked'}</Badge> : null}
         {counts.pending ? <Badge tone="neutral">{counts.pending} {advanced ? 'awaiting upload' : 'still on the phone'}</Badge> : null}
-        {counts.quarantined ? <Badge tone="danger">{counts.quarantined} {advanced ? 'quarantined' : 'failed the tamper check'}</Badge> : null}
+        {counts.quarantined ? <Badge tone="danger">{counts.quarantined} {advanced ? 'quarantined' : 'failed a security check'}</Badge> : null}
         {inspections.length > 1 ? (
           <div className="ml-auto w-48">
             <Select value={attemptFilter} onValueChange={setAttemptFilter}>
-              <SelectTrigger aria-label="Attempt">
+              <SelectTrigger aria-label="Visit">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL}>All attempts</SelectItem>
+                <SelectItem value={ALL}>All visits</SelectItem>
                 {inspections.map((i) => (
                   <SelectItem key={i.id} value={i.id}>
-                    Attempt {i.attempt}
+                    Visit {i.attempt}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -388,7 +388,7 @@ export function EvidenceGallery({
       {groups.map((g) => (
         <section key={g.inspectionId} className="space-y-3">
           <h3 className="text-base font-semibold">
-            {g.attempt !== null ? `Attempt ${g.attempt}` : `Inspection ${shortId(g.inspectionId)}`}{' '}
+            {g.attempt !== null ? `Visit ${g.attempt}` : advanced ? `Visit ${shortId(g.inspectionId)}` : 'Visit'}{' '}
             <span className="font-normal text-muted-foreground">· {g.items.length} items</span>
           </h3>
           {g.fields.map(([field, items]) => (
@@ -404,7 +404,7 @@ export function EvidenceGallery({
                     <div className="text-sm leading-tight text-muted-foreground">
                       <DateTime value={e.captured_at_device} mode="time" />
                       {e.is_mocked ? <Badge tone="danger" className="ml-1 px-1 py-0 text-xs">{advanced ? 'mock' : 'fake GPS'}</Badge> : null}
-                      {!e.in_manifest ? <Badge tone="warning" className="ml-1 px-1 py-0 text-xs">extra</Badge> : null}
+                      {!e.in_manifest ? <Badge tone="warning" className="ml-1 px-1 py-0 text-xs">not expected</Badge> : null}
                     </div>
                   </div>
                 ))}

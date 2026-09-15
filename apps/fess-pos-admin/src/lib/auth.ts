@@ -1,53 +1,21 @@
 'use client';
 
-// Browser auth helpers: AAL checks, sign-out, the local-only MFA skip flag and safe redirects.
+// Browser auth helpers: sign-out, safe redirects and the password rules. Since D-96 (T2-37) admins sign in with email and
+// password only; people join by a registration link (/register). There is no authenticator-app step in the panel.
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
-import { env } from './env';
 import { getSupabase } from './supabase';
 
-const SKIP_MFA_KEY = 'fess-pos-admin.skip-mfa';
-/** Friendly name of the TOTP factor the panel enrols. */
-export const TOTP_FRIENDLY_NAME = 'FESS POS admin';
-
-/** True when the local-only "Skip (local test only)" escape hatch is active for this tab. */
-export function isMfaSkipped(): boolean {
-  if (!env.allowSkipMfa) return false;
-  try {
-    return window.sessionStorage.getItem(SKIP_MFA_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
-/** Set or clear the local-only MFA skip flag (no-op unless allowed by env). */
-export function setMfaSkipped(skipped: boolean): void {
-  try {
-    if (skipped && env.allowSkipMfa) window.sessionStorage.setItem(SKIP_MFA_KEY, '1');
-    else window.sessionStorage.removeItem(SKIP_MFA_KEY);
-  } catch {
-    // storage unavailable — nothing to do
-  }
-}
-
-/** Current Authenticator Assurance Level of the session ('aal1' | 'aal2'), or null when signed out. */
-export async function currentAal(): Promise<'aal1' | 'aal2' | null> {
-  const { data, error } = await getSupabase().auth.mfa.getAuthenticatorAssuranceLevel();
-  if (error || !data) return null;
-  return data.currentLevel === 'aal2' ? 'aal2' : data.currentLevel === 'aal1' ? 'aal1' : null;
-}
-
-/** Only allow same-origin relative redirects, never back into the auth pages. */
+/** Only allow same-origin relative redirects, never back into the sign-in or registration pages. */
 export function safeNextPath(raw: string | null | undefined, fallback = '/'): string {
   if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) return fallback;
-  if (raw.startsWith('/sign-in') || raw.startsWith('/mfa')) return fallback;
+  if (raw.startsWith('/sign-in') || raw.startsWith('/register') || raw.startsWith('/mfa')) return fallback;
   return raw;
 }
 
-/** Sign out of this browser (local scope) and clear the skip flag. */
+/** Sign out of this browser (local scope). */
 export async function signOut(): Promise<void> {
-  setMfaSkipped(false);
   await getSupabase().auth.signOut({ scope: 'local' });
 }
 
@@ -60,4 +28,24 @@ export function useSignOut(): () => Promise<void> {
     queryClient.clear();
     router.replace('/sign-in');
   }, [queryClient, router]);
+}
+
+// ── Password rules ────────────────────────────────────────────────────────────────────────────
+// A mirror of Supabase Auth's policy (supabase/config.toml: minimum_password_length = 12, password_requirements =
+// lower_upper_letters_digits). Supabase Auth is the rule; this only lets the page say what's missing before sending.
+export const PASSWORD_MIN_LENGTH = 12;
+
+export interface PasswordRule {
+  key: 'length' | 'upper' | 'lower' | 'digit';
+  label: string;
+  met: boolean;
+}
+
+export function passwordRules(password: string): PasswordRule[] {
+  return [
+    { key: 'length', label: `At least ${PASSWORD_MIN_LENGTH} characters`, met: password.length >= PASSWORD_MIN_LENGTH },
+    { key: 'upper', label: 'A capital letter', met: /[A-Z]/.test(password) },
+    { key: 'lower', label: 'A small letter', met: /[a-z]/.test(password) },
+    { key: 'digit', label: 'A number', met: /[0-9]/.test(password) },
+  ];
 }

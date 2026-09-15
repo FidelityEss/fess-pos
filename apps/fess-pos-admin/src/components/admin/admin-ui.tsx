@@ -8,34 +8,26 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { shortId } from '@/lib/format';
 import { useBankLookup } from '@/lib/hooks';
+import { PERMISSION_LABEL, ROLE_LABEL } from '@/lib/labels';
 import type { StatusTone } from '@/lib/status';
 import type { Permission, PosRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-export const ROLE_LABEL: Record<PosRole, string> = {
-  pos_agent: 'Agent',
-  pos_admin: 'Administrator',
-  pos_bank_reader: 'Bank reader',
-};
+// The plain role and permission names live in @/lib/labels; re-exported for the screens that import them from here.
+export { PERMISSION_LABEL, ROLE_LABEL };
 
 const ROLE_TONE: Record<PosRole, StatusTone> = { pos_agent: 'info', pos_admin: 'accent', pos_bank_reader: 'neutral' };
 
 export const ROLE_HINT: Record<PosRole, string> = {
-  pos_agent: 'Works in the field through the FESS app. Agents never get a panel login.',
-  pos_admin: 'Uses this admin panel with email and two-factor sign-in.',
-  pos_bank_reader: 'Read-only access to this panel for their banks.',
-};
-
-export const PERMISSION_LABEL: Record<Permission, string> = {
-  review_inspections: 'Review inspections',
-  approve_definitions: 'Approve changes (four-eyes)',
-  schedule_jobs: 'Schedule jobs',
+  pos_agent: 'Does the visits, using the FESS app on their phone. Agents never sign in to this panel.',
+  pos_admin: 'Uses this admin panel to set things up, create jobs and check visits.',
+  pos_bank_reader: 'Can see their own banks’ jobs and visits in this panel, but can’t change anything.',
 };
 
 export const PERMISSION_HINT: Record<Permission, string> = {
-  review_inspections: 'Approve, return or reject submitted inspections and record amendments.',
-  approve_definitions: 'Approve definition, activation and config changes raised by another administrator.',
-  schedule_jobs: 'Log contact attempts, confirm appointments and record appointments not secured.',
+  review_inspections: 'Approve finished visits, send them back to the agent or reject them, and record corrections.',
+  approve_definitions: 'Give the second approval when another administrator changes the set-up or app settings.',
+  schedule_jobs: 'Record calls to merchants, agree visit times, and note when a visit couldn’t be booked.',
 };
 
 export function RoleBadge({ role, className }: { role: PosRole; className?: string }) {
@@ -149,10 +141,10 @@ export function BankList({ bankIds, allLabel = 'All banks' }: { bankIds: readonl
   );
 }
 
-/** "Global" or the owning bank's code (reason codes, lookup lists). */
+/** "All banks" (global) or the owning bank's code (reason codes, lookup lists). */
 export function BankScopeBadge({ bankId }: { bankId: string | null }) {
   const lookup = useBankLookup();
-  if (bankId === null) return <Badge tone="muted">Global</Badge>;
+  if (bankId === null) return <Badge tone="muted">All banks</Badge>;
   const bank = lookup(bankId);
   return (
     <Badge tone="neutral" className="font-mono" title={bank?.name ?? bankId}>

@@ -16,7 +16,7 @@ export function SelectTrigger({ className, children, ...props }: React.Component
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        'flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-1 text-left text-sm shadow-xs focus:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive data-[placeholder]:text-muted-foreground [&>span]:truncate',
+        'flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-1 text-left text-sm focus:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive data-[placeholder]:text-muted-foreground [&>span]:truncate',
         className,
       )}
       {...props}
@@ -36,7 +36,7 @@ export function SelectContent({ className, children, position = 'popper', ...pro
       <SelectPrimitive.Content
         position={position}
         className={cn(
-          'relative z-50 max-h-80 min-w-32 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md animate-in-fade',
+          'relative z-50 max-h-80 min-w-32 overflow-hidden rounded-md border bg-popover text-popover-foreground animate-in-fade',
           position === 'popper' && 'w-full min-w-[var(--radix-select-trigger-width)] data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
           className,
         )}

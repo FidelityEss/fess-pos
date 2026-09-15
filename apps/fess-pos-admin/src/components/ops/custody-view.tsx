@@ -16,12 +16,15 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { adminApi } from '@/lib/api';
-import { ageMs, formatDuration, formatNumber, humanize, shortId } from '@/lib/format';
+import { ageMs, formatDuration, formatNumber, shortId } from '@/lib/format';
 import { queryKeys } from '@/lib/hooks';
-import { INSPECTION_STATUS_TONE } from '@/lib/status';
+import { labelFrom } from '@/lib/labels';
+import { useIsAdvanced } from '@/lib/preferences';
+import { INSPECTION_STATUS_LABEL, INSPECTION_STATUS_TONE } from '@/lib/status';
 import { DbError, fetchRows, pos } from '@/lib/supabase';
 import type { DeviceSyncStatus, Inspection, QueueDepths } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { ENVELOPE_TYPE_LABEL, QUEUE_LABEL } from './ops-labels';
 import { AgeBadge, HOUR_MS, SectionTitle, toCount, UserName } from './ops-shared';
 
 // Timeliness thresholds (docs/12 §9, proposed D-34).
@@ -30,6 +33,15 @@ const PENDING_ALERT = 24 * HOUR_MS;
 const MANIFEST_WARN = 6 * HOUR_MS;
 const MANIFEST_ALERT = 24 * HOUR_MS;
 const LOW_STORAGE_MB = 200;
+
+/** What a phone still holds, by kind (sync_report.pending keys; free-form, so unknown keys are humanized). */
+const PENDING_KIND_LABEL: Record<string, string> = {
+  ...ENVELOPE_TYPE_LABEL,
+  envelopes: 'Data',
+  evidence: 'Photos',
+  photos: 'Photos',
+  traces: 'Location trail',
+};
 
 type ManifestRow = Pick<
   Inspection,
@@ -62,10 +74,10 @@ function Tile({ icon: Icon, title, value, tone = 'default', href, children, load
     </>
   );
   const className = cn(
-    'block rounded-lg border bg-card p-3.5 shadow-xs',
+    'block rounded-lg border bg-card p-3.5',
     tone === 'danger' && 'border-red-200 bg-red-50/60',
     tone === 'warning' && 'border-amber-200 bg-amber-50/50',
-    href && 'transition hover:border-primary/40 hover:shadow-sm',
+    href && 'transition-colors hover:border-primary/40',
   );
   return href ? (
     <Link href={href} className={className}>
@@ -83,7 +95,8 @@ function queueRows(q: QueueDepths) {
 }
 
 function QueuesCard({ query }: { query: UseQueryResult<QueueDepths, Error> }) {
-  if (query.error) return <ApiErrorAlert error={query.error} title="Queue depths unavailable" onRetry={() => void query.refetch()} />;
+  const advanced = useIsAdvanced();
+  if (query.error) return <ApiErrorAlert error={query.error} title="Couldn’t load the background work" onRetry={() => void query.refetch()} />;
   if (query.isPending) return <Skeleton className="h-40 w-full" />;
   const rows = queueRows(query.data);
   return (
@@ -91,16 +104,17 @@ function QueuesCard({ query }: { query: UseQueryResult<QueueDepths, Error> }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Queue</TableHead>
-            <TableHead className="text-right">Depth</TableHead>
-            <TableHead className="text-right">Dead letters</TableHead>
+            <TableHead>Work</TableHead>
+            <TableHead className="text-right">Waiting</TableHead>
+            <TableHead className="text-right">Failed after several tries</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((r) => (
             <TableRow key={r.name} className={cn(r.dlq !== null && r.dlq > 0 && 'bg-red-50/60')}>
               <TableCell>
-                <span className="font-medium">{humanize(r.name)}</span> <code className="ml-1 text-xs text-muted-foreground">{r.name}</code>
+                <span className="font-medium">{labelFrom(QUEUE_LABEL, r.name)}</span>
+                {advanced ? <code className="ml-1 text-xs text-muted-foreground">{r.name}</code> : null}
               </TableCell>
               <TableCell className="text-right tabular-nums">{r.depth === null ? '—' : formatNumber(r.depth)}</TableCell>
               <TableCell className="text-right tabular-nums">
@@ -111,7 +125,7 @@ function QueuesCard({ query }: { query: UseQueryResult<QueueDepths, Error> }) {
           {rows.length === 0 ? (
             <TableRow>
               <TableCell colSpan={3} className="text-center text-muted-foreground">
-                No queues reported
+                No background work reported.
               </TableCell>
             </TableRow>
           ) : null}
@@ -121,7 +135,7 @@ function QueuesCard({ query }: { query: UseQueryResult<QueueDepths, Error> }) {
   );
 }
 
-/** /custody — data custody dashboard (B7.7, docs/12 §7–10): device backlogs, incomplete manifests, queues and stuck envelopes. */
+/** /custody — data delivery (B7.7, docs/12 §7–10): what phones still hold, visits missing photos, background work and stuck incoming data. */
 export function CustodyView() {
   const now = useNow(30_000);
   const status = useQuery({
@@ -173,18 +187,19 @@ export function CustodyView() {
       { accessorKey: 'user_id', header: 'Agent', cell: ({ row }) => <UserName id={row.original.user_id} className="text-sm" /> },
       {
         accessorKey: 'device_id',
-        header: 'Device',
+        header: 'Phone ID',
+        meta: { advanced: true },
         cell: ({ row }) => (
           <code className="text-xs" title={row.original.device_id}>
             {shortId(row.original.device_id)}
           </code>
         ),
       },
-      { accessorKey: 'pending_total', header: 'Pending', meta: { className: 'text-right tabular-nums font-medium', headerClassName: 'text-right' } },
+      { accessorKey: 'pending_total', header: 'Waiting to send', meta: { className: 'text-right tabular-nums font-medium', headerClassName: 'text-right' } },
       {
         id: 'pending_by_type',
         accessorFn: (r) => JSON.stringify(r.pending),
-        header: 'By type',
+        header: 'What’s waiting',
         enableSorting: false,
         cell: ({ row }) => {
           const entries = Object.entries(row.original.pending ?? {}).filter(([, v]) => (toCount(v) ?? 0) > 0);
@@ -193,8 +208,8 @@ export function CustodyView() {
           ) : (
             <div className="flex flex-wrap gap-1">
               {entries.map(([k, v]) => (
-                <Badge key={k} tone="neutral" className="font-mono">
-                  {k}: {String(v)}
+                <Badge key={k} tone="neutral" title={k}>
+                  {labelFrom(PENDING_KIND_LABEL, k)}: {String(v)}
                 </Badge>
               ))}
             </div>
@@ -204,36 +219,36 @@ export function CustodyView() {
       {
         id: 'oldest',
         accessorFn: (r) => (r.oldest_pending_at ? Date.parse(r.oldest_pending_at) : Number.POSITIVE_INFINITY),
-        header: 'Oldest pending',
+        header: 'Oldest has waited',
         cell: ({ row }) =>
           row.original.pending_total > 0 ? <AgeBadge ms={ageMs(row.original.oldest_pending_at, now)} warnMs={PENDING_WARN} alertMs={PENDING_ALERT} /> : <span className="text-muted-foreground">—</span>,
       },
-      { accessorKey: 'last_success_at', header: 'Last success', cell: ({ row }) => <DateTime value={row.original.last_success_at} mode="relative" /> },
-      { accessorKey: 'received_at', header: 'Last report', cell: ({ row }) => <DateTime value={row.original.received_at} mode="relative" /> },
+      { accessorKey: 'last_success_at', header: 'Last sent', cell: ({ row }) => <DateTime value={row.original.last_success_at} mode="relative" /> },
+      { accessorKey: 'received_at', header: 'Last check-in', cell: ({ row }) => <DateTime value={row.original.received_at} mode="relative" /> },
       {
         accessorKey: 'battery_restricted',
-        header: 'Battery',
+        header: 'Battery saving',
         cell: ({ row }) =>
           row.original.battery_restricted ? (
-            <Badge tone="warning">
-              <BatteryWarning /> Restricted
+            <Badge tone="warning" title="The phone may hold data back to save battery">
+              <BatteryWarning /> On
             </Badge>
           ) : row.original.battery_restricted === false ? (
-            <span className="text-sm text-muted-foreground">OK</span>
+            <span className="text-sm text-muted-foreground">Off</span>
           ) : (
             <span className="text-muted-foreground">—</span>
           ),
       },
       {
         accessorKey: 'free_storage_mb',
-        header: 'Free storage',
+        header: 'Free space',
         meta: { className: 'text-right tabular-nums', headerClassName: 'text-right' },
         cell: ({ row }) => {
           const mb = row.original.free_storage_mb;
           return mb === null ? '—' : <span className={cn(mb < LOW_STORAGE_MB && 'font-medium text-amber-700')}>{formatNumber(mb)} MB</span>;
         },
       },
-      { accessorKey: 'module_version', header: 'Module', cell: ({ row }) => <code className="text-xs">{row.original.module_version ?? '—'}</code> },
+      { accessorKey: 'module_version', header: 'App version', cell: ({ row }) => <span className="whitespace-nowrap text-sm">{row.original.module_version ?? '—'}</span> },
     ],
     [now],
   );
@@ -243,8 +258,7 @@ export function CustodyView() {
   return (
     <>
       <PageHeader
-        title="Data custody"
-        description="Where captured data is right now: what devices still hold, submissions waiting for evidence, background queues and envelopes that have not committed. Refreshes every minute."
+        title="Data delivery"
         actions={
           <Button
             variant="outline"
@@ -263,45 +277,45 @@ export function CustodyView() {
       />
 
       <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Tile icon={Smartphone} title="Devices with a backlog" value={formatNumber(withBacklog.length)} loading={status.isPending}>
-          {formatNumber(devices.length)} devices reporting · {formatNumber(pendingTotal)} items pending
+        <Tile icon={Smartphone} title="Phones still holding data" value={formatNumber(withBacklog.length)} loading={status.isPending}>
+          {formatNumber(devices.length)} phones checked in · {formatNumber(pendingTotal)} items waiting to be sent
         </Tile>
         <Tile
           icon={Clock}
-          title="Oldest pending item"
+          title="Longest wait"
           value={oldest === null ? '—' : formatDuration(oldest)}
           tone={oldest !== null && oldest > PENDING_ALERT ? 'danger' : oldest !== null && oldest > PENDING_WARN ? 'warning' : 'default'}
           loading={status.isPending}
         >
-          Warn above 4 h · alert above 24 h
+          Amber after 4 hours, red after 24 hours
         </Tile>
         <Tile
           icon={BatteryWarning}
-          title="Battery-restricted devices"
+          title="Phones on battery saving"
           value={formatNumber(batteryRestricted)}
           tone={batteryRestricted > 0 ? 'warning' : 'default'}
           loading={status.isPending}
         >
-          Background sync may be delayed by the OS
+          These phones may hold data back to save battery
         </Tile>
         <Tile
           icon={Inbox}
-          title="Envelopes stuck > 1 h"
+          title="Incoming data stuck over an hour"
           value={stuck.error ? '—' : formatNumber(stuck.data ?? 0)}
           tone={(stuck.data ?? 0) > 0 ? 'warning' : 'default'}
           href="/envelopes?attention=stuck"
           loading={stuck.isPending}
         >
-          Received or deferred, not committed
+          Arrived but not saved yet
         </Tile>
-        <Tile icon={Inbox} title="Dead letters" value={formatNumber(dlqTotal)} tone={dlqTotal > 0 ? 'danger' : 'default'} loading={queues.isPending}>
-          Target is always 0
+        <Tile icon={Inbox} title="Failed after several tries" value={formatNumber(dlqTotal)} tone={dlqTotal > 0 ? 'danger' : 'default'} loading={queues.isPending}>
+          This should always be 0
         </Tile>
       </section>
-      {stuck.error ? <ApiErrorAlert error={stuck.error} title="Could not count stuck envelopes" className="mb-4" /> : null}
+      {stuck.error ? <ApiErrorAlert error={stuck.error} title="Couldn’t count the stuck incoming data. Try refreshing." className="mb-4" /> : null}
 
       <section className="mb-6">
-        <SectionTitle>Device backlogs (latest sync report per device)</SectionTitle>
+        <SectionTitle>What each phone still has to send (from its last check-in)</SectionTitle>
         <DataTable
           columns={deviceColumns}
           data={devices}
@@ -314,30 +328,30 @@ export function CustodyView() {
             const age = r.pending_total > 0 ? ageMs(r.oldest_pending_at, now) : null;
             return age !== null && age > PENDING_ALERT ? 'bg-red-50/50' : age !== null && age > PENDING_WARN ? 'bg-amber-50/40' : undefined;
           }}
-          searchPlaceholder="Search devices…"
-          emptyTitle="No sync reports yet"
-          emptyDescription="Devices report their backlog with every sync."
+          searchPlaceholder="Search phones…"
+          emptyTitle="No phones have checked in yet"
+          emptyDescription="Each phone reports what it still has to send whenever it connects."
         />
       </section>
 
       <section className="mb-6">
-        <SectionTitle>Incomplete manifests (submitted, evidence still outstanding)</SectionTitle>
+        <SectionTitle>Visits sent in with photos still missing</SectionTitle>
         {manifests.error ? <ApiErrorAlert error={manifests.error} onRetry={() => void manifests.refetch()} /> : null}
         <Card className="overflow-hidden">
           {manifests.isPending ? (
             <Skeleton className="m-4 h-20" />
           ) : (manifests.data ?? []).length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-muted-foreground">Every submitted inspection has all its evidence verified.</p>
+            <p className="px-4 py-6 text-center text-sm text-muted-foreground">Every visit that was sent in has all its photos, and they passed their checks.</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Job</TableHead>
                   <TableHead>Agent</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Verified / received / expected</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead>Waiting</TableHead>
+                  <TableHead>Visit status</TableHead>
+                  <TableHead className="text-right">Photos checked / received / expected</TableHead>
+                  <TableHead>Sent in</TableHead>
+                  <TableHead>Waiting for</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -352,7 +366,7 @@ export function CustodyView() {
                       <UserName id={m.user_id} />
                     </TableCell>
                     <TableCell>
-                      <ToneBadge value={m.status} tones={INSPECTION_STATUS_TONE} />
+                      <ToneBadge value={m.status} tones={INSPECTION_STATUS_TONE} labels={INSPECTION_STATUS_LABEL} />
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       <span className="font-medium">{m.evidence_verified}</span> / {m.evidence_received} / {m.evidence_expected}
@@ -372,7 +386,7 @@ export function CustodyView() {
       </section>
 
       <section>
-        <SectionTitle>Queues and dead letters</SectionTitle>
+        <SectionTitle>Background work</SectionTitle>
         <QueuesCard query={queues} />
       </section>
     </>

@@ -1,18 +1,33 @@
 import { env, type EnvName } from '@/lib/env';
 import { cn } from '@/lib/utils';
 
-const BANNER: Record<Exclude<EnvName, 'production'>, { text: string; className: string }> = {
-  local: { text: 'LOCAL — development stack, not real data', className: 'bg-slate-700 text-slate-100' },
-  qa: { text: 'QA — testing environment, dummy data only', className: 'bg-amber-400 text-amber-950' },
-  staging: { text: 'STAGING — test data only', className: 'bg-amber-400 text-amber-950' },
+/** The environment's name as people say it. */
+export const ENV_NAME_LABEL: Record<EnvName, string> = {
+  local: 'a local test copy',
+  qa: 'QA (testing)',
+  staging: 'staging (testing)',
+  production: 'production (live)',
 };
 
-/** Full-width environment banner for non-production environments (renders nothing in production). */
+const BANNER: Record<Exclude<EnvName, 'production'>, { text: string; className: string }> = {
+  local: { text: 'Local test copy: nothing here is real data', className: 'bg-slate-700 text-slate-100' },
+  qa: { text: 'QA: for testing only, with made-up data', className: 'bg-amber-400 text-amber-950' },
+  staging: { text: 'Staging: for testing only', className: 'bg-amber-400 text-amber-950' },
+};
+
+/**
+ * Full-width environment banner for non-production environments (renders nothing in production). It stays on screen
+ * (sticky) at a fixed height; globals.css reads `data-env-banner` to push the header and sidebar below it (T2-30).
+ */
 export function EnvBanner() {
   if (env.envName === 'production') return null;
   const b = BANNER[env.envName];
   return (
-    <div role="status" className={cn('px-4 py-1 text-center text-xs font-semibold tracking-wide', b.className)}>
+    <div
+      role="status"
+      data-env-banner
+      className={cn('sticky top-0 z-40 h-6 truncate px-4 text-center text-xs font-semibold leading-6 tracking-wide', b.className)}
+    >
       {b.text}
     </div>
   );
@@ -28,7 +43,10 @@ const BADGE: Record<EnvName, string> = {
 /** Small environment badge for the header. */
 export function EnvBadge({ className }: { className?: string }) {
   return (
-    <span className={cn('rounded border px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide', BADGE[env.envName], className)}>
+    <span
+      title={`You’re on ${ENV_NAME_LABEL[env.envName]}`}
+      className={cn('rounded border px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide', BADGE[env.envName], className)}
+    >
       {env.envName}
     </span>
   );

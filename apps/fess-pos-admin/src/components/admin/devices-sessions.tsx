@@ -1,7 +1,7 @@
 'use client';
 
-// Devices and POS sessions (docs/07 §2): tables with revoke / restore / revoke-family actions, used by /devices and
-// /users/[id]. Tokens and refresh hashes are never selected.
+// Phones (devices) and sign-ins (POS sessions, docs/07 §2): tables with block / unblock / sign-out actions, used by
+// /devices and /users/[id]. Tokens and refresh hashes are never selected.
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Ban, History, RotateCcw } from 'lucide-react';
@@ -10,6 +10,7 @@ import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DataTable } from '@/components/data-table';
 import { DateTime, useNow } from '@/components/date-time';
+import { Details } from '@/components/details';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { adminApi } from '@/lib/api';
 import { employeeName, formatNumber, formatRelative } from '@/lib/format';
 import { useMutationWithToast } from '@/lib/mutations';
+import { useIsAdvanced } from '@/lib/preferences';
 import { useStaff } from '@/lib/staff';
 import type { StatusTone } from '@/lib/status';
 import { fetchMaybeRow, fetchRows, pos } from '@/lib/supabase';
@@ -67,20 +69,21 @@ export type SessionRow = Pick<
 >;
 
 const INVALIDATE = [['devices'], ['pos_sessions'], ['auth_events'], ['alerts'], ['device_sync_status'], ['users']];
+const REASON_PLACEHOLDER = 'Why? This is recorded in the activity history.';
 
 function sessionState(s: SessionRow, now: number): { label: string; tone: StatusTone; live: boolean } {
-  if (s.revoked_at) return { label: 'Revoked', tone: 'danger', live: false };
-  if (s.rotated_at) return { label: 'Rotated', tone: 'muted', live: false };
+  if (s.revoked_at) return { label: 'Signed out', tone: 'danger', live: false };
+  if (s.rotated_at) return { label: 'Renewed', tone: 'muted', live: false };
   if (Date.parse(s.expires_at) <= now) return { label: 'Expired', tone: 'muted', live: false };
-  return { label: 'Active', tone: 'success', live: true };
+  return { label: 'Signed in', tone: 'success', live: true };
 }
 
 export function SessionScopeBadge({ scope }: { scope: SessionRow['scope'] }) {
   return scope === 'full' ? (
-    <Badge tone="info">Full</Badge>
+    <Badge tone="info">Full access</Badge>
   ) : (
-    <Badge tone="warning" title="Only uploads of work already started are accepted (D-35)">
-      Upload only
+    <Badge tone="warning" title="This sign-in can only send work that was already started on the phone.">
+      Can only finish sending
     </Badge>
   );
 }
@@ -88,20 +91,20 @@ export function SessionScopeBadge({ scope }: { scope: SessionRow['scope'] }) {
 export function DeviceStatusBadge({ device }: { device: Pick<DeviceRow, 'revoked_at' | 'revoke_reason'> }) {
   return device.revoked_at ? (
     <Badge tone="danger" title={device.revoke_reason ?? undefined}>
-      Revoked
+      Blocked
     </Badge>
   ) : (
-    <Badge tone="success">Active</Badge>
+    <Badge tone="success">Allowed</Badge>
   );
 }
 
 function deviceSummary(d: DeviceRow): string {
-  return [d.client_type === 'web' ? 'Web' : 'Native', d.platform, d.model, d.os_version].filter(Boolean).join(' · ');
+  return [d.client_type === 'web' ? 'Browser' : 'App', d.platform, d.model, d.os_version].filter(Boolean).join(' · ');
 }
 
 type DeviceAction = { kind: 'revoke' | 'restore'; device: DeviceRow };
 
-/** Devices with Sessions / Revoke / Restore actions. `canManage` overrides the per-row scope check (user page). */
+/** Phones with Sign-ins / Block / Unblock actions. `canManage` overrides the per-row scope check (user page). */
 export function DevicesTable({
   data,
   isLoading,
@@ -122,6 +125,7 @@ export function DevicesTable({
   emptyDescription?: ReactNode;
 }) {
   const staff = useStaff();
+  const advanced = useIsAdvanced();
   const [sessionsFor, setSessionsFor] = useState<DeviceRow | null>(null);
   const [action, setAction] = useState<DeviceAction | null>(null);
   const allowed = useCallback(
@@ -134,45 +138,48 @@ export function DevicesTable({
     if (showUser) {
       cols.push({
         id: 'user',
-        header: 'User',
+        header: 'Person',
         accessorFn: (d) => (d.user ? `${d.user.employee_number} ${d.user.first_name} ${d.user.last_name}` : d.user_id),
         cell: ({ row }) =>
           row.original.user ? (
             <Link href={`/users/${row.original.user.id}`} onClick={(e) => e.stopPropagation()} className="font-medium hover:underline">
               {employeeName(row.original.user)}
             </Link>
-          ) : (
+          ) : advanced ? (
             <MonoId value={row.original.user_id} />
+          ) : (
+            <span className="text-muted-foreground">Unknown person</span>
           ),
       });
     }
     cols.push(
       {
         accessorKey: 'device_id',
-        header: 'Device',
+        header: 'Phone',
         cell: ({ row }) => (
           <div className="grid gap-0.5">
-            <MonoId value={row.original.device_id} />
-            <span className="text-sm text-muted-foreground">{deviceSummary(row.original)}</span>
+            <span className="text-sm">{deviceSummary(row.original) || 'Unknown phone'}</span>
+            {advanced ? <MonoId value={row.original.device_id} /> : null}
           </div>
         ),
       },
       {
         accessorKey: 'module_version',
-        header: 'Module',
-        cell: ({ row }) => <span className="whitespace-nowrap font-mono text-sm">{row.original.module_version ?? '—'}</span>,
+        header: 'App version',
+        cell: ({ row }) => <span className="whitespace-nowrap text-sm">{row.original.module_version ?? '—'}</span>,
       },
       {
         accessorKey: 'host_app_version',
-        header: 'Host app',
+        header: 'FESS app version',
+        meta: { advanced: true },
         cell: ({ row }) => <span className="whitespace-nowrap font-mono text-sm">{row.original.host_app_version ?? '—'}</span>,
       },
-      { accessorKey: 'first_seen_at', header: 'First seen', cell: ({ row }) => <DateTime value={row.original.first_seen_at} /> },
-      { accessorKey: 'last_seen_at', header: 'Last seen', cell: ({ row }) => <DateTime value={row.original.last_seen_at} showRelative /> },
+      { accessorKey: 'first_seen_at', header: 'First used', cell: ({ row }) => <DateTime value={row.original.first_seen_at} /> },
+      { accessorKey: 'last_seen_at', header: 'Last used', cell: ({ row }) => <DateTime value={row.original.last_seen_at} showRelative /> },
       {
         id: 'status',
         header: 'Status',
-        accessorFn: (d) => (d.revoked_at ? 'revoked' : 'active'),
+        accessorFn: (d) => (d.revoked_at ? 'blocked' : 'allowed'),
         cell: ({ row }) => (
           <div className="grid gap-0.5">
             <DeviceStatusBadge device={row.original} />
@@ -203,7 +210,7 @@ export function DevicesTable({
                   setSessionsFor(d);
                 }}
               >
-                <History /> Sessions
+                <History /> Sign-ins
               </Button>
               {can ? (
                 d.revoked_at ? (
@@ -215,7 +222,7 @@ export function DevicesTable({
                       setAction({ kind: 'restore', device: d });
                     }}
                   >
-                    <RotateCcw /> Restore
+                    <RotateCcw /> Unblock
                   </Button>
                 ) : (
                   <Button
@@ -227,7 +234,7 @@ export function DevicesTable({
                       setAction({ kind: 'revoke', device: d });
                     }}
                   >
-                    <Ban /> Revoke
+                    <Ban /> Block
                   </Button>
                 )
               ) : null}
@@ -237,7 +244,7 @@ export function DevicesTable({
       },
     );
     return cols;
-  }, [showUser, allowed]);
+  }, [showUser, allowed, advanced]);
 
   return (
     <>
@@ -249,9 +256,9 @@ export function DevicesTable({
         onRetry={onRetry}
         getRowId={(d) => d.id}
         toolbar={toolbar}
-        searchPlaceholder="Search devices…"
-        emptyTitle="No devices"
-        emptyDescription={emptyDescription ?? 'Devices appear after an agent signs in from the FESS app.'}
+        searchPlaceholder="Search phones…"
+        emptyTitle="No phones yet"
+        emptyDescription={emptyDescription ?? 'A phone appears here after an agent signs in on it from the FESS app.'}
         initialSorting={[{ id: 'last_seen_at', desc: true }]}
       />
       <DeviceActionDialog action={action} onClose={() => setAction(null)} />
@@ -289,7 +296,7 @@ function DeviceActionDialog({ action, onClose }: { action: DeviceAction | null; 
       v.kind === 'revoke' ? adminApi.devices.revoke(v.id, { reason: v.reason }) : adminApi.devices.restore(v.id, { reason: v.reason }),
     invalidate: INVALIDATE,
     toastErrors: false,
-    successMessage: (_d, v) => (v.kind === 'revoke' ? 'Device revoked' : 'Device restored'),
+    successMessage: (_d, v) => (v.kind === 'revoke' ? 'Phone blocked. The agent is signed out on it.' : 'Phone unblocked. The agent can sign in on it again.'),
   });
 
   return (
@@ -298,41 +305,45 @@ function DeviceActionDialog({ action, onClose }: { action: DeviceAction | null; 
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      title={revoking ? 'Revoke this device?' : 'Restore this device?'}
-      description={device ? `Device ${device.device_id}${device.user ? ` · ${employeeName(device.user)}` : ''}` : undefined}
+      title={revoking ? 'Block this phone?' : 'Unblock this phone?'}
+      description={
+        revoking
+          ? 'The agent is signed out on this phone and can’t use it for visits until you unblock it.'
+          : 'The agent can sign in on this phone again. Sign-ins that were ended stay ended, so they sign in afresh.'
+      }
       destructive={revoking}
       requireReason
-      confirmLabel={revoking ? 'Revoke device' : 'Restore device'}
+      reasonPlaceholder={REASON_PLACEHOLDER}
+      confirmLabel={revoking ? 'Block phone' : 'Unblock phone'}
       onConfirm={(reason) => (device && action ? mutation.mutateAsync({ kind: action.kind, id: device.id, reason }) : undefined)}
     >
+      {device ? (
+        <p className="text-sm">
+          <span className="text-muted-foreground">Phone:</span> {deviceSummary(device) || 'Unknown phone'}
+          {device.user ? `, used by ${employeeName(device.user)}` : ''}
+        </p>
+      ) : null}
       {revoking ? (
         <Alert variant="warning">
           <Ban />
           <AlertDescription className="space-y-1.5">
             <p>
-              Every session on this device is revoked and its unused inspection tokens are cancelled. Anything still waiting
-              on the device can’t upload until the device is restored and the agent signs in again.
+              Anything still waiting on the phone can’t be sent until you unblock it and the agent signs in again. Visits that were ready to start on it
+              can’t be started from it.
             </p>
             {pending.isPending ? (
               <Skeleton className="h-4 w-56" />
             ) : pending.data ? (
               <p className="font-medium">
-                Pending on this device at its last sync: {formatNumber(pending.data.pending_total)} item
-                {pending.data.pending_total === 1 ? '' : 's'} (reported {formatRelative(pending.data.received_at)}).
+                At its last check-in ({formatRelative(pending.data.received_at)}) it still had {formatNumber(pending.data.pending_total)} item
+                {pending.data.pending_total === 1 ? '' : 's'} to send.
               </p>
             ) : (
-              <p className="font-medium">No sync report from this device yet — the pending count is unknown.</p>
+              <p className="font-medium">This phone hasn’t checked in yet, so we don’t know whether it still has anything to send.</p>
             )}
           </AlertDescription>
         </Alert>
-      ) : (
-        <Alert variant="info">
-          <RotateCcw />
-          <AlertDescription>
-            The agent can sign in again from this device. Sessions that were revoked stay revoked.
-          </AlertDescription>
-        </Alert>
-      )}
+      ) : null}
     </ConfirmDialog>
   );
 }
@@ -346,6 +357,7 @@ function DeviceSessionsSheet({
   onOpenChange: (open: boolean) => void;
   canManage: boolean;
 }) {
+  const advanced = useIsAdvanced();
   const sessions = useQuery({
     queryKey: ['pos_sessions', 'device', device?.user_id ?? null, device?.device_id ?? null],
     queryFn: () =>
@@ -366,12 +378,18 @@ function DeviceSessionsSheet({
     <Sheet open={device !== null} onOpenChange={onOpenChange}>
       <SheetContent size="xl">
         <SheetHeader>
-          <SheetTitle>Sessions on this device</SheetTitle>
+          <SheetTitle>Sign-ins on this phone</SheetTitle>
           <SheetDescription>
             {device ? (
               <>
                 {device.user ? `${employeeName(device.user)} · ` : ''}
-                <span className="font-mono">{device.device_id}</span> · {deviceSummary(device)}
+                {deviceSummary(device) || 'Unknown phone'}
+                {advanced ? (
+                  <>
+                    {' '}
+                    · <span className="font-mono">{device.device_id}</span>
+                  </>
+                ) : null}
               </>
             ) : null}
           </SheetDescription>
@@ -390,7 +408,7 @@ function DeviceSessionsSheet({
   );
 }
 
-/** POS sessions with "Revoke session family" on the live head of each rotation family. */
+/** Sign-ins (POS sessions) with "Sign out" on the live head of each rotation family. */
 export function SessionsTable({
   data,
   isLoading,
@@ -412,34 +430,39 @@ export function SessionsTable({
     mutationFn: (v: { id: string; reason: string }) => adminApi.sessions.revoke(v.id, { reason: v.reason }),
     invalidate: INVALIDATE,
     toastErrors: false,
-    successMessage: (r) => `Revoked ${r.revoked} session${r.revoked === 1 ? '' : 's'} in the family`,
+    successMessage: 'Signed out. The agent must sign in again on this phone.',
   });
 
   const columns = useMemo<ColumnDef<SessionRow>[]>(() => {
     const cols: ColumnDef<SessionRow>[] = [
       {
         id: 'state',
-        header: 'State',
+        header: 'Status',
         accessorFn: (s) => sessionState(s, now).label,
         cell: ({ row }) => {
           const st = sessionState(row.original, now);
           return <Badge tone={st.tone}>{st.label}</Badge>;
         },
       },
-      { accessorKey: 'scope', header: 'Scope', cell: ({ row }) => <SessionScopeBadge scope={row.original.scope} /> },
+      { accessorKey: 'scope', header: 'Access', cell: ({ row }) => <SessionScopeBadge scope={row.original.scope} /> },
     ];
     if (showDevice) {
-      cols.push({ accessorKey: 'device_id', header: 'Device', cell: ({ row }) => <MonoId value={row.original.device_id} /> });
+      cols.push({ accessorKey: 'device_id', header: 'Phone ID', meta: { advanced: true }, cell: ({ row }) => <MonoId value={row.original.device_id} /> });
     }
     cols.push(
-      { accessorKey: 'issuer_key', header: 'Issuer', cell: ({ row }) => <span className="whitespace-nowrap font-mono text-sm">{row.original.issuer_key}</span> },
-      { accessorKey: 'issued_at', header: 'Issued', cell: ({ row }) => <DateTime value={row.original.issued_at} /> },
-      { accessorKey: 'expires_at', header: 'Expires', cell: ({ row }) => <DateTime value={row.original.expires_at} /> },
-      { accessorKey: 'rotated_at', header: 'Rotated', cell: ({ row }) => <DateTime value={row.original.rotated_at} /> },
+      {
+        accessorKey: 'issuer_key',
+        header: 'Sign-in source',
+        meta: { advanced: true },
+        cell: ({ row }) => <span className="whitespace-nowrap font-mono text-sm">{row.original.issuer_key}</span>,
+      },
+      { accessorKey: 'issued_at', header: 'Signed in', cell: ({ row }) => <DateTime value={row.original.issued_at} /> },
+      { accessorKey: 'expires_at', header: 'Ends', cell: ({ row }) => <DateTime value={row.original.expires_at} /> },
+      { accessorKey: 'rotated_at', header: 'Renewed', meta: { advanced: true }, cell: ({ row }) => <DateTime value={row.original.rotated_at} /> },
       { accessorKey: 'last_used_at', header: 'Last used', cell: ({ row }) => <DateTime value={row.original.last_used_at} mode="relative" /> },
       {
         accessorKey: 'revoked_at',
-        header: 'Revoked',
+        header: 'Signed out',
         cell: ({ row }) =>
           row.original.revoked_at ? (
             <div className="grid gap-0.5">
@@ -450,7 +473,7 @@ export function SessionsTable({
             <span className="text-muted-foreground">—</span>
           ),
       },
-      { accessorKey: 'family_id', header: 'Family', cell: ({ row }) => <MonoId value={row.original.family_id} /> },
+      { accessorKey: 'family_id', header: 'Sign-in group', meta: { advanced: true }, cell: ({ row }) => <MonoId value={row.original.family_id} /> },
       {
         id: 'actions',
         header: '',
@@ -468,7 +491,7 @@ export function SessionsTable({
                 setTarget(row.original);
               }}
             >
-              <Ban /> Revoke family
+              <Ban /> Sign out
             </Button>
           ) : null,
       },
@@ -487,34 +510,35 @@ export function SessionsTable({
         getRowId={(s) => s.id}
         enableSearch={false}
         pageSize={25}
-        emptyTitle="No sessions"
-        emptyDescription="A session is created each time the agent signs in through the host app."
+        emptyTitle="No sign-ins yet"
+        emptyDescription="A sign-in is recorded each time the agent signs in through the FESS app."
       />
       <ConfirmDialog
         open={target !== null}
         onOpenChange={(open) => {
           if (!open) setTarget(null);
         }}
-        title="Revoke this session family?"
-        description={target ? `Family ${target.family_id} on device ${target.device_id}` : undefined}
+        title="Sign the agent out on this phone?"
+        description="They must sign in again on this phone to keep working. Work already on the phone stays there and is sent once they do."
         destructive
         requireReason
-        confirmLabel="Revoke session family"
+        reasonPlaceholder={REASON_PLACEHOLDER}
+        confirmLabel="Sign out"
         onConfirm={(reason) => (target ? mutation.mutateAsync({ id: target.id, reason }) : undefined)}
       >
-        <Alert variant="warning">
-          <Ban />
-          <AlertDescription>
-            Every session in this rotation family is revoked. The agent must sign in again on this device; work already on
-            the device stays there and uploads once they have.
-          </AlertDescription>
-        </Alert>
+        {target ? (
+          <Details summary="Technical details">
+            <p className="text-sm text-muted-foreground">
+              Every sign-in in group <code className="text-xs">{target.family_id}</code> on phone <code className="text-xs">{target.device_id}</code> ends.
+            </p>
+          </Details>
+        ) : null}
       </ConfirmDialog>
     </>
   );
 }
 
-/** Devices and sessions for one user (user detail page). */
+/** Phones and sign-ins for one person (person detail page). */
 export function UserDevicesAndSessions({ user }: { user: Pick<PosUser, 'id' | 'role' | 'bank_ids'> }) {
   const staff = useStaff();
   const canManage = canManageUser(staff, user.role, user.bank_ids);
@@ -533,18 +557,18 @@ export function UserDevicesAndSessions({ user }: { user: Pick<PosUser, 'id' | 'r
   return (
     <div className="space-y-6">
       <section>
-        <SectionHeading title="Devices" description="Devices this user has signed in from. Revoking a device revokes its sessions." />
+        <SectionHeading title="Phones" description="Phones this person has signed in on. Blocking a phone signs them out on it." />
         <DevicesTable
           data={devices.data}
           isLoading={devices.isPending}
           error={devices.error}
           onRetry={() => void devices.refetch()}
           canManage={canManage}
-          emptyDescription="This user has not signed in from any device yet."
+          emptyDescription="This person hasn’t signed in on a phone yet."
         />
       </section>
       <section>
-        <SectionHeading title="Sessions" description="Most recent 200 POS sessions across all devices." />
+        <SectionHeading title="Sign-ins" description="Their 200 most recent sign-ins, on any phone." />
         <SessionsTable
           data={sessions.data}
           isLoading={sessions.isPending}

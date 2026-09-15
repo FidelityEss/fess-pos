@@ -10,7 +10,6 @@ import { DateTime } from '@/components/date-time';
 import { PageHeader } from '@/components/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useIsAdvanced } from '@/lib/preferences';
 import { useStaff } from '@/lib/staff';
 import { fetchRows, pos } from '@/lib/supabase';
 import { CreateListDialog } from './_components/create-list-dialog';
@@ -19,7 +18,6 @@ import { latestItems, latestVersion, type ListRow } from './_components/types';
 
 export default function LookupListsPage() {
   const staff = useStaff();
-  const advanced = useIsAdvanced();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const lists = useQuery({
@@ -39,42 +37,37 @@ export default function LookupListsPage() {
 
   const columns = useMemo<ColumnDef<ListRow>[]>(
     () => [
-      { accessorKey: 'title', header: advanced ? 'Title' : 'List', cell: ({ row }) => <span className="font-medium">{row.original.title}</span> },
+      { accessorKey: 'title', header: 'List', cell: ({ row }) => <span className="font-medium">{row.original.title}</span> },
       { accessorKey: 'key', header: 'Key', meta: { advanced: true }, cell: ({ row }) => <span className="whitespace-nowrap font-mono text-sm">{row.original.key}</span> },
-      { id: 'scope', header: 'Used by', accessorFn: (l) => l.bank_id ?? '', cell: ({ row }) => <BankScopeBadge bankId={row.original.bank_id} /> },
+      { id: 'scope', header: 'Which banks', accessorFn: (l) => l.bank_id ?? '', cell: ({ row }) => <BankScopeBadge bankId={row.original.bank_id} /> },
       {
         id: 'latest',
-        header: advanced ? 'Latest version' : 'Version',
+        header: 'Version',
         accessorFn: (l) => latestVersion(l)?.version ?? 0,
         cell: ({ row }) => {
           const v = latestVersion(row.original);
-          return v ? <span className="tabular-nums">{advanced ? `v${v.version}` : `Version ${v.version}`}</span> : <Badge tone="warning">Not published</Badge>;
+          return v ? <span className="tabular-nums">Version {v.version}</span> : <Badge tone="warning">Not published yet</Badge>;
         },
       },
-      { id: 'items', header: 'Items', accessorFn: (l) => latestItems(l).length, cell: ({ row }) => <span className="tabular-nums">{latestItems(row.original).length}</span> },
+      { id: 'items', header: 'Choices', accessorFn: (l) => latestItems(l).length, cell: ({ row }) => <span className="tabular-nums">{latestItems(row.original).length}</span> },
       {
         id: 'published_at',
-        header: 'Published',
+        header: 'Last published',
         accessorFn: (l) => latestVersion(l)?.published_at ?? '',
         cell: ({ row }) => <DateTime value={latestVersion(row.original)?.published_at} />,
       },
     ],
-    [advanced],
+    [],
   );
 
   return (
     <>
       <PageHeader
-        title="Lookup lists"
-        description={
-          advanced
-            ? 'Versioned option lists used by forms. Publishing creates a new immutable version; nothing is edited in place.'
-            : 'Lists of choices used in forms. Changing a list publishes a new version; earlier versions stay as they were.'
-        }
+        title="Drop-down lists"
         actions={
           staff.isAdmin ? (
             <Button onClick={() => setCreating(true)}>
-              <Plus /> New list
+              <Plus /> Add a list
             </Button>
           ) : null
         }
@@ -88,7 +81,19 @@ export default function LookupListsPage() {
         getRowId={(l) => l.id}
         onRowClick={(l) => setSelectedId(l.id)}
         searchPlaceholder="Search lists…"
-        emptyTitle="No lookup lists yet"
+        emptyTitle="No drop-down lists yet"
+        emptyDescription={
+          staff.isAdmin ? (
+            <>
+              Add the first one, then add its choices.
+              <span className="mt-3 block">
+                <Button onClick={() => setCreating(true)}>
+                  <Plus /> Add a list
+                </Button>
+              </span>
+            </>
+          ) : undefined
+        }
       />
       <CreateListDialog open={creating} onOpenChange={setCreating} onCreated={setSelectedId} />
       <LookupListSheet

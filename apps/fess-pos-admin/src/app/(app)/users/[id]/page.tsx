@@ -1,7 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { UserCheck, UserX } from 'lucide-react';
+import { Briefcase, UserCheck, UserX } from 'lucide-react';
+import Link from 'next/link';
 import { use, useState } from 'react';
 import { canManageUser } from '@/components/admin/access';
 import { ActiveBadge, BankList, ReadOnlyNotice, RoleBadge } from '@/components/admin/admin-ui';
@@ -23,14 +24,14 @@ import { useIsAdvanced } from '@/lib/preferences';
 import { useStaff } from '@/lib/staff';
 import { fetchMaybeRow, pos } from '@/lib/supabase';
 import type { PosUser } from '@/lib/types';
-import { AdminLoginCard } from './_components/admin-login';
 import { AuthEventsTable } from './_components/auth-events';
 import { DeactivateDialog } from './_components/deactivate-dialog';
 import { IdentityLinks } from './_components/identity-links';
+import { PanelAccessCard } from './_components/panel-access';
 import { PhotoCard } from './_components/photo-card';
 import { ProfileCard } from './_components/profile-card';
 
-const BACK = { href: '/users', label: 'Users' };
+const BACK = { href: '/users', label: 'People' };
 
 export default function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -48,14 +49,14 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     mutationFn: (reason: string) => adminApi.users.reactivate(id, { reason }),
     invalidate: [['users'], ['agents'], ['auth_events']],
     toastErrors: false,
-    successMessage: 'User reactivated',
+    successMessage: 'Reactivated',
   });
 
   if (!valid) {
     return (
       <>
-        <PageHeader title="User" back={BACK} />
-        <EmptyState title="That isn’t a valid user link" description="Open the user from the Users list." />
+        <PageHeader title="Person" back={BACK} />
+        <EmptyState title="That isn’t a valid link to a person" description="Open them from the People list." />
       </>
     );
   }
@@ -70,7 +71,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
   if (userQ.error) {
     return (
       <>
-        <PageHeader title="User" back={BACK} />
+        <PageHeader title="Person" back={BACK} />
         <ErrorState error={userQ.error} onRetry={() => void userQ.refetch()} />
       </>
     );
@@ -79,8 +80,8 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
   if (!user) {
     return (
       <>
-        <PageHeader title="User" back={BACK} />
-        <EmptyState title="User not found" description="They may not exist, or they may be outside your banks." />
+        <PageHeader title="Person" back={BACK} />
+        <EmptyState title="Person not found" description="They may not exist, or they may be outside the banks you look after." />
       </>
     );
   }
@@ -99,6 +100,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         }
         description={
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="basis-full">Their details, what they can do and how they sign in.</span>
             <span>
               Employee number <span className="font-mono">{user.employee_number}</span>
             </span>
@@ -107,7 +109,15 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
           </span>
         }
         actions={
-          canManage ? (
+          <>
+            {user.role === 'pos_agent' ? (
+              <Button asChild variant="outline">
+                <Link href={`/jobs?agent=${user.id}`}>
+                  <Briefcase /> See their jobs
+                </Link>
+              </Button>
+            ) : null}
+            {canManage ? (
             user.active ? (
               <Button variant="outline" className="text-destructive" onClick={() => setDeactivateOpen(true)} disabled={isSelf} title={isSelf ? 'You can’t deactivate yourself' : undefined}>
                 <UserX /> Deactivate
@@ -117,7 +127,8 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 <UserCheck /> Reactivate
               </Button>
             )
-          ) : null
+            ) : null}
+          </>
         }
       />
 
@@ -134,8 +145,8 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         ) : null}
         {!canManage ? (
           <ReadOnlyNotice>
-            You can view this user but not change them. Bank-scoped administrators manage only agents and bank readers within
-            their own banks (D-44).
+            You can see this person but not change them. Administrators who look after only some banks can manage only the agents
+            and bank viewers of those banks.
           </ReadOnlyNotice>
         ) : null}
       </div>
@@ -146,7 +157,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
           <ProfileCard key={user.updated_at} user={user} canManage={canManage} isSelf={isSelf} />
           <div className="space-y-6">
             <PhotoCard user={user} canManage={canManage} />
-            <AdminLoginCard user={user} canManage={canManage} />
+            <PanelAccessCard user={user} canManage={canManage} />
           </div>
         </div>
       ) : (
@@ -162,7 +173,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             <ProfileCard key={user.updated_at} user={user} canManage={canManage} isSelf={isSelf} />
             <div className="space-y-6">
               <PhotoCard user={user} canManage={canManage} />
-              <AdminLoginCard user={user} canManage={canManage} />
+              <PanelAccessCard user={user} canManage={canManage} />
             </div>
           </div>
         </TabsContent>

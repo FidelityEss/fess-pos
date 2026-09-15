@@ -7,7 +7,6 @@ const EnvSchema = z.object({
   NEXT_PUBLIC_POS_API_URL: z.string().url(),
   NEXT_PUBLIC_MAP_STYLE_URL: z.string().url(),
   NEXT_PUBLIC_ENV_NAME: z.enum(['local', 'qa', 'staging', 'production']),
-  NEXT_PUBLIC_ALLOW_SKIP_MFA: z.enum(['true', 'false']).optional(),
 });
 
 export type EnvName = 'local' | 'qa' | 'staging' | 'production';
@@ -19,8 +18,6 @@ export interface AppEnv {
   posApiUrl: string;
   mapStyleUrl: string;
   envName: EnvName;
-  /** True only when ENV_NAME=local and NEXT_PUBLIC_ALLOW_SKIP_MFA=true (e2e escape hatch). */
-  allowSkipMfa: boolean;
   isProduction: boolean;
 }
 
@@ -31,7 +28,6 @@ function loadEnv(): AppEnv {
     NEXT_PUBLIC_POS_API_URL: process.env.NEXT_PUBLIC_POS_API_URL,
     NEXT_PUBLIC_MAP_STYLE_URL: process.env.NEXT_PUBLIC_MAP_STYLE_URL,
     NEXT_PUBLIC_ENV_NAME: process.env.NEXT_PUBLIC_ENV_NAME,
-    NEXT_PUBLIC_ALLOW_SKIP_MFA: process.env.NEXT_PUBLIC_ALLOW_SKIP_MFA || undefined,
   });
   if (!parsed.success) {
     const problems = parsed.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
@@ -47,7 +43,6 @@ function loadEnv(): AppEnv {
     posApiUrl: e.NEXT_PUBLIC_POS_API_URL.replace(/\/+$/, ''),
     mapStyleUrl: e.NEXT_PUBLIC_MAP_STYLE_URL,
     envName: e.NEXT_PUBLIC_ENV_NAME,
-    allowSkipMfa: e.NEXT_PUBLIC_ENV_NAME === 'local' && e.NEXT_PUBLIC_ALLOW_SKIP_MFA === 'true',
     isProduction: e.NEXT_PUBLIC_ENV_NAME === 'production',
   };
 }

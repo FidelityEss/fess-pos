@@ -118,7 +118,7 @@ export function JsonEditor({
         placeholder={placeholder}
         spellCheck={false}
         aria-invalid={!result.ok || (serverErrors?.length ?? 0) > 0}
-        className="w-full resize-y rounded-md border border-input bg-card px-3 py-2 font-mono text-xs leading-5 shadow-xs focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 aria-invalid:border-destructive"
+        className="w-full resize-y rounded-md border border-input bg-card px-3 py-2 font-mono text-xs leading-5 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 aria-invalid:border-destructive"
       />
       {result.ok ? (
         <p className="flex items-center gap-1 text-xs text-emerald-700">

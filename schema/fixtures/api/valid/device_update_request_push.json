@@ -1,0 +1,9 @@
+{
+  "description": "refreshed push token, with its provider, plus the module version",
+  "schema": "device-update-request",
+  "value": {
+    "push_provider": "fcm",
+    "push_token": "fcm-token-abc123",
+    "module_version": "0.2.0"
+  }
+}

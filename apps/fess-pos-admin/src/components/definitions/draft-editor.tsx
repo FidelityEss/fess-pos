@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { ApiErrorAlert } from '@/components/api-error-alert';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { JsonEditor, parseJsonText, stringifyJson } from '@/components/json-editor';
+import { useNextStepToast } from '@/components/next-step';
 import { LineDiffView } from '@/components/ops/diff';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -18,12 +19,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { adminApi, errorMessage, isApiError, isApprovalRequired } from '@/lib/api';
 import { formatTime } from '@/lib/format';
 import { useIsAdvanced } from '@/lib/preferences';
-import { upsertDefinitionDraft } from '@/lib/hooks';
+import { upsertDefinitionDraft, useBankLookup } from '@/lib/hooks';
 import { useStaff } from '@/lib/staff';
 import type { AnalyseResult, DefinitionFamily, JsonObject } from '@/lib/types';
 import { isPlainObject } from '@/lib/utils';
 import { AnalysisResultView, asAnalyseResult } from './analysis-result';
-import { defKeys, fetchDraft, fetchVersion, templateFor, type VersionLite } from './definitions-data';
+import { defKeys, familyTabHref, fetchDraft, fetchVersion, templateFor, type VersionLite } from './definitions-data';
 import { useStudioRefs } from './studio/bundle';
 import type { Update } from './studio/shared';
 import { DefinitionWorkspace } from './studio/workspace';
@@ -79,6 +80,9 @@ function PublishDialog({
 }) {
   const advanced = useIsAdvanced();
   const queryClient = useQueryClient();
+  const nextStep = useNextStepToast();
+  const bankLookup = useBankLookup();
+  const bankName = family.scope === 'global' ? null : (bankLookup(family.bank_id)?.name ?? null);
   const [note, setNote] = useState('');
   const [refusal, setRefusal] = useState<Partial<AnalyseResult> | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -91,10 +95,14 @@ function PublishDialog({
         queryClient.invalidateQueries({ queryKey: defKeys.approvals }),
       ]);
       if (isApprovalRequired(res.data)) {
-        toast.success('Sent for approval', { description: 'A second admin must approve before the version is recorded (four-eyes).' });
+        toast.success('Sent for a second approval', { description: 'Another admin must approve it before it’s published.' });
         onPublished(null);
       } else {
-        toast.success(`Published version ${res.data.version.version}`, { description: 'Activate it to make it live for an audience.' });
+        nextStep(
+          `Version ${res.data.version.version} published.`,
+          { label: bankName ? `Make it live for ${bankName}` : 'Make it live', href: familyTabHref(family.id, 'activations') },
+          'Agents only see it once you make it live.',
+        );
         onPublished(res.data.version.id);
       }
       setNote('');
@@ -124,27 +132,27 @@ function PublishDialog({
     >
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{advanced ? `Publish ${family.kind}/${family.key}` : `Publish “${family.title}”`}</DialogTitle>
+          <DialogTitle>Publish “{family.title}”</DialogTitle>
           <DialogDescription>
             {advanced
-              ? 'Publishing records an immutable version with its canonical hash. It does not change what agents see until the version is activated.'
-              : 'Publishing saves this as a new version that can never be changed. Agents only see it once you activate it.'}
+              ? `Publishing records a version that never changes, with its fingerprint (hash), for ${family.kind}/${family.key}. Agents only see it once you make it live.`
+              : 'Publishing saves this as a new version that can never be changed. Agents only see it once you make it live.'}
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[55vh] space-y-3 overflow-y-auto">
           {analysing ? (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" /> Checking the draft and running the test cases…
+              <Loader2 className="size-4 animate-spin" /> Checking the draft and the example answers…
             </p>
           ) : analyseError ? (
-            <ApiErrorAlert error={analyseError} title="Analysis failed" />
+            <ApiErrorAlert error={analyseError} title="Couldn’t check the draft" />
           ) : shown ? (
             <>
               {refusal ? (
                 <Alert variant="destructive">
                   <AlertTriangle />
-                  <AlertTitle>The server refused to publish</AlertTitle>
-                  <AlertDescription>Fix the problems below, analyse again and retry.</AlertDescription>
+                  <AlertTitle>It couldn’t be published</AlertTitle>
+                  <AlertDescription>Fix the problems below, check again, then publish.</AlertDescription>
                 </Alert>
               ) : null}
               <AnalysisResultView result={shown} doc={definition} relatedForm={relatedForm} />
@@ -152,7 +160,7 @@ function PublishDialog({
           ) : null}
           <div className="grid gap-1.5">
             <Label htmlFor="publish-note">
-              Note <span className="text-muted-foreground">(optional — what changed and why)</span>
+              Note <span className="text-muted-foreground">(optional: what changed and why)</span>
             </Label>
             <Textarea id="publish-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What changed and why" />
           </div>
@@ -333,8 +341,8 @@ export function DraftEditor({ family, versions, canEdit }: { family: DefinitionF
   if (!initialised) return <Skeleton className="h-96 w-full" />;
 
   let status: ReactNode;
-  if (!canEdit) status = <span className="text-muted-foreground">Read only — this is outside your scope</span>;
-  else if (!parsed.ok) status = <span className="text-destructive">{advanced ? 'Fix the JSON to save' : 'Not saved — the document has an error'}</span>;
+  if (!canEdit) status = <span className="text-muted-foreground">View only. You can’t change this one.</span>;
+  else if (!parsed.ok) status = <span className="text-destructive">{advanced ? 'Not saved. Fix the JSON to save.' : 'Not saved: something in the draft is broken.'}</span>;
   else if (saving)
     status = (
       <span className="inline-flex items-center gap-1 text-muted-foreground">
@@ -346,7 +354,7 @@ export function DraftEditor({ family, versions, canEdit }: { family: DefinitionF
       <span className="inline-flex items-center gap-2 text-destructive">
         Not saved: {errorMessage(saveError)}
         <Button type="button" size="sm" variant="outline" onClick={() => definition && void save(text, definition, baseId)}>
-          Retry
+          Try again
         </Button>
       </span>
     );
@@ -354,7 +362,8 @@ export function DraftEditor({ family, versions, canEdit }: { family: DefinitionF
   else if (!savedAt)
     status = (
       <span className="text-muted-foreground">
-        No changes yet — showing {origin === 'latest' ? `the published version ${latest?.version ?? '?'}` : 'a starting template'}. Your changes save automatically as a draft.
+        No changes yet. You’re looking at {origin === 'latest' ? `published version ${latest?.version ?? '?'}` : 'a blank starting point'}. Your changes save by
+        themselves as a draft.
       </span>
     );
   else
@@ -369,19 +378,19 @@ export function DraftEditor({ family, versions, canEdit }: { family: DefinitionF
       {staleBase ? (
         <Alert variant="warning">
           <AlertTriangle />
-          <AlertTitle>The draft is behind the latest version</AlertTitle>
+          <AlertTitle>A newer version was published after this draft started</AlertTitle>
           <AlertDescription>
-            This draft started from {baseVersion ? `v${baseVersion.version}` : 'an older version'}; v{latest?.version} has been published since. Review
-            the changes before publishing{advanced ? ' (Diff)' : ''}, or reset the draft to the latest version.
+            This draft started from {baseVersion ? `version ${baseVersion.version}` : 'an older version'}, and version {latest?.version} has been published
+            since. Check what’s different before you publish{advanced ? ' (Compare)' : ''}, or start again from version {latest?.version}.
           </AlertDescription>
         </Alert>
       ) : null}
       {kindMismatch ? (
         <Alert variant="warning">
           <AlertTriangle />
-          <AlertTitle>Kind mismatch</AlertTitle>
+          <AlertTitle>This draft is the wrong type</AlertTitle>
           <AlertDescription>
-            The document&apos;s <code>kind</code> must be <code>{family.kind}</code> for this family; analysis and publish will refuse it.
+            It can’t be checked or published until its <code>kind</code> is <code>{family.kind}</code>.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -391,16 +400,16 @@ export function DraftEditor({ family, versions, canEdit }: { family: DefinitionF
         <div className="flex flex-wrap items-center gap-2">
           {latest && advanced ? (
             <Button type="button" size="sm" variant="ghost" onClick={() => setShowDiff((v) => !v)} disabled={!definition}>
-              <FileDiff /> {showDiff ? 'Hide diff' : `Diff vs v${latest.version}`}
+              <FileDiff /> {showDiff ? 'Hide the comparison' : `Compare with version ${latest.version}`}
             </Button>
           ) : null}
           {canEdit ? (
             <Button type="button" size="sm" variant="outline" onClick={() => setResetOpen(true)}>
-              <RotateCcw /> {latest ? `Reset to v${latest.version}` : 'Reset to template'}
+              <RotateCcw /> {latest ? `Start again from version ${latest.version}` : 'Start again'}
             </Button>
           ) : null}
           <Button type="button" size="sm" variant="outline" onClick={runAnalysis} disabled={!definition} loading={analyse.isPending}>
-            {analyse.isPending ? null : <FlaskConical />} Analyse
+            {analyse.isPending ? null : <FlaskConical />} Check
           </Button>
           {canEdit ? (
             <Button type="button" size="sm" onClick={openPublish} disabled={!definition || saving}>
@@ -414,9 +423,9 @@ export function DraftEditor({ family, versions, canEdit }: { family: DefinitionF
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
-              {advanced ? 'Analysis' : 'Check before publishing'}
+              Check results
               <span className="flex items-center gap-2">
-                {analysisStale ? <span className="text-sm font-normal text-amber-700">Out of date — the draft changed since</span> : null}
+                {analysisStale ? <span className="text-sm font-normal text-amber-700">Out of date: the draft has changed since. Check again.</span> : null}
                 <Button type="button" size="sm" variant="ghost" onClick={() => setAnalysis(null)} disabled={analyse.isPending}>
                   Close
                 </Button>
@@ -425,7 +434,7 @@ export function DraftEditor({ family, versions, canEdit }: { family: DefinitionF
           </CardHeader>
           <CardContent>
             {analyse.error ? (
-              <ApiErrorAlert error={analyse.error} title="Analysis failed" />
+              <ApiErrorAlert error={analyse.error} title="Couldn’t check the draft" />
             ) : analysis ? (
               <AnalysisResultView result={analysis} doc={definition} relatedForm={relatedForm} onLocate={(target) => setSelected(target)} />
             ) : null}
@@ -435,7 +444,7 @@ export function DraftEditor({ family, versions, canEdit }: { family: DefinitionF
 
       {showDiff && latest && advanced ? (
         latestQ.data ? (
-          <LineDiffView before={latestQ.data.definition} after={definition ?? undefined} beforeLabel={`v${latest.version} (published)`} afterLabel="Draft" />
+          <LineDiffView before={latestQ.data.definition} after={definition ?? undefined} beforeLabel={`Version ${latest.version} (published)`} afterLabel="Draft" />
         ) : latestQ.error ? (
           <ApiErrorAlert error={latestQ.error} />
         ) : (
@@ -452,15 +461,15 @@ export function DraftEditor({ family, versions, canEdit }: { family: DefinitionF
         selected={selected}
         onSelect={setSelected}
         invalidJsonMessage={parsed.ok ? undefined : parsed.error.message}
-        jsonEditor={<JsonEditor value={text} onChange={setText} requireObject rows={30} readOnly={!canEdit} label="Draft definition (JSON)" id="draft-json" />}
+        jsonEditor={<JsonEditor value={text} onChange={setText} requireObject rows={30} readOnly={!canEdit} label="Draft (JSON)" id="draft-json" />}
       />
 
       <ConfirmDialog
         open={resetOpen}
         onOpenChange={setResetOpen}
-        title={latest ? `Reset the draft to v${latest.version}?` : 'Reset the draft to the template?'}
-        description="Your current draft is replaced (and autosaved). Published versions are never affected."
-        confirmLabel="Reset draft"
+        title={latest ? `Start again from version ${latest.version}?` : 'Start again from a blank draft?'}
+        description="Your current draft is replaced and saved straight away. Published versions don’t change."
+        confirmLabel="Start again"
         destructive
         onConfirm={() => {
           if (latest && latestQ.data) {

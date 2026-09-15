@@ -1,8 +1,9 @@
 'use client';
 
-// "Publish new version" editor for a lookup list: an editable table of value / label rows (add, remove, reorder, paste
-// straight from a spreadsheet), with optional extra details per item as named fields. Raw JSON is an Advanced option.
-// Values must be non-empty and unique; the server hashes the items (JCS) and stores an immutable version.
+// "Publish a new version" editor for a drop-down list: an editable table of stored value / what agents see rows (add,
+// remove, reorder, paste straight from a spreadsheet), with optional extra details per choice as named fields. Raw JSON
+// is an Advanced option. Values must be non-empty and unique; the server hashes the items (JCS) and stores an immutable
+// version.
 import { ArrowDown, ArrowUp, ClipboardPaste, Plus, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { type ClipboardEvent, type FormEvent, Fragment, useState } from 'react';
 import { newRowId } from '@/components/admin/form-helpers';
@@ -58,9 +59,9 @@ function itemsFromRows(rows: ItemRow[]): { items: LookupItem[]; errors: RowError
     const label = r.label.trim();
     if (!value && !label && metaCount(r) === 0) continue;
     const e: { value?: string; label?: string; meta?: string } = {};
-    if (!value) e.value = 'Value is required';
-    else if (seen.has(value)) e.value = `Duplicate value "${value}"`;
-    if (!label) e.label = 'Label is required';
+    if (!value) e.value = 'Enter a stored value';
+    else if (seen.has(value)) e.value = `“${value}” is used twice. Each stored value must be different.`;
+    if (!label) e.label = 'Enter what agents see';
     const meta = objectEditorStateToObject(r.meta, { label: 'Extra details' });
     if (!meta.ok) e.meta = meta.message;
     if (value) seen.add(value);
@@ -83,9 +84,9 @@ function itemsFromJson(text: string): { items: LookupItem[] | null; error: strin
   );
   const parsed = lookupListVersionSchema.safeParse({ items: trimmed });
   if (!parsed.success) {
-    return { items: null, error: 'Some items are invalid', issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })) };
+    return { items: null, error: 'Some choices aren’t valid', issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })) };
   }
-  if (parsed.data.items.length === 0) return { items: null, error: 'Add at least one item', issues: [] };
+  if (parsed.data.items.length === 0) return { items: null, error: 'Add at least one choice', issues: [] };
   return { items: parsed.data.items, error: null, issues: [] };
 }
 
@@ -153,7 +154,7 @@ function VersionEditor({
     mutationFn: (items: LookupItem[]) => adminApi.lookupLists.publishVersion(listId, { items }),
     invalidate: [['lookup_lists']],
     toastErrors: false,
-    successMessage: (v) => `Published version ${v.version}`,
+    successMessage: (v) => `Version ${v.version} published.`,
     onSuccess: () => onDone(),
   });
 
@@ -238,11 +239,11 @@ function VersionEditor({
       const r = itemsFromRows(rows);
       setRowErrors(r.errors);
       if (Object.keys(r.errors).length > 0) {
-        setGeneral('Fix the highlighted rows.');
+        setGeneral('Check the highlighted rows and try again.');
         return;
       }
       if (r.items.length === 0) {
-        setGeneral('Add at least one item.');
+        setGeneral('Add at least one choice.');
         return;
       }
       items = r.items;
@@ -268,15 +269,15 @@ function VersionEditor({
         <DialogTitle>
           Publish version {nextVersion} of {listTitle}
         </DialogTitle>
-        <DialogDescription>Versions can’t be changed once published. Forms using an earlier version keep it; this becomes the latest.</DialogDescription>
+        <DialogDescription>Once published, a version can’t be changed. Questions already using an earlier version keep it; this one becomes the latest.</DialogDescription>
       </DialogHeader>
       <div className="flex flex-wrap items-center gap-2">
         {advanced || mode === 'json' ? (
           <div className="inline-flex rounded-md border bg-muted p-0.5 text-sm" role="tablist" aria-label="Editor">
-            <button type="button" role="tab" aria-selected={mode === 'table'} onClick={() => (mode === 'json' ? toTable() : undefined)} className={cn('rounded px-3 py-1', mode === 'table' ? 'bg-card font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
+            <button type="button" role="tab" aria-selected={mode === 'table'} onClick={() => (mode === 'json' ? toTable() : undefined)} className={cn('rounded px-3 py-1', mode === 'table' ? 'bg-card font-medium ring-1 ring-border' : 'text-muted-foreground hover:text-foreground')}>
               Table
             </button>
-            <button type="button" role="tab" aria-selected={mode === 'json'} onClick={() => (mode === 'table' ? toJson() : undefined)} className={cn('rounded px-3 py-1', mode === 'json' ? 'bg-card font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
+            <button type="button" role="tab" aria-selected={mode === 'json'} onClick={() => (mode === 'table' ? toJson() : undefined)} className={cn('rounded px-3 py-1', mode === 'json' ? 'bg-card font-medium ring-1 ring-border' : 'text-muted-foreground hover:text-foreground')}>
               JSON
             </button>
           </div>
@@ -284,7 +285,8 @@ function VersionEditor({
         {mode === 'table' ? (
           <>
             <span className="text-sm text-muted-foreground">
-              {filled} item{filled === 1 ? '' : 's'}. Blank rows are ignored. Tip: paste two columns (value, label) from a spreadsheet into any Value box.
+              {filled} choice{filled === 1 ? '' : 's'}. Empty rows are skipped. Tip: you can paste two columns from a spreadsheet (stored value, then what
+              agents see) into any stored value box.
             </span>
             <Button type="button" size="sm" variant="outline" className="ml-auto" onClick={() => setPasteOpen((o) => !o)} aria-expanded={pasteOpen}>
               <ClipboardPaste /> Paste from a spreadsheet
@@ -294,22 +296,24 @@ function VersionEditor({
       </div>
 
       {mode === 'table' && pasteOpen ? (
-        <div className="grid gap-3 rounded-md border bg-slate-50 p-4">
+        <div className="grid gap-3 rounded-md border p-4">
           <p className="text-sm">
-            Copy two columns from Excel or Google Sheets — <strong>value</strong> then <strong>label</strong> — and paste them below, one item per line. A single
-            column uses the same text for both.
+            Copy two columns from Excel or Google Sheets, <strong>stored value</strong> then <strong>what agents see</strong>, and paste them below, one
+            choice per line. If you paste one column, it’s used for both.
           </p>
           <Textarea rows={6} value={pasteText} onChange={(e) => setPasteText(e.target.value)} placeholder={'retail\tRetail shop\nfood\tRestaurant or takeaway'} className="font-mono text-sm" aria-label="Spreadsheet rows" />
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={pasteHeader} onCheckedChange={(v) => setPasteHeader(v === true)} /> The first line is a header row
           </label>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-muted-foreground">{pastePreview.length} item{pastePreview.length === 1 ? '' : 's'} found</span>
+            <span className="text-sm text-muted-foreground">
+              {pastePreview.length} choice{pastePreview.length === 1 ? '' : 's'} found
+            </span>
             <Button type="button" size="sm" variant="outline" className="ml-auto" disabled={pastePreview.length === 0} onClick={() => applyPaste('append')}>
               Add to the end
             </Button>
             <Button type="button" size="sm" disabled={pastePreview.length === 0} onClick={() => applyPaste('replace')}>
-              Replace all items
+              Replace all choices
             </Button>
           </div>
         </div>
@@ -321,8 +325,8 @@ function VersionEditor({
             <TableHeader className="sticky top-0 z-10">
               <TableRow>
                 <TableHead className="w-10">#</TableHead>
-                <TableHead>Value (saved) *</TableHead>
-                <TableHead>Label (shown to agents) *</TableHead>
+                <TableHead>Stored value *</TableHead>
+                <TableHead>What agents see *</TableHead>
                 <TableHead>Extra details</TableHead>
                 <TableHead className="w-px" />
               </TableRow>
@@ -336,11 +340,11 @@ function VersionEditor({
                     <TableRow className="align-top">
                       <TableCell className="pt-4 text-sm tabular-nums text-muted-foreground">{i + 1}</TableCell>
                       <TableCell className="min-w-44">
-                        <Input value={r.value} onChange={(e) => setRow(r.id, { value: e.target.value })} onPaste={(e) => onValuePaste(e, i)} className="font-mono" aria-label={`Value ${i + 1}`} aria-invalid={!!err?.value || undefined} />
+                        <Input value={r.value} onChange={(e) => setRow(r.id, { value: e.target.value })} onPaste={(e) => onValuePaste(e, i)} className="font-mono" aria-label={`Stored value ${i + 1}`} aria-invalid={!!err?.value || undefined} />
                         {err?.value ? <p className="mt-1 text-sm text-destructive">{err.value}</p> : null}
                       </TableCell>
                       <TableCell className="min-w-56">
-                        <Input value={r.label} onChange={(e) => setRow(r.id, { label: e.target.value })} aria-label={`Label ${i + 1}`} aria-invalid={!!err?.label || undefined} />
+                        <Input value={r.label} onChange={(e) => setRow(r.id, { label: e.target.value })} aria-label={`What agents see ${i + 1}`} aria-invalid={!!err?.label || undefined} />
                         {err?.label ? <p className="mt-1 text-sm text-destructive">{err.label}</p> : null}
                       </TableCell>
                       <TableCell>
@@ -350,24 +354,24 @@ function VersionEditor({
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-0.5">
-                          <Button type="button" size="icon-sm" variant="ghost" aria-label={`Move item ${i + 1} up`} disabled={i === 0} onClick={() => move(i, -1)}>
+                          <Button type="button" size="icon-sm" variant="ghost" aria-label={`Move choice ${i + 1} up`} disabled={i === 0} onClick={() => move(i, -1)}>
                             <ArrowUp />
                           </Button>
-                          <Button type="button" size="icon-sm" variant="ghost" aria-label={`Move item ${i + 1} down`} disabled={i === rows.length - 1} onClick={() => move(i, 1)}>
+                          <Button type="button" size="icon-sm" variant="ghost" aria-label={`Move choice ${i + 1} down`} disabled={i === rows.length - 1} onClick={() => move(i, 1)}>
                             <ArrowDown />
                           </Button>
-                          <Button type="button" size="icon-sm" variant="ghost" aria-label={`Remove item ${i + 1}`} onClick={() => setRows((rs) => (rs.length > 1 ? rs.filter((x) => x.id !== r.id) : [emptyRow()]))}>
+                          <Button type="button" size="icon-sm" variant="ghost" aria-label={`Remove choice ${i + 1}`} onClick={() => setRows((rs) => (rs.length > 1 ? rs.filter((x) => x.id !== r.id) : [emptyRow()]))}>
                             <Trash2 />
                           </Button>
                         </div>
                       </TableCell>
                     </TableRow>
                     {r.metaOpen ? (
-                      <TableRow className="bg-slate-50/70">
+                      <TableRow>
                         <TableCell />
                         <TableCell colSpan={4} className="pb-4">
-                          <p className="mb-2 text-sm text-muted-foreground">Extra details stored with “{r.label || r.value || `item ${i + 1}`}” (optional, e.g. a group).</p>
-                          <ObjectEditor state={r.meta} onChange={(meta) => setRow(r.id, { meta })} label="Extra details" keyLabel="Detail" keyPlaceholder="e.g. group" addLabel="Add detail" emptyText="No extra details." error={err?.meta} />
+                          <p className="mb-2 text-sm text-muted-foreground">Extra details kept with “{r.label || r.value || `choice ${i + 1}`}” (optional, such as a group).</p>
+                          <ObjectEditor state={r.meta} onChange={(meta) => setRow(r.id, { meta })} label="Extra details" keyLabel="Detail" keyPlaceholder="For example, group" addLabel="Add a detail" emptyText="No extra details." error={err?.meta} />
                         </TableCell>
                       </TableRow>
                     ) : null}
@@ -383,7 +387,7 @@ function VersionEditor({
       {mode === 'table' ? (
         <div>
           <Button type="button" size="sm" variant="outline" onClick={() => setRows((rs) => [...rs, emptyRow()])}>
-            <Plus /> Add item
+            <Plus /> Add a choice
           </Button>
         </div>
       ) : null}

@@ -2,10 +2,12 @@
 
 // Job schema preview (T3-23): the job detail screen with a "Bank details" section — each attribute with the sample
 // job's value (docs/04 §3.3: attributes are available to views as job.attributes.*). The section sits after the job's
-// key facts (before the map) so it is visible without scrolling.
+// key facts (before the map) so it is visible without scrolling. Flat labelled rows between hairlines (D-97).
 import type { FieldDef, ViewItemDef } from '@/lib/engine';
+import { cn } from '@/lib/utils';
 import { lenientParse } from './lenient-parse';
 import { PhoneSection } from './phone-frame';
+import { PAGE_X, PP_TINT_BG, typeStyle } from './phone-style';
 import { PreviewNotice } from './phone-widgets';
 import { templateText, usePreviewEnv } from './preview-context';
 import { formatValue, humanise } from './preview-format';
@@ -35,22 +37,27 @@ export function JobSchemaScreen({ attributes }: { attributes: readonly FieldDef[
   const before = items.length ? items.slice(0, split) : FALLBACK_HEADER;
   const after = items.slice(split);
   return (
-    <div className="space-y-3 pb-4">
-      <div className="px-3 pt-3">
+    <div className="space-y-4 pb-4">
+      <div className={cn(PAGE_X, 'pt-4')}>
         <ViewItems items={before} data={env.data} />
       </div>
       <PhoneSection title="Bank details" className="pt-0">
         {attributes.length === 0 ? (
-          <PreviewNotice>No attributes yet.</PreviewNotice>
+          <PreviewNotice>No job information yet.</PreviewNotice>
         ) : (
-          <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white" data-preview-anchor="bank_details">
+          <div className="divide-y divide-[color:var(--ph-divider)] border-y border-[color:var(--ph-divider)]" data-preview-anchor="bank_details">
             {attributes.map((a) => {
               const v = values[a.key];
               const focused = env.focus === a.key;
+              const unset = v === undefined || v === null;
               return (
-                <div key={a.key} data-preview-anchor={a.key} className={focused ? 'bg-[color-mix(in_srgb,var(--pp)_10%,white)] px-3 py-2.5 ring-2 ring-inset ring-[var(--pp)]' : 'px-3 py-2.5'}>
-                  <div className="text-[12px] font-medium uppercase tracking-wide text-slate-500">{typeof a.label === 'string' ? templateText(a.label, env.data) : humanise(a.key)}</div>
-                  <div className={v === undefined || v === null ? 'text-[15px] italic text-slate-400' : 'text-[15px] text-slate-900'}>{attributeValue(a, v)}</div>
+                <div key={a.key} data-preview-anchor={a.key} className={cn('py-2.5', focused && cn(PP_TINT_BG, '-mx-2 px-2 ring-2 ring-inset ring-[var(--pp)]'))}>
+                  <div className="text-[color:var(--ph-body)]" style={typeStyle('caption')}>
+                    {typeof a.label === 'string' ? templateText(a.label, env.data) : humanise(a.key)}
+                  </div>
+                  <div className={cn('leading-snug text-[color:var(--ph-body)]', unset && 'italic')} style={typeStyle(unset ? 'bodyRegular' : 'body')}>
+                    {attributeValue(a, v)}
+                  </div>
                 </div>
               );
             })}
@@ -58,7 +65,7 @@ export function JobSchemaScreen({ attributes }: { attributes: readonly FieldDef[
         )}
       </PhoneSection>
       {after.length ? (
-        <div className="px-3">
+        <div className={PAGE_X}>
           <ViewItems items={after} data={env.data} />
         </div>
       ) : null}

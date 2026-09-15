@@ -111,7 +111,7 @@ export function IdentityLinks({ user }: { user: PosUser }) {
           ) : null
         }
       />
-      {!canLink ? <ReadOnlyNotice>Identity links are managed by all-bank administrators (D-44).</ReadOnlyNotice> : null}
+      {!canLink ? <ReadOnlyNotice>Only an administrator for all banks can change these links.</ReadOnlyNotice> : null}
       <DataTable
         columns={columns}
         data={links.data}

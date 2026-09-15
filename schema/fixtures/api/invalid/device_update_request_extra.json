@@ -1,0 +1,8 @@
+{
+  "description": "requests are strict; the device is the session's own, never named in the body",
+  "schema": "device-update-request",
+  "value": {
+    "device_id": "7d1e8f60-2c4b-4a51-9e0f-1b2c3d4e5f60",
+    "module_version": "0.2.0"
+  }
+}

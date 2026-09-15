@@ -65,7 +65,7 @@ function JsonNode({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center rounded text-left hover:bg-slate-100"
+        className="flex items-center rounded text-left hover:bg-muted"
         aria-expanded={open}
       >
         {open ? <ChevronDown className="size-3.5 shrink-0 text-slate-400" /> : <ChevronRight className="size-3.5 shrink-0 text-slate-400" />}
@@ -118,7 +118,7 @@ export function JsonView({
   const advanced = useIsAdvanced();
   const [raw, setRaw] = useState(false);
   const showRaw = advanced && raw;
-  const tab = (active: boolean) => cn('rounded px-2 py-0.5', active ? 'bg-card font-medium text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground');
+  const tab = (active: boolean) => cn('rounded px-2 py-0.5', active ? 'bg-card font-medium text-foreground ring-1 ring-border' : 'text-muted-foreground hover:text-foreground');
   return (
     <div className={cn('rounded-md border bg-card', className)}>
       {advanced ? (
@@ -134,7 +134,7 @@ export function JsonView({
           {copyable ? <CopyButton value={JSON.stringify(value, null, 2) ?? ''} title="Copy JSON" /> : null}
         </div>
       ) : null}
-      <div className={cn('overflow-auto p-3', showRaw && 'bg-slate-50 font-mono text-xs leading-5')} style={{ maxHeight }}>
+      <div className={cn('overflow-auto p-3', showRaw && 'bg-muted font-mono text-xs leading-5')} style={{ maxHeight }}>
         {showRaw ? <JsonNode value={value} depth={0} expandDepth={defaultExpandDepth} last /> : <StructuredView value={value} expandDepth={defaultExpandDepth} />}
       </div>
     </div>

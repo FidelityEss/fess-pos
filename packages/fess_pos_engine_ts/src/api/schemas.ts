@@ -412,6 +412,37 @@ export const UploadGrantResponseSchema = z
     }
   });
 
+// ------------------------------------------------------------------ device update (T2-31)
+
+export const DeviceUpdateRequestSchema = z
+  .object({
+    push_provider: z.string().min(1).max(40).optional(),
+    push_token: z.string().min(1).max(4096).nullable().optional(),
+    platform: z.string().max(40).optional(),
+    model: z.string().max(120).optional(),
+    os_version: z.string().max(60).optional(),
+    host_app_version: z.string().max(60).optional(),
+    module_version: z.string().max(60).optional(),
+    capabilities: CapabilityReportSchema.optional(),
+  })
+  .strict()
+  .superRefine((v, ctx) => {
+    if (Object.keys(v).length === 0) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "send at least one field" });
+    if (typeof v.push_token === "string" && v.push_provider === undefined) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["push_provider"], message: "push_provider is required with a push_token" });
+    }
+  });
+export const DeviceUpdateResponseSchema = z
+  .object({
+    device_id: uuid,
+    push_provider: z.string().nullable().optional(),
+    push_registered: z.boolean(),
+    module_version: z.string().nullable().optional(),
+    host_app_version: z.string().nullable().optional(),
+    last_seen_at: dt,
+  })
+  .passthrough();
+
 // ------------------------------------------------------------------ payloads (schema/api/payloads/<type>.v1)
 
 const requireWhen = (cond: boolean, value: unknown, ctx: z.RefinementCtx, path: string, why: string): void => {

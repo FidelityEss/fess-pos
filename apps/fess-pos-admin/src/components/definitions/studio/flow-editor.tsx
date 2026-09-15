@@ -57,7 +57,12 @@ function newStep(type: string, id: string): Obj {
   }
 }
 
-function stepSummary(step: Obj, sectionTitle: (k: string) => string, titleOf: (kind: 'view' | 'form', k: string) => string): string {
+function stepSummary(
+  step: Obj,
+  sectionTitle: (k: string) => string,
+  titleOf: (kind: 'view' | 'form', k: string) => string,
+  declarationTitle: (k: string) => string,
+): string {
   const t = asStr(step.type);
   if (t === 'form') {
     const secs = asArr(step.sections).map((s) => sectionTitle(String(s)));
@@ -66,8 +71,8 @@ function stepSummary(step: Obj, sectionTitle: (k: string) => string, titleOf: (k
   }
   if (t === 'job_briefing' || t === 'receipt') return step.view ? `Shows the screen “${titleOf('view', asStr(step.view))}”` : '';
   if (t === 'submit') return asStr(step.confirm_text);
-  if (t === 'declaration') return step.declaration_key ? `Declaration: ${asStr(step.declaration_key)}` : "Uses the form's declaration";
-  if (t === 'location_check') return step.override_form ? `If the agent is elsewhere: “${titleOf('form', asStr(step.override_form))}” form` : '';
+  if (t === 'declaration') return step.declaration_key ? `Declaration: ${declarationTitle(asStr(step.declaration_key))}` : 'Uses the declaration set on the questions';
+  if (t === 'location_check') return step.override_form ? `If the agent isn’t at the site, asks “${titleOf('form', asStr(step.override_form))}”` : '';
   if (t === 'summary_review') return [step.show_risk_indicators ? 'shows risk flags' : '', step.allow_jump_back ? 'agent can go back to fix answers' : ''].filter(Boolean).join(' · ');
   return '';
 }
@@ -84,6 +89,7 @@ export function FlowEditor(props: EditorProps) {
   const vocab = useMemo(() => buildVocab(form, refs.bundle.jobSchema), [form, refs.bundle.jobSchema]);
   const titleOf = (k: string) => sections.find((s) => s.key === k)?.title ?? k;
   const familyTitle = (kind: 'view' | 'form', k: string) => refs.families[kind].find((f) => f.key === k)?.title ?? k;
+  const declarationTitle = (k: string) => refs.declarations.find((d) => d.key === k)?.title ?? k;
   const drag = useDragReorder('steps', move);
 
   const usage = useMemo(() => {
@@ -126,18 +132,18 @@ export function FlowEditor(props: EditorProps) {
       <DocumentHeader doc={doc} update={update}>
         <div className="grid gap-4 md:grid-cols-2">
           <SelectField
-            label="Form the agent fills in"
+            label="Questions the agent answers"
             value={formKey || undefined}
             onChange={(v) => update((d) => setProp(d, [], 'form_family', v) as Obj)}
             options={refs.families.form.map((f) => ({ value: f.key, label: f.title }))}
             unsetLabel="None"
           />
           <SelectField
-            label="What submitting does"
+            label="What sending it in does"
             value={asStr(doc.action) || undefined}
             onChange={(v) => update((d) => setProp(d, [], 'action', v) as Obj)}
             options={FLOW_ACTIONS.map((a) => ({ value: a, label: ACTION_LABEL[a] ?? a }))}
-            unsetLabel="Submit the inspection (default)"
+            unsetLabel="Send the visit in (default)"
           />
         </div>
       </DocumentHeader>
@@ -145,16 +151,16 @@ export function FlowEditor(props: EditorProps) {
       {form && uncovered.length > 0 ? (
         <Alert variant="warning">
           <AlertTriangle />
-          <AlertTitle>Some sections of the form are never shown</AlertTitle>
+          <AlertTitle>Some sections of the questions are never shown</AlertTitle>
           <AlertDescription>
-            {uncovered.map((s) => `“${s.title}”`).join(', ')} {uncovered.length === 1 ? "isn't" : "aren't"} in any Questions step. Add{' '}
-            {uncovered.length === 1 ? 'it' : 'them'} to a step, or the flow can&apos;t be published.
+            {uncovered.map((s) => `“${s.title}”`).join(', ')} {uncovered.length === 1 ? 'isn’t' : 'aren’t'} in any Questions step. Add{' '}
+            {uncovered.length === 1 ? 'it' : 'them'} to a step, or these steps can’t be published.
           </AlertDescription>
         </Alert>
       ) : null}
       {formKey && !form && !refs.loading ? (
         <Alert variant="info">
-          <AlertDescription>The form “{formKey}” has no published version yet, so its sections can&apos;t be listed.</AlertDescription>
+          <AlertDescription>The questions “{formKey}” haven’t been published yet, so their sections can’t be listed.</AlertDescription>
         </Alert>
       ) : null}
 
@@ -163,7 +169,7 @@ export function FlowEditor(props: EditorProps) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-base font-semibold">Steps, in order</h3>
             <span className="text-sm text-muted-foreground">
-              <Lock className="mr-1 inline size-3.5" /> Locked steps protect the evidence and can&apos;t be removed.
+              <Lock className="mr-1 inline size-3.5" /> Locked steps protect the visit record and can’t be removed.
             </span>
           </div>
           <ol className="grid gap-2">
@@ -203,11 +209,11 @@ export function FlowEditor(props: EditorProps) {
                             <Lock /> Locked
                           </Badge>
                         ) : null}
-                        {isRule(s.visible) ? <Badge tone="progress">Conditional</Badge> : null}
-                        {s.next !== undefined ? <Badge tone="progress">Branches</Badge> : null}
+                        {isRule(s.visible) ? <Badge tone="progress">Shown sometimes</Badge> : null}
+                        {s.next !== undefined ? <Badge tone="progress">Can skip ahead</Badge> : null}
                         {advanced ? <code className="text-xs text-muted-foreground">{asStr(s.id)}</code> : null}
                       </div>
-                      <p className="text-sm text-muted-foreground">{stepSummary(s, titleOf, familyTitle) || w.description}</p>
+                      <p className="text-sm text-muted-foreground">{stepSummary(s, titleOf, familyTitle, declarationTitle) || w.description}</p>
                     </div>
                     {!readOnly ? (
                       <div className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
@@ -219,7 +225,7 @@ export function FlowEditor(props: EditorProps) {
                     ) : null}
                   </div>
                   {isSel ? (
-                    <div className="border-t bg-slate-50/70 p-4">
+                    <div className="border-t p-4">
                       <StepInspector index={i} step={s} flowForm={formKey} sections={sections} usage={usage} props={props} vocab={vocab} />
                     </div>
                   ) : null}
@@ -227,7 +233,7 @@ export function FlowEditor(props: EditorProps) {
               );
             })}
           </ol>
-          {steps.length === 0 ? <Hint>No steps yet — add the steps the agent goes through.</Hint> : null}
+          {steps.length === 0 ? <Hint>No steps yet. Add the first step the agent goes through.</Hint> : null}
           {!readOnly ? (
             <div>
               <Button type="button" variant="outline" onClick={() => setAdding(true)}>
@@ -241,7 +247,7 @@ export function FlowEditor(props: EditorProps) {
         open={adding}
         onOpenChange={setAdding}
         title="Add a step"
-        description="Steps run in order. Questions steps show sections of the linked form."
+        description="Steps run in order. Questions steps show sections of the chosen questions."
         choices={Object.keys(STEPS).map((t) => ({ value: t, ...stepWording(t) }))}
         onPick={add}
       />
@@ -284,13 +290,13 @@ function StepInspector({
         <TextField label="Heading shown to the agent" value={asStr(step.label)} onChange={(v) => set('label', v)} placeholder={stepWording(type).name} />
         {advanced ? (
           <TextField
-            label="Step id"
+            label="Step's technical name"
             value={asStr(step.id)}
             onChange={(v) => {
               set('id', v);
             }}
             mono
-            hint="Used by branching (next) rules."
+            hint="Used by conditions that skip to this step."
           />
         ) : null}
       </div>
@@ -299,11 +305,17 @@ function StepInspector({
         <div className="grid gap-4">
           <SubHeading>Questions</SubHeading>
           {advanced ? (
-            <SelectField label="Form" value={stepForm || undefined} onChange={(v) => set('form', v)} options={formOptions} unsetLabel={`The flow's form${flowForm ? ` (${flowForm})` : ''}`} />
+            <SelectField
+              label="Questions"
+              value={stepForm || undefined}
+              onChange={(v) => set('form', v)}
+              options={formOptions}
+              unsetLabel={`The questions chosen at the top${flowForm ? ` (${flowForm})` : ''}`}
+            />
           ) : null}
           <CheckList
             label="Sections shown in this step"
-            hint="Each section of the form should be shown in exactly one step."
+            hint="Show each section in exactly one step."
             values={asArr(step.sections).map(String)}
             onChange={(v) => set('sections', v)}
             options={ownSections.map((s) => {
@@ -336,13 +348,13 @@ function StepInspector({
             unsetLabel="Default"
             options={['profile', 'always'].map((p) => ({ value: p, label: enumLabel(p) }))}
           />
-          <SelectField label="Form used to override the location check" value={asStr(step.override_form) || undefined} onChange={(v) => set('override_form', v)} options={formOptions} unsetLabel="None" />
+          <SelectField label="Questions asked when the agent isn’t at the site" value={asStr(step.override_form) || undefined} onChange={(v) => set('override_form', v)} options={formOptions} unsetLabel="None" />
           {step.messages !== undefined ? (
             <Row label="Messages" className="md:col-span-2">
               <StructuredView value={step.messages} className="rounded-md border bg-card p-2" />
             </Row>
           ) : null}
-          <Hint className="md:col-span-2">Distances and accuracy come from the remote configuration (Settings), within safe bounds.</Hint>
+          <Hint className="md:col-span-2">How close the agent must be, and how accurate the location must be, are set in App settings.</Hint>
         </div>
       ) : null}
       {type === 'summary_review' ? (
@@ -361,11 +373,11 @@ function StepInspector({
         />
       ) : null}
       {type === 'submit' ? (
-        <TextField label="Confirmation question" value={asStr(step.confirm_text)} onChange={(v) => set('confirm_text', v)} multiline rows={2} placeholder="Submit this inspection? You can't change it afterwards." />
+        <TextField label="Confirmation question" value={asStr(step.confirm_text)} onChange={(v) => set('confirm_text', v)} multiline rows={2} placeholder="Send this visit in? You can’t change it afterwards." />
       ) : null}
 
       {spec?.removable || isRule(step.visible) ? (
-        <Row label="Shown">
+        <Row label="When it shows">
           {isRule(step.visible) ? (
             <RuleLine sentence={slotSentence('step_visible', step.visible, vocab)} rule={step.visible} onChange={(v) => set('visible', v)} onRemove={() => set('visible', undefined)} removeLabel="Always show" />
           ) : (

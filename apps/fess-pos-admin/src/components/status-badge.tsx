@@ -1,12 +1,12 @@
 import { Badge } from '@/components/ui/badge';
 import { humanize } from '@/lib/format';
-import { dashboardStatus, INSPECTION_STATUS_LABEL, INSPECTION_STATUS_TONE, JOB_STATUS_LABEL, JOB_STATUS_TONE, type StatusTone } from '@/lib/status';
+import { dashboardStatus, INSPECTION_STATUS_LABEL, INSPECTION_STATUS_TONE, JOB_STATUS_LABEL, JOB_STATUS_MEANING, JOB_STATUS_TONE, type StatusTone } from '@/lib/status';
 import type { InspectionStatus, JobStatus } from '@/lib/types';
 
-/** Internal job status badge (tooltip shows the dashboard status, e.g. "Pending – appointment confirmed"). */
+/** Job status badge in plain words (tooltip: what it means, and the bank's dashboard group, e.g. "Pending – appointment confirmed"). */
 export function StatusBadge({ status, className }: { status: JobStatus; className?: string }) {
   return (
-    <Badge tone={JOB_STATUS_TONE[status]} title={`Dashboard: ${dashboardStatus(status).displayLabel}`} className={className}>
+    <Badge tone={JOB_STATUS_TONE[status]} title={`${JOB_STATUS_MEANING[status]} Bank report group: ${dashboardStatus(status).displayLabel}.`} className={className}>
       {JOB_STATUS_LABEL[status]}
     </Badge>
   );
@@ -22,10 +22,10 @@ export function DashboardStatusBadge({ status, className }: { status: JobStatus;
   );
 }
 
-/** Inspection (attempt) status in plain language, e.g. integrity_failed → "Failed tamper check". */
+/** Visit (inspection attempt) status in plain language, e.g. integrity_failed → "Failed a security check". */
 export function InspectionStatusBadge({ status, className }: { status: InspectionStatus; className?: string }) {
   return (
-    <Badge tone={INSPECTION_STATUS_TONE[status] ?? 'neutral'} title={status} className={className}>
+    <Badge tone={INSPECTION_STATUS_TONE[status] ?? 'neutral'} className={className}>
       {INSPECTION_STATUS_LABEL[status] ?? humanize(status)}
     </Badge>
   );

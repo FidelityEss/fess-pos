@@ -1,0 +1,7 @@
+{
+  "description": "a push token must name its provider",
+  "schema": "device-update-request",
+  "value": {
+    "push_token": "fcm-token-abc123"
+  }
+}

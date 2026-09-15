@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/page-header';
 import { ToneBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { useStaff } from '@/lib/staff';
-import { RELEASE_STATUS_TONE } from '@/lib/status';
+import { RELEASE_STATUS_LABEL, RELEASE_STATUS_TONE } from '@/lib/status';
 import { fetchRows, pos } from '@/lib/supabase';
 import type { ModuleRelease } from '@/lib/types';
 import { RELEASE_STATUS_HINT, ReleaseSheet } from './_components/release-form';
@@ -31,22 +31,40 @@ export default function ModuleReleasesPage() {
       { accessorKey: 'released_at', header: 'Released', cell: ({ row }) => <DateTime value={row.original.released_at} /> },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: 'Can agents use it?',
         cell: ({ row }) => (
           <span title={RELEASE_STATUS_HINT[row.original.status]}>
-            <ToneBadge value={row.original.status} tones={RELEASE_STATUS_TONE} />
+            <ToneBadge value={row.original.status} tones={RELEASE_STATUS_TONE} labels={RELEASE_STATUS_LABEL} />
           </span>
         ),
       },
       {
         id: 'api_versions',
-        header: 'API versions',
+        header: 'Server connection versions',
+        meta: { advanced: true },
         accessorFn: (r) => r.api_versions.join(', '),
         cell: ({ row }) => <span className="font-mono text-sm">{row.original.api_versions.length ? row.original.api_versions.join(', ') : '—'}</span>,
       },
-      { accessorKey: 'spec_range', header: 'Spec range', cell: ({ row }) => <span className="whitespace-nowrap font-mono text-sm">{row.original.spec_range}</span> },
-      { id: 'components', header: 'Components', accessorFn: (r) => keyCount(r.components), cell: ({ row }) => <span className="tabular-nums">{keyCount(row.original.components)}</span> },
-      { id: 'page_types', header: 'Page types', accessorFn: (r) => keyCount(r.page_types), cell: ({ row }) => <span className="tabular-nums">{keyCount(row.original.page_types)}</span> },
+      {
+        accessorKey: 'spec_range',
+        header: 'Set-up versions',
+        meta: { advanced: true },
+        cell: ({ row }) => <span className="whitespace-nowrap font-mono text-sm">{row.original.spec_range}</span>,
+      },
+      {
+        id: 'components',
+        header: 'Question and screen types',
+        meta: { advanced: true },
+        accessorFn: (r) => keyCount(r.components),
+        cell: ({ row }) => <span className="tabular-nums">{keyCount(row.original.components)}</span>,
+      },
+      {
+        id: 'page_types',
+        header: 'Kinds of page',
+        meta: { advanced: true },
+        accessorFn: (r) => keyCount(r.page_types),
+        cell: ({ row }) => <span className="tabular-nums">{keyCount(row.original.page_types)}</span>,
+      },
       {
         accessorKey: 'notes',
         header: 'Notes',
@@ -67,12 +85,11 @@ export default function ModuleReleasesPage() {
   return (
     <>
       <PageHeader
-        title="Module releases"
-        description="Every POS module build: compatibility, component versions and support status. Status never blocks uploads (docs/13 §4)."
+        title="App versions"
         actions={
           staff.isGlobalAdmin ? (
             <Button onClick={() => setSheet({ release: null })}>
-              <Plus /> Register release
+              <Plus /> Add a version
             </Button>
           ) : null
         }
@@ -85,8 +102,9 @@ export default function ModuleReleasesPage() {
         onRetry={() => void releases.refetch()}
         getRowId={(r) => r.id}
         onRowClick={(r) => setSheet({ release: r })}
-        searchPlaceholder="Search releases…"
-        emptyTitle="No releases registered"
+        searchPlaceholder="Search versions…"
+        emptyTitle="No app versions yet"
+        emptyDescription={staff.isGlobalAdmin ? 'Add a version when a new build of the phone app is released.' : undefined}
       />
       <ReleaseSheet
         open={sheet !== null}

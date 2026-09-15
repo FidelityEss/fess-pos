@@ -81,9 +81,9 @@ function pageSummary(page: Obj, titleOf: (k: string) => string, fam: (kind: 'vie
     case 'list_page':
       return `Lists ${enumLabel(asStr(page.source)).toLowerCase()}${isPlainObject(page.filter) ? ' (filtered)' : ''}${page.on_tap ? ` · tap ${targetText(page.on_tap, titleOf)}` : ''}`;
     case 'form_page':
-      return `Form “${fam('form', asStr(page.form))}” → ${(ACTION_LABEL[asStr(page.action)] ?? asStr(page.action)).toLowerCase()}`;
+      return `Questions “${fam('form', asStr(page.form))}”, then ${(ACTION_LABEL[asStr(page.action)] ?? asStr(page.action)).toLowerCase()}`;
     case 'flow':
-      return `Runs the flow “${fam('flow', asStr(page.flow))}”`;
+      return `Runs the visit steps “${fam('flow', asStr(page.flow))}”`;
     case 'outcome_page':
       return `${enumLabel(asStr(page.outcome))} · ${asStr(page.message).slice(0, 70)}`;
     default:
@@ -133,9 +133,9 @@ function ButtonsEditor({ path, items, update, withAction, pages }: { path: (stri
 
 function PageIdEditor({ id, taken, onRename }: { id: string; taken: string[]; onRename: (to: string) => void }) {
   const [draft, setDraft] = useState(id);
-  const problem = draft === id ? null : !KEY_PATTERN.test(draft) ? 'Lower-case letters, digits and _' : taken.includes(draft) ? 'Already used' : null;
+  const problem = draft === id ? null : !KEY_PATTERN.test(draft) ? 'Use lower-case letters, numbers and _' : taken.includes(draft) ? 'Already used' : null;
   return (
-    <Row label="Page id" hint={problem ?? 'Renaming updates the start page, navigation, outcome sets and every button that opens it.'}>
+    <Row label="Page’s technical name" hint={problem ?? 'Renaming updates the start page, the tabs, the result pages and every button that opens it.'}>
       <div className="flex gap-2">
         <Input value={draft} onChange={(e) => setDraft(e.target.value.trim())} className="font-mono" aria-invalid={!!problem} />
         <Button type="button" variant="outline" disabled={draft === id || !!problem} onClick={() => onRename(draft)}>
@@ -208,7 +208,7 @@ function PageInspector({ id, page, props, pages, setNames }: { id: string; page:
       ) : null}
       {type === 'form_page' ? (
         <div className="grid gap-4 md:grid-cols-2">
-          <SelectField label="Form" value={formKey || undefined} onChange={(v) => set('form', v)} options={refs.families.form.map((f) => ({ value: f.key, label: f.title }))} />
+          <SelectField label="Questions" value={formKey || undefined} onChange={(v) => set('form', v)} options={refs.families.form.map((f) => ({ value: f.key, label: f.title }))} />
           <SelectField label="Submitting it will" value={asStr(page.action) || undefined} onChange={(v) => set('action', v)} options={FORM_PAGE_ACTIONS.map((a) => ({ value: a, label: ACTION_LABEL[a] ?? a }))} />
           <SelectField label="About" value={asStr(page.subject) || undefined} onChange={(v) => set('subject', v)} unsetLabel="Default" options={['job', 'agent', 'none'].map((s) => ({ value: s, label: s === 'none' ? 'Nothing in particular' : enumLabel(s) }))} />
           <SelectField label="Result pages" value={asStr(page.outcomes) || undefined} onChange={(v) => set('outcomes', v)} options={setNames.map((n) => ({ value: n, label: humanLabel(n) }))} />
@@ -225,7 +225,7 @@ function PageInspector({ id, page, props, pages, setNames }: { id: string; page:
       ) : null}
       {type === 'flow' ? (
         <div className="grid gap-4 md:grid-cols-2">
-          <SelectField label="Flow" value={asStr(page.flow) || undefined} onChange={(v) => set('flow', v)} options={refs.families.flow.map((f) => ({ value: f.key, label: f.title }))} />
+          <SelectField label="Visit steps" value={asStr(page.flow) || undefined} onChange={(v) => set('flow', v)} options={refs.families.flow.map((f) => ({ value: f.key, label: f.title }))} />
           <SelectField label="Result pages" value={asStr(page.outcomes) || undefined} onChange={(v) => set('outcomes', v)} options={setNames.map((n) => ({ value: n, label: humanLabel(n) }))} />
         </div>
       ) : null}
@@ -296,7 +296,7 @@ export function AppEditor(props: EditorProps) {
       <DocumentHeader doc={doc} update={update}>
         <SelectField
           label="Start page"
-          hint="What the agent sees first when they open POS."
+          hint="What the agent sees first when they open the app."
           value={asStr(doc.home) || undefined}
           onChange={(v) => update((d) => setProp(d, [], 'home', v) as Obj)}
           options={pages.map((p) => ({ value: p.key, label: p.title }))}
@@ -308,7 +308,7 @@ export function AppEditor(props: EditorProps) {
         <CardContent className="grid gap-3 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <button type="button" className="text-left" onClick={() => onSelect(selected === 'navigation' ? null : 'navigation')}>
-              <h3 className="text-base font-semibold">Navigation</h3>
+              <h3 className="text-base font-semibold">Tabs</h3>
               <Hint>The tabs the agent uses to move between the main pages.</Hint>
             </button>
             {doc.navigation !== undefined ? (
@@ -325,11 +325,11 @@ export function AppEditor(props: EditorProps) {
             !readOnly ? (
               <div>
                 <Button type="button" variant="outline" size="sm" onClick={() => update((d) => ({ ...d, navigation: { style: 'bottom_tabs', items: [] } }))}>
-                  <Plus /> Add navigation
+                  <Plus /> Add tabs
                 </Button>
               </div>
             ) : (
-              <Hint>No navigation.</Hint>
+              <Hint>No tabs.</Hint>
             )
           ) : (
             <ol className="grid gap-2">
@@ -402,7 +402,7 @@ export function AppEditor(props: EditorProps) {
                         <span className="text-base font-medium">{asStr(page.title) || humanLabel(id)}</span>
                         <span className="text-sm text-muted-foreground">{w.name}</span>
                         {doc.home === id ? <Badge tone="success">Start page</Badge> : null}
-                        {navPages.has(id) ? <Badge tone="accent">In navigation</Badge> : null}
+                        {navPages.has(id) ? <Badge tone="accent">Has a tab</Badge> : null}
                         {advanced ? <code className="text-xs text-muted-foreground">{id}</code> : null}
                       </div>
                       <p className="text-sm text-muted-foreground">{pageSummary(page, titleOf, famTitle) || w.description}</p>
@@ -417,7 +417,7 @@ export function AppEditor(props: EditorProps) {
                     ) : null}
                   </div>
                   {isSel ? (
-                    <div className="border-t bg-slate-50/70 p-4">
+                    <div className="border-t p-4">
                       <PageInspector id={id} page={page} props={props} pages={pages} setNames={setNames} />
                     </div>
                   ) : null}
@@ -438,13 +438,13 @@ export function AppEditor(props: EditorProps) {
       <Card>
         <CardContent className="grid gap-3 p-4">
           <div>
-            <h3 className="text-base font-semibold">Result pages for forms and flows</h3>
-            <Hint>Every form and flow ends on one of three results: confirmed by the server, saved on the phone (offline), or could not be completed.</Hint>
+            <h3 className="text-base font-semibold">Result pages</h3>
+            <Hint>Questions and visit steps end on one of three results: received by the office, saved on the phone to send later, or couldn’t be completed.</Hint>
           </div>
           {setNames.map((name) => (
             <div key={name} className="grid gap-3 rounded-md border bg-card p-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold">{humanLabel(name)} set</span>
+                <span className="text-sm font-semibold">{humanLabel(name)} result pages</span>
                 {advanced && !readOnly ? (
                   <IconAction
                     label="Remove set"
@@ -465,7 +465,7 @@ export function AppEditor(props: EditorProps) {
                 {OUTCOMES.map((o) => (
                   <SelectField
                     key={o}
-                    label={o === 'success' ? 'Confirmed by the server' : enumLabel(o)}
+                    label={o === 'success' ? 'Received by the office' : enumLabel(o)}
                     value={asStr(asObj(sets[name])[o]) || undefined}
                     onChange={(v) => update((d) => setProp(d, ['outcome_sets', name], o, v ?? '') as Obj)}
                     options={(outcomePages(o).length ? outcomePages(o) : pages).map((p) => ({ value: p.key, label: p.title }))}
@@ -488,7 +488,7 @@ export function AppEditor(props: EditorProps) {
                   })
                 }
               >
-                <Plus /> Add a result set
+                <Plus /> Add a set of result pages
               </Button>
             </div>
           ) : null}

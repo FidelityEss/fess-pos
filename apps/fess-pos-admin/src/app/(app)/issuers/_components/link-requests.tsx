@@ -1,17 +1,18 @@
 'use client';
 
 // Open `link_request` alerts: someone verified by a trusted issuer signed in but no POS user is bound to that identity.
-// Linking acknowledges the alert (pos_rpc.admin_identity_link).
+// Matching (linking) acknowledges the alert (pos_rpc.admin_identity_link).
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Link2 } from 'lucide-react';
-import { type FormEvent, useId, useMemo, useState } from 'react';
+import { type FormEvent, useCallback, useId, useMemo, useState } from 'react';
 import { MonoId, SectionHeading } from '@/components/admin/admin-ui';
-import { useUserOptions } from '@/components/admin/queries';
+import { useTrustedIssuers, useUserOptions } from '@/components/admin/queries';
 import { UserPicker } from '@/components/admin/user-picker';
 import { ApiErrorAlert } from '@/components/api-error-alert';
 import { DataTable } from '@/components/data-table';
 import { DateTime } from '@/components/date-time';
+import { Details } from '@/components/details';
 import { apiFieldErrors, type FieldErrors, FormField, zodFieldErrors } from '@/components/form-field';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -41,8 +42,15 @@ export function subjectOf(a: LinkRequest): string {
   return prefix && a.dedupe_key?.startsWith(prefix) ? a.dedupe_key.slice(prefix.length) : '';
 }
 
+/** A sign-in source's name from its key (the key itself when unknown). */
+function useSourceName(): (key: string | null) => string {
+  const issuers = useTrustedIssuers();
+  return useCallback((key) => (key ? (issuers.data?.find((i) => i.key === key)?.title ?? key) : '—'), [issuers.data]);
+}
+
 export function LinkRequests() {
   const [target, setTarget] = useState<LinkRequest | null>(null);
+  const sourceName = useSourceName();
   const requests = useQuery({
     queryKey: ['alerts', 'link_request', 'open'],
     queryFn: () =>
@@ -59,18 +67,29 @@ export function LinkRequests() {
 
   const columns = useMemo<ColumnDef<LinkRequest>[]>(
     () => [
-      { accessorKey: 'created_at', header: 'Raised', cell: ({ row }) => <DateTime value={row.original.created_at} showRelative /> },
-      { id: 'issuer', header: 'Issuer', accessorFn: (a) => issuerOf(a) ?? '', cell: ({ row }) => <span className="whitespace-nowrap font-mono text-sm">{issuerOf(row.original) ?? '—'}</span> },
+      { accessorKey: 'created_at', header: 'Signed in', cell: ({ row }) => <DateTime value={row.original.created_at} showRelative /> },
+      {
+        id: 'issuer',
+        header: 'Sign-in source',
+        accessorFn: (a) => sourceName(issuerOf(a)),
+        cell: ({ row }) => <span className="whitespace-nowrap text-sm">{sourceName(issuerOf(row.original))}</span>,
+      },
       {
         id: 'employee_number',
-        header: 'Verified employee no.',
+        header: 'Employee number',
         accessorFn: (a) => str(a.detail.employee_number) ?? '',
         cell: ({ row }) => {
           const n = str(row.original.detail.employee_number);
-          return n ? <span className="whitespace-nowrap font-mono text-sm">{n}</span> : <span className="text-sm text-muted-foreground">Not provided by the issuer</span>;
+          return n ? <span className="whitespace-nowrap font-mono text-sm">{n}</span> : <span className="text-sm text-muted-foreground">Not given</span>;
         },
       },
-      { id: 'subject', header: 'Subject', accessorFn: subjectOf, cell: ({ row }) => <MonoId value={subjectOf(row.original) || null} head={24} tail={6} /> },
+      {
+        id: 'subject',
+        header: 'Their ID at the source',
+        meta: { advanced: true },
+        accessorFn: subjectOf,
+        cell: ({ row }) => <MonoId value={subjectOf(row.original) || null} head={24} tail={6} />,
+      },
       {
         id: 'actions',
         header: '',
@@ -78,19 +97,19 @@ export function LinkRequests() {
         meta: { className: 'text-right', headerClassName: 'w-px' },
         cell: ({ row }) => (
           <Button size="sm" variant="outline" onClick={() => setTarget(row.original)}>
-            <Link2 /> Link to user…
+            <Link2 /> Match to a person…
           </Button>
         ),
       },
     ],
-    [],
+    [sourceName],
   );
 
   return (
     <section className="space-y-3">
       <SectionHeading
-        title="Link requests"
-        description="Sign-ins verified by a trusted issuer that matched no POS user. Link each to the right person, or provision them first under Users."
+        title="People waiting to be matched"
+        description="These people signed in through a sign-in source, but we couldn’t match them to anyone in the panel. Match each one to the right person, or add them under People first."
       />
       <DataTable
         columns={columns}
@@ -100,7 +119,7 @@ export function LinkRequests() {
         onRetry={() => void requests.refetch()}
         getRowId={(a) => a.id}
         enableSearch={false}
-        emptyTitle="No open link requests"
+        emptyTitle="Nobody is waiting to be matched"
       />
       <Dialog
         open={target !== null}
@@ -108,13 +127,15 @@ export function LinkRequests() {
           if (!open) setTarget(null);
         }}
       >
-        <DialogContent>{target ? <LinkRequestForm key={target.id} request={target} onClose={() => setTarget(null)} /> : null}</DialogContent>
+        <DialogContent>
+          {target ? <LinkRequestForm key={target.id} request={target} sourceName={sourceName(issuerOf(target))} onClose={() => setTarget(null)} /> : null}
+        </DialogContent>
       </Dialog>
     </section>
   );
 }
 
-function LinkRequestForm({ request, onClose }: { request: LinkRequest; onClose: () => void }) {
+function LinkRequestForm({ request, sourceName, onClose }: { request: LinkRequest; sourceName: string; onClose: () => void }) {
   const uid = useId();
   const users = useUserOptions();
   const issuer = issuerOf(request) ?? '';
@@ -128,7 +149,7 @@ function LinkRequestForm({ request, onClose }: { request: LinkRequest; onClose: 
     mutationFn: (body: IdentityLinkCreateBody) => adminApi.identityLinks.create(body),
     invalidate: [['alerts'], ['identity_links'], ['users'], ['auth_events']],
     toastErrors: false,
-    successMessage: 'Identity linked — the request is closed',
+    successMessage: 'Matched. Next time they sign in, they’re recognised as this person.',
     onSuccess: () => onClose(),
   });
   const errors: FieldErrors = { ...apiFieldErrors(create.error), ...clientErrors };
@@ -138,7 +159,7 @@ function LinkRequestForm({ request, onClose }: { request: LinkRequest; onClose: 
     const parsed = identityLinkCreateSchema.safeParse({ user_id: chosen ?? '', issuer_key: issuer, subject });
     if (!parsed.success) {
       const errs = zodFieldErrors(parsed.error);
-      if (!chosen) errs.user_id = 'Choose the user this identity belongs to';
+      if (!chosen) errs.user_id = 'Choose the person this sign-in belongs to.';
       setClientErrors(errs);
       return;
     }
@@ -149,37 +170,48 @@ function LinkRequestForm({ request, onClose }: { request: LinkRequest; onClose: 
   return (
     <form onSubmit={submit} className="grid gap-4" noValidate>
       <DialogHeader>
-        <DialogTitle>Link this identity to a user</DialogTitle>
+        <DialogTitle>Match this sign-in to a person</DialogTitle>
         <DialogDescription>
-          Issuer <span className="font-mono">{issuer || '—'}</span>
+          Signed in through {sourceName}
           {employeeNumber ? (
             <>
               {' '}
-              · verified employee number <span className="font-mono">{employeeNumber}</span>
+              with employee number <span className="font-mono">{employeeNumber}</span>
             </>
           ) : null}
+          . From then on, they’re recognised as the person you choose.
         </DialogDescription>
       </DialogHeader>
       <FormField
-        label="User"
+        label="Person"
         htmlFor={`${uid}-user`}
         required
         error={errors.user_id}
-        hint={suggested && !userId ? 'Suggested: the user with the verified employee number.' : undefined}
+        hint={suggested && !userId ? 'We suggest the person with the same employee number.' : undefined}
       >
         <UserPicker id={`${uid}-user`} value={chosen} onChange={(id) => setUserId(id)} invalid={!!errors.user_id} />
       </FormField>
-      <FormField label="Subject" htmlFor={`${uid}-subject`} required error={errors.subject} hint="The issuer’s identifier for this person, taken from the request.">
-        <Input id={`${uid}-subject`} value={subject} onChange={(e) => setSubject(e.target.value)} className="font-mono" aria-invalid={!!errors.subject || undefined} />
-      </FormField>
-      {errors.issuer_key ? <p className="text-sm text-destructive">This request has no issuer — it can’t be linked here.</p> : null}
+      <Details summary="Their ID at the sign-in source" defaultOpen={!!errors.subject || !subject}>
+        <FormField
+          label="ID at the sign-in source"
+          htmlFor={`${uid}-subject`}
+          required
+          error={errors.subject}
+          hint="Filled in from the sign-in. Only change it if you know it’s wrong."
+        >
+          <Input id={`${uid}-subject`} value={subject} onChange={(e) => setSubject(e.target.value)} className="font-mono" aria-invalid={!!errors.subject || undefined} />
+        </FormField>
+      </Details>
+      {errors.issuer_key ? (
+        <p className="text-sm text-destructive">This sign-in doesn’t say which sign-in source it came from, so it can’t be matched here.</p>
+      ) : null}
       <ApiErrorAlert error={create.error} />
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
         <Button type="submit" loading={create.isPending}>
-          Link identity
+          Match
         </Button>
       </DialogFooter>
     </form>

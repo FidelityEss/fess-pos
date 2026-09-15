@@ -40,10 +40,10 @@ interface TargetDef {
 const CORE_TARGETS: TargetDef[] = [
   { key: 'merchant_name', label: 'Merchant name', group: 'Job', synonyms: ['merchant', 'merchantname', 'businessname', 'business', 'name', 'legalname', 'registeredname'] },
   { key: 'trading_name', label: 'Trading name', group: 'Job', synonyms: ['tradingname', 'tradingas', 'ta', 'dba'] },
-  { key: 'external_ref', label: 'External reference', group: 'Job', synonyms: ['externalref', 'externalreference', 'reference', 'ref', 'bankref', 'bankreference', 'caseref', 'caseid', 'applicationid'] },
-  { key: 'mcc_code', label: 'MCC', group: 'Job', synonyms: ['mcc', 'mcccode', 'merchantcategorycode'] },
-  { key: 'location_type', label: 'Location type', group: 'Job', synonyms: ['locationtype', 'sitetype', 'premisestype', 'profile'] },
-  { key: 'notes', label: 'Notes', group: 'Job', synonyms: ['notes', 'note', 'comments', 'comment', 'instructions'] },
+  { key: 'external_ref', label: 'Bank’s reference', group: 'Job', synonyms: ['externalref', 'externalreference', 'reference', 'ref', 'bankref', 'bankreference', 'caseref', 'caseid', 'applicationid'] },
+  { key: 'mcc_code', label: 'Business type (MCC)', group: 'Job', synonyms: ['mcc', 'mcccode', 'merchantcategorycode'] },
+  { key: 'location_type', label: 'Type of place', group: 'Job', synonyms: ['locationtype', 'sitetype', 'premisestype', 'profile'] },
+  { key: 'notes', label: 'Notes for the agent', group: 'Job', synonyms: ['notes', 'note', 'comments', 'comment', 'instructions'] },
   { key: 'address.line1', label: 'Address line 1', group: 'Address', synonyms: ['address', 'address1', 'addressline1', 'street', 'streetaddress', 'line1'] },
   { key: 'address.line2', label: 'Address line 2', group: 'Address', synonyms: ['address2', 'addressline2', 'line2', 'unit', 'building'] },
   { key: 'address.suburb', label: 'Suburb', group: 'Address', synonyms: ['suburb', 'area'] },
@@ -51,15 +51,15 @@ const CORE_TARGETS: TargetDef[] = [
   { key: 'address.province', label: 'Province', group: 'Address', synonyms: ['province', 'state', 'region'] },
   { key: 'address.postal_code', label: 'Postal code', group: 'Address', synonyms: ['postalcode', 'postcode', 'zip', 'zipcode'] },
   { key: 'address.country', label: 'Country', group: 'Address', synonyms: ['country'] },
-  { key: 'location.lat', label: 'Latitude (merchant pin)', group: 'Location', synonyms: ['lat', 'latitude', 'gpslat', 'pinlat'] },
-  { key: 'location.lng', label: 'Longitude (merchant pin)', group: 'Location', synonyms: ['lng', 'lon', 'long', 'longitude', 'gpslng', 'gpslon', 'pinlng'] },
-  { key: 'bank_coordinates.lat', label: 'Bank-supplied latitude', group: 'Location', synonyms: ['banklat', 'banklatitude', 'bankcoordinateslat'] },
-  { key: 'bank_coordinates.lng', label: 'Bank-supplied longitude', group: 'Location', synonyms: ['banklng', 'banklon', 'banklongitude', 'bankcoordinateslng'] },
-  { key: 'geofence_radius_m', label: 'Fence radius (m)', group: 'Location', synonyms: ['geofenceradius', 'geofenceradiusm', 'radius', 'radiusm'] },
-  { key: 'gps_accuracy_max_m', label: 'GPS accuracy (m)', group: 'Location', synonyms: ['gpsaccuracy', 'gpsaccuracymaxm', 'accuracy', 'maxaccuracy'] },
-  { key: 'contact.name', label: 'Contact name', group: 'Contact', synonyms: ['contact', 'contactname', 'contactperson'] },
-  { key: 'contact.phone', label: 'Contact phone', group: 'Contact', synonyms: ['phone', 'contactphone', 'telephone', 'tel', 'mobile', 'cell', 'contactnumber'] },
-  { key: 'contact.email', label: 'Contact email', group: 'Contact', synonyms: ['email', 'contactemail', 'emailaddress'] },
+  { key: 'location.lat', label: 'Map pin latitude', group: 'Location', synonyms: ['lat', 'latitude', 'gpslat', 'pinlat'] },
+  { key: 'location.lng', label: 'Map pin longitude', group: 'Location', synonyms: ['lng', 'lon', 'long', 'longitude', 'gpslng', 'gpslon', 'pinlng'] },
+  { key: 'bank_coordinates.lat', label: 'Bank’s latitude', group: 'Location', synonyms: ['banklat', 'banklatitude', 'bankcoordinateslat'] },
+  { key: 'bank_coordinates.lng', label: 'Bank’s longitude', group: 'Location', synonyms: ['banklng', 'banklon', 'banklongitude', 'bankcoordinateslng'] },
+  { key: 'geofence_radius_m', label: 'Site area size (metres)', group: 'Location', synonyms: ['geofenceradius', 'geofenceradiusm', 'radius', 'radiusm'] },
+  { key: 'gps_accuracy_max_m', label: 'GPS accuracy needed (metres)', group: 'Location', synonyms: ['gpsaccuracy', 'gpsaccuracymaxm', 'accuracy', 'maxaccuracy'] },
+  { key: 'contact.name', label: 'Contact name', group: 'Merchant contact', synonyms: ['contact', 'contactname', 'contactperson'] },
+  { key: 'contact.phone', label: 'Contact phone', group: 'Merchant contact', synonyms: ['phone', 'contactphone', 'telephone', 'tel', 'mobile', 'cell', 'contactnumber'] },
+  { key: 'contact.email', label: 'Contact email', group: 'Merchant contact', synonyms: ['email', 'contactemail', 'emailaddress'] },
 ];
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -67,14 +67,14 @@ const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 function targetsFor(attrs: AttributeDef[]): TargetDef[] {
   return [
     ...CORE_TARGETS,
-    ...attrs.map((a) => ({ key: `attributes.${a.key}`, label: a.label, group: 'Bank attributes', synonyms: [norm(a.key), norm(a.label)] })),
+    ...attrs.map((a) => ({ key: `attributes.${a.key}`, label: a.label, group: 'Job information', synonyms: [norm(a.key), norm(a.label)] })),
   ];
 }
 
 /** Map each header to the first unused target whose key, label or synonym matches (attributes first). */
 function autoMatch(headers: string[], targets: TargetDef[]): string[] {
   const used = new Set<string>();
-  const ordered = [...targets.filter((t) => t.group === 'Bank attributes'), ...targets.filter((t) => t.group !== 'Bank attributes')];
+  const ordered = [...targets.filter((t) => t.group === 'Job information'), ...targets.filter((t) => t.group !== 'Job information')];
   return headers.map((h) => {
     const n = norm(h);
     const hit = ordered.find((t) => !used.has(t.key) && (norm(t.key) === n || norm(t.label) === n || t.synonyms.includes(n)));
@@ -190,19 +190,19 @@ export function JobImport() {
     if (/\.xlsx?$/i.test(file.name)) {
       setCsv(null);
       setFileName(file.name);
-      setParseError('Excel files are not supported here. In Excel choose File › Save As › "CSV UTF-8", then upload the .csv file.');
+      setParseError('This page can’t read Excel files directly. In Excel, choose File › Save As › “CSV UTF-8”, then choose that .csv file here.');
       return;
     }
     try {
       const parsed = parseCsv(await file.text());
       if (parsed.headers.length === 0) throw new Error('The file is empty.');
-      if (parsed.rows.length === 0) throw new Error('The file has a header row but no data rows.');
+      if (parsed.rows.length === 0) throw new Error('The file has column headings but no jobs under them.');
       setCsv(parsed);
       setFileName(file.name);
       setMapping(autoMatch(parsed.headers, targets));
     } catch (err) {
       setCsv(null);
-      setParseError(err instanceof Error ? err.message : 'Could not read the file.');
+      setParseError(err instanceof Error ? err.message : 'We couldn’t read the file.');
     }
   }
 
@@ -211,7 +211,7 @@ export function JobImport() {
     const rows = dryRun ? bodies : bodies.filter((b) => report?.rows.get(b.csvIndex)?.ok);
     if (rows.length === 0) return;
     setError(null);
-    setRunning({ label: dryRun ? 'Checking rows' : 'Creating jobs', done: 0, total: rows.length });
+    setRunning({ label: dryRun ? 'Checking the rows' : 'Creating jobs', done: 0, total: rows.length });
     try {
       const results = await runChunks(bankId, rows, dryRun, (done) => setRunning((r) => (r ? { ...r, done } : r)));
       if (dryRun) setReport({ dryRun: true, rows: results });
@@ -257,13 +257,13 @@ export function JobImport() {
   return (
     <>
       <PageHeader
-        title="Import jobs"
-        description={`Bulk-create jobs from a CSV file. Check the rows with a dry run first; the server validates every row. Up to ${CHUNK} rows are sent per request.`}
+        title="Import jobs from a spreadsheet"
+        description="Create many jobs at once from a spreadsheet saved as CSV. First check the rows, then create the ones that are fine."
         back={{ href: '/jobs', label: 'Jobs' }}
       />
 
       <div className="space-y-5">
-        <SectionCard title="1. Bank and file" description="Rows are validated against this bank's job schema and geofence profiles.">
+        <SectionCard title="1. Bank and file" description="Each row is checked against this bank’s job information and site-area rules.">
           <div className="grid gap-4 md:grid-cols-[18rem_1fr]">
             <FormField label="Bank" htmlFor="import-bank" required>
               <BankSelect
@@ -276,18 +276,18 @@ export function JobImport() {
                 disabled={!!running}
               />
             </FormField>
-            <FormField label="CSV file" htmlFor="import-file" hint={fileName && csv ? `${fileName} — ${formatNumber(csv.rows.length)} rows, ${csv.headers.length} columns` : 'Comma, semicolon or tab separated; first row = column headings.'}>
+            <FormField label="CSV file" htmlFor="import-file" hint={fileName && csv ? `${fileName}: ${formatNumber(csv.rows.length)} rows, ${csv.headers.length} columns` : 'The first row must hold the column headings. Commas, semicolons or tabs all work.'}>
               <Input id="import-file" type="file" accept=".csv,text/csv,.txt" onChange={(e) => void onFile(e)} disabled={!bankId || !!running} />
             </FormField>
           </div>
           <Alert variant="info" className="mt-4">
             <Info />
-            <AlertDescription>Excel (.xlsx) isn&apos;t read directly — save the sheet as CSV (File › Save As › CSV UTF-8) and upload that.</AlertDescription>
+            <AlertDescription>Using Excel? Save the sheet as CSV first (File › Save As › CSV UTF-8), then choose that file.</AlertDescription>
           </Alert>
           {parseError ? (
             <Alert variant="destructive" className="mt-3">
               <XCircle />
-              <AlertTitle>Could not use {fileName ?? 'this file'}</AlertTitle>
+              <AlertTitle>We couldn’t use {fileName ?? 'this file'}</AlertTitle>
               <AlertDescription>{parseError}</AlertDescription>
             </Alert>
           ) : null}
@@ -295,11 +295,11 @@ export function JobImport() {
 
         {csv && bankId ? (
           <SectionCard
-            title="2. Map columns"
-            description="Each column goes to a job field or a bank attribute. Matches were guessed from the headings — check them."
+            title="2. Match the columns"
+            description="Say what each column in your file is. We guessed from the headings, so check each one."
             actions={
               <Button type="button" variant="ghost" size="sm" onClick={() => setMapping(autoMatch(csv.headers, targets))} disabled={!!running}>
-                <RotateCcw /> Re-match
+                <RotateCcw /> Guess again
               </Button>
             }
           >
@@ -307,7 +307,7 @@ export function JobImport() {
               {csv.headers.map((h, i) => (
                 <div key={`${h}-${i}`} className="grid gap-1">
                   <span className="break-words text-sm font-medium" title={h}>
-                    {h} <span className="font-normal text-muted-foreground">· e.g. “{csv.rows[0]?.[i] ?? ''}”</span>
+                    {h} <span className="font-normal text-muted-foreground">· for example “{csv.rows[0]?.[i] ?? ''}”</span>
                   </span>
                   <Select
                     value={mapping[i] ?? IGNORE}
@@ -344,14 +344,14 @@ export function JobImport() {
 
             {locMapped ? (
               <div className="mt-4 max-w-sm">
-                <FormField label="Where do the latitude / longitude columns come from?" htmlFor="coord-source" hint="Recorded as the job's location source.">
+                <FormField label="Where do the latitude and longitude come from?" htmlFor="coord-source" hint="Saved with each job, so reviewers know how the pin was placed.">
                   <Select value={coordSource} onValueChange={(v) => setCoordSource(v as LocationSource)}>
                     <SelectTrigger id="coord-source">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="bank_supplied">Supplied by the bank</SelectItem>
-                      <SelectItem value="geocoded">Geocoded from the address</SelectItem>
+                      <SelectItem value="geocoded">Worked out from the address</SelectItem>
                       <SelectItem value="pinned">Pinned on a map</SelectItem>
                     </SelectContent>
                   </Select>
@@ -363,23 +363,23 @@ export function JobImport() {
               {duplicates.length ? (
                 <Alert variant="destructive">
                   <XCircle />
-                  <AlertDescription>More than one column maps to: {[...new Set(duplicates)].map(labelOf).join(', ')}. Only the last one would be used — fix the mapping.</AlertDescription>
+                  <AlertDescription>More than one column is matched to: {[...new Set(duplicates)].map(labelOf).join(', ')}. Match each to one column only.</AlertDescription>
                 </Alert>
               ) : null}
               {missingRequired.length ? (
                 <Alert variant="warning">
                   <Info />
-                  <AlertDescription>Not mapped (required): {missingRequired.map(labelOf).join(', ')}. Rows without these will fail validation.</AlertDescription>
+                  <AlertDescription>Needed but not matched yet: {missingRequired.map(labelOf).join(', ')}. Rows without these can’t be created.</AlertDescription>
                 </Alert>
               ) : null}
             </div>
 
-            <h3 className="mb-2 mt-5 text-sm font-semibold">Preview (first 5 rows as they will be sent)</h3>
+            <h3 className="mb-2 mt-5 text-sm font-semibold">Preview: the first 5 rows</h3>
             <div className="overflow-hidden rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Line</TableHead>
+                    <TableHead>Row</TableHead>
                     {previewCols.map(({ i, m }) => (
                       <TableHead key={i}>{labelOf(m)}</TableHead>
                     ))}
@@ -401,19 +401,18 @@ export function JobImport() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <Button type="button" onClick={() => void run(true)} loading={running?.label === 'Checking rows'} disabled={!!running || duplicates.length > 0}>
-                Dry run ({formatNumber(csv.rows.length)} rows)
+              <Button type="button" onClick={() => void run(true)} loading={running?.label === 'Checking the rows'} disabled={!!running || duplicates.length > 0}>
+                Check the {formatNumber(csv.rows.length)} rows
               </Button>
               <Button
                 type="button"
                 variant="default"
-                className="bg-emerald-600 hover:bg-emerald-700"
                 onClick={() => void run(false)}
                 disabled={!report?.dryRun || !stats?.ok || !!running}
                 loading={running?.label === 'Creating jobs'}
-                title={!report?.dryRun ? 'Run a dry run first' : undefined}
+                title={!report?.dryRun ? 'Check the rows first' : undefined}
               >
-                Create {stats?.ok ? formatNumber(stats.ok) : ''} valid jobs
+                Create {stats?.ok ? formatNumber(stats.ok) : 'the'} jobs that are fine
               </Button>
               <Button type="button" variant="ghost" onClick={reset} disabled={!!running}>
                 Start over
@@ -432,19 +431,19 @@ export function JobImport() {
           <Card>
             <CardContent className="space-y-3 pt-4">
               <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-base font-semibold">{report.dryRun ? '3. Dry-run report' : '4. Import report'}</h2>
+                <h2 className="text-base font-semibold">{report.dryRun ? '3. What we found' : '4. What was created'}</h2>
                 {report.dryRun ? (
                   <>
-                    <Badge tone="success">{formatNumber(stats.ok)} valid</Badge>
-                    <Badge tone={stats.bad ? 'danger' : 'neutral'}>{formatNumber(stats.bad)} invalid</Badge>
-                    <span className="text-sm text-muted-foreground">Nothing has been created yet. Fix invalid rows in the file and re-upload, or create the valid ones.</span>
+                    <Badge tone="success">{formatNumber(stats.ok)} fine</Badge>
+                    <Badge tone={stats.bad ? 'danger' : 'neutral'}>{formatNumber(stats.bad)} with problems</Badge>
+                    <span className="text-sm text-muted-foreground">Nothing is created yet. Fix the rows with problems in your file and choose it again, or create the ones that are fine.</span>
                   </>
                 ) : (
                   <>
                     <Badge tone="success">{formatNumber(stats.created)} created</Badge>
                     <Badge tone={stats.bad ? 'danger' : 'neutral'}>{formatNumber(stats.bad)} not created</Badge>
                     <Button variant="link" size="sm" asChild>
-                      <Link href="/jobs?dash=pending">View pending jobs</Link>
+                      <Link href="/jobs?status=pending">Book the new jobs</Link>
                     </Button>
                   </>
                 )}
@@ -456,10 +455,10 @@ export function JobImport() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Line</TableHead>
+                      <TableHead>Row</TableHead>
                       <TableHead>Merchant</TableHead>
                       <TableHead>Result</TableHead>
-                      <TableHead>Details</TableHead>
+                      <TableHead>What to fix, or the new job</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -472,16 +471,16 @@ export function JobImport() {
                           <TableCell className="max-w-56 break-words">{merchantCol >= 0 ? cells[merchantCol] : '—'}</TableCell>
                           <TableCell>
                             {!r ? (
-                              <Badge tone="neutral">Not checked</Badge>
+                              <Badge tone="neutral">Not checked yet</Badge>
                             ) : r.job_id ? (
                               <Badge tone="success">
                                 <CheckCircle2 /> Created
                               </Badge>
                             ) : r.ok ? (
-                              <Badge tone={report.dryRun ? 'success' : 'neutral'}>{report.dryRun ? 'Valid' : 'Valid (not created)'}</Badge>
+                              <Badge tone={report.dryRun ? 'success' : 'neutral'}>{report.dryRun ? 'Fine' : 'Fine (not created)'}</Badge>
                             ) : (
                               <Badge tone="danger">
-                                <XCircle /> Invalid
+                                <XCircle /> Has problems
                               </Badge>
                             )}
                           </TableCell>
@@ -520,7 +519,7 @@ export function JobImport() {
         {!bankId ? (
           <Alert>
             <FileUp />
-            <AlertDescription>Choose a bank to start.</AlertDescription>
+            <AlertDescription>Choose the bank the jobs are for, to start.</AlertDescription>
           </Alert>
         ) : null}
       </div>

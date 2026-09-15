@@ -17,6 +17,58 @@ import {
   validateFormAnswers as engineValidateFormAnswers,
   validatePayload as engineValidatePayload,
 } from './engine/index.ts';
+import { componentSpec } from './engine/definitions/catalogue.ts';
+
+/** A form field that holds a value, as exports and the bank API describe it (T6-06). */
+export interface FormFieldInfo {
+  section: string;
+  sectionTitle: string | null;
+  key: string;
+  type: string;
+  /** export.column_label, else the label when it is plain text, else the key (a label can be a rule). */
+  label: string;
+  /** Inline options, value → label (lookup lists and reason codes aren't resolved here). */
+  options: Record<string, string> | null;
+  /** false when the form says export.include = false: the field stays out of exports and the bank API. */
+  exported: boolean;
+  /** A photo, signature or other evidence component: its value is evidence ids. */
+  evidence: boolean;
+}
+
+/** Every value-holding field of a form definition, in form order, with groups flattened and display components skipped. */
+export function formFieldList(definition: unknown): FormFieldInfo[] {
+  const out: FormFieldInfo[] = [];
+  const def = definition as { sections?: Array<{ key?: string; title?: unknown; fields?: unknown[] }> } | null;
+  for (const section of def?.sections ?? []) {
+    const sectionTitle = typeof section.title === 'string' ? section.title : null;
+    const walk = (fields: unknown[] | undefined) => {
+      for (const raw of fields ?? []) {
+        const f = raw as {
+          key?: string; type?: string; label?: unknown; fields?: unknown[];
+          export?: { include?: boolean; column_label?: string }; options?: Array<{ value: string; label: string }>;
+        };
+        const spec = f.type ? componentSpec(f.type) : undefined;
+        if (spec?.shape === 'group') {
+          walk(f.fields);
+          continue;
+        }
+        if (!f.key || spec?.shape === 'display') continue;
+        out.push({
+          section: section.key ?? '',
+          sectionTitle,
+          key: f.key,
+          type: f.type ?? 'unknown',
+          label: f.export?.column_label ?? (typeof f.label === 'string' ? f.label : f.key),
+          options: Array.isArray(f.options) ? Object.fromEntries(f.options.map((o) => [o.value, o.label])) : null,
+          exported: f.export?.include !== false,
+          evidence: spec?.category === 'evidence',
+        });
+      }
+    };
+    walk(section.fields);
+  }
+  return out;
+}
 
 /** sha256(JCS(value)), lower-case hex — stored_hash, answers_hash, definition_hash (docs/12 §11). */
 export function canonicalHash(value: unknown): Promise<string> {

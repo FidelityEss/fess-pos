@@ -27,7 +27,7 @@ export function DocumentHeader({
     <Card>
       <CardContent className="grid gap-4 p-4">
         <div className={advanced || asStr(doc.description) ? 'grid gap-4 md:grid-cols-2' : 'grid gap-4 md:max-w-2xl'}>
-          <TextField label={titleLabel} value={asStr(doc.title)} onChange={(v) => set('title', v)} placeholder="Shown to admins and, for some kinds, to agents" />
+          <TextField label={titleLabel} value={asStr(doc.title)} onChange={(v) => set('title', v)} placeholder="Shown in the admin panel, and to agents on some screens" />
           {advanced || asStr(doc.description) ? (
             <TextField label="Description" value={asStr(doc.description)} onChange={(v) => set('description', v)} placeholder="Optional" />
           ) : null}
@@ -36,7 +36,7 @@ export function DocumentHeader({
         {advanced ? (
           <div className="grid gap-4 border-t pt-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="text-sm">
-              <p className="text-xs text-muted-foreground">Family key</p>
+              <p className="text-xs text-muted-foreground">Technical name</p>
               <code className="text-sm">{asStr(doc.family) || '—'}</code>
             </div>
             <div className="text-sm">

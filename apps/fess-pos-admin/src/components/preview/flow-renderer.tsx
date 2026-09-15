@@ -12,6 +12,7 @@ import { ErrorBanner, sectionTitle, validateAndReveal } from './form-screen';
 import { type AnswerMeta, type FormPreviewState, useFormPreviewState } from './form-state';
 import { lenientParse } from './lenient-parse';
 import { PhoneSection } from './phone-frame';
+import { PAGE_BLEED, PAGE_X, toneColors, typeStyle } from './phone-style';
 import { Callout, CheckRow, MockMap, PhoneActionButton, PhoneDialog, PreviewNotice, RiskChip, StepIndicator, StickyFooter } from './phone-widgets';
 import { contentText, type RenderFrame, ruleBool, templateText, usePreviewEnv, useResolveContext } from './preview-context';
 import { formatDate, formatValue, humanise } from './preview-format';
@@ -85,12 +86,18 @@ function answerText(rf: ResolvedField, meta: AnswerMeta | undefined): string | n
 function SummaryReview({ state, form, sections, step, onJump }: { state: FormPreviewState; form: FormDefinition; sections: readonly string[]; step: StepDef; onJump: (section: string) => void }) {
   const risks = step.show_risk_indicators === false ? [] : state.risks(sections);
   const resolved = state.resolved;
-  if (!resolved) return <PreviewNotice>Answers can’t be summarised: {state.resolveError}</PreviewNotice>;
+  if (!resolved) {
+    return (
+      <div className={cn(PAGE_X, 'py-4')}>
+        <PreviewNotice>Answers can’t be summarised: {state.resolveError}</PreviewNotice>
+      </div>
+    );
+  }
   return (
-    <div className="space-y-4 py-3">
+    <div className="space-y-2 pb-4">
       {risks.length > 0 ? (
         <PhoneSection title="Risk indicators">
-          <div className="flex flex-wrap gap-1.5 rounded-xl border border-amber-200 bg-amber-50/60 p-2.5">
+          <div className="flex flex-wrap gap-1.5 rounded-[var(--ph-inner-r)] p-3" style={{ backgroundColor: toneColors('warning').background }}>
             {risks.map((r) => (
               <RiskChip key={r.key} level={r.level} label={r.label ?? r.fieldLabel} />
             ))}
@@ -106,13 +113,22 @@ function SummaryReview({ state, form, sections, step, onJump }: { state: FormPre
           .filter((rf): rf is ResolvedField => Boolean(rf && rf.section === key && rf.visible && !['info', 'callout', 'divider', 'image', 'group'].includes(rf.type) && !(rf.type === 'computed' && rf.props.hidden === true)));
         return (
           <PhoneSection key={key} title={sectionTitle(form, key)}>
-            <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            {/* Flat rows between hairlines (no box), as the module's lists. */}
+            <div className="divide-y divide-[color:var(--ph-divider)] border-y border-[color:var(--ph-divider)]">
               {rows.map((rf) => {
                 const text = answerText(rf, state.meta[rf.key]);
                 return (
-                  <div key={rf.key} className="px-3 py-2">
-                    <div className="text-[13px] text-slate-500">{rf.label ?? humanise(rf.key)}</div>
-                    <div className={cn('text-[15px]', text === null ? (rf.required ? 'text-amber-700' : 'text-slate-400') : 'text-slate-900')}>
+                  <div key={rf.key} className="py-2.5">
+                    <div className="text-[color:var(--ph-body)]" style={typeStyle('caption')}>
+                      {rf.label ?? humanise(rf.key)}
+                    </div>
+                    <div
+                      className={cn(
+                        'leading-snug',
+                        text === null ? (rf.required ? 'text-[color:var(--ph-warning-text)]' : 'text-[color:var(--ph-muted)]') : 'text-[color:var(--ph-text)]',
+                      )}
+                      style={typeStyle('body')}
+                    >
                       {text ?? (rf.required ? 'Not answered' : '—')}
                     </div>
                   </div>
@@ -120,7 +136,7 @@ function SummaryReview({ state, form, sections, step, onJump }: { state: FormPre
               })}
             </div>
             {step.allow_jump_back !== false ? (
-              <button type="button" onClick={() => onJump(key)} className="mt-1 inline-flex items-center gap-1 px-1 py-1 text-[14px] font-medium text-[var(--pp)]">
+              <button type="button" onClick={() => onJump(key)} className="mt-1 inline-flex cursor-pointer items-center gap-1 py-1 text-[14px] font-semibold text-[var(--pp)]">
                 <Pencil className="size-3.5" /> Edit
               </button>
             ) : null}
@@ -181,7 +197,8 @@ export function FlowScreen({
   const data = state.resolved?.data ?? env.data;
   const today = typeof env.data.today === 'string' ? env.data.today : null;
   const steps = flow.steps.map((s, i) => ({ step: s, id: stepId(s, i) })).filter(({ step }) => ruleBool(step.visible, data, true, today));
-  if (steps.length === 0) return renderFrame({ title: title ?? flow.title, body: <div className="p-3"><PreviewNotice>This flow has no steps yet.</PreviewNotice></div> });
+  const padded = cn(PAGE_X, 'py-4');
+  if (steps.length === 0) return renderFrame({ title: title ?? flow.title, body: <div className={padded}><PreviewNotice>There are no steps yet.</PreviewNotice></div> });
 
   const index = Math.max(0, steps.findIndex((s) => s.id === current));
   const { step, id } = steps[index] ?? steps[0]!;
@@ -263,16 +280,16 @@ export function FlowScreen({
   const ackText = step.type === 'declaration' ? 'I have read and accept this declaration' : (step.acknowledgement_text ?? '');
   const ackRow =
     (step.type === 'job_briefing' && step.acknowledgement_text) || step.type === 'declaration' ? (
-      <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-1">
+      <div className="mt-4 border-t border-[color:var(--ph-divider)] pt-2">
         <CheckRow checked={acks[id] === true} onChange={(c) => { setAcks((a) => ({ ...a, [id]: c })); setNeedAck(null); }}>{templateText(ackText, data)}</CheckRow>
-        {needAck === id ? <p className="pb-2 text-[13px] text-red-700">Tick the box to continue.</p> : null}
+        {needAck === id ? <p className="pb-2 text-[color:var(--ph-error-text)]" style={typeStyle('caption')}>Tick the box to continue.</p> : null}
       </div>
     ) : null;
 
   switch (step.type) {
     case 'job_briefing':
       body = (
-        <div className="px-3 py-3">
+        <div className={padded}>
           <ViewByKey viewKey={step.view} />
           {ackRow}
         </div>
@@ -281,7 +298,7 @@ export function FlowScreen({
     case 'location_check': {
       const prompt = step.checkin_prompt === 'always' || geofence.relaxed;
       body = (
-        <div className="space-y-3 px-3 py-3">
+        <div className={cn('space-y-3', padded)}>
           <MockMap height={200} fence agent={geofence.inside ? 'inside' : 'outside'} />
           {geofence.inside ? (
             <Callout tone="info">
@@ -296,16 +313,16 @@ export function FlowScreen({
               <PhoneActionButton variant={checkedIn ? 'outline' : 'primary'} onClick={() => { setCheckedIn(true); setNeedAck(null); }}>
                 {checkedIn ? <><CircleCheck className="size-4" /> Location recorded</> : <><MapPin className="size-4" /> Record my location</>}
               </PhoneActionButton>
-              {needAck === id ? <p className="text-[13px] text-red-700">Record your location to continue.</p> : null}
+              {needAck === id ? <p className="text-[color:var(--ph-error-text)]" style={typeStyle('caption')}>Record your location to continue.</p> : null}
             </div>
           ) : null}
           {!geofence.inside && override ? (
             overrideForm ? (
-              <div className="-mx-3">
+              <div className={PAGE_BLEED}>
                 <FormSections state={overrideState} />
               </div>
             ) : (
-              <PreviewNotice>Override form “{step.override_form ?? '—'}” is not loaded in this preview.</PreviewNotice>
+              <PreviewNotice>The questions asked away from the site (“{step.override_form ?? '—'}”) can’t be shown in this preview.</PreviewNotice>
             )
           ) : null}
         </div>
@@ -315,12 +332,12 @@ export function FlowScreen({
     }
     case 'form':
       body = !form ? (
-        <div className="p-3">
-          <PreviewNotice>Form “{step.form ?? flow.form_family ?? '—'}” is not loaded in this preview.</PreviewNotice>
+        <div className={padded}>
+          <PreviewNotice>The questions “{step.form ?? flow.form_family ?? '—'}” can’t be shown in this preview.</PreviewNotice>
         </div>
       ) : pages.length === 0 ? (
-        <div className="p-3">
-          <PreviewNotice>This step’s sections are hidden for this sample or not in the form.</PreviewNotice>
+        <div className={padded}>
+          <PreviewNotice>This step’s sections are hidden for this sample job, or aren’t in the questions.</PreviewNotice>
         </div>
       ) : (
         <FormSections state={state} sectionKeys={pages[subIndex] ?? []} />
@@ -328,18 +345,16 @@ export function FlowScreen({
       break;
     case 'summary_review':
       body = form ? (
-        <div className="px-3">
-          <SummaryReview state={state} form={form} sections={allFlowSections} step={step} onJump={jumpToSection} />
-        </div>
+        <SummaryReview state={state} form={form} sections={allFlowSections} step={step} onJump={jumpToSection} />
       ) : (
-        <div className="p-3">
-          <PreviewNotice>The form is not loaded in this preview.</PreviewNotice>
+        <div className={padded}>
+          <PreviewNotice>The questions can’t be shown in this preview.</PreviewNotice>
         </div>
       );
       break;
     case 'declaration':
       body = (
-        <div className="px-3 py-3">
+        <div className={padded}>
           <DeclarationText declarationKey={step.declaration_key ?? form?.declaration_key} />
           {ackRow}
         </div>
@@ -348,7 +363,7 @@ export function FlowScreen({
     case 'submit':
       primary = step.label ?? 'Submit';
       body = (
-        <div className="space-y-3 px-3 py-3">
+        <div className={cn('space-y-3', padded)}>
           <Callout tone="info">Your answers and photos will be sealed and sent. If you’re offline, they are saved on this phone and sent automatically.</Callout>
           {submitErrors ? (
             <Callout tone="danger">
@@ -370,16 +385,16 @@ export function FlowScreen({
     case 'receipt':
       primary = 'Done';
       body = (
-        <div className="px-3 py-3">
+        <div className={padded}>
           <ViewByKey viewKey={step.view} />
         </div>
       );
       break;
     default:
       body = (
-        <div className="p-3">
+        <div className={padded}>
           <PreviewNotice>
-            <span className="font-mono">{step.type}</span> — preview not available yet
+            This step can’t be previewed yet (<span className="font-mono">{step.type}</span>).
           </PreviewNotice>
         </div>
       );

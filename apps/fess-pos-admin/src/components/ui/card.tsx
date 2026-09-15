@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 /** Bordered white surface. */
 export function Card({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div className={cn('rounded-xl border bg-card text-card-foreground shadow-xs', className)} {...props} />;
+  return <div className={cn('rounded-xl border bg-card text-card-foreground', className)} {...props} />;
 }
 
 export function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {

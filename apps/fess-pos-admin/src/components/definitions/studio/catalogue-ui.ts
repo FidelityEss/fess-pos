@@ -103,10 +103,10 @@ const COMPONENT_WORDING: Record<string, Wording> = {
   tri_state: { name: 'Yes / No / Not applicable', description: 'Yes, No or N/A.', icon: CircleDot },
   single_select: { name: 'Pick one', description: 'Choose one answer from a list (radio buttons, dropdown or chips).', icon: List },
   multi_select: { name: 'Pick several', description: 'Tick all the answers that apply.', icon: ListChecks },
-  lookup: { name: 'Search a list', description: 'Pick from a long managed list (lookup list) with search.', icon: Search },
+  lookup: { name: 'Search a list', description: 'Pick from a long drop-down list, with a search box.', icon: Search },
   date: { name: 'Date', description: 'A calendar date.', icon: Calendar },
   time: { name: 'Time', description: 'A time of day.', icon: Clock },
-  duration: { name: 'Length of time', description: 'How long, in days, months or years (e.g. time in business).', icon: Hourglass },
+  duration: { name: 'Length of time', description: 'How long, in days, months or years, such as time in business.', icon: Hourglass },
   business_hours: { name: 'Business hours', description: 'Opening and closing times for weekdays, weekends and holidays.', icon: CalendarClock },
   datetime: { name: 'Date and time', description: 'A date with a time.', icon: CalendarClock },
   address: { name: 'Address', description: 'A South African address, optionally with a map pin.', icon: MapPin },
@@ -114,22 +114,22 @@ const COMPONENT_WORDING: Record<string, Wording> = {
   current_location: { name: 'Current GPS location', description: "Records the phone's GPS position.", icon: Navigation },
   photo: { name: 'Photos', description: 'Camera photos with GPS and a minimum / maximum count.', icon: Camera },
   signature: { name: 'Signature', description: 'A signature drawn on the screen.', icon: PenLine },
-  declaration: { name: 'Declaration', description: 'The agent accepts a versioned declaration text.', icon: FileSignature },
+  declaration: { name: 'Declaration', description: 'The agent agrees to a declaration statement.', icon: FileSignature },
   acknowledgement: { name: 'Tick to confirm', description: 'A statement the agent must tick to continue.', icon: CheckSquare },
-  consent: { name: 'Consent', description: 'The interviewee gives consent to a versioned text.', icon: ShieldCheck },
+  consent: { name: 'Consent', description: 'The person being interviewed agrees to a consent statement.', icon: ShieldCheck },
   info: { name: 'Information text', description: 'A paragraph of guidance for the agent. Not a question.', icon: Info },
   callout: { name: 'Highlighted notice', description: 'A coloured notice, such as a warning. Not a question.', icon: MessageSquareWarning },
   divider: { name: 'Divider line', description: 'A line that separates parts of a page.', icon: Minus },
   image: { name: 'Picture', description: 'An instructional image.', icon: Image },
   prefilled: { name: 'Copied from the job', description: 'Shows a value copied from the job or the agent, which the agent can flag as different.', icon: FileText },
-  computed: { name: 'Calculated value', description: 'A value worked out from other answers (e.g. a score).', icon: Calculator },
+  computed: { name: 'Calculated value', description: 'A value worked out from other answers, such as a score.', icon: Calculator },
   group: { name: 'Group', description: 'Keeps several questions together (optionally in two columns).', icon: Square },
-  repeatable_group: { name: 'Repeating group', description: 'A set of questions the agent can fill in several times (e.g. each other business).', icon: Repeat },
+  repeatable_group: { name: 'Repeating group', description: 'A set of questions the agent can fill in several times, such as once for each other business.', icon: Repeat },
   matrix: { name: 'Grid of questions', description: 'Rows of questions sharing the same answer columns.', icon: Columns3 },
 };
 
 export function componentWording(type: string): Wording {
-  return COMPONENT_WORDING[type] ?? { name: humanLabel(type), description: 'A component from the catalogue.', icon: Sparkles };
+  return COMPONENT_WORDING[type] ?? { name: humanLabel(type), description: 'Another kind of question.', icon: Sparkles };
 }
 
 const DISPLAY_LABEL: Record<string, string> = {
@@ -161,7 +161,7 @@ export const displayLabel = (d: string): string => DISPLAY_LABEL[d] ?? humanLabe
 export const PROP_LABEL: Record<string, { label: string; hint?: string }> = {
   min_length: { label: 'Minimum characters' },
   max_length: { label: 'Maximum characters' },
-  pattern: { label: 'Format (pattern)', hint: 'A regular expression the answer must match, e.g. ^[0-9]{6}$ for six digits.' },
+  pattern: { label: 'Format (pattern)', hint: 'A pattern the answer must match, written as a regular expression. For six digits: ^[0-9]{6}$' },
   mask: { label: 'Input mask' },
   placeholder: { label: 'Hint inside the box' },
   keyboard: { label: 'Keyboard' },
@@ -171,11 +171,11 @@ export const PROP_LABEL: Record<string, { label: string; hint?: string }> = {
   max: { label: 'Highest allowed' },
   integer: { label: 'Whole numbers only' },
   decimals: { label: 'Decimal places' },
-  unit: { label: 'Unit', hint: 'Shown after the number, e.g. m² or days.' },
+  unit: { label: 'Unit', hint: 'Shown after the number, such as m² or days.' },
   step: { label: 'Step size' },
-  default_region: { label: 'Default country code', hint: 'Two letters, e.g. ZA.' },
+  default_region: { label: 'Default country code', hint: 'Two letters, such as ZA.' },
   allow_landline: { label: 'Allow landline numbers' },
-  currency: { label: 'Currency', hint: 'Three letters, e.g. ZAR.' },
+  currency: { label: 'Currency', hint: 'Three letters, such as ZAR.' },
   min_label: { label: 'Label at the low end' },
   max_label: { label: 'Label at the high end' },
   scale: { label: 'Scale (3–10)' },
@@ -188,8 +188,8 @@ export const PROP_LABEL: Record<string, { label: string; hint?: string }> = {
   other_label: { label: 'Label for "Other"' },
   min_select: { label: 'Tick at least' },
   max_select: { label: 'Tick at most' },
-  exclusive_options: { label: 'Options that clear the others', hint: 'E.g. "None of the above". Use option values.' },
-  list: { label: 'Lookup list' },
+  exclusive_options: { label: 'Answers that clear the others', hint: 'Such as “None of the above”.' },
+  list: { label: 'Drop-down list' },
   search: { label: 'Show a search box' },
   allow_unknown: { label: 'Allow "Unknown"' },
   units: { label: 'Units the agent can choose' },
@@ -204,7 +204,7 @@ export const PROP_LABEL: Record<string, { label: string; hint?: string }> = {
   sample_seconds: { label: 'GPS sampling time (seconds)' },
   min_count: { label: 'Minimum photos' },
   max_count: { label: 'Maximum photos' },
-  category: { label: 'Photo category', hint: 'Groups the photos in the review screen and exports, e.g. external.' },
+  category: { label: 'Photo group', hint: 'Groups the photos on the review screen and in exports, such as “external”.' },
   require_gps: { label: 'Photos must carry a GPS location' },
   guidance: { label: 'Guidance for the agent' },
   caption: { label: 'Caption' },
@@ -288,8 +288,8 @@ const ENUM_VALUE_LABEL: Record<string, string> = {
   local: 'Records on the phone',
   server: 'Total from the server',
   jobs: 'Jobs',
-  inspections: 'Inspections',
-  form_submissions: 'Form submissions',
+  inspections: 'Visits',
+  form_submissions: 'Answers sent in',
   call: 'Call',
   sms: 'SMS',
   bottom_tabs: 'Tabs along the bottom',
@@ -298,9 +298,9 @@ const ENUM_VALUE_LABEL: Record<string, string> = {
   failure: 'Could not be completed',
   agent: 'The agent',
   home: 'Go home',
-  receipt: 'Show the receipt',
+  receipt: 'Show the confirmation',
   retry: 'Try again',
-  start_flow: 'Start a flow',
+  start_flow: 'Start visit steps',
   page: 'Open a page',
   back: 'Go back',
   currency_value: 'Currency',
@@ -311,34 +311,34 @@ export const enumLabel = (v: string): string => ENUM_VALUE_LABEL[v] ?? humanLabe
 // ── Flow steps ─────────────────────────────────────────────────────────────────────────────────
 const STEP_WORDING: Record<string, Wording> = {
   job_briefing: { name: 'Job briefing', description: 'Shows the job details before the agent starts.', icon: ClipboardCheck },
-  location_check: { name: 'Location check', description: 'Checks the agent is at the merchant (geofence), with an override path.', icon: MapPin },
-  form: { name: 'Questions', description: 'Shows one or more sections of the linked form.', icon: LayoutList },
-  summary_review: { name: 'Review answers', description: 'The agent checks every answer before declaring.', icon: ListChecks },
-  declaration: { name: 'Agent declaration', description: 'The agent accepts the versioned declaration.', icon: FileSignature },
-  submit: { name: 'Submit', description: 'Seals the answers and photos and queues them for upload.', icon: Send },
-  receipt: { name: 'Receipt', description: 'Shows what the server received.', icon: Receipt },
+  location_check: { name: 'Location check', description: 'Checks the agent is inside the site area around the merchant, with a way to carry on if not.', icon: MapPin },
+  form: { name: 'Questions', description: 'Shows one or more sections of the chosen questions.', icon: LayoutList },
+  summary_review: { name: 'Review answers', description: 'The agent checks every answer before the declaration.', icon: ListChecks },
+  declaration: { name: 'Agent declaration', description: 'The agent agrees to the declaration statement.', icon: FileSignature },
+  submit: { name: 'Submit', description: 'Locks the answers and photos and sends them to the office.', icon: Send },
+  receipt: { name: 'Confirmation', description: 'Shows what the office received.', icon: Receipt },
 };
 
 export function stepWording(type: string): Wording {
-  return STEP_WORDING[type] ?? { name: humanLabel(type), description: 'A flow step.', icon: Workflow };
+  return STEP_WORDING[type] ?? { name: humanLabel(type), description: 'A step of the visit.', icon: Workflow };
 }
 
 export const ACTION_LABEL: Record<string, string> = {
   'job.accept': 'Accept the job',
-  'job.reject': 'Reject the job',
-  'job.unable': 'Mark the job as unable to complete',
-  'inspection.start': 'Start the inspection',
-  'inspection.submit': 'Submit the inspection',
+  'job.reject': 'Turn down the job',
+  'job.unable': 'Mark the job as not possible to do',
+  'inspection.start': 'Start the visit',
+  'inspection.submit': 'Send the visit in',
   'record.submit': 'Save the answers as a record',
-  'lead.create': 'Create a lead (pending decision)',
+  'lead.create': 'Create a lead (not decided yet)',
   navigate: 'Go to a page',
-  'panic.raise': 'Raise a panic alert (deferred)',
+  'panic.raise': 'Raise a panic alert (not available yet)',
 };
 
 // ── View components ────────────────────────────────────────────────────────────────────────────
 const VIEW_WORDING: Record<string, Wording> = {
   title: { name: 'Title', description: 'A large heading, from a job value or fixed text.', icon: Heading1 },
-  field_value: { name: 'Label and value', description: 'One job detail with its label, e.g. Reference.', icon: Type },
+  field_value: { name: 'Label and value', description: 'One job detail with its label, such as the reference.', icon: Type },
   address_block: { name: 'Address', description: 'A formatted address.', icon: MapPin },
   map_preview: { name: 'Map', description: 'A small map at a location.', icon: MapIcon },
   contact: { name: 'Contact', description: 'A person with call / SMS buttons.', icon: Contact },
@@ -348,14 +348,14 @@ const VIEW_WORDING: Record<string, Wording> = {
   markdown: { name: 'Text', description: 'A paragraph of text (may include job values).', icon: ScrollText },
   image: { name: 'Picture', description: 'An image.', icon: Image },
   divider: { name: 'Divider line', description: 'A separating line.', icon: Minus },
-  evidence_status: { name: 'Photo upload status', description: 'How many photos the server has verified.', icon: Fingerprint },
-  greeting: { name: 'Greeting', description: 'A welcome line, e.g. "Hi Gugu".', icon: Smile },
+  evidence_status: { name: 'Photo upload status', description: 'How many photos the office has received and checked.', icon: Fingerprint },
+  greeting: { name: 'Greeting', description: 'A welcome line, such as “Hi Gugu”.', icon: Smile },
   section_title: { name: 'Section heading', description: 'A small heading between parts of the home page.', icon: Heading1 },
-  stat_row: { name: 'Row of totals', description: 'A row of tiles with counts, e.g. Active or Due today.', icon: BarChart3 },
+  stat_row: { name: 'Row of totals', description: 'A row of tiles with counts, such as Active or Due today.', icon: BarChart3 },
   stat_tile: { name: 'Total tile', description: 'One count, from the phone or from the server.', icon: Hash },
   job_list: { name: 'List of jobs', description: 'A filtered list of the agent’s jobs.', icon: LayoutList },
   agent_card_summary: { name: 'Authorisation card (small)', description: "A summary of the agent's card; tap to open it.", icon: CreditCard },
-  action_button: { name: 'Button', description: 'A button that opens a page or starts a flow.', icon: MousePointerClick },
+  action_button: { name: 'Button', description: 'A button that opens a page or starts visit steps.', icon: MousePointerClick },
   sync_status: { name: 'Sync status', description: 'Whether everything has uploaded.', icon: RefreshCw },
   announcement: { name: 'Announcement', description: 'A coloured message for all agents.', icon: Megaphone },
   agent_card: { name: 'Agent authorisation card', description: "The agent's card with photo and QR code.", icon: UserRound },
@@ -363,17 +363,17 @@ const VIEW_WORDING: Record<string, Wording> = {
 };
 
 export function viewWording(type: string): Wording {
-  return VIEW_WORDING[type] ?? { name: humanLabel(type), description: 'A screen component.', icon: Sparkles };
+  return VIEW_WORDING[type] ?? { name: humanLabel(type), description: 'Something shown on the screen.', icon: Sparkles };
 }
 
 export const VIEW_GROUP_LABEL: Record<string, string> = { display: 'Job and record details', home: 'Home page', card: 'Cards' };
 
 // ── Page types ─────────────────────────────────────────────────────────────────────────────────
 const PAGE_WORDING: Record<string, Wording> = {
-  view_page: { name: 'Screen', description: 'Shows a screen (view), such as the home page or job detail.', icon: PanelTop },
-  list_page: { name: 'List', description: 'A list of jobs or records, e.g. active leads.', icon: LayoutList },
-  form_page: { name: 'Form', description: 'Any form, submitted to one action (e.g. reject a job).', icon: FileText },
-  flow: { name: 'Step-by-step journey', description: 'Runs a flow, such as the site inspection.', icon: Workflow },
+  view_page: { name: 'Screen', description: 'Shows a screen layout, such as the home page or the job page.', icon: PanelTop },
+  list_page: { name: 'List', description: 'A list of jobs or records, such as active leads.', icon: LayoutList },
+  form_page: { name: 'Questions page', description: 'A set of questions that does one thing when sent, such as turning down a job.', icon: FileText },
+  flow: { name: 'Visit steps', description: 'Runs visit steps, such as the site visit.', icon: Workflow },
   outcome_page: { name: 'Result', description: 'What the agent sees after submitting: success, saved or failure.', icon: Receipt },
 };
 

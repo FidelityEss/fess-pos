@@ -2,8 +2,10 @@
 
 import { type FormEvent, useId, useState } from 'react';
 import { canWriteScoped } from '@/components/admin/access';
+import { keyFromText } from '@/components/admin/form-helpers';
 import { defaultScope, ScopeSelect } from '@/components/admin/scope-select';
 import { ApiErrorAlert } from '@/components/api-error-alert';
+import { Details } from '@/components/details';
 import { apiFieldErrors, type FieldErrors, FormField, zodFieldErrors } from '@/components/form-field';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -33,14 +35,17 @@ function CreateListForm({ onClose, onCreated }: { onClose: () => void; onCreated
   const staff = useStaff();
   const uid = useId();
   const [key, setKey] = useState('');
+  // The key follows the list's name until someone types their own.
+  const [keyTouched, setKeyTouched] = useState(false);
   const [title, setTitle] = useState('');
   const [bankId, setBankId] = useState<string | null>(() => defaultScope(staff));
   const [clientErrors, setClientErrors] = useState<FieldErrors>({});
+  const shownKey = keyTouched ? key : keyFromText(title);
   const create = useMutationWithToast({
     mutationFn: (body: LookupListCreateBody) => adminApi.lookupLists.create(body),
     invalidate: [['lookup_lists']],
     toastErrors: false,
-    successMessage: (l) => `List ${l.key} created — publish its first version next`,
+    successMessage: (l) => `“${l.title}” added. Now add its choices and publish them.`,
     onSuccess: (l) => {
       onClose();
       onCreated(l.id);
@@ -51,8 +56,10 @@ function CreateListForm({ onClose, onCreated }: { onClose: () => void; onCreated
   function submit(e: FormEvent) {
     e.preventDefault();
     const next: FieldErrors = {};
-    if (!canWriteScoped(staff, bankId)) next.bank_id = bankId === null ? 'Only an all-bank administrator can create global lists (D-44).' : 'That bank is outside your scope.';
-    const parsed = lookupListCreateSchema.safeParse({ key: key.trim(), bank_id: bankId, title });
+    if (!canWriteScoped(staff, bankId)) {
+      next.bank_id = bankId === null ? 'Only an administrator who covers all banks can add a list for all banks.' : 'You don’t have access to that bank.';
+    }
+    const parsed = lookupListCreateSchema.safeParse({ key: shownKey.trim(), bank_id: bankId, title });
     const merged = parsed.success ? next : { ...zodFieldErrors(parsed.error), ...next };
     setClientErrors(merged);
     if (!parsed.success || Object.keys(merged).length > 0) return;
@@ -62,25 +69,43 @@ function CreateListForm({ onClose, onCreated }: { onClose: () => void; onCreated
   return (
     <form onSubmit={submit} className="grid gap-4" noValidate>
       <DialogHeader>
-        <DialogTitle>New lookup list</DialogTitle>
-        <DialogDescription>A versioned list of options that forms can use. Items are added by publishing its first version.</DialogDescription>
+        <DialogTitle>Add a drop-down list</DialogTitle>
+        <DialogDescription>A list of choices the questions can use, such as provinces. After adding it, you add its choices and publish them.</DialogDescription>
       </DialogHeader>
-      <FormField label="Key" htmlFor={`${uid}-key`} required error={errors.key} hint="snake_case, e.g. business_types. Forms refer to the list by this key.">
-        <Input id={`${uid}-key`} value={key} onChange={(e) => setKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} maxLength={64} className="font-mono" aria-invalid={!!errors.key || undefined} />
-      </FormField>
-      <FormField label="Title" htmlFor={`${uid}-title`} required error={errors.title}>
+      <FormField label="Name" htmlFor={`${uid}-title`} required error={errors.title}>
         <Input id={`${uid}-title`} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} aria-invalid={!!errors.title || undefined} />
       </FormField>
-      <FormField label="Scope" htmlFor={`${uid}-scope`} required error={errors.bank_id} hint="A bank list with the same key replaces the global one for that bank.">
+      <FormField label="Which banks" htmlFor={`${uid}-scope`} required error={errors.bank_id} hint="Choose one bank if only that bank should use this list.">
         <ScopeSelect id={`${uid}-scope`} value={bankId} onChange={setBankId} invalid={!!errors.bank_id} />
       </FormField>
+      <Details defaultOpen={!!errors.key}>
+        <FormField
+          label="Key"
+          htmlFor={`${uid}-key`}
+          required
+          error={errors.key}
+          hint="The name the questions use to find this list. It’s filled in from the list’s name and can’t be changed later."
+        >
+          <Input
+            id={`${uid}-key`}
+            value={shownKey}
+            onChange={(e) => {
+              setKeyTouched(true);
+              setKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+            }}
+            maxLength={64}
+            className="font-mono"
+            aria-invalid={!!errors.key || undefined}
+          />
+        </FormField>
+      </Details>
       <ApiErrorAlert error={create.error} />
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
         <Button type="submit" loading={create.isPending}>
-          Create list
+          Add list
         </Button>
       </DialogFooter>
     </form>

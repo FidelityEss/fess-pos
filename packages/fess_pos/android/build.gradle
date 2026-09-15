@@ -1,0 +1,33 @@
+// The module's own Android code (T5-02, D-95): battery optimisation and
+// background restriction, and the settings screen to exempt the app. It
+// uses the host's Android Gradle plugin and Kotlin versions (D-55): no
+// buildscript, no pinned plugin versions.
+group = "com.fidelityess.fess_pos"
+version = "1.0"
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+android {
+    namespace = "com.fidelityess.fess_pos"
+    compileSdk = 35
+
+    defaultConfig {
+        minSdk = 21
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        main.java.srcDirs += "src/main/kotlin"
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}

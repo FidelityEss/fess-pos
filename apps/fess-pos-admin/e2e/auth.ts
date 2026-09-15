@@ -1,6 +1,7 @@
 // LOCAL-ONLY e2e authentication. The local stack disables email/password sign-in, so the tests sign the admin in by
-// injecting a short-lived aal2 session minted with the local Supabase demo JWT secret — the same token shape GoTrue
-// issues after TOTP verification. It refuses any Supabase URL that is not localhost/127.0.0.1, so it can never be
+// injecting a short-lived session minted with the local Supabase demo JWT secret — the token shape GoTrue issues. It is
+// aal2 by default so the tests pass whichever way admin.require_mfa is set (off since D-96); pass 'aal1' for a
+// password-only session. It refuses any Supabase URL that is not localhost/127.0.0.1, so it can never be
 // pointed at staging or production (and never at the FESS project).
 //
 // Needs a bootstrapped admin: `SUPABASE_SERVICE_ROLE_KEY=… node scripts/bootstrap-admin.mjs --email admin@fess-pos.local`.

@@ -68,7 +68,7 @@ function EditorFor({ kind, ...props }: EditorProps & { kind: string }) {
     case 'app':
       return <AppEditor {...props} />;
     default:
-      return <p className="text-sm text-muted-foreground">There is no structured editor for “{kind}” yet.</p>;
+      return <p className="text-sm text-muted-foreground">This kind of set-up can’t be edited here yet. Switch to Advanced view to edit it as JSON.</p>;
   }
 }
 
@@ -118,7 +118,7 @@ export function DefinitionWorkspace({
       role="tab"
       aria-selected={tab === value}
       onClick={() => setTab(value)}
-      className={cn('inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-sm', tab === value ? 'bg-card font-medium text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+      className={cn('inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-sm', tab === value ? 'bg-card font-medium text-foreground ring-1 ring-border' : 'text-muted-foreground hover:text-foreground')}
     >
       <Icon className="size-4" /> {label}
     </button>
@@ -130,7 +130,7 @@ export function DefinitionWorkspace({
         <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             {advanced && jsonEditor ? (
-              <div className="inline-flex rounded-md border bg-muted p-0.5" role="tablist" aria-label="Editor">
+              <div className="inline-flex rounded-md border bg-card p-0.5" role="tablist" aria-label="Editor">
                 {tabBtn('structured', 'Editor', LayoutList)}
                 {tabBtn('json', 'Edit as JSON', Braces)}
               </div>
@@ -156,9 +156,11 @@ export function DefinitionWorkspace({
             )
           ) : (
             <Alert variant="warning">
-              <AlertTitle>The document can&apos;t be shown as an outline</AlertTitle>
+              <AlertTitle>This draft can’t be shown</AlertTitle>
               <AlertDescription>
-                {invalidJsonMessage ?? 'Its JSON has an error.'} {advanced ? 'Fix it in the “Edit as JSON” tab.' : 'Switch to Advanced view (top right) to fix it in the JSON editor, or reset the draft.'}
+                {advanced
+                  ? `${invalidJsonMessage ?? 'Its JSON has an error.'} Fix it in the “Edit as JSON” tab.`
+                  : 'Something in it is broken. Switch to Advanced view (top right) to fix it in the JSON editor, or start again from the published version.'}
               </AlertDescription>
             </Alert>
           )}

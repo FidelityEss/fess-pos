@@ -1,6 +1,6 @@
 'use client';
 
-// Local / staging helpers. Hidden in production by the nav (components/shell/nav.ts) and refused here as well.
+// QA / local helpers. Hidden on production by the nav (components/shell/nav.ts) and refused here as well.
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRightLeft, HeartPulse, KeyRound, RotateCw, ShieldAlert, Smartphone, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
@@ -12,8 +12,10 @@ import { ApiErrorAlert } from '@/components/api-error-alert';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { CopyButton } from '@/components/copy-button';
 import { DateTime } from '@/components/date-time';
+import { Details } from '@/components/details';
 import { JsonView } from '@/components/json-view';
 import { PageHeader } from '@/components/page-header';
+import { navItem } from '@/components/shell/nav';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,11 +43,11 @@ function TokenRow({ label, token }: { label: string; token: string }) {
   return (
     <div className="grid gap-1">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-2 rounded-md border bg-slate-50 px-2.5 py-1.5">
+      <div className="flex items-center gap-2 rounded-md border px-2.5 py-1.5">
         <code className="min-w-0 flex-1 truncate font-mono text-xs" title="Copy to see the full value">
           {truncateToken(token)}
         </code>
-        <CopyButton value={token} title={`Copy ${label.toLowerCase()}`} />
+        <CopyButton value={token} title={`Copy the ${label.toLowerCase()}`} />
       </div>
     </div>
   );
@@ -64,16 +66,16 @@ export default function DevToolsPage() {
   if (env.isProduction) {
     return (
       <>
-        <PageHeader title="Dev tools" />
-        <ReadOnlyNotice title="Not available in production">Dev tools exist only in local and staging environments.</ReadOnlyNotice>
+        <PageHeader title="Developer tools" description={null} />
+        <ReadOnlyNotice title="Not available on production">Developer tools are only for QA and local testing.</ReadOnlyNotice>
       </>
     );
   }
   return (
     <>
       <PageHeader
-        title="Dev tools"
-        description={`Helpers for ${env.envName} — simulate an agent sign-in through the stand-in issuer, check API health, and the server-epoch break-glass.`}
+        title="Developer tools"
+        description={`Test helpers for ${env.envName}: try an agent sign-in, check the server is answering, and the emergency re-send after a database restore. They never appear on production.`}
       />
       <div className="mb-6">
         <Button asChild variant="outline">
@@ -147,17 +149,17 @@ function SimulateSignIn() {
   }
 
   const sessionUser = session && isPlainObject(session.user) ? session.user : null;
+  const devicesLabel = navItem('/devices')?.label ?? 'Phones and sign-ins';
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <KeyRound className="size-4" /> Simulate an agent sign-in
+          <KeyRound className="size-4" /> Try an agent sign-in
         </CardTitle>
         <CardDescription>
-          Mints a host token from the stand-in issuer <code className="font-mono">{STAND_IN_ISSUER}</code> and exchanges it for a POS
-          session, exactly as the module would. It registers a real device (platform admin-devtools) and session for the agent in
-          this environment — revoke it under Devices &amp; sessions when you are done.
+          Signs the agent in through the stand-in sign-in source, exactly as the phone app would. This adds a real test phone and sign-in for the agent
+          here. Block the phone under {devicesLabel} when you’re done.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -175,7 +177,7 @@ function SimulateSignIn() {
               />
             </div>
             <Button onClick={() => void getHostToken()} disabled={!agentId} loading={busy === 'token'}>
-              <KeyRound /> Get host token
+              <KeyRound /> Step 1: Get a test sign-in
             </Button>
           </div>
         </div>
@@ -183,22 +185,24 @@ function SimulateSignIn() {
         {host ? (
           <div className="space-y-3 rounded-md border p-3">
             <div className="flex flex-wrap gap-x-6 gap-y-2">
-              <Field label="Issuer">
-                <span className="font-mono">{host.issuer}</span>
-              </Field>
               <Field label="Employee number">
                 <span className="font-mono">{host.employee_number}</span>
               </Field>
-              <Field label="Issued at">
+              <Field label="Made at">
                 <DateTime value={typeof host.issued_at === 'number' ? new Date(host.issued_at).toISOString() : host.issued_at} seconds />
               </Field>
             </div>
-            <TokenRow label="Host token" token={host.token} />
-            <Field label="Simulated device id">
-              <MonoId value={deviceId} />
-            </Field>
+            <Details summary="Technical details">
+              <Field label="Sign-in source">
+                <span className="font-mono">{host.issuer}</span>
+              </Field>
+              <TokenRow label="FESS sign-in token" token={host.token} />
+              <Field label="Test phone ID">
+                <MonoId value={deviceId} />
+              </Field>
+            </Details>
             <Button onClick={() => void exchange()} loading={busy === 'exchange'} disabled={session !== null}>
-              <ArrowRightLeft /> Exchange for a POS session
+              <ArrowRightLeft /> Step 2: Sign in with it
             </Button>
           </div>
         ) : null}
@@ -206,27 +210,29 @@ function SimulateSignIn() {
         <ApiErrorAlert error={error} />
 
         {session ? (
-          <div className="space-y-3 rounded-md border border-emerald-200 bg-emerald-50/40 p-3">
-            <p className="text-sm font-medium text-emerald-800">The stand-in issuer works — a POS session was issued.</p>
+          <div className="space-y-3 rounded-md border border-emerald-200 p-3">
+            <p className="text-sm font-medium text-emerald-800">It worked: the agent is signed in.</p>
             <div className="flex flex-wrap gap-x-6 gap-y-2">
-              <Field label="Session">
-                <MonoId value={session.session_id} />
-              </Field>
-              <Field label="Scope">
-                <SessionScopeBadge scope={session.scope} />
-              </Field>
-              <Field label="User">
+              <Field label="Person">
                 {sessionUser ? employeeName({ first_name: str(sessionUser.first_name), last_name: str(sessionUser.last_name), employee_number: str(sessionUser.employee_number) }) : agent ? employeeName(agent) : '—'}
               </Field>
-              <Field label="Access token expires">
+              <Field label="Access">
+                <SessionScopeBadge scope={session.scope} />
+              </Field>
+              <Field label="Signed in until">
                 <DateTime value={str(session.access_expires_at)} seconds showRelative />
               </Field>
-              <Field label="Refresh token expires">
+              <Field label="Can renew until">
                 <DateTime value={str(session.refresh_expires_at)} showRelative />
               </Field>
             </div>
-            <TokenRow label="Access token" token={session.access_token} />
-            <TokenRow label="Refresh token" token={session.refresh_token} />
+            <Details summary="Tokens, for testing the API">
+              <Field label="Sign-in ID">
+                <MonoId value={session.session_id} />
+              </Field>
+              <TokenRow label="Access token" token={session.access_token} />
+              <TokenRow label="Refresh token" token={session.refresh_token} />
+            </Details>
           </div>
         ) : null}
       </CardContent>
@@ -241,12 +247,12 @@ function HealthCard() {
       <CardHeader className="flex-row items-start justify-between gap-2">
         <div className="grid gap-1">
           <CardTitle className="flex items-center gap-2">
-            <HeartPulse className="size-4" /> API health
+            <HeartPulse className="size-4" /> Server status
           </CardTitle>
-          <CardDescription className="break-all">{env.posApiUrl}/v1/health</CardDescription>
+          <CardDescription>Checks that the server is answering.</CardDescription>
         </div>
         <Button size="sm" variant="outline" onClick={() => void health.refetch()} loading={health.isFetching}>
-          <RotateCw /> Check
+          <RotateCw /> Check again
         </Button>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -257,10 +263,13 @@ function HealthCard() {
         ) : (
           <>
             <div className="flex items-center gap-2">
-              <Badge tone={health.data.ok ? 'success' : 'danger'}>{health.data.ok ? 'Healthy' : 'Unhealthy'}</Badge>
-              {health.data.env ? <span className="text-xs text-muted-foreground">env: {health.data.env}</span> : null}
+              <Badge tone={health.data.ok ? 'success' : 'danger'}>{health.data.ok ? 'Working' : 'Not working'}</Badge>
+              {health.data.env ? <span className="text-xs text-muted-foreground">Environment: {health.data.env}</span> : null}
             </div>
-            <JsonView value={health.data} defaultExpandDepth={1} maxHeight={240} />
+            <Details summary="Technical details">
+              <p className="break-all text-xs text-muted-foreground">{env.posApiUrl}/v1/health</p>
+              <JsonView value={health.data} defaultExpandDepth={1} maxHeight={240} />
+            </Details>
           </>
         )}
       </CardContent>
@@ -276,27 +285,32 @@ function ServerEpochCard() {
     <Card className="border-red-200">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-red-800">
-          <ShieldAlert className="size-4" /> Server epoch — break-glass
+          <ShieldAlert className="size-4" /> Emergency: ask every phone to re-send
         </CardTitle>
         <CardDescription>
-          After restoring the database from a backup, rotating the epoch makes every device re-send the envelopes it still retains,
-          so nothing captured since the restore point is lost (docs/12 §12).
+          Only after the database has been restored from a backup. Every phone re-sends everything it still holds, so nothing captured since the backup
+          is lost (docs/12 §12).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {!staff.isGlobalAdmin ? (
-          <ReadOnlyNotice>Only an all-bank administrator can rotate the server epoch (D-44).</ReadOnlyNotice>
+          <ReadOnlyNotice>Only an administrator for all banks can do this.</ReadOnlyNotice>
         ) : (
           <Button variant="destructive" onClick={() => setOpen(true)}>
-            <TriangleAlert /> Rotate server epoch…
+            <TriangleAlert /> Ask every phone to re-send…
           </Button>
         )}
         {result ? (
           <Alert variant="success">
             <ShieldAlert />
-            <AlertTitle>Epoch rotated</AlertTitle>
+            <AlertTitle>Done</AlertTitle>
             <AlertDescription>
-              New epoch <MonoId value={result.epoch} /> set <DateTime value={result.set_at} seconds />.
+              Phones re-send everything they hold the next time they connect. Asked <DateTime value={result.set_at} seconds />.
+              <Details summary="Technical details" className="mt-1">
+                <span>
+                  New server epoch <MonoId value={result.epoch} />
+                </span>
+              </Details>
             </AlertDescription>
           </Alert>
         ) : null}
@@ -304,12 +318,13 @@ function ServerEpochCard() {
       <ConfirmDialog
         open={open}
         onOpenChange={setOpen}
-        title="Rotate the server epoch?"
+        title="Ask every phone to re-send everything?"
+        description="Use this only after a database restore. Every phone sends again everything it still holds."
         destructive
         requireReason
-        reasonLabel="Reason (break-glass)"
-        reasonPlaceholder="e.g. Restored from the 02:00 backup after incident …"
-        confirmLabel="Rotate epoch"
+        reasonLabel="Reason"
+        reasonPlaceholder="Restored from the 02:00 backup after …"
+        confirmLabel="Ask phones to re-send"
         onConfirm={async (reason) => {
           const r = await adminApi.serverEpoch.rotate({ reason });
           setResult(r);
@@ -317,10 +332,9 @@ function ServerEpochCard() {
       >
         <Alert variant="destructive">
           <TriangleAlert />
-          <AlertTitle>Every device will re-send every envelope it still retains</AlertTitle>
+          <AlertTitle>Expect a burst of uploads</AlertTitle>
           <AlertDescription>
-            Use this only after a database restore. Ingest is idempotent, so re-sent items that already landed are recorded as
-            duplicates — but expect a burst of upload traffic from the whole fleet, and a critical alert is raised.
+            Anything that already arrived is recognised and not saved twice, but every phone uploads at once, and an urgent alert is raised.
           </AlertDescription>
         </Alert>
       </ConfirmDialog>

@@ -11,7 +11,7 @@ export function Table({ className, ...props }: React.ComponentProps<'table'>) {
 }
 
 export function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
-  return <thead className={cn('bg-slate-50 [&_tr]:border-b', className)} {...props} />;
+  return <thead className={cn('bg-card [&_tr]:border-b [&_tr]:border-border', className)} {...props} />;
 }
 
 export function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {
@@ -19,17 +19,17 @@ export function TableBody({ className, ...props }: React.ComponentProps<'tbody'>
 }
 
 export function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>) {
-  return <tfoot className={cn('border-t bg-slate-50 font-medium', className)} {...props} />;
+  return <tfoot className={cn('border-t bg-card font-medium', className)} {...props} />;
 }
 
 export function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
-  return <tr className={cn('border-b transition-colors data-[state=selected]:bg-primary/5', className)} {...props} />;
+  return <tr className={cn('border-b border-divider transition-colors data-[state=selected]:bg-primary/5', className)} {...props} />;
 }
 
 export function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
   return (
     <th
-      className={cn('h-10 whitespace-nowrap px-3 text-left align-middle text-sm font-semibold text-slate-600', className)}
+      className={cn('h-10 whitespace-nowrap px-3 text-left align-middle text-sm font-semibold text-muted-foreground', className)}
       {...props}
     />
   );

@@ -3,7 +3,7 @@ import { Brand } from '@/components/shell/brand';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-/** Centred card layout for sign-in, MFA and access-problem pages. */
+/** Centred card layout for the sign-in, registration and access-problem pages. */
 export function AuthCard({
   title,
   description,

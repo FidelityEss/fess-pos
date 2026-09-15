@@ -91,7 +91,7 @@ export function ReviewQueueView() {
             <Link href={reviewHref(row.original)} onClick={(e) => e.stopPropagation()} className="font-mono text-sm font-medium text-primary hover:underline">
               {row.original.job?.reference ?? row.original.job_id}
             </Link>
-            {!advanced && row.original.attempt > 1 ? <div className="text-sm text-muted-foreground">Attempt {row.original.attempt}</div> : null}
+            {!advanced && row.original.attempt > 1 ? <div className="text-sm text-muted-foreground">Visit {row.original.attempt}</div> : null}
           </div>
         ),
       },
@@ -108,17 +108,17 @@ export function ReviewQueueView() {
         header: 'Agent',
         cell: ({ row }) => <span className="whitespace-nowrap">{row.original.agent ? (advanced ? employeeName(row.original.agent) : fullName(row.original.agent)) : '—'}</span>,
       },
-      { accessorKey: 'attempt', header: 'Attempt', meta: { advanced: true }, cell: ({ row }) => <span className="tabular-nums">{row.original.attempt}</span> },
+      { accessorKey: 'attempt', header: 'Visit', meta: { advanced: true }, cell: ({ row }) => <span className="tabular-nums">{row.original.attempt}</span> },
       {
         id: 'submitted',
         accessorFn: (r) => r.submitted_at_server ?? '',
-        header: 'Submitted',
+        header: 'Sent in',
         cell: ({ row }) => (advanced ? <DateTime value={row.original.submitted_at_server} showRelative /> : <DateTime value={row.original.submitted_at_server} mode="relative" />),
       },
       {
         id: 'evidence',
         accessorFn: (r) => (r.evidence_expected ? r.evidence_verified / r.evidence_expected : 1),
-        header: 'Evidence',
+        header: 'Photos',
         cell: ({ row }) => {
           const r = row.original;
           const done = r.evidence_verified >= r.evidence_expected;
@@ -135,7 +135,7 @@ export function ReviewQueueView() {
       {
         id: 'status',
         accessorFn: (r) => r.status,
-        header: advanced ? 'Status & flags' : 'Status',
+        header: advanced ? 'Status and warnings' : 'Status',
         cell: ({ row }) => (
           <div className="flex min-w-44 max-w-64 flex-wrap items-center gap-1">
             <InspectionStatusBadge status={row.original.status} />
@@ -162,9 +162,9 @@ export function ReviewQueueView() {
   if (!canReview) {
     return (
       <>
-        <PageHeader title="Review queue" />
+        <PageHeader title="To review" />
         <Alert variant="info">
-          <AlertDescription>The review queue needs the Review inspections permission.</AlertDescription>
+          <AlertDescription>Reviewing visits needs permission to review visits. Ask an administrator if you need it.</AlertDescription>
         </Alert>
       </>
     );
@@ -175,8 +175,8 @@ export function ReviewQueueView() {
   return (
     <>
       <PageHeader
-        title="Review queue"
-        description={`Visits waiting for a decision, newest first (up to ${JOB_LIST_LIMIT}). You can read the answers while photos are still arriving; approval waits until they are all checked.`}
+        title="To review"
+        description={`Finished visits waiting for someone to check the answers and photos and approve them, newest first. You can read a visit while its photos are still arriving, and approve it once they’re all checked.`}
         actions={
           <Button variant="outline" size="sm" onClick={() => void query.refetch()} loading={query.isFetching}>
             {query.isFetching ? null : <RefreshCw />} Refresh
@@ -192,9 +192,9 @@ export function ReviewQueueView() {
         getRowId={(r) => r.id}
         onRowClick={(r) => router.push(reviewHref(r))}
         rowClassName={(r) => (r.status === 'integrity_failed' ? 'bg-red-50/60' : isHot(r) ? 'bg-amber-50/50' : undefined)}
-        searchPlaceholder="Search reference, merchant, agent…"
-        emptyTitle="Nothing awaiting review"
-        emptyDescription="New submissions appear here as they sync from agents' devices."
+        searchPlaceholder="Search by reference, merchant or agent"
+        emptyTitle="Nothing to review"
+        emptyDescription="Visits show here as soon as agents’ phones send them in."
         toolbar={
           <>
             <BankSelect value={bankId} onChange={setBankId} allowAll includeInactive className="w-52" />
@@ -205,8 +205,8 @@ export function ReviewQueueView() {
             </label>
             <span className="ml-auto text-sm text-muted-foreground">
               {advanced
-                ? 'Highlighted: integrity failed (red), geofence override or non-current form version (amber).'
-                : 'Red rows failed the tamper check; amber rows started outside the site area or used an older form.'}
+                ? 'Highlighted: failed a security check (red); started away from the site or used an older version of the questions (amber).'
+                : 'Red rows failed a security check. Amber rows started away from the site or used an older version of the questions.'}
             </span>
           </>
         }

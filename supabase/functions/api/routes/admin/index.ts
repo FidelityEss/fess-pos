@@ -1,11 +1,14 @@
-// /v1/admin/* — admin panel API. Every route: Supabase Auth session + MFA (requireStaff), then exactly one
-// pos_rpc.admin_* write in asService({ id: staff.userId, role: 'pos_admin', requestId }) — see ./_util.ts.
+// /v1/admin/* — admin panel API. Every route: Supabase Auth session (email + password; a second step only while
+// admin.require_mfa is true — D-96), requireStaff, then exactly one pos_rpc.admin_* write in
+// asService({ id: staff.userId, role: 'pos_admin', requestId }) — see ./_util.ts.
 // Bank readers pass requireStaff (allowReader) but every write route is gated with requirePermission(), which refuses them.
 import { Hono } from 'hono';
 import { requireStaff } from '../../../_shared/auth.ts';
 import type { AppEnv } from '../../../_shared/types.ts';
+import { bankKeyRoutes } from './bank-keys.ts';
 import { configRoutes } from './config.ts';
 import { definitionRoutes } from './definitions.ts';
+import { invitationRoutes } from './invitations.ts';
 import { jobRoutes } from './jobs.ts';
 import { opsRoutes } from './ops.ts';
 import { peopleRoutes } from './people.ts';
@@ -30,6 +33,8 @@ adminRoutes.get('/me', (c) => {
 });
 
 adminRoutes.route('/', peopleRoutes);
+adminRoutes.route('/', invitationRoutes);
+adminRoutes.route('/', bankKeyRoutes);
 adminRoutes.route('/', referenceRoutes);
 adminRoutes.route('/', configRoutes);
 adminRoutes.route('/', definitionRoutes);

@@ -68,14 +68,18 @@ const FN_NAME = /^[a-z_][a-z0-9_]*$/;
 
 // JSON goes over the wire as text and is cast server-side ($n::text::jsonb). Letting postgres.js see a jsonb
 // parameter makes it JSON-encode the value itself, which double-encodes an already-serialised string.
+// Timestamps go as text too ($n::text::timestamptz): postgres.js turns a timestamptz parameter into a JS Date, which keeps
+// only milliseconds, so a stored microsecond time (a cursor, a device clock) would come back altered (found by T6-06).
 function toParam(value: unknown, type: PgType): unknown {
   if (value === undefined || value === null) return null;
   if (type === 'jsonb') return JSON.stringify(value);
+  if (type === 'timestamptz' && value instanceof Date) return value.toISOString();
   return value;
 }
 
 function placeholder(type: PgType, i: number): string {
-  return type === 'jsonb' ? `$${i + 1}::text::jsonb` : `$${i + 1}::${type}`;
+  if (type === 'jsonb' || type === 'timestamptz') return `$${i + 1}::text::${type}`;
+  return `$${i + 1}::${type}`;
 }
 
 /** Call pos_rpc.<fn>(…) with explicitly typed arguments; returns the single result value. */

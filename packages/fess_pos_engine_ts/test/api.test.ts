@@ -9,6 +9,8 @@ import {
   AuthRefreshResponseSchema,
   ContextSnapshotSchema,
   DefinitionRefSchema,
+  DeviceUpdateRequestSchema,
+  DeviceUpdateResponseSchema,
   EnvelopeSchema,
   ErrorResponseSchema,
   IngestRequestSchema,
@@ -53,6 +55,8 @@ const ZOD: Record<string, z.ZodTypeAny> = {
   "auth-refresh-response": AuthRefreshResponseSchema,
   "upload-grant-request": UploadGrantRequestSchema,
   "upload-grant-response": UploadGrantResponseSchema,
+  "device-update-request": DeviceUpdateRequestSchema,
+  "device-update-response": DeviceUpdateResponseSchema,
   "answers-document": AnswersDocumentSchema,
 };
 

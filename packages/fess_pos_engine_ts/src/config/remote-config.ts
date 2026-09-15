@@ -95,6 +95,7 @@ export const REMOTE_CONFIG_KEYS: readonly ConfigKeySpec[] = [
   k("sync.foreground_interval_s", "integer", 60, "Foreground sync interval while the outbox is non-empty.", { min: 15, max: 600 }),
   k("sync.idle_interval_s", "integer", 900, "Sync interval otherwise.", { min: 900, max: 86400 }),
   k("sync.retain_committed_payload_days", "integer", 30, "Committed payloads kept for restore-epoch re-send (docs/12 §12).", { min: 7, max: 365, ...IR }),
+  k("sync.report_interval_s", "integer", 21600, "How often a device sends its sync report (sync_report, docs/12 §9); sooner when its battery restriction changes.", { min: 900, max: 86400 }),
   k("storage.cap_mb", "integer", 500, "Total module storage cap.", { min: 100, max: 4096 }),
   k("storage.block_new_work_at_pct", "integer", 80, "Block new inspections at this share of the cap.", { min: 50, max: 95 }),
   k("storage.tile_cache_mb", "integer", 150, "Map tile cache cap.", { min: 0, max: 1024 }),

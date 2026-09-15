@@ -1,0 +1,92 @@
+import 'package:fess_pos/src/core/content/bundled_copy.dart';
+import 'package:fess_pos/src/core/theme/tokens.g.dart';
+import 'package:flutter/widgets.dart';
+
+/// Everything a view needs to render (docs/04 §3.4, `11` §7.2). The renderer
+/// has no database or API access: screens hand it the data.
+@immutable
+class RenderContext {
+  const RenderContext({
+    required this.data,
+    this.jobs = const [],
+    this.itemViews = const {},
+    this.copy = BundledCopy.text,
+    this.onNavigate,
+    this.today,
+    this.mapPreview,
+    this.openContact,
+    this.onSyncNow,
+    this.gutter = PosTokens.componentPagePaddingX,
+    this.inRow = false,
+  });
+
+  /// What items bind to and rules read: `job`, `agent`, `stats`, `sync`.
+  final Map<String, Object?> data;
+
+  /// The agent's jobs as pulled, for `job_list` and local `stat_tile`s.
+  final List<Map<String, Object?>> jobs;
+
+  /// Item views by key (e.g. `job_card`), each its list of items.
+  final Map<String, List<Object?>> itemViews;
+
+  /// Content by key: the server's `core` strings over the bundled ones.
+  final String Function(String key) copy;
+
+  /// Opens a tap target such as `{"page": "job_detail"}` for the thing
+  /// tapped, e.g. `{"job": {...}}`.
+  final void Function(Map<String, Object?> target, Map<String, Object?> data)?
+  onNavigate;
+
+  /// Today's date (`YYYY-MM-DD`) for the `today` operator in view rules.
+  final String? today;
+
+  /// Draws a `map_preview` item for its bound location; the screen supplies
+  /// it, since the map needs tiles and the phone's maps app. Without one,
+  /// the item is left out.
+  final Widget? Function(Map<String, Object?> item, Object? location)?
+  mapPreview;
+
+  /// Starts a call, a text message or an email (`call`, `sms`, `email`) to
+  /// a `contact` item's number or address; the screen supplies it. Without
+  /// one, contacts show without their buttons.
+  final void Function(String channel, String address)? openContact;
+
+  /// Runs a sync now, from the sync status (docs/08 §8); the screen
+  /// supplies it.
+  final VoidCallback? onSyncNow;
+
+  /// The page's side padding. Items that run edge to edge (a list, the
+  /// stat strip) line their content up with it.
+  final double gutter;
+
+  /// Drawn as one row of a list (`job_list`'s item view): compact, a line
+  /// per item, as FESS's list rows.
+  final bool inRow;
+
+  /// The same context with other data, e.g. one job of a list.
+  RenderContext withData(Map<String, Object?> data) => _copy(data: data);
+
+  /// The same context on a page with side padding [gutter].
+  RenderContext withGutter(double gutter) => _copy(gutter: gutter);
+
+  /// The same context drawing one row of a list.
+  RenderContext asRow() => _copy(inRow: true);
+
+  RenderContext _copy({
+    Map<String, Object?>? data,
+    double? gutter,
+    bool? inRow,
+  }) => RenderContext(
+    data: data ?? this.data,
+    jobs: jobs,
+    itemViews: itemViews,
+    copy: copy,
+    onNavigate: onNavigate,
+    today: today,
+    mapPreview: mapPreview,
+    openContact: openContact,
+    onSyncNow: onSyncNow,
+    gutter: gutter ?? this.gutter,
+    inRow: inRow ?? this.inRow,
+  );
+}

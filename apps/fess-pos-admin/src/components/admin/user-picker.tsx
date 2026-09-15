@@ -16,7 +16,7 @@ export function UserPicker({
   onChange,
   roles,
   includeInactive = true,
-  placeholder = 'Choose a user',
+  placeholder = 'Choose a person',
   allowClear = false,
   id,
   invalid,
@@ -65,10 +65,10 @@ export function UserPicker({
             id={id}
             disabled={disabled || isLoading}
             data-invalid={invalid || undefined}
-            className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-1 text-left text-sm shadow-xs focus:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 data-[invalid=true]:border-destructive"
+            className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-1 text-left text-sm focus:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 data-[invalid=true]:border-destructive"
           >
             <span className={cn('truncate', !selected && 'text-muted-foreground')}>
-              {selected ? employeeName(selected) : isLoading ? 'Loading users…' : error ? 'Could not load users' : placeholder}
+              {selected ? employeeName(selected) : isLoading ? 'Loading people…' : error ? 'Couldn’t load the list of people' : placeholder}
             </span>
             <ChevronDown className={cn('size-4 shrink-0 opacity-50', allowClear && selected && 'invisible')} />
           </button>
@@ -77,7 +77,7 @@ export function UserPicker({
           <button
             type="button"
             onClick={() => pick(null)}
-            aria-label="Clear user"
+            aria-label="Clear the choice"
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             <X className="size-4" />
@@ -93,12 +93,12 @@ export function UserPicker({
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Employee number, name or email"
             className="pl-8"
-            aria-label="Search users"
+            aria-label="Search people"
           />
         </div>
         <div className="max-h-64 overflow-y-auto">
           {filtered.length === 0 ? (
-            <p className="px-2 py-1.5 text-sm text-muted-foreground">No matching users</p>
+            <p className="px-2 py-1.5 text-sm text-muted-foreground">No one matches</p>
           ) : (
             filtered.map((u) => (
               <button

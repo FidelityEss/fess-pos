@@ -35,7 +35,7 @@ export function AgentSelect({
       disabled={disabled || isLoading}
     >
       <SelectTrigger id={id} aria-invalid={invalid || undefined}>
-        <SelectValue placeholder={isLoading ? 'Loading agents…' : error ? 'Could not load agents' : placeholder} />
+        <SelectValue placeholder={isLoading ? 'Loading agents…' : error ? 'Couldn’t load the agents' : placeholder} />
       </SelectTrigger>
       <SelectContent>
         {agents.map((a) => (
@@ -43,7 +43,7 @@ export function AgentSelect({
             {employeeName(a)}
           </SelectItem>
         ))}
-        {data && agents.length === 0 ? <div className="px-2 py-1.5 text-sm text-muted-foreground">No eligible agents</div> : null}
+        {data && agents.length === 0 ? <div className="px-2 py-1.5 text-sm text-muted-foreground">No active agents work for this bank</div> : null}
       </SelectContent>
     </Select>
   );
