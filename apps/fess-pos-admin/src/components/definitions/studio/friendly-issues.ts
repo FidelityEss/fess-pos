@@ -1,5 +1,6 @@
-// Analysis issues (docs/04 §9) in plain language for the Basic view: where the problem is ("Premises › Premises type")
-// and what it means ("It's required but can never be shown"). Advanced view keeps the raw code and path.
+// Check results (docs/04 §9) as plain-language advice for the Basic view: where the problem is ("Premises › Premises type")
+// and what to do about it ("It must be answered but is never shown; did you mean to hide it?"). Advanced view keeps the
+// raw code and path.
 import { humanLabel } from '@/components/structured-view';
 import type { ValidationIssue } from '@/lib/types';
 import { componentWording, pageWording, stepWording, viewWording } from './catalogue-ui';
@@ -53,7 +54,7 @@ export function describeLocation(doc: unknown, path: string | undefined): { wher
     }
   } else if (root === 'attributes' && typeof segs[1] === 'number') {
     const f = asObj(getIn(doc, ['attributes', segs[1]]));
-    parts.push(fieldName(f) || `Attribute ${segs[1] + 1}`);
+    parts.push(fieldName(f) || `Detail ${segs[1] + 1}`);
     target = ['attributes', segs[1]];
   } else if (root === 'steps' && typeof segs[1] === 'number') {
     const s = asObj(getIn(doc, ['steps', segs[1]]));
@@ -65,16 +66,16 @@ export function describeLocation(doc: unknown, path: string | undefined): { wher
     target = ['items', segs[1]];
   } else if (root === 'pages' && typeof segs[1] === 'string') {
     const pg = asObj(getIn(doc, ['pages', segs[1]]));
-    parts.push(`Page ${q(asStr(pg.title) || segs[1])} (${pageWording(asStr(pg.type)).name})`);
+    parts.push(`Page ${q(asStr(pg.title) || humanLabel(segs[1]))} (${pageWording(asStr(pg.type)).name})`);
     target = ['pages', segs[1]];
   } else if (root === 'navigation') {
-    parts.push('Navigation');
+    parts.push('Tabs');
     target = ['navigation'];
   } else if (root === 'strings' && typeof segs[1] === 'string') {
     parts.push(`Text ${q(segs[1])}`);
     target = ['strings', segs[1]];
   } else if (root === 'outcome_sets') {
-    parts.push(`Outcome set ${q(String(segs[1] ?? ''))}`);
+    parts.push(`Result pages ${q(humanLabel(String(segs[1] ?? '')))}`);
   } else if (typeof root === 'string') {
     parts.push(humanLabel(root));
   }
@@ -86,7 +87,7 @@ function sectionTitle(doc: unknown, bundleForm: unknown, key: string): string {
   return key;
 }
 
-/** Plain-language rendering of one analysis issue. `relatedForm` helps name sections in flow issues. */
+/** Plain-language advice for one check result. `relatedForm` helps name sections in visit-step issues. */
 export function friendlyIssue(issue: ValidationIssue, doc: unknown, relatedForm?: unknown): FriendlyIssue {
   const names = quoted(issue.message);
   const [a, b] = names;
@@ -95,127 +96,129 @@ export function friendlyIssue(issue: ValidationIssue, doc: unknown, relatedForm?
   switch (issue.code) {
     case 'DUPLICATE_KEY':
     case 'DUPLICATE_STEP_ID':
-      text = `The key ${q(a)} is used more than once. Every key must be unique.`;
+      text = `Two items are saved under the same name, ${q(a)}. Rename one so each is different.`;
       break;
     case 'DUPLICATE_OPTION_VALUE':
-      text = `Two options share the value ${q(a)}. Each option needs its own value.`;
+      text = `Two answers are saved as ${q(a)}. Give each answer its own value.`;
       break;
     case 'MISSING_REF':
       text = /lookup list/.test(issue.message)
-        ? `The lookup list ${q(a)} doesn't exist.`
+        ? `The drop-down list ${q(a)} doesn’t exist. Choose another list, or add it on the Drop-down lists page.`
         : /reason-code/.test(issue.message)
-          ? `There are no reason codes in the category ${q(a)}.`
+          ? `There are no reasons in the group ${q(a)} yet. Add some on the Reasons page.`
           : /declaration/.test(issue.message)
-            ? `The declaration ${q(a)} doesn't exist. Publish it on the Declarations page first.`
-            : `A rule or setting refers to ${q(b ?? a)}, which isn't a question in this form.`;
+            ? `The declaration ${q(a)} doesn’t exist yet. Publish it on the Declarations page first.`
+            : `A condition or setting points to ${q(b ?? a)}, which isn’t a question here. Did you remove or rename it?`;
       break;
     case 'REFERENCES_LATER_FIELD':
-      text = `A rule reads the answer to a later question (${q(b)}). The agent answers that afterwards, so check the order.`;
+      text = `A condition uses the answer to ${q(b)}, which the agent only answers later. Did you mean to move that question up?`;
       break;
     case 'UNKNOWN_OPTION_VALUE':
-      text = `A rule compares with ${q(a)}, which isn't one of the options of ${q(b)}.`;
+      text = `A condition checks for ${q(a)}, but that isn’t one of the answers to ${q(b)}. Did the answers change?`;
       break;
     case 'REQUIRED_NEVER_VISIBLE':
-      text = `${q(a)} is required but can never be shown, so the agent could never complete the form.`;
+      text = `${q(a)} must be answered but is never shown, so the agent could never finish. Did you mean to hide it, or to make it optional?`;
       break;
     case 'UNREACHABLE_SECTION':
-      text = `Section ${q(a)} can never be shown.`;
+      text = `Section ${q(a)} is never shown to anyone. Did you mean to hide it?`;
       break;
     case 'CYCLE':
-      text = 'Some rules depend on each other in a loop. Change one so the loop is broken.';
+      text = 'Some conditions depend on each other in a circle. Change one of them to break the circle.';
       break;
     case 'SECTION_NOT_IN_FLOW':
-      text = `The flow never shows the form's section ${q(sectionTitle(doc, relatedForm, a ?? ''))}. Add it to a Questions step.`;
+      text = `The section ${q(sectionTitle(doc, relatedForm, a ?? ''))} isn’t in any step, so agents never see it. Add it to a Questions step.`;
       break;
     case 'MISSING_SECTION_REF':
-      text = `A step shows section ${q(a)}, which isn't in the form ${q(b)}.`;
+      text = `A step shows the section ${q(a)}, which isn’t in the questions ${q(b)}. Did you rename or remove it?`;
       break;
     case 'MISSING_FORM_REF':
-      text = a ? `The form ${q(a)} doesn't exist (or has no published version).` : 'A Questions step has no form. Link a form to the flow.';
+      text = a ? `The questions ${q(a)} don’t exist yet, or haven’t been published.` : 'A Questions step doesn’t say which questions to show. Choose them at the top.';
       break;
     case 'MISSING_VIEW_REF':
-      text = `The screen ${q(a)} doesn't exist (or has no published version).`;
+      text = `The screen layout ${q(a)} doesn’t exist yet, or hasn’t been published.`;
       break;
     case 'MISSING_FLOW_REF':
-      text = `The flow ${q(a)} doesn't exist (or has no published version).`;
+      text = `The visit steps ${q(a)} don’t exist yet, or haven’t been published.`;
       break;
     case 'MISSING_PAGE_REF':
-      text = `The page ${q(a)} doesn't exist in this app.`;
+      text = `The page ${q(a)} isn’t in this app.`;
       break;
     case 'MISSING_STEP_REF':
-      text = `A step jumps to ${q(a)}, which isn't a step of this flow.`;
+      text = `A step jumps to ${q(a)}, which isn’t one of these steps.`;
       break;
     case 'UNREACHABLE_STEP':
-      text = 'This step can never be reached.';
+      text = 'The agent can never reach this step. Did you mean to remove it?';
       break;
     case 'STEP_NEVER_VISIBLE':
-      text = 'This step is never shown.';
+      text = 'This step is never shown. Did you mean to hide it?';
       break;
     case 'INTEGRITY_STEP_MISSING':
-      text = a ? `The ${stepWording(a).name} step is required and can't be removed.` : 'The flow needs a Submit step.';
+      text = a ? `The ${stepWording(a).name} step protects the visit record, so it has to stay.` : 'The steps need a Submit step at the end.';
       break;
     case 'NO_SUBMIT_STEP':
-      text = 'The flow needs a Submit step.';
+      text = 'The steps need a Submit step at the end.';
       break;
     case 'INTEGRITY_STEP_DUPLICATE':
-      text = a ? `The ${stepWording(a).name} step appears more than once.` : 'A flow has exactly one Submit step.';
+      text = a ? `The ${stepWording(a).name} step appears more than once. Keep just one.` : 'There can only be one Submit step.';
       break;
     case 'INTEGRITY_STEP_ORDER':
-      text = a ? `The ${stepWording(a).name} step must come before Submit.` : 'Questions steps must come before Submit.';
+      text = a ? `Move the ${stepWording(a).name} step so it comes before Submit.` : 'Questions steps must come before Submit.';
       break;
     case 'INTEGRITY_STEP_BYPASSABLE':
-      text = `The agent could reach Submit without passing the ${stepWording(a ?? '').name} step.`;
+      text = `The agent could reach Submit without going through the ${stepWording(a ?? '').name} step. Check the conditions on the steps in between.`;
       break;
     case 'DECLARATION_FIELD_MISSING':
-      text = `The linked form must contain exactly one Declaration question.`;
+      text = 'The questions used here need exactly one Declaration question.';
       break;
     case 'ORPHAN_PAGE':
-      text = `The page ${q(a)} can't be reached from the start page or the navigation.`;
+      text = `No button or tab leads to the page ${q(a)}. Link to it from somewhere, or remove it.`;
       break;
     case 'OUTCOME_SET_MISSING':
-      text = a ? `The outcome set ${q(a)} doesn't exist, so the page never shows a result.` : 'Starting a flow directly needs a "default" outcome set.';
+      text = a
+        ? `The result pages ${q(a)} don’t exist, so the agent never sees a result.`
+        : 'Starting visit steps straight from a page needs a set of result pages called “default”.';
       break;
     case 'OUTCOME_PAGE_INVALID':
-      text = `${q(a)} must be a Result page for the right outcome.`;
+      text = `${q(a)} must be a result page for the matching result.`;
       break;
     case 'INVALID_TEMPLATE':
-      text = 'The text has unbalanced {{ }} or a placeholder with an invalid name.';
+      text = 'Some text has a {{ }} that isn’t closed, or a placeholder name that isn’t allowed.';
       break;
     case 'MIN_GREATER_THAN_MAX':
-      text = 'The lowest allowed value is higher than the highest.';
+      text = 'The lowest allowed value is higher than the highest. Swap them round.';
       break;
     case 'TYPE_MISMATCH':
-      text = `A rule compares different kinds of value (${issue.message}).`;
+      text = 'A condition compares two different kinds of value, such as a number with a word.';
       break;
     case 'DEF_INVALID_EXPRESSION':
-      text = 'A rule is not valid.';
+      text = 'A condition isn’t written correctly.';
       break;
     case 'UNKNOWN_ROOT':
-      text = `A rule or binding reads ${q(a)}, which isn't available here.`;
+      text = `A condition or value reads ${q(a)}, which isn’t available here.`;
       break;
     case 'INVALID_STAT_TILE':
-      text = 'A total tile needs a source: records on the phone need a collection; server totals need stats.<name>.';
+      text = 'A total tile doesn’t say what to count. Choose what it counts.';
       break;
     case 'ACTION_PENDING_DECISION':
-      text = `The action ${q(a)} is still waiting for a decision (D-38).`;
+      text = `What ${q(a)} does hasn’t been decided yet, so it can’t be used for now.`;
       break;
     case 'DEF_MISSING_PROPERTY':
-      text = `Something required is missing${where ? '' : ''}: ${issue.message}.`;
+      text = 'A required setting is missing.';
       break;
     case 'DEF_UNKNOWN_PROPERTY':
-      text = `Contains a setting that isn't part of the specification (${issue.message}).`;
+      text = 'It has a setting the app doesn’t recognise.';
       break;
     case 'DEF_UNKNOWN_COMPONENT':
     case 'DEF_UNKNOWN_STEP_TYPE':
     case 'DEF_UNKNOWN_VIEW_COMPONENT':
     case 'DEF_UNKNOWN_PAGE_TYPE':
-      text = 'Uses a component type that this version of the app does not know.';
+      text = 'It uses something the current phone app doesn’t know yet.';
       break;
     case 'DEF_OPTIONS_REQUIRED':
-      text = 'A choice question needs a list of options (or a source for them).';
+      text = 'A choice question needs answers to choose from.';
       break;
     default:
-      text = issue.message ? issue.message.charAt(0).toUpperCase() + issue.message.slice(1) : 'Problem';
+      text = issue.message ? issue.message.charAt(0).toUpperCase() + issue.message.slice(1) : 'Something here needs attention.';
   }
   return { text, where, target };
 }

@@ -41,7 +41,7 @@ export function ConfirmDialog({
   destructive = false,
   requireReason = false,
   reasonLabel = 'Reason',
-  reasonPlaceholder = 'Why are you doing this? This is recorded in the audit log.',
+  reasonPlaceholder = 'Why are you doing this? It’s saved in the activity history.',
   minReasonLength = 1,
   onConfirm,
 }: ConfirmDialogProps) {

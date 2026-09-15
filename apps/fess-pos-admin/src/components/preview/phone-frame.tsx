@@ -1,13 +1,16 @@
 'use client';
 
 // Phone mock-up used by the live previews (remote config, definitions studio). Interim until the embedded real-module
-// web preview (T3-12): it approximates the module, which looks like the FESS app (schema/design/tokens.json: green status
-// bar and 60 px header with a round back button, Montserrat, 45 px / 5 px buttons, 12 px cards, white bottom nav).
+// web preview (T3-12): it mirrors the module's FESS look (docs/14 §2, D-97; schema/design/tokens.json through
+// src/lib/brand.ts): a green status bar and 60 px header with a centred title and an outlined round back button, white
+// pages with 32 px side padding, no shadows anywhere, Montserrat, 45 px / 5 px buttons, bordered boxes only where one
+// is needed, and a white bottom bar under a hairline.
 // Sizes inside the frame are phone pixels on purpose: the frame does not scale with the admin text-size setting.
 import { ArrowLeft, BatteryFull, type LucideIcon, Signal, Wifi } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
-import { FESS } from '@/lib/brand';
+import { FESS, fessTint } from '@/lib/brand';
 import { cn } from '@/lib/utils';
+import { BUTTON_BASE, BUTTON_LOOK, BUTTON_OFF, BUTTON_STYLE, type FessTone, PAGE_X, PHONE_VARS, toneColors, typeStyle } from './phone-style';
 
 export interface PhoneTheme {
   primaryColor?: string | null;
@@ -28,7 +31,7 @@ export interface PhoneNavItem {
 /** Status bar in the header colour, as FESS paints it (a zero-height AppBar in appBarColour). */
 function StatusBar() {
   return (
-    <div className="flex h-7 shrink-0 items-center justify-between bg-[var(--pp)] px-5 text-[12px] font-semibold text-white">
+    <div className="flex h-7 shrink-0 items-center justify-between bg-[var(--pp)] px-5 text-[12px] font-semibold" style={{ color: FESS.header.title.color }}>
       <span>09:41</span>
       <span className="flex items-center gap-1">
         <Signal className="size-3.5" />
@@ -39,15 +42,21 @@ function StatusBar() {
   );
 }
 
+/** FESS's bottom bar: white under a hairline, the active item green, the rest body grey, labels one size, no pill. */
 export function PhoneBottomNav({ items }: { items: PhoneNavItem[] }) {
+  const nav = FESS.bottomNav;
   return (
-    <nav className="flex h-14 shrink-0 items-stretch border-t bg-white" style={{ borderColor: FESS.divider }}>
+    <nav className="flex h-14 shrink-0 items-stretch border-t" style={{ backgroundColor: nav.background, borderColor: nav.border }}>
       {items.map((item) => {
-        const cls = cn('flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px]', item.active ? 'font-semibold text-[var(--pp)]' : 'font-medium');
-        const style = item.active ? undefined : { color: FESS.textMuted };
-        const icon = <item.icon className="size-5" style={item.active ? undefined : { color: FESS.navInactive }} />;
+        const cls = 'flex flex-1 flex-col items-center justify-center gap-0.5 leading-tight';
+        const style: CSSProperties = {
+          color: item.active ? 'var(--pp)' : nav.inactiveItem,
+          fontSize: nav.labelSize,
+          fontWeight: item.active ? 600 : nav.labelWeight,
+        };
+        const icon = <item.icon className="size-6" />;
         return item.onSelect ? (
-          <button key={item.label} type="button" onClick={item.onSelect} aria-current={item.active ? 'page' : undefined} className={cn(cls, 'hover:bg-slate-50')} style={style}>
+          <button key={item.label} type="button" onClick={item.onSelect} aria-current={item.active ? 'page' : undefined} className={cn(cls, 'cursor-pointer')} style={style}>
             {icon}
             {item.label}
           </button>
@@ -101,33 +110,50 @@ export function PhoneFrame({
 }) {
   const style = {
     '--pp': theme?.primaryColor || PHONE_DEFAULT_PRIMARY,
+    ...PHONE_VARS,
     fontFamily: theme?.fontFamily || FESS.fontFamily,
   } as CSSProperties;
+  const b = FESS.header.back;
+  // custom_app_bar_widget: a 1 px white ring round a white arrow, not a filled circle.
   const back = (
-    <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full border-2 border-white/90">
-      <ArrowLeft className="size-3.5" strokeWidth={2.75} />
+    <span
+      className="flex shrink-0 items-center justify-center rounded-full"
+      style={{ width: b.size, height: b.size, color: b.color, border: b.style === 'outline' ? `${b.borderWidth}px solid ${b.color}` : undefined }}
+    >
+      <ArrowLeft style={{ width: b.iconSize, height: b.iconSize }} strokeWidth={2.75} />
     </span>
   );
+  const h = FESS.header;
   return (
     <figure className={cn('mx-auto shrink-0', className)} style={{ width }}>
-      <div className="rounded-[38px] border-[10px] border-slate-900 bg-slate-900 shadow-xl" style={style}>
+      <div className="rounded-[38px] border-[10px] border-slate-900 bg-slate-900" style={style}>
         <div
           className="relative flex flex-col overflow-hidden rounded-[28px] text-[14px] leading-[1.4]"
-          style={{ height, backgroundColor: FESS.bgHome, color: FESS.textBody }}
+          style={{ height, backgroundColor: FESS.page.background, color: FESS.textBody }}
         >
           <StatusBar />
           {title !== undefined ? (
-            <div className="flex shrink-0 items-center gap-3 bg-[var(--pp)] px-4 text-white" style={{ height: FESS.header.height }}>
+            // A centred title: with a back button, an empty slot of the same size on the right keeps it centred.
+            <div
+              className={cn('grid shrink-0 items-center gap-2 bg-[var(--pp)]', showBack ? 'grid-cols-[auto_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)]')}
+              style={{ height: h.height, paddingLeft: h.paddingX, paddingRight: h.paddingX, color: h.title.color }}
+            >
               {showBack ? (
                 onBack ? (
-                  <button type="button" onClick={onBack} aria-label="Back" className="rounded-full hover:bg-white/15">
+                  <button type="button" onClick={onBack} aria-label="Back" className="cursor-pointer rounded-full hover:bg-white/15">
                     {back}
                   </button>
                 ) : (
                   back
                 )
               ) : null}
-              <span className="truncate text-[16px] font-semibold">{title}</span>
+              <span
+                className="truncate"
+                style={{ fontSize: h.title.size, fontWeight: h.title.weight, textAlign: h.title.align as CSSProperties['textAlign'] }}
+              >
+                {title}
+              </span>
+              {showBack ? <span aria-hidden style={{ width: b.size }} /> : null}
             </div>
           ) : null}
           {banner}
@@ -148,28 +174,38 @@ export function PhoneFrame({
 
 // ── Building blocks for preview screens (FESS styling) ──────────────────────────────────────────
 
+/** A strip under the header: a light tint of its tone with dark text of the same family, over a hairline. */
 export function PhoneBanner({ tone = 'info', children }: { tone?: 'info' | 'warning' | 'danger' | 'success'; children: ReactNode }) {
-  const tones = {
-    info: 'bg-sky-50 text-sky-900 border-sky-200',
-    warning: 'bg-amber-50 text-amber-900 border-amber-200',
-    danger: 'bg-red-50 text-red-900 border-red-200',
-    success: 'bg-emerald-50 text-emerald-900 border-emerald-200',
-  } as const;
-  return <div className={cn('shrink-0 border-b px-3 py-2 text-[13px] font-medium', tones[tone])}>{children}</div>;
+  const colors = toneColors(tone);
+  return (
+    <div className={cn('shrink-0 border-b py-2 text-[13px] font-medium leading-snug', PAGE_X)} style={{ backgroundColor: colors.background, color: colors.foreground, borderColor: FESS.divider }}>
+      {children}
+    </div>
+  );
 }
 
 export function PhoneSection({ title, children, className }: { title?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={cn('px-3 pt-3', className)}>
-      {title ? <h3 className="mb-1.5 text-[13px] font-bold text-black">{title}</h3> : null}
+    <section className={cn(PAGE_X, 'pt-4', className)}>
+      {title ? (
+        <h3 className="mb-2 leading-tight" style={{ ...typeStyle('title'), color: FESS.text }}>
+          {title}
+        </h3>
+      ) : null}
       {children}
     </section>
   );
 }
 
+/** A box, only where one is needed (component.card, D-97): white, a 1 px light border, 12 px corners, no shadow. */
 export function PhoneCard({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('rounded-[12px] border bg-white p-3', className)} style={{ borderColor: FESS.divider, boxShadow: FESS.shadowCard }}>
+    <div
+      className={cn(
+        'rounded-[var(--ph-card-r)] border-[length:var(--ph-card-bw)] border-[color:var(--ph-card-border)] bg-[color:var(--ph-card-bg)] p-4',
+        className,
+      )}
+    >
       {children}
     </div>
   );
@@ -177,26 +213,32 @@ export function PhoneCard({ children, className }: { children: ReactNode; classN
 
 export function PhoneButton({ children, variant = 'primary', disabled = false }: { children: ReactNode; variant?: 'primary' | 'outline'; disabled?: boolean }) {
   return (
-    <span
-      className={cn(
-        'flex w-full items-center justify-center rounded-[5px] text-[14px] font-semibold',
-        variant === 'primary' ? 'bg-[var(--pp)] text-white' : 'border-2 border-[var(--pp)] bg-white text-[var(--pp)]',
-        disabled && 'opacity-40',
-      )}
-      style={{ height: FESS.buttonHeight }}
-    >
+    <span className={cn(BUTTON_BASE, 'w-full', BUTTON_LOOK[variant], disabled && BUTTON_OFF[variant])} style={BUTTON_STYLE}>
       {children}
     </span>
   );
 }
 
-export function PhoneChip({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'primary' | 'success' | 'warning' | 'danger' }) {
-  const tones = {
-    neutral: 'bg-slate-100 text-slate-700',
-    primary: 'bg-[color-mix(in_srgb,var(--pp)_12%,white)] text-[var(--pp)]',
-    success: 'bg-emerald-50 text-emerald-800',
-    warning: 'bg-amber-50 text-amber-800',
-    danger: 'bg-red-50 text-red-800',
-  } as const;
-  return <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold', tones[tone])}>{children}</span>;
+/** Chip tones: the module's (status colours, gold `accent` for work in hand) plus `primary`, a tint of the accent. */
+export type PhoneChipTone = 'neutral' | 'primary' | FessTone;
+
+/** A status chip (component.chip): a pill tinted in its tone's colour with dark text of the same family. */
+export function PhoneChip({ children, tone = 'neutral' }: { children: ReactNode; tone?: PhoneChipTone }) {
+  const colors = tone === 'primary' ? { background: fessTint('var(--pp)'), foreground: 'var(--pp)' } : toneColors(tone);
+  const chip = FESS.chip;
+  return (
+    <span
+      className="inline-flex max-w-full items-center gap-1.5 leading-snug [&_svg]:shrink-0"
+      style={{
+        backgroundColor: colors.background,
+        color: colors.foreground,
+        borderRadius: chip.radius,
+        padding: `${chip.paddingY}px ${chip.paddingX}px`,
+        fontSize: chip.textSize,
+        fontWeight: chip.textWeight,
+      }}
+    >
+      {children}
+    </span>
+  );
 }

@@ -7,6 +7,7 @@ import { ChevronDown, ChevronRight, Copy, FolderInput, MoreHorizontal, Plus, Set
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { Details } from '@/components/details';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -65,15 +66,15 @@ function FieldBadges({ field }: { field: Obj }) {
   const out: React.ReactNode[] = [];
   if (field.required === true) out.push(<Badge key="req" tone="neutral">Required</Badge>);
   else if (isRule(field.required)) out.push(<Badge key="req" tone="progress">Required sometimes</Badge>);
-  if (isRule(field.visible)) out.push(<Badge key="vis" tone="progress">Conditional</Badge>);
+  if (isRule(field.visible)) out.push(<Badge key="vis" tone="progress">Shown sometimes</Badge>);
   if (field.visible === false) out.push(<Badge key="vis" tone="muted">Hidden</Badge>);
   if (isRule(field.risk_indicator)) out.push(<Badge key="risk" tone="warning">Risk flag</Badge>);
   if (field.read_only === true || field.value !== undefined || spec?.category === 'computed') out.push(<Badge key="auto" tone="info">Automatic</Badge>);
   const checks = asArr(field.validate).length;
   if (checks) out.push(<Badge key="val" tone="neutral">{checks === 1 ? '1 check' : `${checks} checks`}</Badge>);
   const src = asObj(field.options_source);
-  if (src.type === 'reason_codes') out.push(<Badge key="src" tone="accent">Reason codes</Badge>);
-  if (src.type === 'lookup_list') out.push(<Badge key="src" tone="accent">Lookup list</Badge>);
+  if (src.type === 'reason_codes') out.push(<Badge key="src" tone="accent">Reasons</Badge>);
+  if (src.type === 'lookup_list') out.push(<Badge key="src" tone="accent">Drop-down list</Badge>);
   const p = asObj(field.props);
   if (field.type === 'photo') {
     const min = typeof p.min_count === 'number' ? p.min_count : isRule(p.min_count) ? 'varies' : 0;
@@ -156,8 +157,8 @@ function FieldRowCard({
     <li
       {...drag.target(index)}
       className={cn(
-        'rounded-lg border bg-card transition-shadow',
-        isSelected && 'border-primary shadow-sm ring-2 ring-primary/25',
+        'rounded-lg border bg-card transition-colors',
+        isSelected && 'border-primary ring-2 ring-primary/25',
         drag.over === index && 'border-primary ring-2 ring-primary/30',
       )}
     >
@@ -231,7 +232,7 @@ function FieldRowCard({
         ) : null}
       </div>
       {isSelected ? (
-        <div className="border-t bg-slate-50/70 p-4">
+        <div className="border-t p-4">
           <FieldInspector
             path={path}
             field={field}
@@ -280,7 +281,11 @@ export function FieldList({
   });
   return (
     <div className="grid gap-2">
-      {fields.length === 0 ? <Hint className="rounded-md border border-dashed p-3 text-center">Nothing here yet.</Hint> : null}
+      {fields.length === 0 ? (
+        <Hint className="rounded-md border border-dashed p-3 text-center">
+          {readOnly ? 'Nothing here yet.' : ctx.mode === 'job_schema' ? 'No details yet. Add the first one.' : 'No questions here yet. Add the first one.'}
+        </Hint>
+      ) : null}
       <ul className="grid gap-2">
         {fields.map((f, i) => (
           <FieldRowCard key={i} arrayPath={arrayPath} index={i} count={fields.length} field={f} doc={doc} update={update} selected={selected} onSelect={onSelect} ctx={ctx} drag={drag} />
@@ -299,7 +304,7 @@ export function FieldList({
         allow={ctx.allow}
         takenKeys={ctx.takenKeys}
         refs={refs}
-        title={ctx.mode === 'job_schema' ? 'Add a job detail' : 'Add a question'}
+        title={ctx.mode === 'job_schema' ? 'Add a detail' : 'Add a question'}
         onPick={(field, key) => {
           const idx = fields.length;
           fresh.add(key);
@@ -347,7 +352,7 @@ function SectionSettings({ index, section, update, vocab }: { index: number; sec
   const set = (k: string, v: unknown) => update((d) => setProp(d, path, k, v) as Obj);
   const key = asStr(section.key);
   return (
-    <div className="grid gap-4 border-t bg-slate-50/70 p-4">
+    <div className="grid gap-4 border-t p-4">
       <div className="grid gap-4 md:grid-cols-2">
         <TextField
           label="Section title"
@@ -369,14 +374,16 @@ function SectionSettings({ index, section, update, vocab }: { index: number; sec
         <TextField label="Description" value={asStr(section.description)} onChange={(v) => set('description', v)} placeholder="Optional" />
       </div>
       {advanced ? (
-        <TextField label="Key" value={key} onChange={(v) => set('key', v)} mono hint="Flow steps refer to sections by this key." />
+        <TextField label="Technical name" value={key} onChange={(v) => set('key', v)} mono hint="Visit steps refer to the section by this name." />
       ) : (
-        <p className="text-sm text-muted-foreground">
-          Saved as <code className="rounded bg-muted px-1 py-0.5">{key}</code>
-        </p>
+        <Details summary="Technical name">
+          <p className="text-sm text-muted-foreground">
+            Saved as <code className="rounded border px-1 py-0.5">{key}</code>
+          </p>
+        </Details>
       )}
       <div className="grid gap-1.5">
-        <span className="text-sm font-medium">Shown</span>
+        <span className="text-sm font-medium">When it shows</span>
         {isRule(section.visible) ? (
           <RuleLine sentence={slotSentence('visible', section.visible, vocab)} rule={section.visible} onChange={(v) => set('visible', v)} onRemove={() => set('visible', undefined)} removeLabel="Always show" />
         ) : (
@@ -448,17 +455,17 @@ function SectionCard({
 
   return (
     <Card {...drag.target(index)} className={cn('overflow-hidden', isSelected && 'border-primary ring-2 ring-primary/25', drag.over === index && 'border-primary ring-2 ring-primary/30')}>
-      <div className="flex items-center gap-2 bg-slate-50 px-3 py-2.5">
+      <div className="flex items-center gap-2 border-b px-3 py-2.5">
         {drag.handle(index)}
         <IconAction label={collapsed ? 'Expand section' : 'Collapse section'} onClick={onToggle}>
           {collapsed ? <ChevronRight /> : <ChevronDown />}
         </IconAction>
         <button type="button" onClick={() => onSelect(isSelected ? null : pk)} className="min-w-0 flex-1 text-left" aria-expanded={isSelected}>
-          <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">Section {index + 1}</span>
+          <span className="block text-xs font-medium text-muted-foreground">Section {index + 1}</span>
           <span className="flex flex-wrap items-center gap-2">
             <span className="text-base font-semibold">{title}</span>
             <Badge tone="muted">{fields.length === 1 ? '1 question' : `${fields.length} questions`}</Badge>
-            {isRule(section.visible) ? <Badge tone="progress">Conditional</Badge> : null}
+            {isRule(section.visible) ? <Badge tone="progress">Shown sometimes</Badge> : null}
             {section.page_break === true ? <Badge tone="muted">New page</Badge> : null}
           </span>
           {isRule(section.visible) ? <span className="block text-sm text-violet-800">{slotSentence('visible', section.visible, ctx.vocab)}</span> : null}
@@ -493,7 +500,7 @@ function SectionCard({
         open={confirm}
         onOpenChange={setConfirm}
         title={`Remove section “${title}”?`}
-        description={`It has ${fields.length} question${fields.length === 1 ? '' : 's'}. You can undo straight after, or reset the draft to the published version.`}
+        description={`It has ${fields.length} question${fields.length === 1 ? '' : 's'}. You can undo straight after, or start again from the published version.`}
         confirmLabel="Remove section"
         destructive
         onConfirm={remove}
@@ -525,10 +532,10 @@ export function FormEditor(props: EditorProps) {
 
   return (
     <div className="grid gap-4">
-      <DocumentHeader doc={doc} update={update} showLocale titleLabel="Form title">
+      <DocumentHeader doc={doc} update={update} showLocale titleLabel="Title">
         <SelectField
-          label="Agent declaration for this form"
-          hint="The declaration the agent accepts before submitting. Published on the Declarations page."
+          label="Declaration the agent agrees to"
+          hint="The statement the agent agrees to before sending the visit in. Set up on the Declarations page."
           value={asStr(doc.declaration_key) || undefined}
           onChange={(v) => update((d) => setProp(d, [], 'declaration_key', v) as Obj)}
           unsetLabel="None"

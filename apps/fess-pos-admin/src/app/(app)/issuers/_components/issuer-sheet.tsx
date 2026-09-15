@@ -32,15 +32,15 @@ type JsonField = 'request_template' | 'employee_number_source';
 type IssuerField = TextField | JsonField;
 
 export const ISSUER_TYPE_LABEL: Record<IssuerType, string> = {
-  jwks: 'Signed tokens (JWKS)',
-  introspection: 'Server check (introspection)',
-  dev_stub: 'Stand-in (development)',
+  jwks: 'Checks a signature',
+  introspection: 'Asks its server',
+  dev_stub: 'Stand-in (QA only)',
 };
 
 const TYPE_HINT: Record<IssuerType, string> = {
-  jwks: 'Verifies signed JWTs against the issuer’s published public keys.',
-  introspection: 'Calls the issuer’s server to check each token. The request shape and the response paths to read are configuration.',
-  dev_stub: 'Stand-in identity provider for development and staging. Its signing secret lives in the function secrets.',
+  jwks: 'We check each sign-in’s signature against public keys the source publishes (JWKS).',
+  introspection: 'We ask the source’s server about each sign-in. What to send and which answers to read are set below.',
+  dev_stub: 'A stand-in sign-in source for QA and local testing only. Production never uses it. Its signing secret is stored on the server.',
 };
 
 const TYPE_FIELDS: Record<IssuerType, readonly IssuerField[]> = {
@@ -50,11 +50,11 @@ const TYPE_FIELDS: Record<IssuerType, readonly IssuerField[]> = {
 };
 
 const TEXT_FIELDS: { key: TextField; label: string; hint: string; mono?: boolean; placeholder?: string }[] = [
-  { key: 'issuer', label: 'Issuer (iss)', hint: 'The expected iss claim.' },
-  { key: 'audience', label: 'Audience (aud)', hint: 'The expected aud claim.' },
-  { key: 'jwks_url', label: 'JWKS URL', hint: 'Where the issuer publishes its public signing keys.', placeholder: 'https://…' },
-  { key: 'introspection_url', label: 'Introspection URL', hint: 'Server-to-server endpoint that validates the token.', placeholder: 'https://…' },
-  { key: 'subject_claim', label: 'Subject claim', hint: 'Claim holding the person’s stable id, e.g. sub.', mono: true },
+  { key: 'issuer', label: 'Source name in the sign-in (iss)', hint: 'Must match the iss value in every sign-in.' },
+  { key: 'audience', label: 'Meant for (aud)', hint: 'Must match the aud value in every sign-in.' },
+  { key: 'jwks_url', label: 'Public keys address (JWKS URL)', hint: 'Where the source publishes the keys we check signatures with.', placeholder: 'https://…' },
+  { key: 'introspection_url', label: 'Check address (introspection URL)', hint: 'The address on the source’s server that we ask about each sign-in.', placeholder: 'https://…' },
+  { key: 'subject_claim', label: 'Person ID value (subject claim)', hint: 'The value that holds the person’s permanent ID, usually sub.', mono: true },
 ];
 
 const SECRET_NAME_RE = /^[A-Z][A-Z0-9_]{1,127}$/;
@@ -107,7 +107,7 @@ function templateStateFrom(t: JsonObject | null | undefined): TemplateState {
 function templateFromState(s: TemplateState): Parsed<JsonObject> {
   if (s.mode === 'json') {
     const r = parseJsonText(s.json || '{}', { requireObject: true });
-    return r.ok && isPlainObject(r.value) ? { ok: true, value: r.value } : { ok: false, message: `Request template: ${r.ok ? 'must be an object' : r.error.message}` };
+    return r.ok && isPlainObject(r.value) ? { ok: true, value: r.value } : { ok: false, message: `What we send: ${r.ok ? 'must be a JSON object' : r.error.message}` };
   }
   const headers = objectEditorStateToObject(s.headers, {
     label: 'Headers',
@@ -129,7 +129,7 @@ function templateFromState(s: TemplateState): Parsed<JsonObject> {
   if (Object.keys(names).length > 0) out.names = names;
   const t = s.timeoutMs.trim();
   if (t) {
-    if (!/^\d+$/.test(t) || Number(t) < 100 || Number(t) > 60000) return { ok: false, message: 'Timeout must be a whole number of milliseconds between 100 and 60 000' };
+    if (!/^\d+$/.test(t) || Number(t) < 100 || Number(t) > 60000) return { ok: false, message: 'The wait time must be a whole number between 100 and 60 000 milliseconds.' };
     out.timeout_ms = Number(t);
   }
   return { ok: true, value: { ...out, ...s.extra } };
@@ -154,15 +154,15 @@ function sourceStateFrom(o: JsonObject | null | undefined): SourceState {
 function sourceFromState(s: SourceState, issuerType: IssuerType): Parsed<JsonObject> {
   if (s.mode === 'json') {
     const r = parseJsonText(s.json || '{}', { requireObject: true });
-    return r.ok && isPlainObject(r.value) ? { ok: true, value: r.value } : { ok: false, message: `Employee number source: ${r.ok ? 'must be an object' : r.error.message}` };
+    return r.ok && isPlainObject(r.value) ? { ok: true, value: r.value } : { ok: false, message: `Employee number: ${r.ok ? 'must be a JSON object' : r.error.message}` };
   }
   const out: JsonObject = { ...s.extra };
   const type = issuerType === 'introspection' && !s.type ? 'issuer_lookup' : s.type;
   if (type) out.type = type;
   if (type !== 'none' && s.path.trim()) out.path = s.path.trim();
   if (s.claim.trim()) out.claim = s.claim.trim();
-  if (issuerType === 'jwks' && type === 'claim' && !s.path.trim()) return { ok: false, message: 'Employee number source: give the claim that holds the employee number' };
-  if (issuerType === 'introspection' && !s.path.trim()) return { ok: false, message: 'Employee number source: give the field in the issuer’s answer that holds the employee number' };
+  if (issuerType === 'jwks' && type === 'claim' && !s.path.trim()) return { ok: false, message: 'Employee number: say which value in the sign-in holds it.' };
+  if (issuerType === 'introspection' && !s.path.trim()) return { ok: false, message: 'Employee number: say which field in the source’s answer holds it.' };
   return { ok: true, value: out };
 }
 
@@ -170,7 +170,7 @@ function sourceFromState(s: SourceState, issuerType: IssuerType): Parsed<JsonObj
 function ModeSwitch({ mode, onFields, onJson, fieldsBlocked, jsonBlocked }: { mode: 'fields' | 'json'; onFields: () => void; onJson: () => void; fieldsBlocked: boolean; jsonBlocked: boolean }) {
   const advanced = useIsAdvanced();
   if (!advanced && mode === 'fields') return null;
-  const tab = (active: boolean) => cn('rounded px-3 py-1 disabled:opacity-50', active ? 'bg-card font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground');
+  const tab = (active: boolean) => cn('rounded px-3 py-1 disabled:opacity-50', active ? 'bg-card font-medium ring-1 ring-border' : 'text-muted-foreground hover:text-foreground');
   return (
     <div className="inline-flex rounded-md border bg-muted p-0.5 text-sm" role="tablist">
       <button type="button" role="tab" aria-selected={mode === 'fields'} className={tab(mode === 'fields')} disabled={fieldsBlocked} onClick={onFields}>
@@ -201,11 +201,11 @@ function RequestTemplateEditor({ state, onChange, error, uid }: { state: Templat
   return (
     <div className="grid gap-4 rounded-md border p-4">
       <SubHeading
-        title="Request to the issuer"
+        title="What we send to the source"
         hint={
           <>
-            How the server calls the introspection URL. Use <code>{'{{token}}'}</code> for the host token and <code>{'{{secret}}'}</code> for the credential
-            named below — the secret value is substituted on the server.
+            How we ask the source’s server about a sign-in. Write <code>{'{{token}}'}</code> where the sign-in goes and <code>{'{{secret}}'}</code> where
+            the stored password goes. The server fills them in.
           </>
         }
         action={
@@ -237,7 +237,7 @@ function RequestTemplateEditor({ state, onChange, error, uid }: { state: Templat
                 </SelectContent>
               </Select>
             </FormField>
-            <FormField label="Timeout (milliseconds)" htmlFor={`${uid}-timeout`} hint="Blank = 8 000 ms.">
+            <FormField label="How long to wait (milliseconds)" htmlFor={`${uid}-timeout`} hint="Leave empty for 8 000 (8 seconds).">
               <Input id={`${uid}-timeout`} type="number" inputMode="numeric" min={100} max={60000} step={100} value={state.timeoutMs} onChange={(e) => onChange({ ...state, timeoutMs: e.target.value })} placeholder="8000" />
             </FormField>
           </FormGrid>
@@ -254,7 +254,7 @@ function RequestTemplateEditor({ state, onChange, error, uid }: { state: Templat
               keyPlaceholder="e.g. authorization"
               valuePlaceholder="e.g. Bearer {{secret}}"
               addLabel="Add header"
-              emptyText="No headers — the server sends content-type: application/json."
+              emptyText="No headers. The server sends content-type: application/json."
             />
           </div>
           <div className="grid gap-2">
@@ -277,16 +277,16 @@ function RequestTemplateEditor({ state, onChange, error, uid }: { state: Templat
             ) : null}
           </div>
           <FormGrid>
-            <FormField label="Success field" htmlFor={`${uid}-success`} hint="A field in the answer that must be present for the token to count as valid. Dotted path, e.g. personnelNumber.">
+            <FormField label="Success field" htmlFor={`${uid}-success`} hint="A field that must be in the answer for the sign-in to count as valid. Use dots for nested fields, such as personnelNumber.">
               <Input id={`${uid}-success`} value={state.successPath} onChange={(e) => onChange({ ...state, successPath: e.target.value })} className="font-mono" />
             </FormField>
-            <FormField label="Subject field" htmlFor={`${uid}-subject`} hint="The field holding the person’s stable id. Blank = the employee number field.">
+            <FormField label="Person ID field" htmlFor={`${uid}-subject`} hint="The field holding the person’s permanent ID. Leave empty to use the employee number field.">
               <Input id={`${uid}-subject`} value={state.subjectPath} onChange={(e) => onChange({ ...state, subjectPath: e.target.value })} className="font-mono" />
             </FormField>
-            <FormField label="First name field" htmlFor={`${uid}-first`} hint="Optional, e.g. firstName.">
+            <FormField label="First name field" htmlFor={`${uid}-first`} hint="Optional, such as firstName.">
               <Input id={`${uid}-first`} value={state.firstNamePath} onChange={(e) => onChange({ ...state, firstNamePath: e.target.value })} className="font-mono" />
             </FormField>
-            <FormField label="Last name field" htmlFor={`${uid}-last`} hint="Optional, e.g. surname.">
+            <FormField label="Last name field" htmlFor={`${uid}-last`} hint="Optional, such as surname.">
               <Input id={`${uid}-last`} value={state.lastNamePath} onChange={(e) => onChange({ ...state, lastNamePath: e.target.value })} className="font-mono" />
             </FormField>
           </FormGrid>
@@ -310,7 +310,7 @@ function EmployeeNumberSourceEditor({ state, onChange, issuerType, error, uid }:
     <div className="grid gap-4 rounded-md border p-4">
       <SubHeading
         title="Employee number"
-        hint="Where the verified employee number comes from — a token claim or a field in the issuer’s answer. Never from the host profile."
+        hint="Where we read the person’s checked employee number: a value in the sign-in, or a field in the source’s answer. Never from what the phone app says."
         action={
           <ModeSwitch
             mode={state.mode}
@@ -324,7 +324,7 @@ function EmployeeNumberSourceEditor({ state, onChange, issuerType, error, uid }:
       {state.mode === 'json' ? (
         <JsonEditor value={state.json} onChange={(json) => onChange({ ...state, json })} requireObject rows={5} />
       ) : issuerType === 'dev_stub' ? (
-        <FormField label="Token claim" htmlFor={`${uid}-ens-claim`} hint="The claim in the stand-in token that holds the employee number. Blank = employee_number.">
+        <FormField label="Value in the sign-in" htmlFor={`${uid}-ens-claim`} hint="Which value in the stand-in sign-in holds the employee number. Leave empty for employee_number.">
           <Input id={`${uid}-ens-claim`} value={state.claim} onChange={(e) => onChange({ ...state, claim: e.target.value })} placeholder="employee_number" className="font-mono" />
         </FormField>
       ) : issuerType === 'jwks' ? (
@@ -335,20 +335,20 @@ function EmployeeNumberSourceEditor({ state, onChange, issuerType, error, uid }:
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="claim">A claim in the token</SelectItem>
-                <SelectItem value="none">Not provided by this issuer</SelectItem>
+                <SelectItem value="claim">A value in the sign-in</SelectItem>
+                <SelectItem value="none">This source doesn’t provide it</SelectItem>
                 {type && type !== 'claim' && type !== 'none' ? <SelectItem value={type}>{type}</SelectItem> : null}
               </SelectContent>
             </Select>
           </FormField>
           {type === 'claim' ? (
-            <FormField label="Claim" htmlFor={`${uid}-ens-path`} hint="Dotted path in the token, e.g. employee_number.">
+            <FormField label="Value name" htmlFor={`${uid}-ens-path`} hint="Use dots for nested values, such as employee_number.">
               <Input id={`${uid}-ens-path`} value={state.path} onChange={(e) => onChange({ ...state, path: e.target.value })} className="font-mono" />
             </FormField>
           ) : null}
         </FormGrid>
       ) : (
-        <FormField label="Field in the issuer’s answer" htmlFor={`${uid}-ens-path`} hint="Dotted path in the issuer’s response, e.g. personnelNumber.">
+        <FormField label="Field in the source’s answer" htmlFor={`${uid}-ens-path`} hint="Use dots for nested fields, such as personnelNumber.">
           <Input id={`${uid}-ens-path`} value={state.path} onChange={(e) => onChange({ ...state, path: e.target.value })} className="font-mono" />
         </FormField>
       )}
@@ -394,7 +394,7 @@ function IssuerForm({ issuer, onDone }: { issuer: TrustedIssuer | null; onDone: 
           patchAdmin<TrustedIssuer>(`/issuers/${encodeURIComponent(save.id)}`, save.body),
     invalidate: [['trusted_issuers']],
     toastErrors: false,
-    successMessage: (i, save) => (save.kind === 'create' ? `Issuer ${i.key} created (inactive)` : `Issuer ${i.key} saved`),
+    successMessage: (i, save) => (save.kind === 'create' ? `${i.title} added. It stays off until you turn it on from the list.` : `${i.title} saved.`),
     onSuccess: () => onDone(),
   });
   const errors: FieldErrors = { ...apiFieldErrors(mutation.error), ...clientErrors };
@@ -417,7 +417,7 @@ function IssuerForm({ issuer, onDone }: { issuer: TrustedIssuer | null; onDone: 
     }
     const secretName = text.secret_name.trim();
     if (has('secret_name') && secretName && !SECRET_NAME_RE.test(secretName)) {
-      next.secret_name = 'Use the secret’s NAME in UPPER_SNAKE_CASE, e.g. ISSUER_CREDENTIAL — never the secret itself.';
+      next.secret_name = 'Enter the secret’s name in capitals with underscores (ISSUER_CREDENTIAL, for example), never the secret itself.';
     }
     const textValues: Partial<Record<TextField, string>> = {};
     for (const f of ['issuer', 'audience', 'jwks_url', 'introspection_url', 'subject_claim', 'secret_name'] as const) {
@@ -445,28 +445,34 @@ function IssuerForm({ issuer, onDone }: { issuer: TrustedIssuer | null; onDone: 
   return (
     <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col" noValidate>
       <SheetHeader>
-        <SheetTitle>{isNew ? 'New trusted issuer' : `Issuer ${issuer.key}`}</SheetTitle>
-        <SheetDescription>How the POS API verifies a host token and finds the person’s employee number (D-05).</SheetDescription>
+        <SheetTitle>{isNew ? 'Add a sign-in source' : issuer.title}</SheetTitle>
+        <SheetDescription>How we check that an agent is who they say they are when they sign in, and how we find their employee number.</SheetDescription>
       </SheetHeader>
       <SheetBody className="space-y-6">
         {!isNew ? (
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="text-muted-foreground">Status</span>
-            <ActiveBadge active={issuer.active} />
-            <span className="text-muted-foreground">Activate or deactivate from the list — every change needs a reason.</span>
+            <ActiveBadge active={issuer.active} activeLabel="On" inactiveLabel="Off" />
+            <span className="text-muted-foreground">Turn it on or off from the list. Each change needs a reason.</span>
           </div>
         ) : (
           <Alert variant="info">
             <KeyRound />
-            <AlertDescription>New issuers start inactive. Activate one from the list once its configuration and secret are in place.</AlertDescription>
+            <AlertDescription>A new sign-in source starts turned off. Turn it on from the list once it’s set up and its secret is stored on the server.</AlertDescription>
           </Alert>
         )}
-        <FormSection title="Issuer">
+        <FormSection title="About this source">
           <FormGrid>
-            <FormField label="Key" htmlFor={`${uid}-key`} required={isNew} error={errors.key} hint={isNew ? 'snake_case, e.g. partner_idp. Can’t be changed later.' : 'The key can’t be changed.'}>
+            <FormField
+              label="Key"
+              htmlFor={`${uid}-key`}
+              required={isNew}
+              error={errors.key}
+              hint={isNew ? 'A short internal name in lower case with underscores, such as partner_idp. It can’t be changed later.' : 'The key can’t be changed.'}
+            >
               <Input id={`${uid}-key`} value={key} onChange={(e) => setKey(e.target.value.toLowerCase())} readOnly={!isNew} className="font-mono" maxLength={64} aria-invalid={!!errors.key || undefined} />
             </FormField>
-            <FormField label="Type" htmlFor={`${uid}-type`} required error={errors.type} hint={TYPE_HINT[type]}>
+            <FormField label="How we check sign-ins" htmlFor={`${uid}-type`} required error={errors.type} hint={TYPE_HINT[type]}>
               <Select value={type} onValueChange={(v) => setType(v as IssuerType)}>
                 <SelectTrigger id={`${uid}-type`}>
                   <SelectValue />
@@ -481,19 +487,19 @@ function IssuerForm({ issuer, onDone }: { issuer: TrustedIssuer | null; onDone: 
               </Select>
             </FormField>
           </FormGrid>
-          <FormField label="Title" htmlFor={`${uid}-title`} required error={errors.title}>
+          <FormField label="Name" htmlFor={`${uid}-title`} required error={errors.title}>
             <Input id={`${uid}-title`} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} aria-invalid={!!errors.title || undefined} />
           </FormField>
           <div className="flex items-start gap-3">
             <Switch id={`${uid}-primary`} checked={primary} onCheckedChange={setPrimary} />
             <div className="grid gap-0.5">
-              <Label htmlFor={`${uid}-primary`}>Primary issuer</Label>
-              <p className="text-sm text-muted-foreground">A primary issuer can establish a POS session on its own. A secondary one is only an extra signal.</p>
+              <Label htmlFor={`${uid}-primary`}>Can sign agents in on its own</Label>
+              <p className="text-sm text-muted-foreground">If this is off, the source only adds an extra check alongside another one.</p>
             </div>
           </div>
         </FormSection>
 
-        <FormSection title="Verification" description="Only the fields this issuer type uses are shown.">
+        <FormSection title="Checking sign-ins" description="Only the settings this kind of source needs are shown.">
           <FormGrid>
             {TEXT_FIELDS.filter((f) => has(f.key)).map((f) => (
               <FormField key={f.key} label={f.label} htmlFor={`${uid}-${f.key}`} error={errors[f.key]} hint={f.hint}>
@@ -513,7 +519,7 @@ function IssuerForm({ issuer, onDone }: { issuer: TrustedIssuer | null; onDone: 
               label="Secret name"
               htmlFor={`${uid}-secret`}
               error={errors.secret_name}
-              hint="The NAME of the Edge Function secret that holds the credential for this call. Never paste the credential itself — people set it in the function secret store."
+              hint="The name of the stored server secret that holds the password for this check. Never paste the password itself: a developer stores it on the server."
             >
               <Input
                 id={`${uid}-secret`}
@@ -536,7 +542,7 @@ function IssuerForm({ issuer, onDone }: { issuer: TrustedIssuer | null; onDone: 
           Cancel
         </Button>
         <Button type="submit" loading={mutation.isPending}>
-          {isNew ? 'Create issuer' : 'Save changes'}
+          {isNew ? 'Add sign-in source' : 'Save changes'}
         </Button>
       </SheetFooter>
     </form>

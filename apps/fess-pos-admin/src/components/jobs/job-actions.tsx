@@ -18,7 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { adminApi } from '@/lib/api';
-import { employeeName, fromDateTimeLocalValue, humanize, TIME_ZONE, toDateTimeLocalValue } from '@/lib/format';
+import { employeeName, fromDateTimeLocalValue, TIME_ZONE, toDateTimeLocalValue } from '@/lib/format';
+import { CONTACT_CHANNEL_LABEL, CONTACT_OUTCOME_LABEL } from '@/lib/labels';
 import { useAgents } from '@/lib/hooks';
 import { useMutationWithToast } from '@/lib/mutations';
 import type { ContactAttemptBody, ReasonCodeActionBody, ScheduleBody } from '@/lib/schemas';
@@ -68,28 +69,27 @@ export function jobActions(job: Pick<Job, 'status'>, staff: Pick<StaffContextVal
   if (canSchedule && st === 'pending') {
     out.push({
       kind: 'schedule',
-      label: 'Confirm appointment',
+      label: 'Confirm the visit time',
       enabled: attemptsCount > 0,
-      reason: attemptsCount > 0 ? undefined : 'Log at least one contact attempt first — attempts are the evidence behind the appointment.',
+      reason: attemptsCount > 0 ? undefined : 'First log at least one call or message to the merchant. It’s the proof behind the booking.',
       primary: true,
     });
   }
-  if (st === 'scheduled') out.push({ kind: 'allocate', label: 'Allocate agent', enabled: true, primary: true });
-  if (st === 'assigned' || st === 'accepted') out.push({ kind: 'reassign', label: 'Reassign agent', enabled: true, primary: true });
-  if (CLOSABLE.includes(st)) out.push({ kind: 'close', label: 'Close (archive)', enabled: true, primary: true });
-  if (canSchedule && ATTEMPT_LOGGABLE.includes(st)) out.push({ kind: 'attempt', label: 'Log contact attempt', enabled: true });
-  if (canSchedule && RESCHEDULABLE.includes(st)) out.push({ kind: 'schedule', label: 'Reschedule appointment', enabled: true });
-  if (canSchedule && st === 'scheduled') out.push({ kind: 'unschedule', label: 'Unschedule', enabled: true });
-  if (canSchedule && st === 'pending') out.push({ kind: 'not_secured', label: 'Appointment not secured', enabled: true, destructive: true });
-  if (st === 'assigned' || st === 'accepted') out.push({ kind: 'revoke', label: 'Revoke assignment', enabled: true, destructive: true });
+  if (st === 'scheduled') out.push({ kind: 'allocate', label: 'Assign an agent', enabled: true, primary: true });
+  if (st === 'assigned' || st === 'accepted') out.push({ kind: 'reassign', label: 'Change the agent', enabled: true, primary: true });
+  if (CLOSABLE.includes(st)) out.push({ kind: 'close', label: 'Archive the job', enabled: true, primary: true });
+  if (canSchedule && ATTEMPT_LOGGABLE.includes(st)) out.push({ kind: 'attempt', label: 'Log a call or message', enabled: true });
+  if (canSchedule && RESCHEDULABLE.includes(st)) out.push({ kind: 'schedule', label: 'Change the visit time', enabled: true });
+  if (canSchedule && st === 'scheduled') out.push({ kind: 'unschedule', label: 'Cancel the booking', enabled: true });
+  if (canSchedule && st === 'pending') out.push({ kind: 'not_secured', label: 'Couldn’t book a visit', enabled: true, destructive: true });
+  if (st === 'assigned' || st === 'accepted') out.push({ kind: 'revoke', label: 'Take the job off the agent', enabled: true, destructive: true });
   if (CANCELLABLE.includes(st)) out.push({ kind: 'cancel', label: 'Cancel job', enabled: true, destructive: true });
   return out;
 }
 
-/** Header buttons: Edit, the primary action, and a "More actions" menu. */
+/** Header buttons: Edit and a "More actions" menu. The next step's own button is in the job summary, so pass the other actions. */
 export function JobActionBar({ actions, onOpen, editHref }: { actions: JobAction[]; onOpen: (k: JobDialogKind) => void; editHref: string | null }) {
-  const primary = actions.find((a) => a.primary);
-  const rest = actions.filter((a) => a !== primary);
+  const rest = actions;
   return (
     <>
       {editHref ? (
@@ -118,11 +118,6 @@ export function JobActionBar({ actions, onOpen, editHref }: { actions: JobAction
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
-      {primary ? (
-        <Button size="sm" onClick={() => onOpen(primary.kind)} disabled={!primary.enabled} title={primary.reason}>
-          {primary.label}
-        </Button>
-      ) : null}
     </>
   );
 }
@@ -137,7 +132,7 @@ export function ActionButtons({ actions, kinds, onOpen }: { actions: JobAction[]
         <Button
           key={`${a.kind}-${a.label}`}
           size="sm"
-          variant={a.primary ? 'default' : a.destructive ? 'outline' : 'outline'}
+          variant={a.primary ? 'default' : 'outline'}
           className={cn(a.destructive && 'text-destructive hover:text-destructive')}
           onClick={() => onOpen(a.kind)}
           disabled={!a.enabled}
@@ -185,10 +180,10 @@ function ContactAttemptDialog({ job, onClose }: { job: JobDetailRow; onClose: ()
   const [pEnd, setPEnd] = useState('');
   const [contactName, setContactName] = useState(job.contact?.name ?? '');
   const [note, setNote] = useState('');
-  const m = useJobMutation(job.id, (b: ContactAttemptBody) => adminApi.jobs.contactAttempt(job.id, b), 'Contact attempt logged', onClose);
+  const m = useJobMutation(job.id, (b: ContactAttemptBody) => adminApi.jobs.contactAttempt(job.id, b), 'Call or message logged', onClose);
   const startIso = fromDateTimeLocalValue(pStart);
   const endIso = fromDateTimeLocalValue(pEnd);
-  const windowError = startIso && endIso && Date.parse(endIso) <= Date.parse(startIso) ? 'The proposed end must be after the start' : null;
+  const windowError = startIso && endIso && Date.parse(endIso) <= Date.parse(startIso) ? 'The end must be after the start' : null;
   const atIso = fromDateTimeLocalValue(at);
   const future = atIso ? Date.parse(atIso) > Date.now() + 5 * 60_000 : false;
 
@@ -196,9 +191,9 @@ function ContactAttemptDialog({ job, onClose }: { job: JobDetailRow; onClose: ()
     <ActionDialog
       open
       onOpenChange={(o) => (o ? undefined : onClose())}
-      title="Log contact attempt"
-      description="Record every attempt to reach the merchant — they are the evidence behind an appointment or a not-secured outcome. Times are SAST."
-      submitLabel="Log attempt"
+      title="Log a call or message"
+      description="Note every try to reach the merchant. These notes are the proof behind a booking, or behind “couldn’t book a visit”. Times are South African time."
+      submitLabel="Log it"
       size="md"
       pending={m.isPending}
       error={m.error}
@@ -208,7 +203,7 @@ function ContactAttemptDialog({ job, onClose }: { job: JobDetailRow; onClose: ()
       }
     >
       <FormGrid>
-        <FormField label="Channel" htmlFor="att-channel" required>
+        <FormField label="How" htmlFor="att-channel" required>
           <Select value={channel} onValueChange={(v) => setChannel(v as ContactChannel)}>
             <SelectTrigger id="att-channel">
               <SelectValue />
@@ -216,13 +211,13 @@ function ContactAttemptDialog({ job, onClose }: { job: JobDetailRow; onClose: ()
             <SelectContent>
               {CONTACT_CHANNELS.map((c) => (
                 <SelectItem key={c} value={c}>
-                  {c === 'whatsapp' ? 'WhatsApp' : humanize(c)}
+                  {CONTACT_CHANNEL_LABEL[c]}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </FormField>
-        <FormField label="Outcome" htmlFor="att-outcome" required>
+        <FormField label="What happened" htmlFor="att-outcome" required>
           <Select value={outcome} onValueChange={(v) => setOutcome(v as ContactOutcome)}>
             <SelectTrigger id="att-outcome">
               <SelectValue />
@@ -230,19 +225,19 @@ function ContactAttemptDialog({ job, onClose }: { job: JobDetailRow; onClose: ()
             <SelectContent>
               {CONTACT_OUTCOMES.map((c) => (
                 <SelectItem key={c} value={c}>
-                  {humanize(c)}
+                  {CONTACT_OUTCOME_LABEL[c]}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </FormField>
-        <FormField label="When" htmlFor="att-at" required error={future ? 'Cannot be in the future' : null}>
+        <FormField label="When" htmlFor="att-at" required error={future ? 'This can’t be in the future' : null}>
           <Input id="att-at" type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />
         </FormField>
         <FormField label="Spoke to" htmlFor="att-contact">
           <Input id="att-contact" value={contactName} onChange={(e) => setContactName(e.target.value)} />
         </FormField>
-        <FormField label="Proposed start" htmlFor="att-ps" hint="If the merchant suggested a time">
+        <FormField label="Time they suggested: from" htmlFor="att-ps" hint="If the merchant suggested a time">
           <Input
             id="att-ps"
             type="datetime-local"
@@ -253,7 +248,7 @@ function ContactAttemptDialog({ job, onClose }: { job: JobDetailRow; onClose: ()
             }}
           />
         </FormField>
-        <FormField label="Proposed end" htmlFor="att-pe" error={windowError}>
+        <FormField label="Time they suggested: to" htmlFor="att-pe" error={windowError}>
           <Input id="att-pe" type="datetime-local" value={pEnd} onChange={(e) => setPEnd(e.target.value)} />
         </FormField>
       </FormGrid>
@@ -278,26 +273,26 @@ function ScheduleDialog({ job, attempts, onClose }: { job: JobDetailRow; attempt
   const m = useJobMutation(
     job.id,
     (b: ScheduleBody) => adminApi.jobs.schedule(job.id, b),
-    reschedule ? 'Appointment rescheduled' : 'Appointment confirmed — the job is now scheduled',
+    reschedule ? 'Visit time changed' : 'Visit time confirmed. Next: assign an agent.',
     onClose,
   );
   const startIso = fromDateTimeLocalValue(start);
   const endIso = fromDateTimeLocalValue(end);
   const windowError = startIso && endIso && Date.parse(endIso) <= Date.parse(startIso) ? 'The end must be after the start' : null;
-  const emailError = email.trim() && !EMAIL_RE.test(email.trim()) ? 'Must be a valid email address' : null;
+  const emailError = email.trim() && !EMAIL_RE.test(email.trim()) ? 'Enter a valid email address' : null;
   const canSubmit = !!startIso && !!endIso && !windowError && !!name.trim() && !emailError;
 
   return (
     <ActionDialog
       open
       onOpenChange={(o) => (o ? undefined : onClose())}
-      title={reschedule ? 'Reschedule appointment' : 'Confirm appointment'}
+      title={reschedule ? 'Change the visit time' : 'Confirm the visit time'}
       description={
         reschedule
-          ? `Change the agreed visit window.${job.assigned_to ? ' The assigned agent is notified, and their inspection token window moves with the new time.' : ''}`
-          : 'Record the visit window agreed with the merchant and who will meet the agent. The job moves to Scheduled and can then be allocated.'
+          ? `Change the visit time agreed with the merchant. Times are South African time.${job.assigned_to ? ' The agent gets the new time, and can only start the visit in the new window.' : ''}`
+          : 'Record the visit time agreed with the merchant, and who will meet the agent. Next, you can assign an agent. Times are South African time.'
       }
-      submitLabel={reschedule ? 'Reschedule' : 'Confirm appointment'}
+      submitLabel={reschedule ? 'Change the time' : 'Confirm the visit time'}
       size="md"
       pending={m.isPending}
       error={m.error}
@@ -311,9 +306,9 @@ function ScheduleDialog({ job, attempts, onClose }: { job: JobDetailRow; attempt
         })
       }
     >
-      {reschedule && job.scheduled_start ? <p className="text-sm text-muted-foreground">Currently: {formatWindow(job.scheduled_start, job.scheduled_end)}</p> : null}
+      {reschedule && job.scheduled_start ? <p className="text-sm text-muted-foreground">Booked now: {formatWindow(job.scheduled_start, job.scheduled_end)}</p> : null}
       <FormGrid>
-        <FormField label="Visit starts (SAST)" htmlFor="sch-start" required>
+        <FormField label="Visit starts" htmlFor="sch-start" required>
           <Input
             id="sch-start"
             type="datetime-local"
@@ -324,13 +319,13 @@ function ScheduleDialog({ job, attempts, onClose }: { job: JobDetailRow; attempt
             }}
           />
         </FormField>
-        <FormField label="Visit ends (SAST)" htmlFor="sch-end" required error={windowError}>
+        <FormField label="Visit ends" htmlFor="sch-end" required error={windowError}>
           <Input id="sch-end" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
         </FormField>
-        <FormField label="On-site contact name" htmlFor="sch-name" required>
+        <FormField label="Who will meet the agent" htmlFor="sch-name" required>
           <Input id="sch-name" value={name} onChange={(e) => setName(e.target.value)} />
         </FormField>
-        <FormField label="Role" htmlFor="sch-role" hint="e.g. Owner, Store manager">
+        <FormField label="Their role" htmlFor="sch-role" hint="For example: owner, store manager">
           <Input id="sch-role" value={role} onChange={(e) => setRole(e.target.value)} />
         </FormField>
         <FormField label="Phone" htmlFor="sch-phone">
@@ -458,11 +453,11 @@ function AgentLoadPicker({
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search agents" className="max-w-56" aria-label="Search agents" />
-        <span className="text-sm text-muted-foreground">Jobs already assigned per day (all banks you can see). Fewest on the visit day first.</span>
+        <span className="text-sm text-muted-foreground">How many jobs each agent already has each day (all the banks you can see). The quietest on the visit day are first.</span>
       </div>
       <div className="max-h-72 overflow-auto rounded-md border">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-slate-50 text-sm text-muted-foreground">
+          <thead className="sticky top-0 border-b bg-card text-sm text-muted-foreground">
             <tr>
               <th className="px-2 py-1.5 text-left font-medium">Agent</th>
               {days.map((d) => (
@@ -470,7 +465,7 @@ function AgentLoadPicker({
                   {dayHeadFmt.format(new Date(`${d}T12:00:00+02:00`))}
                 </th>
               ))}
-              <th className="px-2 py-1.5 text-right font-medium">7 days</th>
+              <th className="px-2 py-1.5 text-right font-medium">Week</th>
             </tr>
           </thead>
           <tbody>
@@ -478,7 +473,7 @@ function AgentLoadPicker({
               <tr
                 key={a.id}
                 onClick={() => onChange(a.id)}
-                className={cn('cursor-pointer border-t hover:bg-slate-50', value === a.id && 'bg-primary/10 hover:bg-primary/10')}
+                className={cn('cursor-pointer border-t border-divider hover:bg-accent/50', value === a.id && 'bg-primary/10 hover:bg-primary/10')}
               >
                 <td className="px-2 py-1.5">
                   <label className="flex cursor-pointer items-center gap-2">
@@ -500,14 +495,14 @@ function AgentLoadPicker({
             {list.length === 0 ? (
               <tr>
                 <td colSpan={days.length + 2} className="px-2 py-4 text-center text-sm text-muted-foreground">
-                  No eligible agents for this bank.
+                  No active agents work for this bank. Add one under People.
                 </td>
               </tr>
             ) : null}
           </tbody>
         </table>
       </div>
-      {load.error ? <p className="text-sm text-destructive">Could not load agent workload: {load.error.message}</p> : null}
+      {load.error ? <p className="text-sm text-destructive">We couldn’t load how busy each agent is. You can still choose an agent.</p> : null}
     </div>
   );
 }
@@ -547,11 +542,11 @@ function AllocateDialog({
       mode === 'allocate'
         ? adminApi.jobs.allocate(job.id, { agent_id: v.agentId, note: opt(note) })
         : adminApi.jobs.reassign(job.id, { agent_id: v.agentId, reason_code: code ?? '', note: opt(note) }),
-    mode === 'allocate' ? 'Agent allocated — they have been notified' : 'Job reassigned — both agents have been notified',
+    mode === 'allocate' ? 'Agent assigned. The job shows in their app the next time it syncs.' : 'Agent changed. The job moves to the new agent’s app the next time it syncs.',
     (d) => {
       const conflicts = parseConflicts(d);
       onConflicts(conflicts);
-      if (conflicts.length) toast.warning(`The agent already has ${conflicts.length} overlapping job${conflicts.length === 1 ? '' : 's'}`, { description: conflicts.map((c) => c.reference).join(', ') });
+      if (conflicts.length) toast.warning(`This agent already has ${conflicts.length} other job${conflicts.length === 1 ? '' : 's'} at that time`, { description: conflicts.map((c) => c.reference).join(', ') });
       onClose();
     },
   );
@@ -561,14 +556,16 @@ function AllocateDialog({
     <ActionDialog
       open
       onOpenChange={(o) => (o ? undefined : onClose())}
-      title={mode === 'allocate' ? 'Allocate an agent' : 'Reassign to another agent'}
+      title={mode === 'allocate' ? 'Assign an agent' : 'Change the agent'}
       description={
         <>
-          Visit window: <strong>{formatWindow(job.scheduled_start, job.scheduled_end)}</strong>.{' '}
-          {mode === 'reassign' ? `Currently ${job.agent ? employeeName(job.agent) : 'unassigned'}; their assignment is revoked.` : 'Only eligible, active agents for this bank are listed.'}
+          Visit time: <strong>{formatWindow(job.scheduled_start, job.scheduled_end)}</strong>.{' '}
+          {mode === 'reassign'
+            ? `${job.agent ? employeeName(job.agent) : 'The current agent'} will no longer have the job.`
+            : 'Only active agents who work for this bank are listed.'}
         </>
       }
-      submitLabel={mode === 'allocate' ? 'Allocate' : 'Reassign'}
+      submitLabel={mode === 'allocate' ? 'Assign' : 'Change the agent'}
       size="xl"
       pending={m.isPending}
       error={m.error}
@@ -601,14 +598,14 @@ function AllocateDialog({
 
 function CloseDialog({ job, onClose }: { job: JobDetailRow; onClose: () => void }) {
   const [note, setNote] = useState('');
-  const m = useJobMutation(job.id, () => adminApi.jobs.close(job.id, { note: opt(note) }), 'Job closed (archived)', onClose);
+  const m = useJobMutation(job.id, () => adminApi.jobs.close(job.id, { note: opt(note) }), 'Job archived', onClose);
   return (
     <ActionDialog
       open
       onOpenChange={(o) => (o ? undefined : onClose())}
-      title="Close this job?"
-      description="Closing archives a finished job. It is terminal — nothing else can happen to the job afterwards."
-      submitLabel="Close job"
+      title="Archive this job?"
+      description="Archiving puts a finished job away for good. Nothing more can happen to it afterwards."
+      submitLabel="Archive"
       pending={m.isPending}
       error={m.error}
       onSubmit={() => m.mutate(undefined)}
@@ -644,11 +641,11 @@ export function JobDialogs({
         <ReasonDialog
           job={job}
           category="unschedule"
-          title="Unschedule the appointment?"
-          description="The appointment fell through. The job goes back to Pending so the scheduler can re-arrange it."
-          submitLabel="Unschedule"
+          title="Cancel the booking?"
+          description="Use this when the agreed visit time falls through. The job goes back to “To be booked” so someone can agree a new time."
+          submitLabel="Cancel the booking"
           run={(b) => adminApi.jobs.unschedule(job.id, b)}
-          successMessage="Appointment removed — the job is pending again"
+          successMessage="Booking cancelled. The job needs a new visit time."
           onClose={onClose}
         />
       );
@@ -657,15 +654,15 @@ export function JobDialogs({
         <ReasonDialog
           job={job}
           category="appointment_not_secured"
-          title="Appointment not secured"
-          description="Close the job without dispatching an agent because no appointment could be secured. Whether it is billable follows the reason and the bank's contract settings."
-          submitLabel="Record not secured"
+          title="Couldn’t book a visit"
+          description="Close the job without sending an agent, because no visit time could be agreed with the merchant. Whether the bank is billed depends on the reason and the bank’s billing settings."
+          submitLabel="Record it"
           destructive
           run={(b) => adminApi.jobs.notSecured(job.id, b)}
-          successMessage={(d) => `Recorded as not secured — ${d.billable ? 'billable' : 'not billable'} under the bank's settings`}
+          successMessage={(d) => `Recorded as “couldn’t book a visit”. Under the bank’s billing settings, ${d.billable ? 'the bank is billed for it' : 'the bank isn’t billed for it'}.`}
           onClose={onClose}
         >
-          {attempts.length === 0 ? <p className="text-sm text-amber-700">No contact attempts are logged. Log the attempts first — they are the evidence behind any charge.</p> : null}
+          {attempts.length === 0 ? <p className="text-sm text-amber-700">No calls or messages are logged yet. Log them first: they’re the proof behind any charge.</p> : null}
         </ReasonDialog>
       );
     case 'revoke':
@@ -673,12 +670,12 @@ export function JobDialogs({
         <ReasonDialog
           job={job}
           category="reassign"
-          title="Revoke the assignment?"
-          description={`${job.agent ? employeeName(job.agent) : 'The agent'} is unassigned and notified. The job goes back to Scheduled.`}
-          submitLabel="Revoke"
+          title="Take the job off the agent?"
+          description={`${job.agent ? employeeName(job.agent) : 'The agent'} will no longer have the job. It goes back to “Booked, no agent yet” so you can assign someone else.`}
+          submitLabel="Take it off them"
           destructive
           run={(b) => adminApi.jobs.revoke(job.id, b)}
-          successMessage="Assignment revoked — the job is scheduled again"
+          successMessage="Job taken off the agent. Assign someone else when you’re ready."
           onClose={onClose}
         />
       );
@@ -690,9 +687,11 @@ export function JobDialogs({
           title="Cancel this job?"
           description={
             <>
-              The job is cancelled and open inspection tokens are revoked.
-              {job.assigned_to ? ' The assigned agent is notified.' : ''}
-              {['in_progress', 'paused'].includes(job.status) ? ' The agent is mid-inspection: anything they submit offline is still landed and flagged, never dropped.' : ''}
+              The job stops here, and the agent can no longer start the visit.
+              {job.assigned_to ? ' The job is taken off the agent’s app.' : ''}
+              {['in_progress', 'paused'].includes(job.status)
+                ? ' The agent is on the visit right now: anything they still send in is received and kept, marked as sent after the cancellation.'
+                : ''}
             </>
           }
           submitLabel="Cancel job"
@@ -718,7 +717,7 @@ export function ConflictsBanner({ conflicts, onDismiss }: { conflicts: AgentConf
   return (
     <div role="alert" className="mb-4 flex flex-wrap items-start justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-900">
       <div>
-        <p className="font-medium">The agent already has {conflicts.length} job{conflicts.length === 1 ? '' : 's'} overlapping this window</p>
+        <p className="font-medium">This agent already has {conflicts.length} other job{conflicts.length === 1 ? '' : 's'} at the same time</p>
         <ul className="mt-1 space-y-0.5">
           {conflicts.map((c) => (
             <li key={c.job_id}>

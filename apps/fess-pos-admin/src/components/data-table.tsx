@@ -78,7 +78,7 @@ export function DataTable<TData, TValue = unknown>({
   error,
   onRetry,
   enableSearch = true,
-  searchPlaceholder = 'Search…',
+  searchPlaceholder = 'Search',
   searchFn,
   toolbar,
   onRowClick,
@@ -86,7 +86,7 @@ export function DataTable<TData, TValue = unknown>({
   rowClassName,
   initialSorting = [],
   pageSize = 50,
-  emptyTitle = 'Nothing to show',
+  emptyTitle = 'Nothing here yet',
   emptyDescription,
   selectable = false,
   onSelectionChange,
@@ -216,7 +216,7 @@ export function DataTable<TData, TValue = unknown>({
                         <button
                           type="button"
                           onClick={header.column.getToggleSortingHandler()}
-                          className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-0.5 hover:bg-slate-200/60 hover:text-foreground"
+                          className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-0.5 hover:bg-accent hover:text-foreground"
                         >
                           {content}
                           {sorted === 'asc' ? <ArrowUp className="size-3.5" /> : sorted === 'desc' ? <ArrowDown className="size-3.5" /> : <ArrowUpDown className="size-3.5 opacity-40" />}
@@ -243,8 +243,8 @@ export function DataTable<TData, TValue = unknown>({
               <TableRow>
                 <TableCell colSpan={colSpan} className="p-0">
                   <EmptyState
-                    title={globalFilter ? 'No matches' : emptyTitle}
-                    description={globalFilter ? `Nothing matches "${globalFilter}".` : emptyDescription}
+                    title={globalFilter ? 'Nothing matches your search' : emptyTitle}
+                    description={globalFilter ? `Nothing matches “${globalFilter}”. Try fewer or different words.` : emptyDescription}
                   />
                 </TableCell>
               </TableRow>
@@ -262,7 +262,7 @@ export function DataTable<TData, TValue = unknown>({
                       : undefined
                   }
                   tabIndex={onRowClick ? 0 : undefined}
-                  className={cn(onRowClick && 'cursor-pointer hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none', rowClassName?.(row.original))}
+                  className={cn(onRowClick && 'cursor-pointer hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none', rowClassName?.(row.original))}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
@@ -278,7 +278,7 @@ export function DataTable<TData, TValue = unknown>({
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>
-          {filteredCount === 0 ? '0 rows' : `${from}–${to} of ${filteredCount}`}
+          {filteredCount === 0 ? 'None' : `${from}–${to} of ${filteredCount}`}
           {selectable && Object.keys(rowSelection).length > 0 ? ` · ${Object.keys(rowSelection).length} selected` : ''}
         </span>
         {pageCount > 1 ? (

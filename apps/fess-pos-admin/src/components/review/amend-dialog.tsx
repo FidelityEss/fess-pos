@@ -122,7 +122,7 @@ export function AmendDialog({
   const mutation = useMutationWithToast<Amendment, AmendmentBody>({
     mutationFn: (body) => adminApi.inspections.amend(inspectionId, body),
     toastErrors: false,
-    successMessage: `Amendment to "${fieldLabel}" recorded`,
+    successMessage: `Correction to “${fieldLabel}” saved`,
     onSuccess: async () => {
       await invalidateJob(queryClient, jobId);
       onClose();
@@ -137,7 +137,7 @@ export function AmendDialog({
     control = (
       <Alert variant="info">
         <AlertDescription>
-          This answer has a structured value (for example an address or a list of photos). Switch to Advanced view (top right) to amend it as JSON.
+          This answer has several parts (for example an address or a list of photos). Switch to Advanced view (top right) to correct it in its raw form.
         </AlertDescription>
       </Alert>
     );
@@ -177,7 +177,7 @@ export function AmendDialog({
               {o.label}
             </SelectItem>
           ))}
-          {text && !known ? <SelectItem value={text}>{text} (current, not in the form)</SelectItem> : null}
+          {text && !known ? <SelectItem value={text}>{text} (current, not in the questions)</SelectItem> : null}
         </SelectContent>
       </Select>
     );
@@ -185,7 +185,7 @@ export function AmendDialog({
     const extra = multi.filter((m) => !options.some((o) => o.value === m));
     control = (
       <div id={valueId} role="group" className="grid gap-2 rounded-md border p-3 sm:grid-cols-2">
-        {[...options, ...extra.map((v) => ({ value: v, label: `${v} (not in the form)` }))].map((o) => (
+        {[...options, ...extra.map((v) => ({ value: v, label: `${v} (not in the questions)` }))].map((o) => (
           <label key={o.value} className="flex items-center gap-2 text-sm">
             <Checkbox checked={multi.includes(o.value)} onCheckedChange={(v) => setMulti((cur) => (v === true ? [...cur, o.value] : cur.filter((x) => x !== o.value)))} />
             {o.label}
@@ -201,16 +201,16 @@ export function AmendDialog({
     <ActionDialog
       open
       onOpenChange={(o) => (o ? undefined : onClose())}
-      title={`Amend "${fieldLabel}"`}
-      description="The agent's original answer stays untouched. The amendment is recorded alongside it with your name, the time and your justification."
-      submitLabel="Record amendment"
+      title={`Correct “${fieldLabel}”`}
+      description="The agent’s original answer stays as it was. Your correction is saved next to it, with your name, the time and your reason."
+      submitLabel="Save the correction"
       size="lg"
       pending={mutation.isPending}
       error={mutation.error}
       canSubmit={parsed.ok && !!justification.trim()}
       onSubmit={() => parsed.ok && mutation.mutate({ field_key: fieldKey, new_value: parsed.value, justification: justification.trim() })}
     >
-      <div className="rounded-md border bg-slate-50 p-3 text-sm">
+      <div className="rounded-md border bg-card p-3 text-sm">
         <div className="mb-1 text-muted-foreground">
           Current answer
           {advanced ? <code className="ml-1 text-sm">{fieldKey}</code> : null}
@@ -235,7 +235,7 @@ export function AmendDialog({
       >
         {control}
       </FormField>
-      <FormField label="Justification" htmlFor={`${uid}-why`} required hint="Why the recorded answer is wrong and where the correct value comes from.">
+      <FormField label="Why it needs correcting" htmlFor={`${uid}-why`} required hint="Why the recorded answer is wrong, and where the correct answer comes from.">
         <Textarea id={`${uid}-why`} rows={3} value={justification} onChange={(e) => setJustification(e.target.value)} />
       </FormField>
     </ActionDialog>

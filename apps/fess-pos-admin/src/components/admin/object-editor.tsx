@@ -202,7 +202,7 @@ export function ObjectEditor({
               aria-selected={state.mode === 'rows'}
               disabled={disabled || (state.mode === 'json' && !jsonParse?.ok)}
               onClick={toRows}
-              className={cn('rounded px-3 py-1', state.mode === 'rows' ? 'bg-card font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground disabled:opacity-50')}
+              className={cn('rounded px-3 py-1', state.mode === 'rows' ? 'bg-card font-medium ring-1 ring-border' : 'text-muted-foreground hover:text-foreground disabled:opacity-50')}
             >
               Fields
             </button>
@@ -212,7 +212,7 @@ export function ObjectEditor({
               aria-selected={state.mode === 'json'}
               disabled={disabled || (state.mode === 'rows' && !rowsParse?.ok)}
               onClick={toJson}
-              className={cn('rounded px-3 py-1', state.mode === 'json' ? 'bg-card font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground disabled:opacity-50')}
+              className={cn('rounded px-3 py-1', state.mode === 'json' ? 'bg-card font-medium ring-1 ring-border' : 'text-muted-foreground hover:text-foreground disabled:opacity-50')}
             >
               JSON
             </button>
@@ -257,7 +257,7 @@ export function ObjectEditor({
                         {TYPE_LABEL[t]}
                       </SelectItem>
                     ))}
-                    {advanced || r.type === 'json' ? <SelectItem value="json">{TYPE_LABEL.json}</SelectItem> : null}
+                    {advanced || r.type === 'json' ? <SelectItem value="json">{advanced ? TYPE_LABEL.json : 'Group of values'}</SelectItem> : null}
                   </SelectContent>
                 </Select>
               )}
@@ -318,8 +318,8 @@ function ValueControl({
     if (!advanced) {
       const parsed = parseJsonText(row.text);
       return (
-        <div className="rounded-md border bg-slate-50 px-3 py-2">
-          {parsed.ok ? <StructuredView value={parsed.value} expandDepth={1} /> : <span className="text-sm text-muted-foreground">Structured value</span>}
+        <div className="rounded-md border px-3 py-2">
+          {parsed.ok ? <StructuredView value={parsed.value} expandDepth={1} /> : <span className="text-sm text-muted-foreground">Group of values</span>}
           <p className="mt-1 text-sm text-muted-foreground">Kept as it is. Switch to Advanced view to change it.</p>
         </div>
       );

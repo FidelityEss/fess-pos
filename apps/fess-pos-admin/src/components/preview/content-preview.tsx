@@ -1,12 +1,15 @@
 'use client';
 
 // Content preview (T3-23): each string as the phone (or the verify page / email) shows it, placeholders filled with
-// sample values. Grouped by key prefix; the search box lives in the preview toolbar.
-import { CircleAlert, CircleCheck, CloudUpload, Inbox, Mail, MapPin, ShieldCheck, TriangleAlert } from 'lucide-react';
+// sample values, in the module's look (docs/14 §2, D-97): the sync line as small grey text, receipts as chips, notices as
+// tints, everything else on white with a light border. Grouped by key prefix; the search box lives in the preview toolbar.
+import { CircleAlert, Mail, ShieldCheck } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { SAMPLE_PLACEHOLDER_VALUES } from './fallback-strings';
-import { PreviewNotice } from './phone-widgets';
+import { PhoneChip } from './phone-frame';
+import { PAGE_X, toneColors, typeStyle } from './phone-style';
+import { Callout, PreviewNotice } from './phone-widgets';
 import { fillPlaceholders, humanise } from './preview-format';
 
 const GROUP_LABEL: Record<string, string> = {
@@ -19,11 +22,14 @@ const GROUP_LABEL: Record<string, string> = {
   verify: 'Verification page (web)',
 };
 
+/** A white box with a light border, 8 px corners (text on a web page or in an email). */
+const BOX = 'rounded-[var(--ph-inner-r)] border border-[color:var(--ph-border)] bg-[color:var(--ph-page)] px-3 py-2.5';
+
 function Snippet({ caption, children }: { caption: string; children: ReactNode }) {
   return (
     <div>
       {children}
-      <div className="mt-1 truncate font-mono text-[12px] text-slate-400">{caption}</div>
+      <div className="mt-1 truncate font-mono text-[12px] text-[color:var(--ph-muted)]">{caption}</div>
     </div>
   );
 }
@@ -31,36 +37,25 @@ function Snippet({ caption, children }: { caption: string; children: ReactNode }
 function renderString(key: string, text: string): ReactNode {
   const [group] = key.split('.');
   if (group === 'sync') {
-    const Icon = key.endsWith('synced') ? CircleCheck : key.endsWith('needs_attention') ? CircleAlert : CloudUpload;
-    const tone = key.endsWith('synced') ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : key.endsWith('needs_attention') ? 'border-red-200 bg-red-50 text-red-800' : 'border-sky-200 bg-sky-50 text-sky-800';
+    // The module's sync line: small grey text, centred; what needs attention in error red.
+    const attention = key.endsWith('needs_attention');
     return (
-      <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] font-medium', tone)}>
-        <Icon className="size-4" /> {text}
-      </span>
+      <div className={cn('text-center', attention ? 'text-[color:var(--ph-error-text)]' : 'text-[color:var(--ph-body)]')} style={typeStyle(attention ? 'body' : 'caption')}>
+        {text}
+      </div>
     );
   }
   if (group === 'receipt') {
-    const ok = key.endsWith('received');
-    return (
-      <div className={cn('flex items-start gap-2 rounded-xl border px-3 py-2.5 text-[15px]', ok ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-sky-200 bg-sky-50 text-sky-900')}>
-        {ok ? <CircleCheck className="mt-0.5 size-5 shrink-0" /> : <CloudUpload className="mt-0.5 size-5 shrink-0" />}
-        <span>{text}</span>
-      </div>
-    );
+    return <PhoneChip tone={key.endsWith('received') ? 'success' : 'warning'}>{text}</PhoneChip>;
   }
   if (group === 'location' || group === 'update') {
     const warn = key.includes('outside') || group === 'update';
-    return (
-      <div className={cn('flex items-start gap-2 rounded-lg border px-3 py-2.5 text-[14px]', warn ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-sky-200 bg-sky-50 text-sky-900')}>
-        {warn ? <TriangleAlert className="mt-0.5 size-4 shrink-0" /> : <MapPin className="mt-0.5 size-4 shrink-0" />}
-        <span>{text}</span>
-      </div>
-    );
+    return <Callout tone={warn ? 'warning' : 'info'}>{text}</Callout>;
   }
   if (group === 'jobs') {
+    // An empty list: the message centred on the page.
     return (
-      <div className="flex flex-col items-center gap-1 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-5 text-center text-[14px] text-slate-500">
-        <Inbox className="size-6" />
+      <div className="py-2 text-center text-[color:var(--ph-body)]" style={typeStyle('body')}>
         {text}
       </div>
     );
@@ -69,18 +64,22 @@ function renderString(key: string, text: string): ReactNode {
     const heading = key.endsWith('heading') || key.endsWith('title');
     const bad = key.includes('invalid');
     return (
-      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+      <div className={BOX}>
         {heading ? (
-          <div className={cn('flex items-center gap-1.5 text-[17px] font-semibold', bad ? 'text-red-700' : 'text-emerald-800')}>
-            {bad ? <CircleAlert className="size-5" /> : <ShieldCheck className="size-5" />} {text}
+          <div className="flex items-center gap-1.5" style={{ ...typeStyle('title'), color: toneColors(bad ? 'danger' : 'success').foreground }}>
+            {bad ? <CircleAlert className="size-5 shrink-0" /> : <ShieldCheck className="size-5 shrink-0" />} {text}
           </div>
         ) : (
-          <p className="text-[14px] leading-snug text-slate-700">{text}</p>
+          <p className="text-[14px] font-medium leading-snug text-[color:var(--ph-body)]">{text}</p>
         )}
       </div>
     );
   }
-  return <div className="whitespace-pre-line rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[15px] leading-snug text-slate-800">{text}</div>;
+  return (
+    <div className={cn(BOX, 'whitespace-pre-line leading-snug text-[color:var(--ph-body)]')} style={typeStyle('body')}>
+      {text}
+    </div>
+  );
 }
 
 /** The strings as phone snippets. `query` filters by key or text. */
@@ -92,8 +91,8 @@ export function ContentSnippets({ strings, query = '' }: { strings: Readonly<Rec
     .sort();
   if (keys.length === 0) {
     return (
-      <div className="p-3">
-        <PreviewNotice>{Object.keys(strings).length === 0 ? 'No strings in this content definition yet.' : 'No strings match the search.'}</PreviewNotice>
+      <div className={cn(PAGE_X, 'py-4')}>
+        <PreviewNotice>{Object.keys(strings).length === 0 ? 'No wording yet.' : 'Nothing matches your search.'}</PreviewNotice>
       </div>
     );
   }
@@ -103,7 +102,7 @@ export function ContentSnippets({ strings, query = '' }: { strings: Readonly<Rec
     groups.set(g, [...(groups.get(g) ?? []), k]);
   }
   return (
-    <div className="space-y-5 px-3 py-3">
+    <div className={cn('space-y-6 py-4', PAGE_X)}>
       {[...groups.entries()].map(([group, groupKeys]) => {
         const rendered: ReactNode[] = [];
         const done = new Set<string>();
@@ -118,11 +117,11 @@ export function ContentSnippets({ strings, query = '' }: { strings: Readonly<Rec
             done.add(`${base}.body`);
             rendered.push(
               <Snippet key={base} caption={base}>
-                <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
-                  <div className="flex items-center gap-1.5 text-[14px] font-semibold text-slate-900">
-                    <Mail className="size-4 text-slate-500" /> {subject !== undefined ? fill(subject) : '(no subject)'}
+                <div className={BOX}>
+                  <div className="flex items-center gap-1.5 text-[14px] font-semibold text-[color:var(--ph-text)]">
+                    <Mail className="size-4 shrink-0 text-[color:var(--ph-body)]" /> {subject !== undefined ? fill(subject) : '(no subject)'}
                   </div>
-                  {body !== undefined ? <p className="mt-1.5 whitespace-pre-line text-[14px] leading-snug text-slate-700">{fill(body)}</p> : null}
+                  {body !== undefined ? <p className="mt-1.5 whitespace-pre-line text-[14px] leading-snug text-[color:var(--ph-body)]">{fill(body)}</p> : null}
                 </div>
               </Snippet>,
             );
@@ -137,7 +136,7 @@ export function ContentSnippets({ strings, query = '' }: { strings: Readonly<Rec
         }
         return (
           <section key={group}>
-            <h3 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-slate-500">{GROUP_LABEL[group] ?? humanise(group)}</h3>
+            <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-[color:var(--ph-body)]">{GROUP_LABEL[group] ?? humanise(group)}</h3>
             <div className="space-y-3">{rendered}</div>
           </section>
         );

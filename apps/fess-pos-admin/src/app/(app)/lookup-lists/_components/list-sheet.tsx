@@ -1,6 +1,6 @@
 'use client';
 
-// One lookup list: title, version history, items of a selected version, and "Publish new version".
+// One drop-down list (lookup list): name, version history, the choices in a selected version, and "Publish a new version".
 import { useQuery } from '@tanstack/react-query';
 import { Upload } from 'lucide-react';
 import { useId, useState } from 'react';
@@ -8,6 +8,7 @@ import { canWriteScoped } from '@/components/admin/access';
 import { BankScopeBadge, MonoId, ReadOnlyNotice, SectionHeading } from '@/components/admin/admin-ui';
 import { ApiErrorAlert } from '@/components/api-error-alert';
 import { DateTime } from '@/components/date-time';
+import { Details } from '@/components/details';
 import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,24 +71,37 @@ function ListDetail({ list }: { list: ListRow }) {
   const rename = useMutationWithToast({
     mutationFn: (t: string) => adminApi.lookupLists.update(list.id, { title: t }),
     invalidate: [['lookup_lists']],
-    successMessage: 'Title saved',
+    successMessage: 'Name saved.',
   });
 
   const latest = latestVersion(list);
   const shownItems = Array.isArray(items.data?.items) ? items.data.items : [];
+  const publishButton = canWrite ? (
+    <Button size="sm" onClick={() => setEditorOpen(true)}>
+      <Upload /> Publish a new version
+    </Button>
+  ) : null;
 
   return (
     <>
       <SheetHeader>
         <SheetTitle className="flex flex-wrap items-center gap-2">
-          {advanced ? <span className="font-mono">{list.key}</span> : <span>{list.title}</span>} <BankScopeBadge bankId={list.bank_id} />
+          <span>{list.title}</span> <BankScopeBadge bankId={list.bank_id} />
         </SheetTitle>
-        <SheetDescription>{latest ? `Latest version ${latest.version}, published` : 'Not published yet'} {latest ? <DateTime value={latest.published_at} /> : null}</SheetDescription>
+        <SheetDescription>
+          {latest ? (
+            <>
+              Version {latest.version} is the latest, published <DateTime value={latest.published_at} />.
+            </>
+          ) : (
+            'Nothing published yet. Add its choices and publish them so the questions can use this list.'
+          )}
+        </SheetDescription>
       </SheetHeader>
       <SheetBody className="space-y-6">
         {!canWrite ? (
           <ReadOnlyNotice>
-            {list.bank_id === null ? 'Global lists are managed by all-bank administrators (D-44).' : 'This list belongs to a bank outside your scope.'}
+            {list.bank_id === null ? 'Lists for all banks can only be changed by an administrator who covers all banks.' : 'This list belongs to a bank you don’t have access to.'}
           </ReadOnlyNotice>
         ) : null}
 
@@ -99,33 +113,40 @@ function ListDetail({ list }: { list: ListRow }) {
           }}
         >
           <div className="grid min-w-64 flex-1 gap-1.5">
-            <Label htmlFor={`${uid}-title`}>Title</Label>
+            <Label htmlFor={`${uid}-title`}>Name</Label>
             <Input id={`${uid}-title`} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} disabled={!canWrite} />
           </div>
           {canWrite ? (
             <Button type="submit" variant="outline" loading={rename.isPending} disabled={!title.trim() || title.trim() === list.title}>
-              Save title
+              Save name
             </Button>
           ) : null}
         </form>
+        <Details>
+          <p>
+            Key the questions use to find this list: <span className="font-mono">{list.key}</span>
+          </p>
+        </Details>
 
         <section>
           <SectionHeading
             title="Versions"
-            description={advanced ? 'Each version is immutable and identified by its hash. Select one to see its items.' : 'Each version is kept exactly as it was published. Select one to see its items.'}
-            actions={
-              canWrite ? (
-                <Button size="sm" onClick={() => setEditorOpen(true)}>
-                  <Upload /> Publish new version
-                </Button>
-              ) : null
+            description={
+              advanced
+                ? 'Each version is kept exactly as it was published, with a fingerprint (hash). Pick one to see its choices.'
+                : 'Each version is kept exactly as it was published. Pick one to see its choices.'
             }
+            actions={publishButton}
           />
           <ApiErrorAlert error={versions.error} onRetry={() => void versions.refetch()} />
           {versions.isPending ? (
             <Skeleton className="h-24 w-full" />
           ) : (versions.data ?? []).length === 0 ? (
-            <EmptyState title="No versions yet" description={canWrite ? 'Publish the first version to make the list usable in forms.' : undefined} />
+            <EmptyState
+              title="No choices published yet"
+              description={canWrite ? 'Publish the first version so the questions can use this list.' : undefined}
+              action={publishButton}
+            />
           ) : (
             <div className="overflow-hidden rounded-md border">
               <Table>
@@ -143,7 +164,7 @@ function ListDetail({ list }: { list: ListRow }) {
                       key={v.id}
                       data-state={v.id === versionId ? 'selected' : undefined}
                       onClick={() => setSelected(v.id)}
-                      className="cursor-pointer hover:bg-slate-50"
+                      className="cursor-pointer hover:bg-accent"
                     >
                       <TableCell className="whitespace-nowrap font-medium tabular-nums">Version {v.version}</TableCell>
                       <TableCell>
@@ -165,7 +186,10 @@ function ListDetail({ list }: { list: ListRow }) {
 
         {versionId ? (
           <section>
-            <SectionHeading title={items.data ? `Items in version ${items.data.version}` : 'Items'} description={items.data ? `${shownItems.length} item${shownItems.length === 1 ? '' : 's'}` : undefined} />
+            <SectionHeading
+              title={items.data ? `Choices in version ${items.data.version}` : 'Choices'}
+              description={items.data ? `${shownItems.length} choice${shownItems.length === 1 ? '' : 's'}` : undefined}
+            />
             <ApiErrorAlert error={items.error} onRetry={() => void items.refetch()} />
             {items.isPending ? (
               <Skeleton className="h-40 w-full" />
@@ -175,8 +199,8 @@ function ListDetail({ list }: { list: ListRow }) {
                   <TableHeader className="sticky top-0">
                     <TableRow>
                       <TableHead className="w-10">#</TableHead>
-                      <TableHead>Value (saved)</TableHead>
-                      <TableHead>Label (shown to agents)</TableHead>
+                      <TableHead>What agents see</TableHead>
+                      {advanced ? <TableHead>Stored value</TableHead> : null}
                       <TableHead>Extra details</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -184,8 +208,8 @@ function ListDetail({ list }: { list: ListRow }) {
                     {shownItems.map((it, i) => (
                       <TableRow key={`${it.value}-${i}`}>
                         <TableCell className="text-sm tabular-nums text-muted-foreground">{i + 1}</TableCell>
-                        <TableCell className="whitespace-nowrap font-mono text-sm">{it.value}</TableCell>
                         <TableCell>{it.label}</TableCell>
+                        {advanced ? <TableCell className="whitespace-nowrap font-mono text-sm">{it.value}</TableCell> : null}
                         <TableCell className="text-sm">
                           {it.meta && Object.keys(it.meta).length > 0 ? (
                             advanced ? (

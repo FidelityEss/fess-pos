@@ -19,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBankLookup, useBanks } from '@/lib/hooks';
 import { useIsAdvanced } from '@/lib/preferences';
 import { useStaff } from '@/lib/staff';
-import { DEFINITION_KINDS, type DefinitionActivation, type DefinitionFamily } from '@/lib/types';
+import type { DefinitionActivation, DefinitionFamily } from '@/lib/types';
 import { ApprovalsPanel, usePendingApprovals } from './approvals-panel';
 import {
   audienceLabel,
@@ -28,14 +28,16 @@ import {
   fetchAllDraftsLite,
   fetchAllVersionsLite,
   fetchFamilies,
+  KIND_DESCRIPTION,
   KIND_LABEL,
+  KIND_ORDER,
   liveActivations,
 } from './definitions-data';
 import { NewFamilyDialog } from './new-family-dialog';
 
 const GLOBAL = 'global';
 
-/** /definitions — families grouped by kind, plus the four-eyes approvals queue. */
+/** /definitions — "Inspection set-up": every piece grouped by what it is, plus the changes waiting for a second approval. */
 export function DefinitionsView() {
   const staff = useStaff();
   const advanced = useIsAdvanced();
@@ -87,55 +89,58 @@ export function DefinitionsView() {
 
   function liveCell(f: DefinitionFamily) {
     const live = liveActivations(activationsByFamily.get(f.id) ?? [], now);
-    if (live.length === 0) return <span className="text-xs text-muted-foreground">Not active</span>;
+    if (live.length === 0) return <span className="text-sm text-muted-foreground">Not live yet</span>;
     return (
       <div className="flex flex-wrap gap-1">
-        {live.map((a) => (
-          <Badge key={a.id} tone={a.audience.type === 'all' ? 'success' : 'progress'} title={a.reason}>
-            v{versionById.get(a.version_id)?.version ?? '?'} · {audienceLabel(a.audience)}
-          </Badge>
-        ))}
+        {live.map((a) => {
+          const v = versionById.get(a.version_id)?.version;
+          const label = v ? `Version ${v}` : 'A version';
+          return (
+            <Badge key={a.id} tone={a.audience.type === 'all' ? 'success' : 'progress'} title={a.reason}>
+              {a.audience.type === 'all' ? label : `${label} for ${audienceLabel(a.audience).replace(/^A/, 'a')}`}
+            </Badge>
+          );
+        })}
       </div>
     );
   }
 
   const loading = families.isPending;
   const error = families.error ?? versions.error ?? activations.error ?? drafts.error;
+  const addButton = staff.isAdmin ? (
+    <Button onClick={() => setNewOpen(true)}>
+      <Plus /> Add new
+    </Button>
+  ) : null;
 
   return (
     <>
-      <PageHeader
-        title="Forms & screens"
-        description="The forms agents fill in, the steps of each journey, the screens and wording of the app. Change a draft, check it, publish it, then activate it — published versions never change."
-        actions={
-          staff.isAdmin ? (
-            <Button onClick={() => setNewOpen(true)}>
-              <Plus /> New family
-            </Button>
-          ) : null
-        }
-      />
+      <PageHeader title="Inspection set-up" actions={addButton} />
 
       <Tabs defaultValue="families">
         <TabsList>
-          <TabsTrigger value="families">Families</TabsTrigger>
+          <TabsTrigger value="families">Set-up</TabsTrigger>
           <TabsTrigger value="approvals">
-            Approvals {pendingCount > 0 ? <Badge tone="warning">{pendingCount}</Badge> : null}
+            Waiting for approval {pendingCount > 0 ? <Badge tone="warning">{pendingCount}</Badge> : null}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="families" className="space-y-5">
+          <p className="max-w-3xl text-sm text-muted-foreground">
+            Change a draft, check it and publish it as a new version. Agents only see a version once you make it live. Published versions never change, so
+            you can always go back to an older one.
+          </p>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative w-full max-w-xs">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search key or title…" className="pl-8" aria-label="Search families" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name…" className="pl-8" aria-label="Search the set-up" />
             </div>
             <FilterSelect
               value={scope}
               onChange={setScope}
-              allLabel="All scopes"
-              aria-label="Scope"
-              options={[{ value: GLOBAL, label: 'Global only' }, ...(banks.data ?? []).map((b) => ({ value: b.id, label: `${b.code} overrides` }))]}
+              allLabel="All banks and shared"
+              aria-label="Which bank"
+              options={[{ value: GLOBAL, label: 'Shared by all banks' }, ...(banks.data ?? []).map((b) => ({ value: b.id, label: `Only for ${b.name}` }))]}
             />
           </div>
 
@@ -147,12 +152,13 @@ export function DefinitionsView() {
             <Card>
               <EmptyState
                 icon={FileCode}
-                title={families.data?.length ? 'No matching families' : 'No definition families yet'}
-                description={families.data?.length ? 'Try another search or scope.' : 'Create a family to start drafting.'}
+                title={families.data?.length ? 'Nothing matches your search' : 'Nothing set up yet'}
+                description={families.data?.length ? 'Try another word, or choose a different bank.' : 'Add the first piece, such as the questions agents answer on a visit.'}
+                action={families.data?.length ? undefined : addButton}
               />
             </Card>
           ) : (
-            DEFINITION_KINDS.map((kind) => {
+            KIND_ORDER.map((kind) => {
               const rows = filtered.filter((f) => f.kind === kind);
               if (rows.length === 0) return null;
               return (
@@ -160,16 +166,17 @@ export function DefinitionsView() {
                   <SectionTitle>
                     {KIND_LABEL[kind]} <span className="font-normal normal-case">({rows.length})</span>
                   </SectionTitle>
+                  <p className="-mt-1 mb-2 text-sm text-muted-foreground">{KIND_DESCRIPTION[kind]}</p>
                   <Card className="overflow-hidden">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Family</TableHead>
-                          <TableHead>Scope</TableHead>
-                          <TableHead>In force now</TableHead>
-                          <TableHead className="text-right">Latest</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Who it’s for</TableHead>
+                          <TableHead>Live now</TableHead>
+                          <TableHead className="text-right">Latest version</TableHead>
                           <TableHead>Draft</TableHead>
-                          <TableHead className="text-right">Approvals</TableHead>
+                          <TableHead className="text-right">Waiting for approval</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -177,6 +184,7 @@ export function DefinitionsView() {
                           const latest = latestByFamily.get(f.id);
                           const draft = draftByFamily.get(f.id);
                           const pending = pendingByFamily.get(f.id) ?? 0;
+                          const bank = bankLookup(f.bank_id);
                           return (
                             <TableRow key={f.id} className="hover:bg-slate-50">
                               <TableCell>
@@ -187,15 +195,15 @@ export function DefinitionsView() {
                               </TableCell>
                               <TableCell>
                                 {f.scope === 'global' ? (
-                                  <Badge tone="neutral">Global</Badge>
+                                  <Badge tone="neutral">All banks</Badge>
                                 ) : (
-                                  <Badge tone="accent" title={bankLookup(f.bank_id)?.name}>
-                                    {bankLookup(f.bank_id)?.code ?? 'Bank'}
+                                  <Badge tone="accent" title={bank?.name}>
+                                    {bank?.name ?? 'One bank'}
                                   </Badge>
                                 )}
                               </TableCell>
                               <TableCell>{liveCell(f)}</TableCell>
-                              <TableCell className="text-right tabular-nums">{latest ? `v${latest}` : <span className="text-muted-foreground">—</span>}</TableCell>
+                              <TableCell className="text-right tabular-nums">{latest ? `Version ${latest}` : <span className="text-muted-foreground">None yet</span>}</TableCell>
                               <TableCell className="text-xs">
                                 {draft ? (
                                   <span className="inline-flex items-center gap-1">
@@ -207,7 +215,7 @@ export function DefinitionsView() {
                                 )}
                               </TableCell>
                               <TableCell className="text-right">
-                                {pending > 0 ? <Badge tone="warning">{pending} pending</Badge> : <span className="text-muted-foreground">—</span>}
+                                {pending > 0 ? <Badge tone="warning">{pending} waiting</Badge> : <span className="text-muted-foreground">—</span>}
                               </TableCell>
                             </TableRow>
                           );
@@ -222,9 +230,9 @@ export function DefinitionsView() {
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Four-eyes requests for publishing, activation and integrity-relevant config (D-31). A second admin with the approve_definitions permission
-            decides; nobody decides their own request.
+          <p className="max-w-3xl text-sm text-muted-foreground">
+            Some changes need a second person to approve them before they take effect: publishing a new version, making a version live, and some app
+            settings. Anyone allowed to approve can decide, but never on their own request.
           </p>
           <ApprovalsPanel />
         </TabsContent>

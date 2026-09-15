@@ -16,7 +16,7 @@ const MapViewInner = dynamic(() => import('./map-view-inner'), {
 /** MapLibre GL map (client-only) with markers, circles, lines, fit-to-content and click-to-place. */
 export function MapView(props: MapViewProps) {
   return (
-    <div className={cn('relative overflow-hidden rounded-md border bg-slate-100', props.className)} style={{ height: props.height ?? 360 }}>
+    <div className={cn('relative overflow-hidden rounded-md border bg-muted', props.className)} style={{ height: props.height ?? 360 }}>
       <MapViewInner {...props} />
     </div>
   );

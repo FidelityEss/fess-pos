@@ -335,29 +335,29 @@ export interface FlagInfo {
 }
 
 const FLAG_INFO: Record<string, FlagInfo> = {
-  location_mismatch: { label: 'Location mismatch', plain: 'Map pin far from the bank’s address', tone: 'warning', description: 'The map pin is more than 250 m from the bank-supplied coordinates.' },
-  geofence_override: { label: 'Geofence override', plain: 'Started outside the site area', tone: 'danger', description: 'Started outside the fence through the override form. Must be acknowledged before approval.' },
-  non_current_version: { label: 'Non-current version', plain: 'An older form version was used', tone: 'warning', description: 'Captured on a form version that was not the current one.' },
-  submitted_after_cancel: { label: 'Submitted after cancel', plain: 'Sent in after the job was cancelled', tone: 'danger', description: 'The submission arrived after the job was cancelled.' },
-  submitted_by_unassigned: { label: 'Submitted by unassigned agent', plain: 'Sent in by a different agent', tone: 'danger', description: 'The submitting agent was not the assigned agent.' },
-  unexpected_evidence: { label: 'Unexpected evidence', plain: 'An unexpected photo arrived', tone: 'warning', description: 'Evidence arrived that was not in the manifest.' },
-  web_client: { label: 'Web client', plain: 'Captured on the web version', tone: 'info', description: 'Captured on the web fallback client.' },
-  profile_mismatch: { label: 'Profile mismatch', plain: 'Agent’s details differ from our records', tone: 'warning', description: 'The identity profile differed from the POS record.' },
-  after_deactivation: { label: 'After deactivation', plain: 'Captured after the agent was deactivated', tone: 'danger', description: 'Captured after the agent was deactivated.' },
-  mock_location: { label: 'Mock location', plain: 'Fake GPS location detected', tone: 'danger', description: 'The device reported a mocked location.' },
-  trace_mock_location: { label: 'Mocked trace fix', plain: 'Fake GPS location detected', tone: 'danger', description: 'At least one trace fix was mocked.' },
-  evidence_mock_location: { label: 'Mocked evidence location', plain: 'A photo has a fake GPS location', tone: 'danger', description: 'At least one evidence item had a mocked location.' },
-  device_rooted: { label: 'Rooted device', plain: 'The phone may have been tampered with', tone: 'danger', description: 'The device reported root / jailbreak.' },
-  clock_drift: { label: 'Clock drift', plain: 'The phone’s clock was wrong', tone: 'warning', description: 'Device clock differed from server time by more than 5 minutes.' },
-  evidence_quarantined: { label: 'Evidence quarantined', plain: 'A photo failed the tamper check', tone: 'danger', description: 'At least one evidence item failed verification.' },
-  duplicate_evidence_hash: { label: 'Duplicate evidence hash', plain: 'The same photo was used twice', tone: 'warning', description: 'The same file hash appears more than once.' },
-  probable_duplicate: { label: 'Probable duplicate', plain: 'Looks like a duplicate submission', tone: 'warning', description: 'Looks like a duplicate of another submission.' },
-  photo_missing: { label: 'Photo missing', plain: 'A required photo is missing', tone: 'warning', description: 'A required photo is missing.' },
-  submission_hash_mismatch: { label: 'Submission hash mismatch', plain: 'The submission failed the tamper check', tone: 'danger', description: 'The recomputed submission hash did not match.' },
-  answers_hash_mismatch: { label: 'Answers hash mismatch', plain: 'The answers failed the tamper check', tone: 'danger', description: 'The recomputed answers hash did not match.' },
-  manifest_hash_mismatch: { label: 'Manifest hash mismatch', plain: 'A photo failed the tamper check', tone: 'danger', description: 'An evidence hash did not match the manifest.' },
-  conflicting_submission: { label: 'Conflicting submission', plain: 'Two different submissions for one visit', tone: 'danger', description: 'A different submission exists for this attempt.' },
-  evidence_conflict: { label: 'Evidence conflict', plain: 'Conflicting photos were received', tone: 'danger', description: 'Conflicting evidence was received.' },
+  location_mismatch: { label: 'Location mismatch', plain: 'Map pin far from the bank’s address', tone: 'warning', description: 'The map pin is more than 250 m from the location the bank gave.' },
+  geofence_override: { label: 'Geofence override', plain: 'Started away from the site', tone: 'danger', description: 'The agent started the visit outside the site area, using the “I’m not at the site” form. A reviewer must check why before approving.' },
+  non_current_version: { label: 'Non-current version', plain: 'An older version of the questions was used', tone: 'warning', description: 'The visit used a version of the questions that wasn’t the live one.' },
+  submitted_after_cancel: { label: 'Submitted after cancel', plain: 'Sent in after the job was cancelled', tone: 'danger', description: 'The visit arrived after the job was cancelled. It was kept.' },
+  submitted_by_unassigned: { label: 'Submitted by unassigned agent', plain: 'Sent in by a different agent', tone: 'danger', description: 'The agent who sent the visit in wasn’t the one assigned to the job.' },
+  unexpected_evidence: { label: 'Unexpected evidence', plain: 'An unexpected photo arrived', tone: 'warning', description: 'A photo arrived that wasn’t on the list the phone said it would send.' },
+  web_client: { label: 'Web client', plain: 'Done on the web version', tone: 'info', description: 'The visit was captured on the web version of the app, not the phone app.' },
+  profile_mismatch: { label: 'Profile mismatch', plain: 'Agent’s details differ from our records', tone: 'warning', description: 'The agent’s details from FESS didn’t match ours.' },
+  after_deactivation: { label: 'After deactivation', plain: 'Captured after the agent was turned off', tone: 'danger', description: 'The visit was captured after the agent’s access was turned off.' },
+  mock_location: { label: 'Mock location', plain: 'Fake GPS location detected', tone: 'danger', description: 'The phone reported a fake (mocked) location.' },
+  trace_mock_location: { label: 'Mocked trace fix', plain: 'Fake GPS location detected', tone: 'danger', description: 'At least one point on the location trail was fake.' },
+  evidence_mock_location: { label: 'Mocked evidence location', plain: 'A photo has a fake GPS location', tone: 'danger', description: 'At least one photo was taken with a fake location.' },
+  device_rooted: { label: 'Rooted device', plain: 'The phone may have been tampered with', tone: 'danger', description: 'The phone reported that it is rooted or jailbroken.' },
+  clock_drift: { label: 'Clock drift', plain: 'The phone’s clock was wrong', tone: 'warning', description: 'The phone’s clock was more than 5 minutes off, so its own times may be wrong.' },
+  evidence_quarantined: { label: 'Evidence quarantined', plain: 'A photo failed a security check', tone: 'danger', description: 'At least one photo or file didn’t match what the phone sent, so it was held back.' },
+  duplicate_evidence_hash: { label: 'Duplicate evidence hash', plain: 'The same photo was used twice', tone: 'warning', description: 'The exact same photo appears more than once.' },
+  probable_duplicate: { label: 'Probable duplicate', plain: 'Looks like a duplicate visit', tone: 'warning', description: 'This looks like a copy of another visit.' },
+  photo_missing: { label: 'Photo missing', plain: 'A required photo is missing', tone: 'warning', description: 'A photo the questions ask for is missing.' },
+  submission_hash_mismatch: { label: 'Submission hash mismatch', plain: 'The visit failed a security check', tone: 'danger', description: 'The visit as received doesn’t match what the phone sealed when it was sent.' },
+  answers_hash_mismatch: { label: 'Answers hash mismatch', plain: 'The answers failed a security check', tone: 'danger', description: 'The answers as received don’t match what the phone sealed.' },
+  manifest_hash_mismatch: { label: 'Manifest hash mismatch', plain: 'A photo failed a security check', tone: 'danger', description: 'A photo doesn’t match the list the phone sealed when it sent the visit.' },
+  conflicting_submission: { label: 'Conflicting submission', plain: 'Two different versions of one visit', tone: 'danger', description: 'A different version of this visit was also received. Both are kept.' },
+  evidence_conflict: { label: 'Evidence conflict', plain: 'Two different photos for one slot', tone: 'danger', description: 'Different photos were received for the same slot. Both are kept.' },
 };
 
 /** Label, tone and description for a job or inspection flag (unknown flags are humanised). */
@@ -369,10 +369,10 @@ export function flagInfo(flag: string): FlagInfo {
       label: `Session token: ${humanize(flag.slice(6)).toLowerCase()}`,
       plain: 'A security check on the visit needs attention',
       tone: 'warning',
-      description: 'Inspection session token check (docs/07 §3).',
+      description: 'A check on the visit’s one-time sign-in pass needs attention.',
     };
   }
-  return { label: humanize(flag), plain: humanize(flag), tone: 'neutral', description: flag };
+  return { label: humanize(flag), plain: humanize(flag), tone: 'neutral', description: humanize(flag) };
 }
 
 /** Flags offered as job-list filters. `job` flags live on jobs.flags; `inspection` flags on any attempt's flags. */

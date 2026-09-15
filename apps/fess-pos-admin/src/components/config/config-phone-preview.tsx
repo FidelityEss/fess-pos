@@ -28,13 +28,13 @@ type Scene = 'home' | 'availability' | 'updates' | 'location' | 'photos' | 'secu
 
 const SCENES: { id: Scene; label: string }[] = [
   { id: 'home', label: 'Home screen' },
-  { id: 'availability', label: 'App availability' },
-  { id: 'updates', label: 'App update' },
-  { id: 'location', label: 'Location check' },
+  { id: 'availability', label: 'App on or off' },
+  { id: 'updates', label: 'Asking for an update' },
+  { id: 'location', label: 'Checking the location' },
   { id: 'photos', label: 'Taking a photo' },
-  { id: 'security', label: 'Security check' },
-  { id: 'sync', label: 'Sync & storage' },
-  { id: 'assignment', label: 'New job offer' },
+  { id: 'security', label: 'Phone security check' },
+  { id: 'sync', label: 'Uploading and storage' },
+  { id: 'assignment', label: 'A new job' },
   { id: 'agent_card', label: 'Agent card' },
 ];
 
@@ -688,8 +688,8 @@ export function ConfigPhonePreview({
               value={inside ? 'in' : 'out'}
               onChange={(v) => setInside(v === 'in')}
               options={[
-                { value: 'in', label: 'Agent inside' },
-                { value: 'out', label: 'Agent outside' },
+                { value: 'in', label: 'Agent at the site' },
+                { value: 'out', label: 'Agent away from the site' },
               ]}
             />
           </div>
@@ -713,7 +713,7 @@ export function ConfigPhonePreview({
             options={[
               { value: 'normal', label: 'Normal phone' },
               { value: 'mock', label: 'Fake location' },
-              { value: 'root', label: 'Rooted' },
+              { value: 'root', label: 'Rooted or jailbroken' },
             ]}
           />
         ) : null}

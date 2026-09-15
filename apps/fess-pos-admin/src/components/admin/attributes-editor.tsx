@@ -16,7 +16,7 @@ export function attributesStateFrom(obj: JsonObject | null | undefined): Attribu
 
 /** The object the editor currently describes, or a message explaining what to fix. */
 export function attributesStateToObject(state: AttributesState): Parsed<JsonObject> {
-  return objectEditorStateToObject(state, { label: 'Attributes' });
+  return objectEditorStateToObject(state, { label: 'Extra details' });
 }
 
 export function AttributesEditor({
@@ -37,14 +37,14 @@ export function AttributesEditor({
       id={id}
       state={state}
       onChange={onChange}
-      label="Attributes"
+      label="Extra details"
       disabled={disabled}
       error={error}
-      keyLabel="Attribute"
-      keyPlaceholder="e.g. region"
-      valuePlaceholder="e.g. Gauteng"
-      addLabel="Add attribute"
-      emptyText="No attributes."
+      keyLabel="Detail"
+      keyPlaceholder="For example, region"
+      valuePlaceholder="For example, Gauteng"
+      addLabel="Add a detail"
+      emptyText="No extra details."
     />
   );
 }

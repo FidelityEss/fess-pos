@@ -28,17 +28,23 @@ export default function TrustedIssuersPage() {
     mutationFn: (v: { id: string; active: boolean; reason: string }) => adminApi.issuers.setActive(v.id, { active: v.active, reason: v.reason }),
     invalidate: [['trusted_issuers'], ['alerts']],
     toastErrors: false,
-    successMessage: (i) => `${i.key} ${i.active ? 'activated' : 'deactivated'}`,
+    successMessage: (i) => `${i.title} turned ${i.active ? 'on' : 'off'}.`,
   });
 
   const columns = useMemo<ColumnDef<TrustedIssuer>[]>(
     () => [
-      { accessorKey: 'key', header: 'Key', cell: ({ row }) => <span className="whitespace-nowrap font-mono text-sm font-medium">{row.original.key}</span> },
-      { accessorKey: 'type', header: 'Type', cell: ({ row }) => <Badge tone="outline">{ISSUER_TYPE_LABEL[row.original.type]}</Badge> },
-      { accessorKey: 'title', header: 'Title', cell: ({ row }) => <span className="block max-w-md">{row.original.title}</span> },
-      { accessorKey: 'primary_issuer', header: 'Primary', cell: ({ row }) => <YesNo value={row.original.primary_issuer} title={row.original.primary_issuer ? 'Primary' : 'Secondary signal only'} /> },
-      { accessorKey: 'active', header: 'Status', cell: ({ row }) => <ActiveBadge active={row.original.active} /> },
-      { accessorKey: 'updated_at', header: 'Updated', cell: ({ row }) => <DateTime value={row.original.updated_at} /> },
+      { accessorKey: 'title', header: 'Name', cell: ({ row }) => <span className="block max-w-md font-medium">{row.original.title}</span> },
+      { accessorKey: 'key', header: 'Key', meta: { advanced: true }, cell: ({ row }) => <span className="whitespace-nowrap font-mono text-sm">{row.original.key}</span> },
+      { accessorKey: 'type', header: 'How it checks', cell: ({ row }) => <Badge tone="outline">{ISSUER_TYPE_LABEL[row.original.type]}</Badge> },
+      {
+        accessorKey: 'primary_issuer',
+        header: 'Signs in on its own',
+        cell: ({ row }) => (
+          <YesNo value={row.original.primary_issuer} title={row.original.primary_issuer ? 'Can sign agents in on its own' : 'Only an extra check alongside another source'} />
+        ),
+      },
+      { accessorKey: 'active', header: 'Status', cell: ({ row }) => <ActiveBadge active={row.original.active} activeLabel="On" inactiveLabel="Off" /> },
+      { accessorKey: 'updated_at', header: 'Last changed', cell: ({ row }) => <DateTime value={row.original.updated_at} /> },
       {
         id: 'actions',
         header: '',
@@ -55,11 +61,11 @@ export default function TrustedIssuersPage() {
           >
             {row.original.active ? (
               <>
-                <PowerOff /> Deactivate
+                <PowerOff /> Turn off
               </>
             ) : (
               <>
-                <Power /> Activate
+                <Power /> Turn on
               </>
             )}
           </Button>
@@ -72,8 +78,8 @@ export default function TrustedIssuersPage() {
   if (!staff.isGlobalAdmin) {
     return (
       <>
-        <PageHeader title="Trusted issuers" />
-        <ReadOnlyNotice>Trusted issuers and identity links are managed by all-bank administrators (D-44).</ReadOnlyNotice>
+        <PageHeader title="Sign-in sources" />
+        <ReadOnlyNotice>Only administrators for all banks can manage sign-in sources and match people to them.</ReadOnlyNotice>
       </>
     );
   }
@@ -83,11 +89,10 @@ export default function TrustedIssuersPage() {
   return (
     <>
       <PageHeader
-        title="Trusted issuers"
-        description="Identity issuers whose tokens the POS API accepts, how each is verified, and how a person’s employee number is found (docs/07 §2)."
+        title="Sign-in sources"
         actions={
           <Button onClick={() => setSheet({ issuer: null })}>
-            <Plus /> New issuer
+            <Plus /> Add a sign-in source
           </Button>
         }
       />
@@ -100,8 +105,9 @@ export default function TrustedIssuersPage() {
           onRetry={() => void issuers.refetch()}
           getRowId={(i) => i.id}
           onRowClick={(i) => setSheet({ issuer: i })}
-          searchPlaceholder="Search issuers…"
-          emptyTitle="No trusted issuers"
+          searchPlaceholder="Search sign-in sources…"
+          emptyTitle="No sign-in sources yet"
+          emptyDescription="Add one so agents can sign in to the app."
         />
         <LinkRequests />
       </div>
@@ -118,31 +124,32 @@ export default function TrustedIssuersPage() {
         onOpenChange={(open) => {
           if (!open) setToggle(null);
         }}
-        title={toggle ? `${activating ? 'Activate' : 'Deactivate'} ${toggle.key}?` : ''}
-        description={toggle?.title}
+        title={toggle ? `${activating ? 'Turn on' : 'Turn off'} ${toggle.title}?` : ''}
+        description={
+          activating
+            ? 'Agents can then sign in to the app through it.'
+            : 'Agents can’t sign in through it any more. Anyone already signed in stays signed in.'
+        }
         destructive={!activating}
         requireReason
-        confirmLabel={activating ? 'Activate issuer' : 'Deactivate issuer'}
+        reasonPlaceholder="Why? This is recorded in the activity history."
+        confirmLabel={activating ? 'Turn on' : 'Turn off'}
         onConfirm={(reason) => (toggle ? setActive.mutateAsync({ id: toggle.id, active: activating, reason }) : undefined)}
       >
         {toggle && activating && toggle.type !== 'dev_stub' ? (
           <Alert variant="warning">
             <ShieldAlert />
-            <AlertTitle>Production identity issuer</AlertTitle>
+            <AlertTitle>This is a real sign-in source</AlertTitle>
             <AlertDescription>
-              Activating a real issuer — such as a FESS issuer — must follow D-05: a person does it once FESS has provided the
-              credentials and the function secret is set. Don’t activate it to try it out.
+              Only turn on a real source, such as FESS, once the FESS team has given us its credentials and a developer has stored them on the server.
+              Don’t turn it on to try it out.
             </AlertDescription>
           </Alert>
         ) : toggle && activating ? (
           <Alert variant="info">
             <ShieldAlert />
-            <AlertDescription>Stand-in issuers are for development and staging only.</AlertDescription>
+            <AlertDescription>The stand-in sign-in source is for QA and local testing only. Production never uses it.</AlertDescription>
           </Alert>
-        ) : toggle ? (
-          <p className="text-sm text-muted-foreground">
-            New sign-ins with this issuer’s tokens are refused from now on. POS sessions already issued are not revoked.
-          </p>
         ) : null}
       </ConfirmDialog>
     </>

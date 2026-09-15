@@ -365,14 +365,14 @@ export function JsonPartEditor({ value, onApply, onCancel, label, rows = 8 }: { 
   const [text, setText] = useState(() => stringifyJson(value ?? null));
   const parsed = parseJsonText(text);
   return (
-    <div className="grid gap-2 rounded-md border bg-slate-50 p-2">
+    <div className="grid gap-2 rounded-md border bg-card p-2">
       <JsonEditor value={text} onChange={setText} rows={rows} label={label} />
       <div className="flex justify-end gap-2">
         <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
           <X /> Cancel
         </Button>
         <Button type="button" size="sm" disabled={!parsed.ok} onClick={() => parsed.ok && onApply(parsed.value)}>
-          <Check /> Apply
+          <Check /> Use this
         </Button>
       </div>
     </div>
@@ -380,7 +380,7 @@ export function JsonPartEditor({ value, onApply, onCancel, label, rows = 8 }: { 
 }
 
 /**
- * A rule shown as a plain-English sentence. In Advanced view (and when editable) "Edit rule" opens the rule JSON;
+ * A rule shown as a plain-English sentence. In Advanced view (and when editable) "Edit condition" opens the rule JSON;
  * the visual rule builder is T3-10. Existing rules are always kept intact.
  */
 export function RuleLine({
@@ -388,7 +388,7 @@ export function RuleLine({
   rule,
   onChange,
   onRemove,
-  removeLabel = 'Remove rule',
+  removeLabel = 'Remove condition',
   tone = 'neutral',
 }: {
   sentence: ReactNode;
@@ -417,7 +417,7 @@ export function RuleLine({
         {canEdit && !editing ? (
           <span className="ml-auto flex shrink-0 flex-wrap gap-1">
             <Button type="button" size="sm" variant="ghost" className="h-7" onClick={() => setEditing(true)}>
-              <Braces /> Edit rule
+              <Braces /> Edit condition
             </Button>
             {onRemove ? (
               <Button type="button" size="sm" variant="ghost" className="h-7 text-destructive hover:text-destructive" onClick={onRemove}>
@@ -430,7 +430,7 @@ export function RuleLine({
       {editing && onChange ? (
         <JsonPartEditor
           value={rule}
-          label="Rule (JSON logic)"
+          label="Condition (JSON logic)"
           rows={6}
           onCancel={() => setEditing(false)}
           onApply={(v) => {

@@ -13,7 +13,7 @@ export const DialogClose = DialogPrimitive.Close;
 export const DialogPortal = DialogPrimitive.Portal;
 
 export function DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
-  return <DialogPrimitive.Overlay className={cn('fixed inset-0 z-50 bg-slate-950/40 animate-in-fade', className)} {...props} />;
+  return <DialogPrimitive.Overlay className={cn('fixed inset-0 z-50 bg-slate-950/30 animate-in-fade', className)} {...props} />;
 }
 
 /** Centred panel. `size`: sm (default max-w-md) | md | lg | xl. */
@@ -30,7 +30,7 @@ export function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-lg border bg-card p-6 shadow-lg animate-in-fade focus:outline-none',
+          'fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-lg border bg-card p-6 animate-in-fade focus:outline-none',
           width,
           className,
         )}

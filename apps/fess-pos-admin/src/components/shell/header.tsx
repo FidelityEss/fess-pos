@@ -1,6 +1,7 @@
 'use client';
 
-import { Check, ChevronDown, LogOut, Menu, Type } from 'lucide-react';
+import { Check, ChevronDown, CircleHelp, LogOut, Menu, Type } from 'lucide-react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,8 +13,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useSignOut } from '@/lib/auth';
-import { humanize, shortId } from '@/lib/format';
+import { shortId } from '@/lib/format';
 import { useBankLookup } from '@/lib/hooks';
+import { PERMISSION_LABEL } from '@/lib/labels';
 import { TEXT_SIZES, usePreferences, type ViewMode } from '@/lib/preferences';
 import { useStaff } from '@/lib/staff';
 import { cn } from '@/lib/utils';
@@ -21,15 +23,15 @@ import { EnvBadge } from './env-banner';
 import { findNavItem } from './nav';
 
 const MODES: readonly { value: ViewMode; label: string; hint: string }[] = [
-  { value: 'basic', label: 'Basic', hint: 'Everyday screens and plain-language detail' },
-  { value: 'advanced', label: 'Advanced', hint: 'Adds technical screens, identifiers and raw data' },
+  { value: 'basic', label: 'Basic', hint: 'The everyday screens, in plain words' },
+  { value: 'advanced', label: 'Advanced', hint: 'Also shows technical screens and details such as codes and raw data' },
 ];
 
 /** Basic / Advanced switch (T2-24). */
 export function ViewModeSwitch({ className }: { className?: string }) {
   const { viewMode, setViewMode } = usePreferences();
   return (
-    <div role="radiogroup" aria-label="View mode" className={cn('inline-flex rounded-lg border bg-muted p-0.5 text-sm', className)}>
+    <div role="radiogroup" aria-label="View" className={cn('inline-flex rounded-lg border bg-card p-0.5 text-sm', className)}>
       {MODES.map((m) => (
         <button
           key={m.value}
@@ -40,7 +42,7 @@ export function ViewModeSwitch({ className }: { className?: string }) {
           onClick={() => setViewMode(m.value)}
           className={cn(
             'rounded-md px-3 py-1 font-medium transition-colors',
-            viewMode === m.value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            viewMode === m.value ? 'bg-accent text-primary-hover ring-1 ring-primary/25' : 'text-muted-foreground hover:text-foreground',
           )}
         >
           {m.label}
@@ -74,7 +76,7 @@ function TextSizeMenu() {
   );
 }
 
-/** Top bar: mobile menu button, current section, view mode, text size, env badge, user menu with sign-out. */
+/** Top bar: mobile menu button, current section, view, text size, help, environment, the person's menu with sign-out. */
 export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const staff = useStaff();
   const pathname = usePathname();
@@ -83,24 +85,30 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const { viewMode, setViewMode } = usePreferences();
   const { me } = staff;
 
-  const roleLabel = staff.isReader ? 'Bank reader' : staff.isGlobalAdmin ? 'Administrator · all banks' : 'Administrator';
+  const roleLabel = staff.isReader ? 'Bank viewer (read only)' : staff.isGlobalAdmin ? 'Administrator, all banks' : 'Administrator';
   const bankScope =
-    me.bank_ids === null ? 'All banks' : me.bank_ids.map((id) => bankLookup(id)?.code ?? shortId(id)).join(', ') || 'No banks';
+    me.bank_ids === null ? 'All banks' : me.bank_ids.map((id) => bankLookup(id)?.code ?? shortId(id)).join(', ') || 'No banks yet';
   const initials = `${me.first_name.charAt(0)}${me.last_name.charAt(0)}`.toUpperCase() || '?';
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b bg-card/95 px-4 backdrop-blur lg:px-6">
-      <Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={onMenuClick} aria-label="Open navigation">
+    <header className="sticky top-[var(--env-banner-h)] z-30 flex h-16 shrink-0 items-center gap-3 border-b bg-card px-4 lg:px-6">
+      <Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={onMenuClick} aria-label="Open the menu">
         <Menu />
       </Button>
       <div className="min-w-0 flex-1 truncate text-base font-semibold">{findNavItem(pathname)?.label}</div>
       <ViewModeSwitch className="hidden sm:inline-flex" />
       <TextSizeMenu />
+      <Button variant="ghost" size="sm" className="h-10 gap-1.5 px-2.5" asChild>
+        <Link href="/help" aria-label="Help and glossary">
+          <CircleHelp className="size-5" />
+          <span className="hidden text-sm md:inline">Help</span>
+        </Link>
+      </Button>
       <EnvBadge />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-11 gap-2 px-2" aria-label="User menu">
-            <span className="flex size-8 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-white">{initials}</span>
+          <Button variant="ghost" size="sm" className="h-11 gap-2 px-2" aria-label="Your account">
+            <span className="flex size-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">{initials}</span>
             <span className="hidden flex-col items-start leading-tight sm:flex">
               <span className="text-sm font-medium">{staff.displayName}</span>
               <span className="text-xs font-normal text-muted-foreground">{roleLabel}</span>
@@ -113,10 +121,10 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
             <p className="text-sm font-semibold text-foreground">{staff.displayName}</p>
             {me.email ? <p className="text-xs text-muted-foreground">{me.email}</p> : null}
             <p className="text-xs text-muted-foreground">
-              {roleLabel} · banks: {bankScope}
+              {roleLabel}. Banks you can see: {bankScope}
             </p>
             {me.permissions.length ? (
-              <p className="text-xs text-muted-foreground">Permissions: {me.permissions.map(humanize).join(', ')}</p>
+              <p className="text-xs text-muted-foreground">You can also: {me.permissions.map((p) => PERMISSION_LABEL[p] ?? p).join(', ').toLowerCase()}</p>
             ) : null}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -131,6 +139,11 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/help">
+              <CircleHelp /> Help and glossary
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => void signOut()}>
             <LogOut /> Sign out
           </DropdownMenuItem>

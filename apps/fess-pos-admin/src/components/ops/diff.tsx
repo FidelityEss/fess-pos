@@ -177,7 +177,7 @@ export function LineDiffView({
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>{changedCount === 0 ? 'No differences' : `${changedCount} changed line${changedCount === 1 ? '' : 's'}`}</span>
         <Button type="button" size="sm" variant="ghost" onClick={() => setShowAll((v) => !v)}>
-          {showAll ? 'Only changes' : 'Show all lines'}
+          {showAll ? 'Show only changes' : 'Show all lines'}
         </Button>
       </div>
       <div className="overflow-auto rounded-md border bg-card font-mono text-xs leading-5" style={{ maxHeight }}>
@@ -188,7 +188,7 @@ export function LineDiffView({
             <col className="w-10" />
             <col />
           </colgroup>
-          <thead className="sticky top-0 z-10 bg-slate-50 text-left font-sans text-sm">
+          <thead className="sticky top-0 z-10 bg-card text-left font-sans text-sm">
             <tr>
               <th colSpan={2} className="border-b border-r px-2 py-1 font-medium">
                 {beforeLabel}
@@ -202,7 +202,7 @@ export function LineDiffView({
             {visible.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-2 py-3 text-center font-sans text-sm text-muted-foreground">
-                  Identical
+                  No differences
                 </td>
               </tr>
             ) : (
@@ -262,18 +262,24 @@ export function fieldDiff(before: unknown, after: unknown): FieldChange[] {
 }
 
 const KIND_TONE = { added: 'success', removed: 'danger', changed: 'warning' } as const;
+const KIND_LABEL = { added: 'Added', removed: 'Removed', changed: 'Changed' } as const;
 
-/** Table of leaf-level changes; `highlight(path)` marks rows (e.g. integrity-relevant keys) with a shield. */
+/**
+ * Table of leaf-level changes; `highlight(path)` marks rows (e.g. integrity-relevant keys) with a shield.
+ * `formatPath` turns a dotted path into what people read (the raw path stays in the tooltip).
+ */
 export function FieldDiffTable({
   changes,
   highlight,
-  highlightLabel = 'Integrity-relevant',
-  emptyText = 'No field changes',
+  highlightLabel = 'Affects the security checks',
+  emptyText = 'Nothing changed',
+  formatPath,
 }: {
   changes: FieldChange[];
   highlight?: (path: string) => boolean;
   highlightLabel?: string;
   emptyText?: string;
+  formatPath?: (path: string) => string;
 }) {
   if (changes.length === 0) return <p className="text-sm text-muted-foreground">{emptyText}</p>;
   return (
@@ -292,14 +298,14 @@ export function FieldDiffTable({
             const hl = highlight?.(c.path) ?? false;
             return (
               <TableRow key={c.path} className={cn(hl && 'bg-amber-50/70')}>
-                <TableCell className="font-mono text-sm">
-                  <span className="inline-flex items-center gap-1">
+                <TableCell className={cn('text-sm', !formatPath && 'font-mono')}>
+                  <span className="inline-flex items-center gap-1" title={formatPath ? c.path : undefined}>
                     {hl ? <ShieldAlert className="size-4 text-amber-600" aria-label={highlightLabel} /> : null}
-                    {c.path}
+                    {formatPath ? formatPath(c.path) : c.path}
                   </span>
                 </TableCell>
                 <TableCell>
-                  <Badge tone={KIND_TONE[c.kind]}>{c.kind}</Badge>
+                  <Badge tone={KIND_TONE[c.kind]}>{KIND_LABEL[c.kind]}</Badge>
                 </TableCell>
                 <TableCell className="max-w-[16rem] break-all font-mono text-sm text-red-800">
                   {c.kind === 'added' ? '' : compactJson(c.before, 120)}

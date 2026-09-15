@@ -47,7 +47,7 @@ export interface LayerInheritance {
   above: InheritedLayer[];
   /** Defaults ⊕ the layers above: what this layer inherits. */
   inherited: JsonObject;
-  /** Where the inherited value at a path comes from: "Default", "Global", "Bank: …", "Agent: …". */
+  /** Who the inherited value at a path is set for: "Default", "everyone", the bank's name, the agent's name, or "Not set". */
   sourceOf: (path: string) => string;
   /** Whether integrity-relevant changes on this layer need a second admin (null while unknown). */
   fourEyes: boolean | null;
@@ -92,13 +92,14 @@ export function useLayerInheritance(layer: ConfigLayer, subjectId: string | null
   });
 
   const bank = bankById(bankId);
-  const bankLabel = bank ? `Bank: ${bank.name}` : 'Bank';
-  const agentLabel = user ? `Agent: ${employeeName(user)}` : 'Agent';
+  // Who each layer applies to, read as "Settings for …" / "Same as for …".
+  const bankLabel = bank ? bank.name : 'the bank';
+  const agentLabel = user ? employeeName(user) : 'the agent';
 
   const above = useMemo<InheritedLayer[]>(() => {
     if (!q.data) return [];
     const out: InheritedLayer[] = [];
-    if (layer !== 'global' && q.data.global) out.push({ layer: 'global', label: 'Global', version: q.data.global.version, values: q.data.global.values });
+    if (layer !== 'global' && q.data.global) out.push({ layer: 'global', label: 'everyone', version: q.data.global.version, values: q.data.global.values });
     if (q.data.bank) out.push({ layer: 'bank', label: bankLabel, version: q.data.bank.version, values: q.data.bank.values });
     if (q.data.agent) out.push({ layer: 'agent', label: agentLabel, version: q.data.agent.version, values: q.data.agent.values });
     return out;

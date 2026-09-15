@@ -22,7 +22,7 @@ import { cn, isPlainObject } from '@/lib/utils';
 import { type AttributeDef, flagInfo, toNumber } from './job-data';
 
 /**
- * Job / inspection flags as badges. Basic view shows a plain-language summary ("A photo failed the tamper check"),
+ * Job / visit warnings as badges. Basic view shows a plain-language summary ("A photo failed a security check"),
  * merged when several flags mean the same thing; Advanced shows the technical label (tooltip = description + code).
  * `max` limits the badges shown (the rest collapse into "+N more").
  */
@@ -197,14 +197,14 @@ export function MccPicker({
           ) : value ? (
             <span className="font-mono">{value}</span>
           ) : (
-            <span className="text-muted-foreground">{isLoading ? 'Loading MCC codes…' : error ? 'Could not load MCC codes' : 'Choose an MCC'}</span>
+            <span className="text-muted-foreground">{isLoading ? 'Loading business types…' : error ? 'Couldn’t load business types' : 'Choose a business type'}</span>
           )}
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[min(28rem,calc(100vw-2rem))] p-0">
         <div className="border-b p-2">
-          <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by code or description" aria-label="Search MCC codes" />
+          <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or code" aria-label="Search business types" />
         </div>
         <div className="max-h-72 overflow-y-auto p-1">
           {value ? (
@@ -232,12 +232,12 @@ export function MccPicker({
             >
               <span className="mt-0.5 font-mono text-xs">{m.code}</span>
               <span className="flex-1">{m.description}</span>
-              <Badge tone={RISK_TIER_TONE[m.risk_tier]}>{m.risk_tier}</Badge>
+              <Badge tone={RISK_TIER_TONE[m.risk_tier]}>{m.risk_tier} risk</Badge>
               {m.code === value ? <Check className="mt-0.5 size-4" /> : null}
             </button>
           ))}
-          {data && filtered.length === 0 ? <p className="px-2 py-3 text-sm text-muted-foreground">No MCC codes match.</p> : null}
-          {data && filtered.length === 100 ? <p className="px-2 py-1 text-sm text-muted-foreground">Showing the first 100 — refine the search.</p> : null}
+          {data && filtered.length === 0 ? <p className="px-2 py-3 text-sm text-muted-foreground">No business types match.</p> : null}
+          {data && filtered.length === 100 ? <p className="px-2 py-1 text-sm text-muted-foreground">Showing the first 100. Type more to narrow it down.</p> : null}
         </div>
       </PopoverContent>
     </Popover>
@@ -270,8 +270,8 @@ export function coerceAttributeValue(def: AttributeDef, raw: unknown): { value: 
   if (isEmptyValue(raw)) return { value: undefined, empty: true, error: def.required ? `${def.label} is required` : null };
   if (isNumberAttribute(def)) {
     const n = toNumber(raw);
-    if (n === null) return { value: raw, empty: false, error: 'Must be a number' };
-    if ((def.type === 'integer' || def.props.integer === true) && !Number.isInteger(n)) return { value: n, empty: false, error: 'Must be a whole number' };
+    if (n === null) return { value: raw, empty: false, error: 'Enter a number' };
+    if ((def.type === 'integer' || def.props.integer === true) && !Number.isInteger(n)) return { value: n, empty: false, error: 'Enter a whole number' };
     const min = toNumber(def.props.min);
     const max = toNumber(def.props.max);
     if (min !== null && n < min) return { value: n, empty: false, error: `Must be at least ${min}` };
@@ -282,7 +282,7 @@ export function coerceAttributeValue(def: AttributeDef, raw: unknown): { value: 
     const v = raw.trim();
     if (typeof def.props.pattern === 'string') {
       try {
-        if (!new RegExp(def.props.pattern).test(v)) return { value: v, empty: false, error: 'Does not match the expected format' };
+        if (!new RegExp(def.props.pattern).test(v)) return { value: v, empty: false, error: def.help_text ? `This isn’t in the right format. ${def.help_text}` : 'This isn’t in the right format' };
       } catch {
         // an invalid pattern is the definition's problem; the server reports it
       }
@@ -377,7 +377,7 @@ export function AttributeInput({
               </label>
             );
           })}
-          {def.options.length === 0 ? <span className="text-sm text-muted-foreground">No options defined</span> : null}
+          {def.options.length === 0 ? <span className="text-sm text-muted-foreground">No choices set up yet</span> : null}
         </div>
       );
     }
@@ -410,10 +410,13 @@ export function AttributeInput({
   }
 }
 
-/** Hint under an attribute input: help text, and a note for types the panel shows as plain text. */
-export function attributeHint(def: AttributeDef): ReactNode {
-  const note = isKnownAttributeType(def.type) ? null : `Type "${def.type}" has no dedicated editor here — entered as text.`;
-  const pattern = typeof def.props.pattern === 'string' ? `Format: ${def.props.pattern}` : null;
+/**
+ * Hint under an attribute input: its help text. In Advanced view also the raw format pattern and a note for types the
+ * panel enters as plain text; Basic view never shows a raw pattern (T2-30) — the help text should describe the format.
+ */
+export function attributeHint(def: AttributeDef, advanced = false): ReactNode {
+  const note = advanced && !isKnownAttributeType(def.type) ? `No special input for “${def.type}” here, so it’s entered as text.` : null;
+  const pattern = advanced && typeof def.props.pattern === 'string' ? `Format (pattern): ${def.props.pattern}` : null;
   const parts = [def.help_text, pattern, note].filter(Boolean);
   return parts.length ? parts.join(' · ') : undefined;
 }

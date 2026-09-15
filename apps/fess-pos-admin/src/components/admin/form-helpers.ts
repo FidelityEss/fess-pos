@@ -48,6 +48,21 @@ export function newRowId(prefix = 'row'): string {
   return `${prefix}-${rowSeq}`;
 }
 
+/**
+ * A key suggested from a plain name, e.g. "Business closed" → "business_closed": lowercase letters, digits and _,
+ * starting with a letter, at most `max` characters (KEY_REGEX). Blank when the name has no letters.
+ */
+export function keyFromText(text: string, max = 64): string {
+  return text
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^[^a-z]+/, '')
+    .slice(0, max)
+    .replace(/_+$/, '');
+}
+
 /** Integer text input → number; blank → undefined; not an integer → null. */
 export function parseIntText(text: string): number | undefined | null {
   const t = text.trim();

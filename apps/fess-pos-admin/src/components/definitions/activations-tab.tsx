@@ -10,25 +10,30 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useIsAdvanced } from '@/lib/preferences';
 import type { StatusTone } from '@/lib/status';
 import type { DefinitionActivation } from '@/lib/types';
 import type { ActivatePreset } from './activate-dialog';
-import { audienceLabel, currentAllActivation, isInEffect, liveActivations, POLICY_LABEL, type VersionLite } from './definitions-data';
+import { audienceLabel, currentAllActivation, isInEffect, liveActivations, liveForLabel, POLICY_LABEL, type VersionLite } from './definitions-data';
 
 type ActivationStatus = { label: string; tone: StatusTone };
 
-/** Activation history, what is in force now, "Activate…" and one-click rollback (activate the previous version for all). */
+/** Where a piece is live: what's live now, "Make a version live…", one-click "Go back" and the history. */
 export function ActivationsTab({
   versions,
   activations,
   onActivate,
   canEdit,
+  bankName = null,
 }: {
   versions: VersionLite[];
   activations: DefinitionActivation[];
   onActivate: (preset?: ActivatePreset) => void;
   canEdit: boolean;
+  /** Name of the bank this piece belongs to; null when it's shared by all banks. */
+  bankName?: string | null;
 }) {
+  const advanced = useIsAdvanced();
   const now = useNow(60_000);
   const versionById = useMemo(() => new Map(versions.map((v) => [v.id, v])), [versions]);
   const live = useMemo(() => liveActivations(activations, now), [activations, now]);
@@ -44,12 +49,13 @@ export function ActivationsTab({
       ),
     [activations],
   );
+  const versionText = (a: DefinitionActivation) => `version ${versionById.get(a.version_id)?.version ?? '?'}`;
 
   function statusOf(a: DefinitionActivation): ActivationStatus {
-    if (Date.parse(a.effective_from) > now) return { label: 'Scheduled', tone: 'accent' };
+    if (Date.parse(a.effective_from) > now) return { label: 'Starts later', tone: 'accent' };
     if (!isInEffect(a, now)) return { label: 'Ended', tone: 'muted' };
-    if (live.some((l) => l.id === a.id)) return a.audience.type === 'all' ? { label: 'In force', tone: 'success' } : { label: 'Live', tone: 'progress' };
-    return { label: 'Superseded', tone: 'muted' };
+    if (live.some((l) => l.id === a.id)) return a.audience.type === 'all' ? { label: 'Live', tone: 'success' } : { label: 'Live for some agents', tone: 'progress' };
+    return { label: 'Replaced', tone: 'muted' };
   }
 
   return (
@@ -60,65 +66,77 @@ export function ActivationsTab({
             <Alert variant="success">
               <Rocket />
               <AlertTitle>
-                v{currentVersion.version} is in force for all agents since <DateTime value={current.effective_from} />
+                Version {currentVersion.version} is {liveForLabel(current.audience, bankName).replace(/^L/, 'l')} since <DateTime value={current.effective_from} />
               </AlertTitle>
               <AlertDescription>
                 {live.length > 1
-                  ? `Also live for narrower audiences: ${live
+                  ? `Some agents get a different version for now: ${live
                       .filter((a) => a.id !== current.id)
-                      .map((a) => `v${versionById.get(a.version_id)?.version ?? '?'} (${audienceLabel(a.audience)})`)
+                      .map((a) => `${versionText(a)} (${audienceLabel(a.audience).replace(/^A/, 'a')})`)
                       .join(', ')}.`
-                  : 'No staged rollouts in effect.'}
+                  : 'Every agent gets this version.'}
               </AlertDescription>
             </Alert>
           ) : (
             <Alert variant="warning">
               <History />
-              <AlertTitle>No version is in force for all agents</AlertTitle>
+              <AlertTitle>{live.length > 0 ? 'Not live for everyone yet' : 'Not live yet'}</AlertTitle>
               <AlertDescription>
-                {live.length > 0 ? 'Only staged audiences are live; agents outside them fall back to the global family, if any.' : 'Activate a version to make it live.'}
+                {live.length > 0
+                  ? 'Only some agents get a version. Everyone else gets the set-up shared by all banks, if there is one.'
+                  : 'Agents don’t see any version until you make one live.'}
               </AlertDescription>
             </Alert>
           )}
         </div>
         {canEdit ? (
           <div className="flex flex-wrap gap-2">
-            <Button type="button" onClick={() => onActivate()} disabled={versions.length === 0}>
-              <Rocket /> Activate a version…
+            <Button type="button" onClick={() => onActivate()} disabled={versions.length === 0} title={versions.length === 0 ? 'Publish a version first.' : undefined}>
+              <Rocket /> Make a version live…
             </Button>
             <Button
               type="button"
               variant="outline"
               disabled={!previous || !currentVersion}
-              title={previous ? undefined : 'Needs an older version than the one in force'}
+              title={previous ? undefined : 'There’s no older version to go back to.'}
               onClick={() =>
                 previous && currentVersion
-                  ? onActivate({ versionId: previous.id, reason: `Rollback from v${currentVersion.version} to v${previous.version}: ` })
+                  ? onActivate({ versionId: previous.id, reason: `Going back from version ${currentVersion.version} to version ${previous.version}: ` })
                   : undefined
               }
             >
-              <Undo2 /> Roll back{previous ? ` to v${previous.version}` : ''}…
+              <Undo2 /> Go back{previous ? ` to version ${previous.version}` : ''}…
             </Button>
           </div>
         ) : null}
       </div>
 
       <section>
-        <SectionTitle>History (newest first)</SectionTitle>
+        <SectionTitle>History, newest first</SectionTitle>
         <Card className="overflow-hidden">
           {sorted.length === 0 ? (
-            <EmptyState title="Never activated" description="Published versions do nothing until they are activated for an audience." />
+            <EmptyState
+              title="Never made live"
+              description="A published version does nothing until you make it live."
+              action={
+                canEdit && versions.length > 0 ? (
+                  <Button type="button" onClick={() => onActivate()}>
+                    <Rocket /> Make a version live…
+                  </Button>
+                ) : undefined
+              }
+            />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Status</TableHead>
                   <TableHead>Version</TableHead>
-                  <TableHead>Audience</TableHead>
-                  <TableHead>Effective</TableHead>
-                  <TableHead>Incompatible devices</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Activated / approved</TableHead>
+                  <TableHead>Who gets it</TableHead>
+                  <TableHead>When</TableHead>
+                  {advanced ? <TableHead>If a phone’s app is too old</TableHead> : null}
+                  <TableHead>Why</TableHead>
+                  <TableHead>Made live by</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -129,19 +147,26 @@ export function ActivationsTab({
                       <TableCell>
                         <Badge tone={s.tone}>{s.label}</Badge>
                       </TableCell>
-                      <TableCell className="font-medium tabular-nums">v{versionById.get(a.version_id)?.version ?? '?'}</TableCell>
-                      <TableCell className="text-xs">{audienceLabel(a.audience)}</TableCell>
+                      <TableCell className="font-medium tabular-nums">{versionById.get(a.version_id)?.version ?? '?'}</TableCell>
+                      <TableCell className="text-xs">{a.audience.type === 'all' && bankName ? `All agents at ${bankName}` : audienceLabel(a.audience)}</TableCell>
                       <TableCell className="text-xs">
-                        <DateTime value={a.effective_from} />
-                        <span className="text-muted-foreground"> → </span>
-                        {a.effective_to ? <DateTime value={a.effective_to} /> : <span className="text-muted-foreground">open-ended</span>}
+                        From <DateTime value={a.effective_from} />
+                        <div className="text-muted-foreground">{a.effective_to ? <>until <DateTime value={a.effective_to} /></> : 'No end date'}</div>
                       </TableCell>
-                      <TableCell className="text-xs">{POLICY_LABEL[a.policy.incompatible ?? 'fallback_version'] ?? String(a.policy.incompatible)}</TableCell>
+                      {advanced ? (
+                        <TableCell className="text-xs">{POLICY_LABEL[a.policy.incompatible ?? 'fallback_version'] ?? String(a.policy.incompatible)}</TableCell>
+                      ) : null}
                       <TableCell className="max-w-xs text-xs">{a.reason}</TableCell>
                       <TableCell className="text-xs">
-                        <UserName id={a.activated_by} fallback="System" />
+                        <UserName id={a.activated_by} fallback="The system" />
                         <div className="text-muted-foreground">
-                          <UserName id={a.approved_by} fallback="no four-eyes" />
+                          {a.approved_by ? (
+                            <>
+                              Approved by <UserName id={a.approved_by} />
+                            </>
+                          ) : (
+                            'No second approval'
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
