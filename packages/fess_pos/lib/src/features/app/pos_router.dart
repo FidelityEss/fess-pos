@@ -10,6 +10,7 @@ import 'package:fess_pos/src/domain/navigation/pos_link.dart';
 import 'package:fess_pos/src/features/forms/record_form_page.dart';
 import 'package:fess_pos/src/features/jobs/job_action_pages.dart';
 import 'package:fess_pos/src/features/jobs/job_pages.dart';
+import 'package:fess_pos/src/features/preview/preview_link_page.dart';
 import 'package:fess_pos/src/features/shell/needs_attention_page.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:fess_pos/src/renderer/icons.dart';
@@ -114,6 +115,8 @@ class PosRouterState extends ConsumerState<PosRouter> {
         _openPage('job_detail', jobId);
       case CardLink():
         _openPage('agent_card', null);
+      case PreviewLink(:final token):
+        _push((_) => PreviewLinkPage(token: token));
       case HomeLink():
         break;
     }

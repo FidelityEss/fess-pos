@@ -196,7 +196,7 @@ class _RecordFormPageState extends ConsumerState<RecordFormPage> {
         title: title == null
             ? copy('shell.title')
             : fillTemplate(title, {'job': ?jobData, 'agent': ?agent}),
-        onBack: widget.onBack ?? () => Navigator.of(context).pop(),
+        onBack: widget.onBack ?? () => Navigator.of(context).maybePop(),
       ),
       body: body,
       bottomNavigationBar: submit,

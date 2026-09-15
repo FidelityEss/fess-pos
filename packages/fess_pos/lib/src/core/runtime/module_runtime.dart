@@ -37,6 +37,7 @@ import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/domain/navigation/pos_link.dart';
+import 'package:fess_pos/src/domain/preview/preview_request.dart';
 import 'package:fess_pos/src/domain/session/session_gateway.dart';
 import 'package:fess_pos/src/platform/connectivity.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
@@ -311,6 +312,11 @@ final class ModuleRuntime {
       send: runSync,
     );
   }
+
+  /// Drafts for "Preview on phone" links (docs/04 §10). None until the
+  /// server serves them by token (T3-33): a preview link then says the
+  /// preview isn't available.
+  Future<PreviewDrafts?> previewDrafts() async => null;
 
   /// Generic form submissions (`record.submit`, T3-19), recorded under the
   /// signed-in user's session; null in builds without the POS API client.

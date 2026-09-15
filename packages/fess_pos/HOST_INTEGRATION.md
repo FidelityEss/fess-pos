@@ -77,6 +77,9 @@ generated files, so FlutterFlow regeneration can't lose it.
   host copies them into its own `web/` folder. `tool/drift_worker.dart` rebuilds the worker after a drift upgrade.
   They aren't package assets, so phone apps don't carry them (T3-24).
 - The web store isn't encrypted, and every web record carries `client_type = web` (planning pack `docs/13` §8).
+- **The preview app (T3-08)** is the web build the admin's studio embeds: `example/lib/preview.dart`, built with
+  `--dart-define=POS_PREVIEW_ORIGINS=<the studio's origins>`. `PosModule.previewEntryPoint` needs no `initialize` or
+  sign-in and records nothing. Hosts don't ship it.
 
 ## 5. Files the module keeps
 

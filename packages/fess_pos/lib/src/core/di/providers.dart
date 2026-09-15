@@ -22,6 +22,7 @@ import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/domain/maps/map_tiles.dart';
+import 'package:fess_pos/src/domain/preview/preview_request.dart';
 import 'package:fess_pos/src/domain/sync/attention.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:flutter/material.dart';
@@ -166,6 +167,13 @@ final jobActionsProvider = FutureProvider<JobActions?>(
 final formSubmissionsProvider = FutureProvider<FormSubmissions?>(
   (ref) => ref.watch(moduleRuntimeProvider).formSubmissions(),
   name: 'formSubmissions',
+);
+
+/// Drafts for "Preview on phone" links (T3-08); null until the server
+/// serves them (T3-33).
+final previewDraftsProvider = FutureProvider<PreviewDrafts?>(
+  (ref) => ref.watch(moduleRuntimeProvider).previewDrafts(),
+  name: 'previewDrafts',
 );
 
 /// Inspections (T4-27); null in builds without the POS API client.

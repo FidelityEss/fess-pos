@@ -18,6 +18,13 @@ abstract final class BundledCopy {
     'page.agent_card.title': 'My authorisation card',
     'page.active_jobs.title': 'Active leads',
     'page.receipt.title': 'Receipt',
+    'preview.label': 'Preview',
+    'preview.waiting': 'Waiting for something to preview…',
+    'preview.unavailable':
+        "This preview isn't available. Ask for a new preview link.",
+    'preview.flow_unavailable':
+        "Flows can't be previewed in the app yet; the studio's own preview "
+        'shows them.',
     'form.submit': 'Send',
     'nav.menu': 'Menu',
     'list.group.none': 'Other',

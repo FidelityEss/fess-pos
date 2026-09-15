@@ -8,6 +8,7 @@ import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/runtime/module_runtime.dart';
 import 'package:fess_pos/src/core/version.dart';
 import 'package:fess_pos/src/domain/navigation/pos_link.dart';
+import 'package:fess_pos/src/features/preview/preview_entry.dart';
 import 'package:fess_pos/src/features/shell/pos_entry_point.dart';
 import 'package:fess_pos/src/platform/background_work.dart';
 import 'package:flutter/widgets.dart';
@@ -47,6 +48,14 @@ abstract final class PosModule {
   /// The POS home. The host pushes it as a route.
   static Widget entryPoint() => const PosEntryPoint();
 
+  /// The preview app (T3-08, docs/04 §10): what the admin's definitions
+  /// studio embeds from the module's web build. It needs no [initialize]
+  /// or sign-in. It draws the drafts the embedding page sends, from one of
+  /// [allowedOrigins] (its own origin when none are given), in a sandbox
+  /// that reads no store, calls no server and records nothing.
+  static Widget previewEntryPoint({List<String> allowedOrigins = const []}) =>
+      PosPreviewEntry(allowedOrigins: allowedOrigins);
+
   /// Push messages the host forwards: the `data` of a message tagged
   /// `source: fess_pos`. Push only hints that there is something to sync
   /// (payloads are content-free, docs/07 §8), so the module syncs soon and
@@ -73,7 +82,8 @@ abstract final class PosModule {
   static final RegExp _hint = RegExp(r'^[a-z_]{1,40}$');
 
   /// Deep links under `/pos/…` on either host scheme: `…/pos` (home),
-  /// `…/pos/job/<id>` and `…/pos/card`. Returns whether the link was the
+  /// `…/pos/job/<id>`, `…/pos/card` and `…/pos/preview/<token>` (a draft
+  /// to preview, docs/04 §10). Returns whether the link was the
   /// module's. When it was, push [entryPoint] if it isn't showing: it opens
   /// the page as soon as the agent is signed in.
   static Future<bool> handleDeepLink(Uri uri) async {
