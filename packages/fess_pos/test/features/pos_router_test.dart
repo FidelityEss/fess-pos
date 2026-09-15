@@ -93,11 +93,11 @@ Widget _router(Map<String, Object?> app) => ProviderScope(
       (ref, id) => Stream.value(_jobs.where((j) => j.id == id).firstOrNull),
     ),
     agentProvider.overrideWith((ref) => Stream.value({'first_name': 'Sipho'})),
-    agentTotalsProvider.overrideWith((ref) => Stream.value(null)),
+    agentTotalsProvider.overrideWith((ref) => Stream.value(_totals)),
     activeDefinitionProvider.overrideWith(
       (ref, key) => Stream.value(switch (key.kind) {
         'app' => app,
-        'view' => _views[key.key],
+        'view' => _viewsInForce[key.key],
         _ => null,
       }),
     ),
@@ -105,7 +105,87 @@ Widget _router(Map<String, Object?> app) => ProviderScope(
   child: const MaterialApp(home: PosRouter()),
 );
 
+/// What a test may change: the views in force and the server's totals.
+Map<String, Map<String, Object?>> _viewsInForce = _views;
+Map<String, Object?>? _totals;
+
+Map<String, Object?> _announcement(String text, String until) => {
+  'type': 'announcement',
+  'text': text,
+  'visible': {
+    '>=': [
+      {
+        'date_diff': [
+          {'today': <Object?>[]},
+          until,
+          'days',
+        ],
+      },
+      0,
+    ],
+  },
+};
+
 void main() {
+  setUp(() {
+    _viewsInForce = _views;
+    _totals = null;
+  });
+
+  testWidgets('the home page: tiles from the server and the phone, an '
+      'announcement until its end date, and a tile that opens its tab '
+      '(T3-18)', (tester) async {
+    _totals = const {'due_today': 4};
+    _viewsInForce = {
+      ..._views,
+      'home': {
+        'items': [
+          _announcement('Visits pause on Friday.', '2099-12-31'),
+          _announcement('Old news.', '2000-01-01'),
+          {
+            'type': 'stat_row',
+            'tiles': [
+              {
+                'type': 'stat_tile',
+                'label': 'Due today',
+                'source': 'server',
+                'stat': 'stats.due_today',
+              },
+              {
+                'type': 'stat_tile',
+                'label': 'Active',
+                'source': 'local',
+                'collection': 'jobs',
+                'filter': {
+                  'in': [
+                    {'var': 'job.status'},
+                    ['assigned', 'accepted'],
+                  ],
+                },
+                'on_tap': {'page': 'active_jobs'},
+              },
+            ],
+          },
+        ],
+      },
+    };
+    await tester.pumpWidget(_router(_app(_tabs)));
+    await tester.pumpAndSettle();
+    expect(find.text('Visits pause on Friday.'), findsOneWidget);
+    expect(find.text('Old news.'), findsNothing, reason: 'past its end');
+    expect(find.text('4'), findsOneWidget, reason: "the server's total");
+    expect(find.text('1'), findsOneWidget, reason: 'one active job here');
+
+    await tester.tap(find.text('Active'));
+    await tester.pumpAndSettle();
+    expect(find.text('Active leads'), findsOneWidget);
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      1,
+      reason: 'the tile switched to its tab',
+    );
+  });
+
   testWidgets('the tabs show the top-level pages; a job opens over them and '
       'Back returns (T3-17)', (tester) async {
     await tester.pumpWidget(_router(_app(_tabs)));
