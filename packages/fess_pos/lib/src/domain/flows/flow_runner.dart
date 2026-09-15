@@ -23,10 +23,9 @@ const Set<String> flowStepTypes = {
   'receipt',
 };
 
-/// Steps without a page of their own: the location check ran when the
-/// inspection began (T4-27) and passes until its gate arrives (T4-07); the
-/// receipt is the outcome page shown once the flow is submitted.
-const Set<String> _passThrough = {'location_check', 'receipt'};
+/// Steps without a page of their own: the receipt is the outcome page shown
+/// once the flow is submitted.
+const Set<String> _passThrough = {'receipt'};
 
 /// Where the agent is in a flow: a step, and its page.
 @immutable
@@ -63,6 +62,10 @@ abstract interface class FlowData {
   /// [expr] evaluated against the answers and the context; throws
   /// [RuleError].
   Object? evaluate(Object? expr);
+
+  /// Whether the location check has passed (T4-07): its step has a page
+  /// until it has.
+  bool get locationChecked;
 }
 
 /// Where Next leads.
@@ -142,6 +145,9 @@ class FlowRunner {
         _passThrough.contains(type)) {
       return false;
     }
+    // An integrity step: shown until the location has passed, whatever its
+    // `visible` says.
+    if (type == 'location_check') return !data.locationChecked;
     final visible = steps[at.step]['visible'];
     if (visible != null && !_holds(visible, data)) return false;
     if (type == 'form') return sectionsAt(at).any(data.sectionShown);

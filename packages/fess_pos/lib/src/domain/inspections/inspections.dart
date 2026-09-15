@@ -5,6 +5,7 @@ library;
 
 import 'dart:typed_data';
 
+import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:meta/meta.dart';
@@ -38,14 +39,21 @@ class SignatureCapture {
     required this.width,
     required this.height,
     required this.capturedAt,
+    this.padWidth,
+    this.padHeight,
   });
 
-  /// Each stroke's points as `[x, y, ms since the first touch]`.
+  /// Each stroke's points as `[x, y, ms since the first touch]`, in the
+  /// pad's logical pixels.
   final List<List<List<num>>> strokes;
   final Uint8List png;
   final int width;
   final int height;
   final DateTime capturedAt;
+
+  /// The pad the strokes were drawn on, in logical pixels.
+  final double? padWidth;
+  final double? padHeight;
 
   bool get isEmpty => strokes.every((s) => s.isEmpty);
 }
@@ -117,6 +125,7 @@ class InspectionRecord {
     this.flowPath = const [],
     this.submittedAtDevice,
     this.submissionEnvelopeId,
+    this.locationPassed = true,
   });
 
   final String id;
@@ -153,6 +162,10 @@ class InspectionRecord {
   final String? submittedAtDevice;
   final String? submissionEnvelopeId;
 
+  /// Whether the location check has passed (T4-07), or there was no fence
+  /// to check. The store always sets it; left out, as in tests, it has.
+  final bool locationPassed;
+
   bool get submitted => status == 'submitted';
 }
 
@@ -164,6 +177,9 @@ class EvidenceItem {
     required this.fieldKey,
     required this.type,
     required this.state,
+    this.caption,
+    this.signerName,
+    this.signerDesignation,
   });
 
   final String id;
@@ -174,6 +190,14 @@ class EvidenceItem {
 
   /// `local_only`, `uploaded`, `verified` or `quarantined` (docs/08 §1).
   final String state;
+
+  /// The caption written when the photo was taken.
+  final String? caption;
+
+  /// Who signed a signature, and as what, as the answers said when it was
+  /// signed.
+  final String? signerName;
+  final String? signerDesignation;
 }
 
 enum BeginStatus {
@@ -226,13 +250,16 @@ abstract interface class Inspections implements DeliveryTracker {
     List<List<int>> flowPath = const [],
   });
 
-  /// Stores [photo] for field [fieldKey] and records its `evidence_meta`;
+  /// Stores [photo] for field [fieldKey] and records its `evidence_meta`,
+  /// with its [caption] (written when the photo is taken, never changed);
   /// returns the evidence id, the field's answer.
   Future<String> recordPhoto(
     String inspectionId, {
     required String fieldKey,
     required String category,
     required CapturedPhoto photo,
+    String? caption,
+    String type = 'photo',
   });
 
   /// As [recordPhoto], for a drawn signature.
@@ -240,6 +267,8 @@ abstract interface class Inspections implements DeliveryTracker {
     String inspectionId, {
     required String fieldKey,
     required SignatureCapture signature,
+    String? signerName,
+    String? signerDesignation,
   });
 
   /// The bytes of evidence [evidenceId] while the phone still holds them.
@@ -247,6 +276,53 @@ abstract interface class Inspections implements DeliveryTracker {
 
   /// The evidence of an inspection, live.
   Stream<List<EvidenceItem>> watchEvidence(String inspectionId);
+
+  /// What the inspection's location is judged by (T4-07): the fence frozen
+  /// at its start and the config in force; null when its job has no
+  /// location to fence.
+  Future<GeofencePlan?> geofencePlan(String inspectionId);
+
+  /// Records the location check's outcome in the inspection's
+  /// `geofence_result`, which the submission carries, and in what the rules
+  /// see (`inspection.geofence`).
+  ///
+  /// [method] is `inside_fix`, or `outside_fix` when a fix taken just
+  /// outside proved the location ([checkin], T4-23).
+  Future<void> recordLocationCheck(
+    String inspectionId, {
+    required bool passed,
+    required FixVerdict? verdict,
+    required int sampledSeconds,
+    String method = 'inside_fix',
+    GeoFix? checkin,
+    Map<String, Object?>? override,
+  });
+
+  /// The check-in on arrival for [job] (T4-23): whether it is asked for,
+  /// and the one recorded; null when the job has no location or the config
+  /// doesn't allow the outside fix.
+  Future<CheckinPlan?> checkinPlan(JobRecord job);
+
+  /// Keeps a check-in fix for [jobId], for the location check to use.
+  Future<void> recordCheckin(String jobId, GeoFix fix);
+
+  /// Records the agent leaving the fence (the inspection pauses) or coming
+  /// back (it resumes) as a `job_event`, and keeps the pause on the phone.
+  Future<void> recordGeofenceChange(
+    String inspectionId,
+    GeofenceChange change,
+  );
+
+  /// Keeps [fix] as one of the inspection's breadcrumbs (B3.4, T4-08):
+  /// [inside] the fence, when it could be judged; [event] is `fix`, or
+  /// `checkin`, `enter`, `exit`, `pause` or `resume`. They go to the server
+  /// in batches.
+  Future<void> recordTrace(
+    String inspectionId,
+    GeoFix fix, {
+    bool? inside,
+    String event = 'fix',
+  });
 
   /// Seals and records the submission (docs/07 §4 step 9, docs/12 §7): the
   /// [answers] as the form validated them, their hash, the manifest of the

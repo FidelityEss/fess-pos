@@ -420,6 +420,25 @@ class OutboxStore {
     );
   }
 
+  /// What the server couldn't take (`needs_attention`, docs/08 §8), newest
+  /// first, for the needs-attention list (T4-13). Kept until the server's
+  /// resolution is pulled.
+  Stream<List<OutboxRow>> watchNeedsAttention() =>
+      _needsAttentionQuery().watch();
+
+  /// [status], again each time the outbox changes, for the sync status.
+  Stream<OutboxStatus> watchStatus() async* {
+    yield await status();
+    yield* _db
+        .tableUpdates(TableUpdateQuery.onTable(_db.outbox))
+        .asyncMap((_) => status());
+  }
+
+  SimpleSelectStatement<$OutboxTable, OutboxRow> _needsAttentionQuery() =>
+      _db.select(_db.outbox)
+        ..where((o) => o.state.equals(OutboxState.needsAttention))
+        ..orderBy([(o) => OrderingTerm.desc(o.createdAtMs)]);
+
   /// Reports stores moved into quarantine (D-52) that haven't been
   /// reported yet, as one `client_error`.
   Future<void> reportQuarantinedStores(EnvelopeOrigin origin) =>
@@ -465,6 +484,80 @@ class OutboxStore {
               ModuleMetaCompanion.insert(
                 key: MetaKeys.quarantinedStoresReported,
                 value: '${all.length}',
+                updatedAt: isoWithOffset(now),
+              ),
+            );
+      });
+
+  /// The startup recovery scan for evidence (docs/12 §3, D-74): evidence
+  /// still to upload whose bytes are gone is reported, each item once, as
+  /// `client_error`. Nothing is deleted; the record stays for review.
+  Future<void> reportEvidenceAnomalies(EnvelopeOrigin origin) =>
+      _db.transaction(() async {
+        final e = _db.evidence;
+        final lost =
+            await (_db.selectOnly(e)
+                  ..addColumns([e.id, e.inspectionId, e.fieldKey])
+                  ..where(e.state.equals('local_only') & e.bytes.isNull()))
+                .map(
+                  (r) => (
+                    id: r.read(e.id)!,
+                    inspectionId: r.read(e.inspectionId)!,
+                    fieldKey: r.read(e.fieldKey)!,
+                  ),
+                )
+                .get();
+        if (lost.isEmpty) return;
+        final logged =
+            await (_db.select(
+                  _db.moduleMeta,
+                )..where(
+                  (m) => m.key.equals(MetaKeys.evidenceAnomaliesReported),
+                ))
+                .getSingleOrNull();
+        final reported = <String>{
+          if (logged != null)
+            for (final id in jsonDecode(logged.value) as List<Object?>)
+              if (id is String) id,
+        };
+        final fresh = [
+          for (final l in lost)
+            if (!reported.contains(l.id)) l,
+        ];
+        if (fresh.isEmpty) return;
+        final now = _clock();
+        for (var i = 0; i < fresh.length; i += 50) {
+          await add(
+            origin,
+            type: 'client_error',
+            typeVersion: 1,
+            payload: {
+              'errors': [
+                for (final l in fresh.skip(i).take(50))
+                  {
+                    'code': 'EVIDENCE_BYTES_MISSING',
+                    'kind': 'recovery_anomaly',
+                    'about_envelope_id': null,
+                    'message':
+                        'evidence recorded on this phone has lost its bytes; '
+                        'its record is kept',
+                    'detail': {
+                      'evidence_id': l.id,
+                      'inspection_id': l.inspectionId,
+                      'field_key': l.fieldKey,
+                    },
+                    'at': isoWithOffset(now),
+                  },
+              ],
+            },
+          );
+        }
+        await _db
+            .into(_db.moduleMeta)
+            .insertOnConflictUpdate(
+              ModuleMetaCompanion.insert(
+                key: MetaKeys.evidenceAnomaliesReported,
+                value: jsonEncode([...reported, for (final l in fresh) l.id]),
                 updatedAt: isoWithOffset(now),
               ),
             );

@@ -133,13 +133,144 @@ abstract final class BundledCopy {
     'inspection.signature_hint': 'Sign inside the box.',
     'inspection.clear': 'Clear',
     'inspection.done': 'Done',
+    'signature.too_short': 'Keep going: the signature is too short.',
+    'signature.full': 'The pad is full. Tap Done, or Clear to start again.',
+    'signature.signed_by': 'Signed by {{who}}',
+    'signature.signer_first': 'Fill in who is signing first.',
+    'signature.signer_changed':
+        'Who is signing changed after this signature. Sign again.',
+    'signature.sign_again_confirm':
+        'Sign again? The earlier signature stays on record.',
     'inspection.declaration_accept': 'I accept this declaration',
+    'inspection.declaration_version': 'Version {{version}}',
+    'inspection.declaration_newer':
+        'This declaration has changed since you accepted it. Read it and '
+        'accept it again.',
+    'inspection.declaration_changed':
+        'The declaration has changed. Read the new version and accept it.',
+    'inspection.location_first': 'Check your location first.',
+    'inspection.paused':
+        'You have left the premises, so the inspection is paused. Go back to '
+        'carry on; your answers are kept.',
+    'location.title': 'Location check',
+    'location.checking': 'Checking that you are at the premises…',
+    'location.waiting_fix': 'Waiting for a location fix…',
+    'location.accuracy': 'Accurate to {{m}} m',
+    'location.seconds_left': '{{s}} s left',
+    'location.passed': 'You are at the premises.',
+    'location.outside':
+        'You seem to be {{m}} m from the premises. Move closer and try again.',
+    'location.no_lock':
+        "Your location isn't accurate enough here. Move to an open spot and "
+        'try again.',
+    'location.mocked': 'A mock location app is on. Turn it off and try again.',
+    'location.needs_access':
+        'POS needs your location to check that you are at the premises.',
+    'location.allow': 'Allow location',
+    'location.off': 'Location is off on this phone. Turn it on and try again.',
+    'location.try_again': 'Try again',
+    'location.approximate':
+        'POS needs your precise location. Turn on Precise location for this '
+        "app in your phone's settings, then try again.",
+    'location.open_settings': 'Open settings',
+    'address.line1': 'Street address',
+    'address.line2': 'Unit, building or complex',
+    'address.suburb': 'Suburb',
+    'address.city': 'City or town',
+    'address.province': 'Province',
+    'address.postal_code': 'Postal code',
+    'pin.title': 'Place the pin',
+    'pin.hint': 'Move the map so the pin is on the entrance.',
+    'pin.set': 'Set the pin',
+    'pin.change': 'Move the pin',
+    'pin.none': 'No pin yet.',
+    'pin.at': 'Pin at {{lat}}, {{lng}}',
+    'pin.use': 'Use this spot',
+    'pin.my_location': 'My location',
+    'form.error.address.PIN_REQUIRED': 'Set the pin on the map.',
+    'form.error.address.INVALID_OPTION': 'Choose a province from the list.',
+    'form.error.location_pin.TOO_FAR':
+        "The pin is too far from the job's location.",
+    'location.no_lock_outside':
+        "Your location isn't accurate enough inside. Step outside the "
+        'premises and record your location there.',
+    'location.record_outside': 'Record my location outside',
+    'location.recording_outside':
+        'Recording your location outside the premises…',
+    'checkin.title': 'Check in',
+    'checkin.prompt':
+        'GPS is often weak inside a site like this. Check in outside before '
+        'you go in.',
+    'checkin.explain':
+        'Stand outside the premises, in the open, while the phone records '
+        'where you are.',
+    'checkin.button': 'Check in outside',
+    'checkin.recording': 'Recording your location…',
+    'checkin.done': 'Checked in outside.',
+    'attention.title': 'Needs attention',
+    'attention.explain':
+        "The server couldn't accept these. Your data is safe on this phone, "
+        'and an administrator has been told.',
+    'attention.none': 'Nothing needs attention.',
+    'attention.saved_at': 'Saved {{at}}',
+    'attention.reason': 'Reason: {{code}}',
+    'attention.type.submission': 'Inspection submission',
+    'attention.type.inspection_started': 'Inspection start',
+    'attention.type.job_event': 'Job update',
+    'attention.type.form_submission': 'Form',
+    'attention.type.evidence_meta': 'Photo or signature record',
+    'attention.type.evidence_uploaded': 'Upload record',
+    'attention.type.traces_batch': 'Location trail',
+    'attention.type.inspection_snapshot': 'Inspection snapshot',
+    'attention.type.custody_batch': 'Custody record',
+    'attention.type.sync_report': 'Sync report',
+    'attention.type.client_error': 'Error report',
+    'attention.type.other': 'Record',
+    'location.override': 'Continue with an override',
+    'location.override_too_far':
+        "You're too far from the premises for an override. If you can't "
+        'find them, mark the job unable to complete.',
+    'override.title': 'Location override',
+    'override.submit': 'Continue with the override',
     'inspection.declaration_missing':
         "This declaration hasn't reached your phone yet. Connect to the "
         'internet and try again.',
     'inspection.camera_unavailable':
         "The camera couldn't be opened. Check that FESS may use the camera.",
     'inspection.capture_failed': "This couldn't be saved. Try again.",
+    'camera.explain.title': 'Photos for this inspection',
+    'camera.explain.body':
+        "POS takes the inspection's photos with the camera, here in the app. "
+        "They're never taken from your gallery. Next, your phone asks whether "
+        'FESS may use the camera: choose Allow.',
+    'camera.explain.continue': 'Continue',
+    'camera.denied':
+        "FESS isn't allowed to use the camera. Turn camera access on in your "
+        "phone's settings, then come back.",
+    'camera.open_settings': 'Open settings',
+    'camera.try_again': 'Try again',
+    'camera.location_wait': 'Waiting for your location…',
+    'camera.location_needed':
+        'These photos need your location. Allow FESS to use it.',
+    'camera.location_allow': 'Allow location',
+    'camera.location_off': 'Turn on location on your phone for these photos.',
+    'inspection.take_photos': 'Take photos',
+    'photo.progress': 'Photo {{n}} of {{total}}',
+    'photo.count': '{{n}} taken',
+    'photo.count.min': '{{n}} taken · at least {{min}}',
+    'photo.count.max': '{{n}} taken · up to {{max}}',
+    'photo.count.range': '{{n}} taken · {{min}} to {{max}}',
+    'photo.retake': 'Retake',
+    'photo.remove': 'Remove',
+    'photo.retake_confirm':
+        'Replace this photo? The one you replace stays on record.',
+    'photo.remove_confirm':
+        'Remove this photo? It stays on record, but not in your answers.',
+    'photo.caption.title': 'Caption',
+    'photo.caption.hint': 'What does this photo show?',
+    'photo.caption.save': 'Save',
+    'photo.caption.skip': 'No caption',
+    'photo.caption.discard': 'Discard photo',
     'form.error.RULE_ERROR':
         "This question couldn't be checked. Tell your administrator.",
     'form.error.VALIDATION_RULE_FAILED': 'Check this answer.',

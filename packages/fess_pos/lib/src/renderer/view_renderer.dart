@@ -243,9 +243,21 @@ class _ItemFactory {
     } else {
       shown = ctx.copy('sync.synced');
     }
+    final text = Text(
+      shown,
+      key: const ValueKey('sync-status'),
+      textAlign: TextAlign.center,
+    );
+    final open = ctx.onNavigate;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(shown, textAlign: TextAlign.center),
+      // What needs attention opens its list (T4-13).
+      child: attention is int && attention > 0 && open != null
+          ? InkWell(
+              onTap: () => open(const {'page': 'needs_attention'}, const {}),
+              child: text,
+            )
+          : text,
     );
   }
 }

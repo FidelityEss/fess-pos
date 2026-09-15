@@ -5,9 +5,9 @@
 /// given and the studio can tell who needs an update.
 library;
 
-/// Form components (`11` §3–5). Still to come: address and location pin
-/// (M3), the Wave-2 components (T6-01). A field of another type is drawn as
-/// its declared `fallback` when this build can draw that.
+/// Form components (`11` §3–5). Still to come: the Wave-2 components
+/// (T6-01). A field of another type is drawn as its declared `fallback`
+/// when this build can draw that.
 const Map<String, int> supportedFormComponents = {
   'text': 1,
   'textarea': 1,
@@ -31,15 +31,19 @@ const Map<String, int> supportedFormComponents = {
   'signature': 1,
   'declaration': 1,
   'acknowledgement': 1,
+  'address': 1,
+  'location_pin': 1,
 };
 
 /// Components drawn only inside an inspection, which brings the camera,
-/// the signature pad and the declarations (T4-27). Elsewhere, e.g. an
-/// unable reason that needs a photo, they hold the form as unsupported.
+/// the signature pad, the declarations (T4-27) and the map for a pin
+/// (T4-11). Elsewhere, e.g. an unable reason that needs a photo, they hold
+/// the form as unsupported.
 const Set<String> inspectionOnlyComponents = {
   'photo',
   'signature',
   'declaration',
+  'location_pin',
 };
 
 /// View components (`11` §7.2). Still to come: `action_button` and `image`

@@ -3,14 +3,17 @@ import 'dart:typed_data';
 
 import 'package:fess_pos/src/core/content/bundled_copy.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
+import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/features/inspections/inspection_page.dart';
 import 'package:fess_pos/src/features/jobs/job_pages.dart';
 import 'package:fess_pos/src/platform/camera.dart';
+import 'package:fess_pos/src/platform/location.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
-import 'package:fess_pos_engine/fess_pos_engine.dart' show compileForm;
+import 'package:fess_pos_engine/fess_pos_engine.dart'
+    show compileForm, renderTemplate;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -48,7 +51,12 @@ const Map<String, Object?> _form = {
           'type': 'photo',
           'label': 'Outside',
           'required': true,
-          'props': {'category': 'external', 'min_count': 1, 'max_count': 2},
+          'props': {
+            'category': 'external',
+            'min_count': 1,
+            'max_count': 2,
+            'caption': 'required',
+          },
         },
       ],
     },
@@ -152,17 +160,24 @@ class _FakeInspections implements Inspections {
     required String fieldKey,
     required String category,
     required CapturedPhoto photo,
+    String? caption,
+    String type = 'photo',
   }) async {
     final id = _nextId();
-    captured.add((field: fieldKey, type: 'photo'));
+    captured.add((field: fieldKey, type: type));
+    captions.add(caption);
     return id;
   }
+
+  final List<String?> captions = [];
 
   @override
   Future<String> recordSignature(
     String inspectionId, {
     required String fieldKey,
     required SignatureCapture signature,
+    String? signerName,
+    String? signerDesignation,
   }) async {
     final id = _nextId();
     captured.add((field: fieldKey, type: 'signature'));
@@ -184,6 +199,52 @@ class _FakeInspections implements Inspections {
     submitted = answers;
     return const JobActionResult.recorded('env-submission');
   }
+
+  GeofencePlan? plan;
+  final List<({bool passed, int sampled, String method})> checks = [];
+  final List<GeofenceChange> changes = [];
+  final List<GeoFix> checkins = [];
+
+  @override
+  Future<GeofencePlan?> geofencePlan(String inspectionId) async => plan;
+
+  @override
+  Future<void> recordLocationCheck(
+    String inspectionId, {
+    required bool passed,
+    required FixVerdict? verdict,
+    required int sampledSeconds,
+    String method = 'inside_fix',
+    GeoFix? checkin,
+    Map<String, Object?>? override,
+  }) async => checks.add((
+    passed: passed,
+    sampled: sampledSeconds,
+    method: method,
+  ));
+
+  @override
+  Future<CheckinPlan?> checkinPlan(JobRecord job) async => null;
+
+  @override
+  Future<void> recordCheckin(String jobId, GeoFix fix) async =>
+      checkins.add(fix);
+
+  final List<({GeoFix fix, bool? inside, String event})> traces = [];
+
+  @override
+  Future<void> recordTrace(
+    String inspectionId,
+    GeoFix fix, {
+    bool? inside,
+    String event = 'fix',
+  }) async => traces.add((fix: fix, inside: inside, event: event));
+
+  @override
+  Future<void> recordGeofenceChange(
+    String inspectionId,
+    GeofenceChange change,
+  ) async => changes.add(change);
 
   @override
   Future<void> sendNow() async {}
@@ -248,11 +309,63 @@ JobRecord _job(String status) => JobRecord(
 
 void _noop() {}
 
+/// The merchant's pin for the fence tests.
+const double _pinLat = -26.2041;
+const double _pinLng = 28.0473;
+
+GeofencePlan _plan({required bool passed, GeoFix? checkin}) => GeofencePlan(
+  fence: Fence.fromResult({
+    'profile': 'standalone',
+    'job_location': {'lat': _pinLat, 'lng': _pinLng},
+    'profile_params': {
+      'radius_m': 75,
+      'max_accuracy_m': 30,
+      'exit_consecutive_fixes': 3,
+    },
+  })!,
+  sampleWindow: const Duration(seconds: 60),
+  fixInterval: const Duration(seconds: 20),
+  passed: passed,
+  outsideFix: const OutsideFixRule(
+    maxAccuracyM: 30,
+    validFor: Duration(minutes: 20),
+  ),
+  checkin: checkin,
+  overrideWithinM: 150,
+);
+
+/// A fix near the pin but too vague to count (±80 m).
+LocationFix _vague() => LocationFix(
+  latitude: _pinLat,
+  longitude: _pinLng,
+  accuracyM: 80,
+  fixTime: DateTime.utc(2026, 9, 14, 10),
+  isMocked: false,
+);
+
+/// A fix [metres] north of the pin, accurate to 10 m.
+LocationFix _at(double metres) => LocationFix(
+  latitude: _pinLat + metres / 111195,
+  longitude: _pinLng,
+  accuracyM: 10,
+  fixTime: DateTime.utc(2026, 9, 14, 10),
+  isMocked: false,
+);
+
+const Declaration _declaration = Declaration(
+  id: _declarationId,
+  key: 'agent_declaration',
+  version: 1,
+  text: 'I visited these premises myself.',
+);
+
 List<Override> _overrides(
   _FakeInspections inspections,
   JobRecord job, {
   Map<String, Object?> form = _form,
   Map<String, Object?> flow = _flow,
+  Declaration declaration = _declaration,
+  LocationProvider? location,
 }) => [
   inspectionsProvider.overrideWith((ref) async => inspections),
   jobProvider.overrideWith((ref, id) => Stream.value(job)),
@@ -267,25 +380,16 @@ List<Override> _overrides(
   ),
   // In place: a background isolate's answer never arrives in a widget test.
   formCompilerProvider.overrideWithValue((form) async => compileForm(form)),
-  declarationProvider.overrideWith(
-    (ref, key) => Stream.value(
-      const Declaration(
-        id: _declarationId,
-        key: 'agent_declaration',
-        version: 1,
-        text: 'I visited these premises myself.',
-      ),
-    ),
-  ),
-  platformServicesProvider.overrideWithValue(_platform()),
+  declarationProvider.overrideWith((ref, key) => Stream.value(declaration)),
+  platformServicesProvider.overrideWithValue(_platform(location: location)),
 ];
 
-PlatformServices _platform() {
+PlatformServices _platform({LocationProvider? location}) {
   final base = fakePlatform();
   return PlatformServices(
     secureStore: base.secureStore,
     connectivity: base.connectivity,
-    location: base.location,
+    location: location ?? base.location,
     camera: _Camera(),
     deviceInfo: base.deviceInfo,
     storage: base.storage,
@@ -375,9 +479,26 @@ void main() {
     // A photo through the camera.
     await tester.tap(find.byKey(const ValueKey('photo-take-external_photos')));
     await _settle(tester);
+    // The first photo explains the camera before the phone asks (T4-01).
+    await tester.tap(find.byKey(const ValueKey('camera-explain-continue')));
+    await _settle(tester);
     await tester.tap(find.byKey(const ValueKey('capture-shutter')));
+    // The caption box has the focus, and its cursor never settles.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    // The field asks for a caption; it goes with the photo (T4-04).
+    final save = find.byKey(const ValueKey('photo-caption-save'));
+    expect(tester.widget<FilledButton>(save).onPressed, isNull);
+    await tester.enterText(
+      find.byKey(const ValueKey('photo-caption')),
+      'The shopfront',
+    );
+    await tester.pump();
+    await tester.tap(save);
     await _settle(tester);
     expect(inspections.captured.single.type, 'photo');
+    expect(inspections.captions.single, 'The shopfront');
 
     // A signature on the pad; rendering its PNG needs real async.
     await tester.tap(
@@ -467,6 +588,255 @@ void main() {
       findsOneWidget,
       reason: 'the answer given before the app closed',
     );
+  });
+
+  testWidgets('an acceptance of an earlier declaration version holds the '
+      'step until the new one is accepted (T4-06)', (tester) async {
+    final record = _record();
+    final inspections = _FakeInspections(
+      InspectionRecord(
+        id: record.id,
+        jobId: record.jobId,
+        attempt: 1,
+        status: 'in_progress',
+        formVersionId: 'form-v',
+        flowVersionId: 'flow-v',
+        contextSnapshot: record.contextSnapshot,
+        values: const {
+          'merchant_confirm': 'Joe Spaza',
+          'agent_declaration': {
+            'accepted': true,
+            'declaration_version_id': '0192d4e0-7c1a-7b2e-9f00-0000000000d0',
+            'accepted_at': '2026-09-13T10:00:00+02:00',
+          },
+        },
+        otherText: const {},
+        // Among the pages shown: details, photos, the declaration, submit.
+        currentStep: 2,
+        startedAtDevice: record.startedAtDevice,
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: _overrides(inspections, _job('in_progress')),
+        child: MaterialApp(
+          home: InspectionPage(
+            job: _job('in_progress'),
+            inspectionId: 'insp-1',
+          ),
+        ),
+      ),
+    );
+    await _settle(tester);
+    expect(find.text('Step 3 of 4'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('declaration-newer-agent_declaration')),
+      findsOneWidget,
+    );
+    expect(find.text('Version 1'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('inspection-next')));
+    await _settle(tester);
+    expect(find.text(_copy('inspection.declaration_changed')), findsOneWidget);
+    expect(find.text('Step 3 of 4'), findsOneWidget, reason: 'held');
+
+    await tester.tap(
+      find.byKey(const ValueKey('declaration-accept-agent_declaration')),
+    );
+    await tester.tap(find.byKey(const ValueKey('inspection-next')));
+    await _settle(tester);
+    expect(find.text('Step 4 of 4'), findsOneWidget);
+  });
+
+  group('the location check (T4-07)', () {
+    Future<(_FakeInspections, FakeLocation)> open(
+      WidgetTester tester, {
+      required bool passed,
+      GeoFix? checkin,
+      bool? precise = true,
+    }) async {
+      final record = _record();
+      final inspections = _FakeInspections(
+        InspectionRecord(
+          id: record.id,
+          jobId: record.jobId,
+          attempt: 1,
+          status: 'in_progress',
+          formVersionId: 'form-v',
+          flowVersionId: 'flow-v',
+          contextSnapshot: record.contextSnapshot,
+          values: const {},
+          otherText: const {},
+          currentStep: 0,
+          startedAtDevice: record.startedAtDevice,
+          locationPassed: passed,
+        ),
+      )..plan = _plan(passed: passed, checkin: checkin);
+      final location = FakeLocation()..preciseState = precise;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: _overrides(
+            inspections,
+            _job('in_progress'),
+            location: location,
+          ),
+          child: MaterialApp(
+            home: InspectionPage(
+              job: _job('in_progress'),
+              inspectionId: 'insp-1',
+            ),
+          ),
+        ),
+      );
+      // The check samples on a clock, so the page never settles while it
+      // runs.
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      return (inspections, location);
+    }
+
+    testWidgets('until it has passed it has a page; a fix inside passes it '
+        'and moves on', (tester) async {
+      final (inspections, location) = await open(tester, passed: false);
+      expect(find.text(_copy('location.title')), findsOneWidget);
+      expect(find.text('Step 1 of 5'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('inspection-next')));
+      await tester.pump();
+      expect(find.text(_copy('inspection.location_first')), findsOneWidget);
+
+      location.updates.add(_at(20));
+      await _settle(tester);
+      expect(inspections.checks.single.passed, isTrue);
+      expect(find.text(_copy('location.title')), findsNothing);
+      expect(find.text('Step 1 of 4'), findsOneWidget);
+    });
+
+    testWidgets('outside when the window closes, it holds and says how far', (
+      tester,
+    ) async {
+      final (inspections, location) = await open(tester, passed: false);
+      location.updates.add(_at(300));
+      await tester.pump(const Duration(seconds: 61));
+      await tester.pump();
+      expect(
+        find.text(renderTemplate(_copy('location.outside'), {'m': 300})),
+        findsOneWidget,
+      );
+      expect(inspections.checks.single.passed, isFalse);
+      await tester.tap(find.byKey(const ValueKey('inspection-next')));
+      await tester.pump();
+      expect(find.text(_copy('inspection.location_first')), findsOneWidget);
+      expect(find.text('Step 1 of 5'), findsOneWidget);
+    });
+
+    testWidgets('with no lock inside, the check-in on arrival counts as '
+        'the outside fix (T4-23)', (tester) async {
+      final (inspections, location) = await open(
+        tester,
+        passed: false,
+        checkin: GeoFix(
+          lat: _pinLat,
+          lng: _pinLng,
+          accuracyM: 15,
+          at: DateTime.now(),
+          isMocked: false,
+        ),
+      );
+      location.updates.add(_vague());
+      await tester.pump(const Duration(seconds: 61));
+      await _settle(tester);
+      expect(inspections.checks.single.method, 'outside_fix');
+      expect(inspections.checks.single.passed, isTrue);
+      expect(find.text('Step 1 of 4'), findsOneWidget);
+    });
+
+    testWidgets('with no lock and no check-in, the agent can record one '
+        'outside (T4-23)', (tester) async {
+      final (inspections, location) = await open(tester, passed: false);
+      location.updates.add(_vague());
+      await tester.pump(const Duration(seconds: 61));
+      await tester.pump();
+      expect(find.text(_copy('location.no_lock_outside')), findsOneWidget);
+      expect(inspections.checks.single.passed, isFalse);
+
+      await tester.tap(find.byKey(const ValueKey('location-record-outside')));
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      location.updates.add(_at(20));
+      await _settle(tester);
+      expect(inspections.checkins, hasLength(1));
+      expect(
+        (inspections.checks.last.method, inspections.checks.last.passed),
+        ('outside_fix', true),
+      );
+      expect(find.text('Step 1 of 4'), findsOneWidget);
+    });
+
+    testWidgets('outside but near enough, it offers an override (T4-10)', (
+      tester,
+    ) async {
+      final (_, location) = await open(tester, passed: false);
+      location.updates.add(_at(120));
+      await tester.pump(const Duration(seconds: 61));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('location-override')), findsOneWidget);
+      expect(find.text(_copy('location.override_too_far')), findsNothing);
+    });
+
+    testWidgets('too far for an override, it says so (T4-10)', (tester) async {
+      final (_, location) = await open(tester, passed: false);
+      location.updates.add(_at(400));
+      await tester.pump(const Duration(seconds: 61));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('location-override')), findsNothing);
+      expect(find.text(_copy('location.override_too_far')), findsOneWidget);
+    });
+
+    testWidgets('only approximate location: it says how to allow the precise '
+        'one (B3.7, T4-12)', (tester) async {
+      await open(tester, passed: false, precise: false);
+      expect(find.text(_copy('location.approximate')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('location-open-settings')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('leaving the fence pauses the inspection; coming back '
+        'resumes it', (tester) async {
+      final (inspections, location) = await open(tester, passed: true);
+      await _settle(tester);
+      expect(find.text('Step 1 of 4'), findsOneWidget);
+      for (var i = 0; i < 3; i++) {
+        location.updates.add(_at(300));
+        await tester.pump();
+      }
+      await tester.pump();
+      expect(find.byKey(const ValueKey('inspection-paused')), findsOneWidget);
+      expect(inspections.changes.single.paused, isTrue);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const ValueKey('inspection-next')),
+            )
+            .onPressed,
+        isNull,
+      );
+
+      location.updates.add(_at(20));
+      await _settle(tester);
+      expect(find.byKey(const ValueKey('inspection-paused')), findsNothing);
+      expect(inspections.changes.last.paused, isFalse);
+      // Every fix watched is a breadcrumb (T4-08).
+      expect(inspections.traces.map((t) => t.inside), [
+        false,
+        false,
+        false,
+        true,
+      ]);
+    });
   });
 
   testWidgets('leaving the app writes the draft at once, and a failed write '

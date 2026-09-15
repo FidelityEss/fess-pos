@@ -189,6 +189,7 @@ class FormView extends StatelessWidget {
       'business_hours' => _BusinessHoursInput(b, key: key),
       'prefilled' => _PrefilledView(b, key: key),
       'acknowledgement' => _AcknowledgementInput(b, key: key),
+      'address' => _AddressInput(b, services, key: key),
       'info' => Padding(
         key: key,
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -207,6 +208,11 @@ class FormView extends StatelessWidget {
         key: key,
       ),
       'declaration' when services != null => _DeclarationInput(
+        b,
+        services!,
+        key: key,
+      ),
+      'location_pin' when services?.pickPin != null => _LocationPinInput(
         b,
         services!,
         key: key,
@@ -739,9 +745,15 @@ List<String> _evidenceIds(Object? v) => [
       if (x is String) x,
 ];
 
-/// Photos (`11` §3.5): the ones taken so far and a button for the next,
-/// up to `max_count`. The camera stores each photo before it shows here.
-/// Retakes, captions and guided sequences come with T4-04.
+/// Photos (`11` §3.5, T4-04): the field's guidance, the photos taken so far
+/// with their captions, how many it needs (`min_count`, `max_count`, which
+/// rules may set) and a button for the next. The camera stores each photo
+/// before it shows here.
+///
+/// With `display: guided_sequence` one tap takes photo after photo until
+/// the field has what it asks for. Tapping a photo offers a retake or its
+/// removal, as `retake` allows (`allowed`, `confirm`, `disallowed`). A photo
+/// replaced or removed stays on record; it just isn't in the answer.
 class _PhotoInput extends StatefulWidget {
   const _PhotoInput(this.b, this.services, {super.key});
 
@@ -755,33 +767,148 @@ class _PhotoInput extends StatefulWidget {
 class _PhotoInputState extends State<_PhotoInput> {
   bool _busy = false;
 
+  _Binding get b => widget.b;
+
+  List<String> get _ids => _evidenceIds(b.controller.value(b.key));
+
+  int? get _min => _num(b.props['min_count'])?.toInt();
+
+  int? get _max => _num(b.props['max_count'])?.toInt();
+
+  String get _retake => _string(b.props['retake']) ?? 'allowed';
+
+  void _set(List<String> ids) => b.controller.setValue(b.key, ids);
+
+  Future<String?> _shoot(PhotoShot shot) =>
+      widget.services.takePhoto(context, b.field, shot);
+
   Future<void> _take() async {
     setState(() => _busy = true);
     try {
-      final id = await widget.services.takePhoto(context, widget.b.field);
-      if (id != null) {
-        final b = widget.b;
-        b.controller.setValue(b.key, [
-          ..._evidenceIds(b.controller.value(b.key)),
-          id,
-        ]);
+      if (b.display != 'guided_sequence') {
+        final id = await _shoot(PhotoShot(number: _ids.length + 1));
+        if (id != null) _set([..._ids, id]);
+        return;
+      }
+      // The camera comes back until the field has what it asks for, or the
+      // agent goes back.
+      var total = math.max(_min ?? 1, _ids.length + 1);
+      if (_max case final int max) total = math.min(total, max);
+      while (mounted && _ids.length < total) {
+        final id = await _shoot(
+          PhotoShot(number: _ids.length + 1, of: total),
+        );
+        if (id == null) break;
+        _set([..._ids, id]);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
+  Future<void> _manage(int index) async {
+    if (_retake == 'disallowed' || b.field.readOnly || _busy) return;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              key: ValueKey('photo-retake-${b.key}-$index'),
+              leading: const Icon(Icons.replay),
+              title: Text(b.copy('photo.retake')),
+              onTap: () => Navigator.of(sheet).pop('retake'),
+            ),
+            ListTile(
+              key: ValueKey('photo-remove-${b.key}-$index'),
+              leading: const Icon(Icons.delete_outline),
+              title: Text(b.copy('photo.remove')),
+              onTap: () => Navigator.of(sheet).pop('remove'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    if (_retake == 'confirm') {
+      final retake = choice == 'retake';
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => AlertDialog(
+          content: Text(
+            b.copy(retake ? 'photo.retake_confirm' : 'photo.remove_confirm'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialog).pop(false),
+              child: Text(b.copy('inspection.cancel')),
+            ),
+            FilledButton(
+              key: ValueKey('photo-confirm-${b.key}'),
+              onPressed: () => Navigator.of(dialog).pop(true),
+              child: Text(b.copy(retake ? 'photo.retake' : 'photo.remove')),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
+    if (choice == 'remove') {
+      _set([..._ids]..removeAt(index));
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final id = await _shoot(PhotoShot(number: index + 1));
+      if (id != null && mounted) {
+        final ids = [..._ids];
+        if (index < ids.length) {
+          ids[index] = id;
+        } else {
+          ids.add(id);
+        }
+        _set(ids);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  String _count(int n) {
+    final (min, max) = (_min, _max);
+    final key = switch ((min != null && min > 0, max != null)) {
+      (true, true) => 'photo.count.range',
+      (true, false) => 'photo.count.min',
+      (false, true) => 'photo.count.max',
+      _ => 'photo.count',
+    };
+    return renderTemplate(b.copy(key), {'n': n, 'min': ?min, 'max': ?max});
+  }
+
   @override
   Widget build(BuildContext context) {
-    final b = widget.b;
-    final ids = _evidenceIds(b.controller.value(b.key));
-    final max = b.props['max_count'];
-    final full = max is num && ids.length >= max;
+    final ids = _ids;
+    final max = _max;
+    final full = max != null && ids.length >= max;
+    final guidance = b.props['guidance'] is Map<String, Object?>
+        ? b.template((b.props['guidance']! as Map<String, Object?>)['text'])
+        : null;
+    final theme = Theme.of(context);
     return _Frame(
       b,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (guidance != null && guidance.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                guidance,
+                key: ValueKey('photo-guidance-${b.key}'),
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
           if (ids.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -789,24 +916,61 @@ class _PhotoInputState extends State<_PhotoInput> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  for (final id in ids)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(
-                        PosTokens.radiusControl,
-                      ),
-                      child: SizedBox.square(
-                        dimension: 88,
-                        child: widget.services.evidenceImage(id, 88),
+                  for (var i = 0; i < ids.length; i++)
+                    InkWell(
+                      key: ValueKey('photo-thumb-${b.key}-$i'),
+                      onTap: () => _manage(i),
+                      child: SizedBox(
+                        width: 88,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                PosTokens.radiusControl,
+                              ),
+                              child: SizedBox.square(
+                                dimension: 88,
+                                child: widget.services.evidenceImage(
+                                  ids[i],
+                                  88,
+                                ),
+                              ),
+                            ),
+                            if (widget.services.evidence(ids[i])?.caption
+                                case final String caption)
+                              Text(
+                                caption,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall,
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                 ],
               ),
             ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              _count(ids.length),
+              key: ValueKey('photo-count-${b.key}'),
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
           OutlinedButton.icon(
             key: ValueKey('photo-take-${b.key}'),
             onPressed: b.field.readOnly || full || _busy ? null : _take,
             icon: const Icon(Icons.photo_camera),
-            label: Text(b.copy('inspection.take_photo')),
+            label: Text(
+              b.copy(
+                b.display == 'guided_sequence'
+                    ? 'inspection.take_photos'
+                    : 'inspection.take_photo',
+              ),
+            ),
           ),
           if (_busy) _Saving(b.copy('inspection.saving')),
         ],
@@ -815,7 +979,12 @@ class _PhotoInputState extends State<_PhotoInput> {
   }
 }
 
-/// A signature (`11` §3.5): drawn on the pad, stored, then shown here.
+/// A signature (`11` §3.5, T4-05): drawn on the pad, stored, then shown
+/// here with who signed. Where the form binds the signer's name and
+/// designation (`signer_name_field`, `signer_designation_field`), they are
+/// filled in before signing and go into the signature's record; if either
+/// changes afterwards, the field says to sign again. Signing again keeps
+/// the earlier signature on record.
 class _SignatureInput extends StatefulWidget {
   const _SignatureInput(this.b, this.services, {super.key});
 
@@ -829,11 +998,51 @@ class _SignatureInput extends StatefulWidget {
 class _SignatureInputState extends State<_SignatureInput> {
   bool _busy = false;
 
-  Future<void> _sign() async {
+  _Binding get b => widget.b;
+
+  /// The answer of the field bound by [prop], as text: null when none is
+  /// bound, '' when it has no answer.
+  String? _bound(String prop) {
+    final key = _string(b.props[prop]);
+    if (key == null) return null;
+    final value = b.controller.value(key);
+    return value == null ? '' : '$value'.trim();
+  }
+
+  /// A bound field that is shown and still empty: the signer is named
+  /// before signing (docs/07 §4).
+  bool _missing(String prop) {
+    final key = _string(b.props[prop]);
+    if (key == null) return false;
+    final shown = b.controller.resolved?.fields[key]?.visible ?? false;
+    return shown && (_bound(prop)?.isEmpty ?? false);
+  }
+
+  Future<void> _sign({required bool again}) async {
+    if (again) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => AlertDialog(
+          content: Text(b.copy('signature.sign_again_confirm')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialog).pop(false),
+              child: Text(b.copy('inspection.cancel')),
+            ),
+            FilledButton(
+              key: ValueKey('signature-confirm-${b.key}'),
+              onPressed: () => Navigator.of(dialog).pop(true),
+              child: Text(b.copy('inspection.sign_again')),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
     setState(() => _busy = true);
     try {
-      final id = await widget.services.drawSignature(context, widget.b.field);
-      if (id != null) widget.b.controller.setValue(widget.b.key, id);
+      final id = await widget.services.drawSignature(context, b.field);
+      if (id != null) b.controller.setValue(b.key, id);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -841,8 +1050,23 @@ class _SignatureInputState extends State<_SignatureInput> {
 
   @override
   Widget build(BuildContext context) {
-    final b = widget.b;
     final id = _string(b.controller.value(b.key));
+    final item = id == null ? null : widget.services.evidence(id);
+    final name = _bound('signer_name_field');
+    final designation = _bound('signer_designation_field');
+    final waiting =
+        _missing('signer_name_field') || _missing('signer_designation_field');
+    // Who signed, as recorded, against what the answers say now.
+    final changed =
+        item != null &&
+        ((name != null && (item.signerName ?? '') != name) ||
+            (designation != null &&
+                (item.signerDesignation ?? '') != designation));
+    final signedBy = [
+      item?.signerName,
+      item?.signerDesignation,
+    ].whereType<String>().join(' · ');
+    final small = Theme.of(context).textTheme.bodySmall;
     return _Frame(
       b,
       child: Column(
@@ -856,15 +1080,266 @@ class _SignatureInputState extends State<_SignatureInput> {
                 child: widget.services.evidenceImage(id, 120),
               ),
             ),
+          if (signedBy.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                renderTemplate(b.copy('signature.signed_by'), {
+                  'who': signedBy,
+                }),
+                key: ValueKey('signature-signer-${b.key}'),
+                style: small,
+              ),
+            ),
+          if (changed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                b.copy('signature.signer_changed'),
+                key: ValueKey('signature-changed-${b.key}'),
+                style: small?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
+          if (waiting)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                b.copy('signature.signer_first'),
+                key: ValueKey('signature-waiting-${b.key}'),
+                style: small,
+              ),
+            ),
           OutlinedButton.icon(
             key: ValueKey('signature-sign-${b.key}'),
-            onPressed: b.field.readOnly || _busy ? null : _sign,
+            onPressed: b.field.readOnly || _busy || waiting
+                ? null
+                : () => _sign(again: id != null),
             icon: const Icon(Icons.draw),
             label: Text(
               b.copy(id == null ? 'inspection.sign' : 'inspection.sign_again'),
             ),
           ),
           if (_busy) _Saving(b.copy('inspection.saving')),
+        ],
+      ),
+    );
+  }
+}
+
+Map<String, Object?>? _asMap(Object? v) => v is Map<String, Object?> ? v : null;
+
+/// Where a pin sits, shown and set (`address`, `location_pin`; T4-11).
+class _PinRow extends StatefulWidget {
+  const _PinRow({
+    required this.b,
+    required this.services,
+    required this.pin,
+    required this.onPin,
+  });
+
+  final _Binding b;
+  final FormFieldServices services;
+  final Map<String, Object?>? pin;
+  final void Function(Map<String, Object?> pin) onPin;
+
+  @override
+  State<_PinRow> createState() => _PinRowState();
+}
+
+class _PinRowState extends State<_PinRow> {
+  bool _busy = false;
+
+  Future<void> _pick() async {
+    setState(() => _busy = true);
+    try {
+      final pin = await widget.services.pickPin!(
+        context,
+        widget.b.field,
+        widget.pin,
+      );
+      if (pin != null) widget.onPin(pin);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final b = widget.b;
+    final pin = widget.pin;
+    final lat = pin?['lat'];
+    final lng = pin?['lng'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text(
+            lat is num && lng is num
+                ? renderTemplate(b.copy('pin.at'), {
+                    'lat': lat.toStringAsFixed(5),
+                    'lng': lng.toStringAsFixed(5),
+                  })
+                : b.copy('pin.none'),
+            key: ValueKey('pin-value-${b.key}'),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+        OutlinedButton.icon(
+          key: ValueKey('pin-set-${b.key}'),
+          onPressed: b.field.readOnly || _busy ? null : _pick,
+          icon: const Icon(Icons.push_pin_outlined),
+          label: Text(b.copy(pin == null ? 'pin.set' : 'pin.change')),
+        ),
+      ],
+    );
+  }
+}
+
+/// A pin (`location_pin`, `11` §3.4; T4-11): placed on the phone's cached
+/// map, or from the current location. The rules check how far it is from
+/// the job (`max_distance_from_job_m`).
+class _LocationPinInput extends StatelessWidget {
+  const _LocationPinInput(this.b, this.services, {super.key});
+
+  final _Binding b;
+  final FormFieldServices services;
+
+  @override
+  Widget build(BuildContext context) => _Frame(
+    b,
+    child: _PinRow(
+      b: b,
+      services: services,
+      pin: _asMap(b.controller.value(b.key)),
+      onPin: (pin) => b.controller.setValue(b.key, pin),
+    ),
+  );
+}
+
+/// A South African address (`address`, `11` §3.4; T4-11): typed, so it
+/// works offline, and a pin on the map where `map_pin` asks for one and a
+/// map is at hand. Geocoding (`geocode: when_online`) completes
+/// server-side (D-83).
+class _AddressInput extends StatefulWidget {
+  const _AddressInput(this.b, this.services, {super.key});
+
+  final _Binding b;
+  final FormFieldServices? services;
+
+  @override
+  State<_AddressInput> createState() => _AddressInputState();
+}
+
+class _AddressInputState extends State<_AddressInput> {
+  static const List<String> _parts = [
+    'line1',
+    'line2',
+    'suburb',
+    'city',
+    'province',
+    'postal_code',
+  ];
+
+  late final Map<String, TextEditingController> _text = {
+    for (final k in _parts)
+      k: TextEditingController(text: _string(_value?[k]) ?? ''),
+  };
+
+  _Binding get b => widget.b;
+
+  Map<String, Object?>? get _value => _asMap(b.controller.value(b.key));
+
+  @override
+  void dispose() {
+    for (final c in _text.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _changed({Map<String, Object?>? pin}) {
+    final keep = pin ?? _asMap(_value?['pin']);
+    final next = <String, Object?>{
+      for (final k in _parts)
+        if (_text[k]!.text.trim().isNotEmpty) k: _text[k]!.text.trim(),
+      'pin': ?keep,
+    };
+    b.controller.setValue(b.key, next.isEmpty ? null : next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provinces = [
+      if (b.props['provinces'] case final List<Object?> list)
+        for (final p in list)
+          if (p is String) p,
+    ];
+    final mode = _string(b.props['map_pin']) ?? 'optional';
+    final services = widget.services;
+    Widget line(String part) => Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: TextField(
+        key: ValueKey('address-$part-${b.key}'),
+        controller: _text[part],
+        readOnly: b.field.readOnly,
+        textCapitalization: TextCapitalization.words,
+        keyboardType: part == 'postal_code'
+            ? TextInputType.number
+            : TextInputType.streetAddress,
+        decoration: InputDecoration(labelText: b.copy('address.$part')),
+        onChanged: (_) => _changed(),
+      ),
+    );
+    final province = _text['province']!.text;
+    return _Frame(
+      b,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          line('line1'),
+          line('line2'),
+          line('suburb'),
+          line('city'),
+          if (provinces.isEmpty)
+            line('province')
+          else
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: b.copy('address.province'),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    key: ValueKey('address-province-${b.key}'),
+                    isExpanded: true,
+                    isDense: true,
+                    value: provinces.contains(province) ? province : null,
+                    items: [
+                      for (final p in provinces)
+                        DropdownMenuItem(value: p, child: Text(p)),
+                    ],
+                    onChanged: b.field.readOnly
+                        ? null
+                        : (p) {
+                            setState(() => _text['province']!.text = p ?? '');
+                            _changed();
+                          },
+                  ),
+                ),
+              ),
+            ),
+          line('postal_code'),
+          if (mode != 'none' && services != null && services.pickPin != null)
+            _PinRow(
+              b: b,
+              services: services,
+              pin: _asMap(_value?['pin']),
+              onPin: (pin) => _changed(pin: pin),
+            ),
         ],
       ),
     );
@@ -921,12 +1396,29 @@ class _DeclarationInput extends StatelessWidget {
         value is Map<String, Object?> &&
         value['accepted'] == true &&
         value['declaration_version_id'] == declaration.id;
+    // An earlier version was accepted: this one has to be, again.
+    final outdated =
+        value is Map<String, Object?> &&
+        value['accepted'] == true &&
+        value['declaration_version_id'] != declaration.id;
     final theme = Theme.of(context);
+    final title = declaration.title;
     return _Frame(
       b,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (outdated)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: KeyedSubtree(
+                key: ValueKey('declaration-newer-${b.key}'),
+                child: _Notice(
+                  text: b.copy('inspection.declaration_newer'),
+                  tone: _Tone.warning,
+                ),
+              ),
+            ),
           DecoratedBox(
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest,
@@ -934,7 +1426,27 @@ class _DeclarationInput extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.all(12),
-              child: Text(declaration.text),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (title != null && title.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(title, style: theme.textTheme.titleSmall),
+                    ),
+                  Text(declaration.text),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      renderTemplate(b.copy('inspection.declaration_version'), {
+                        'version': declaration.version,
+                      }),
+                      key: ValueKey('declaration-version-${b.key}'),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           CheckboxListTile(

@@ -34,6 +34,12 @@ class FakeLocation implements LocationProvider {
   @override
   Future<LocationAccess> requestAccess() async => accessState;
 
+  /// What [precise] answers.
+  bool? preciseState = true;
+
+  @override
+  Future<bool?> precise() async => preciseState;
+
   @override
   Future<LocationFix> currentFix({Duration? timeLimit}) async =>
       fix ??
@@ -44,9 +50,11 @@ class FakeLocation implements LocationProvider {
         retryable: true,
       ));
 
+  /// The fixes a test sends.
+  final StreamController<LocationFix> updates = StreamController.broadcast();
+
   @override
-  Stream<LocationFix> fixes({required Duration interval}) =>
-      const Stream.empty();
+  Stream<LocationFix> fixes({required Duration interval}) => updates.stream;
 }
 
 class FakeCamera implements CameraService {
@@ -95,6 +103,14 @@ class FakeExternalApps implements ExternalApps {
   Future<bool> openDirections(double lat, double lng, {String? label}) async {
     directions.add((lat: lat, lng: lng, label: label));
     return opens;
+  }
+
+  int settingsOpened = 0;
+
+  @override
+  Future<bool> openAppSettings() async {
+    settingsOpened++;
+    return true;
   }
 }
 

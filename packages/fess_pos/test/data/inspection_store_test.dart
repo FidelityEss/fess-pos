@@ -12,6 +12,7 @@ import 'package:fess_pos/src/data/outbox/envelope.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
 import 'package:fess_pos/src/data/sync/sections.dart';
+import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
@@ -27,6 +28,7 @@ import 'package:fess_pos_engine/fess_pos_engine.dart'
         sha256HexBytes,
         submissionHash;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 
 import '../support/fake_platform.dart';
 import '../support/fake_pos_api.dart';
@@ -352,6 +354,317 @@ void main() {
     });
   });
 
+  test('at the start a fix is inside when its distance less its accuracy '
+      'is within the radius; a mocked one never passes (T4-07)', () async {
+    location.fix = LocationFix(
+      latitude: -26.2041 + 105 / 111195,
+      longitude: 28.0473,
+      accuracyM: 10,
+      fixTime: DateTime(2026, 9, 14, 9, 59),
+      isMocked: false,
+    );
+    await inspections.begin(job());
+    final geofence =
+        payloadOf(
+              (await envelopes('inspection_started')).single,
+            )['geofence_result']!
+            as Map<String, Object?>;
+    expect(geofence['distance_m']! as num, closeTo(105, 1));
+    expect(geofence['passed'], isTrue, reason: '105 − 10 ≤ 100');
+  });
+
+  test('a profile looser than the default one is relaxed, and asks for a '
+      'check-in on arrival (T4-23)', () async {
+    await putDoc(DocKeys.configDefault, {
+      'config_version_id': _configVersion,
+      'values': {
+        'geofence': {
+          'default_profile': 'standalone',
+          'profiles': {
+            'standalone': {
+              'radius_m': 100,
+              'max_accuracy_m': 30,
+              'exit_consecutive_fixes': 3,
+              'prompt_checkin_on_arrival': false,
+            },
+            'shopping_centre': {
+              'radius_m': 250,
+              'max_accuracy_m': 75,
+              'exit_consecutive_fixes': 5,
+              'prompt_checkin_on_arrival': true,
+            },
+          },
+        },
+      },
+    }, hash: _configVersion);
+    final mall = JobRecord(
+      id: 'j1',
+      reference: 'POS-j1',
+      status: 'accepted',
+      assignedToMe: true,
+      bankId: _bank,
+      data: {...job().data, 'location_type': 'shopping_centre'},
+    );
+    expect((await inspections.checkinPlan(mall))!.prompt, isTrue);
+    expect((await inspections.checkinPlan(job()))!.prompt, isFalse);
+
+    await inspections.begin(mall);
+    final p = payloadOf((await envelopes('inspection_started')).single);
+    final geofence = p['geofence_result']! as Map<String, Object?>;
+    expect(
+      (geofence['profile'], geofence['relaxed']),
+      ('shopping_centre', true),
+    );
+    final context = p['context_snapshot']! as Map<String, Object?>;
+    expect(
+      ((context['inspection']! as Map)['geofence']! as Map)['relaxed'],
+      isTrue,
+    );
+  });
+
+  group('geofence (T4-07)', () {
+    late String id;
+
+    setUp(() async {
+      id = (await inspections.begin(job())).inspectionId!;
+    });
+
+    GeoFix at(double metres) => GeoFix(
+      lat: -26.2041 + metres / 111195,
+      lng: 28.0473,
+      accuracyM: 10,
+      at: DateTime(2026, 9, 14, 10, 1),
+      isMocked: false,
+    );
+
+    test('the plan is the fence frozen at the start and the config in '
+        'force', () async {
+      final plan = (await inspections.geofencePlan(id))!;
+      expect(plan.fence.radiusM, 100);
+      expect(plan.fence.maxAccuracyM, 30);
+      expect(plan.fence.exitConsecutiveFixes, 3);
+      expect(plan.sampleWindow, const Duration(seconds: 60));
+      expect(plan.fixInterval, const Duration(seconds: 20));
+      expect(plan.passed, isTrue, reason: 'the start fix was inside');
+      expect(plan.paused, isFalse);
+    });
+
+    test("a check's outcome goes into the geofence result and what rules "
+        'see', () async {
+      final plan = (await inspections.geofencePlan(id))!;
+      await inspections.recordLocationCheck(
+        id,
+        passed: false,
+        verdict: plan.fence.judge(at(300)),
+        sampledSeconds: 60,
+      );
+      final row = await (db.select(
+        db.inspections,
+      )..where((i) => i.id.equals(id))).getSingle();
+      final g = jsonDecode(row.geofence) as Map<String, Object?>;
+      expect(g['passed'], isFalse);
+      expect(g['sampled_seconds'], 60);
+      expect(g['distance_m']! as num, closeTo(300, 1));
+      expect(g['profile'], 'standalone', reason: 'the frozen profile stays');
+      final context = jsonDecode(row.contextSnapshot) as Map<String, Object?>;
+      expect(
+        ((context['inspection']! as Map)['geofence']! as Map)['inside'],
+        isFalse,
+      );
+      expect((await inspections.watch(id).first)!.locationPassed, isFalse);
+    });
+
+    test('a check-in is kept for the job and recorded as the outside fix '
+        '(T4-23)', () async {
+      final plan0 = (await inspections.geofencePlan(id))!;
+      expect(plan0.outsideFix!.maxAccuracyM, 30);
+      expect(plan0.outsideFix!.validFor, const Duration(minutes: 20));
+      expect(plan0.checkin, isNull);
+
+      final fix = at(20);
+      await inspections.recordCheckin('j1', fix);
+      final plan = (await inspections.geofencePlan(id))!;
+      expect(plan.checkin!.lat, closeTo(fix.lat, 1e-9));
+      expect(
+        (await inspections.checkinPlan(
+          job(),
+        ))!.checkedIn(DateTime(2026, 9, 14, 10, 5)),
+        isTrue,
+      );
+
+      await inspections.recordLocationCheck(
+        id,
+        passed: true,
+        verdict: plan.fence.judge(fix),
+        sampledSeconds: 60,
+        method: 'outside_fix',
+        checkin: fix,
+      );
+      final row = await (db.select(
+        db.inspections,
+      )..where((i) => i.id.equals(id))).getSingle();
+      final g = jsonDecode(row.geofence) as Map<String, Object?>;
+      expect((g['method'], g['passed']), ('outside_fix', true));
+      expect((g['checkin_fix']! as Map)['accuracy_m'], 10);
+      final context = jsonDecode(row.contextSnapshot) as Map<String, Object?>;
+      final seen = (context['inspection']! as Map)['geofence']! as Map;
+      expect((seen['method'], seen['inside']), ('outside_fix', false));
+    });
+
+    test('an override goes into the geofence result, and rules see it '
+        '(T4-10)', () async {
+      final plan = (await inspections.geofencePlan(id))!;
+      expect(plan.overrideWithinM, 200, reason: '2 × 100 m, under 500');
+      final near = plan.fence.judge(at(150));
+      expect(plan.overrideAllowed(near), isTrue);
+      expect(plan.overrideAllowed(plan.fence.judge(at(250))), isFalse);
+      final detail = <String, Object?>{
+        'reason_code': 'gps_inaccurate_indoors',
+        'note': 'Deep inside the centre, no lock at the unit.',
+        'photo_evidence_ids': <String>[],
+        'distance_m': 150.0,
+        'allowed_max_m': 200.0,
+      };
+      await inspections.recordLocationCheck(
+        id,
+        passed: true,
+        verdict: near,
+        sampledSeconds: 60,
+        override: detail,
+      );
+      final row = await (db.select(
+        db.inspections,
+      )..where((i) => i.id.equals(id))).getSingle();
+      final g = jsonDecode(row.geofence) as Map<String, Object?>;
+      expect((g['override'], g['passed']), (true, true));
+      expect(g['override_detail'], detail);
+      final context = jsonDecode(row.contextSnapshot) as Map<String, Object?>;
+      final seen = (context['inspection']! as Map)['geofence']! as Map;
+      expect((seen['override'], seen['inside']), (true, false));
+    });
+
+    test('an override photo is evidence of its own type (T4-10)', () async {
+      await inspections.recordPhoto(
+        id,
+        fieldKey: 'override_photo',
+        category: 'override',
+        photo: photo(img.encodeJpg(img.Image(width: 40, height: 30))),
+        type: 'override_photo',
+      );
+      final p = payloadOf((await envelopes('evidence_meta')).single);
+      expect(
+        (p['type'], p['category'], p['field_key']),
+        (
+          'override_photo',
+          'override',
+          'override_photo',
+        ),
+      );
+    });
+
+    test('leaving pauses the inspection with a job_event; coming back '
+        'resumes it', () async {
+      final plan = (await inspections.geofencePlan(id))!;
+      await inspections.recordGeofenceChange(
+        id,
+        GeofenceChange(paused: true, verdict: plan.fence.judge(at(300))),
+      );
+      expect((await inspections.geofencePlan(id))!.paused, isTrue);
+      expect((await jobRow()).status, 'paused');
+
+      await inspections.recordGeofenceChange(
+        id,
+        GeofenceChange(paused: false, verdict: plan.fence.judge(at(10))),
+      );
+      expect((await inspections.geofencePlan(id))!.paused, isFalse);
+      expect((await jobRow()).status, 'in_progress');
+      final events = [
+        for (final e in await envelopes('job_event')) payloadOf(e),
+      ];
+      expect(events.map((e) => (e['action'], e['trigger'])), [
+        ('pause', 'geofence_exit'),
+        ('resume', 'geofence_enter'),
+      ]);
+      expect(events.first['inspection_id'], id);
+      expect((events.first['fix']! as Map)['accuracy_m'], 10);
+    });
+  });
+
+  group('breadcrumbs (T4-08)', () {
+    late String id;
+
+    setUp(() async {
+      id = (await inspections.begin(job())).inspectionId!;
+    });
+
+    GeoFix fixAt(int minute, {int second = 0}) => GeoFix(
+      lat: -26.2041,
+      lng: 28.0473,
+      accuracyM: 10,
+      at: DateTime(2026, 9, 14, 10, minute, second),
+      isMocked: false,
+    );
+
+    Future<List<Map<String, Object?>>> batches() async => [
+      for (final e in await envelopes('traces_batch')) payloadOf(e),
+    ];
+
+    test('fixes wait on the phone, then go thirty to a batch', () async {
+      for (var i = 0; i < 29; i++) {
+        await inspections.recordTrace(id, fixAt(0, second: i), inside: true);
+      }
+      expect(await batches(), isEmpty);
+      await inspections.recordTrace(id, fixAt(0, second: 29), inside: true);
+      final b = (await batches()).single;
+      expect((b['inspection_id'], b['job_id'], b['batch_seq']), (id, 'j1', 0));
+      final fixes = b['fixes']! as List<Object?>;
+      expect(fixes, hasLength(30));
+      final first = fixes.first! as Map<String, Object?>;
+      expect(
+        (first['event'], first['inside_fence'], first['accuracy_m']),
+        (
+          'fix',
+          true,
+          10,
+        ),
+      );
+    });
+
+    test('a fix five minutes after the first waiting, or an event, sends '
+        'them', () async {
+      await inspections.recordTrace(id, fixAt(0));
+      await inspections.recordTrace(id, fixAt(6));
+      expect((await batches()).single['fixes'], hasLength(2));
+
+      await inspections.recordTrace(id, fixAt(7));
+      await inspections.recordTrace(id, fixAt(7, second: 20), event: 'pause');
+      final second = (await batches()).last;
+      expect(second['batch_seq'], 1);
+      final fixes = second['fixes']! as List<Object?>;
+      expect((fixes.last! as Map<String, Object?>)['event'], 'pause');
+    });
+
+    test(
+      'the submission sends what waits first, and counts the batches',
+      () async {
+        await inspections.recordTrace(id, fixAt(1));
+        await inspections.recordTrace(id, fixAt(2));
+        await inspections.submit(id, answers: const {});
+        final sent = (await batches()).single;
+        final fixes = sent['fixes']! as List<Object?>;
+        expect(fixes, hasLength(2));
+        final manifest =
+            payloadOf((await envelopes('submission')).single)['manifest']!
+                as Map<String, Object?>;
+        expect(manifest['trace_batch_count'], 1);
+        expect(
+          manifest['last_trace_at'],
+          (fixes.last! as Map<String, Object?>)['ts_device'],
+        );
+      },
+    );
+  });
+
   group('evidence', () {
     late String id;
 
@@ -359,7 +672,71 @@ void main() {
       id = (await inspections.begin(job())).inspectionId!;
     });
 
-    test('a photo is stored with its hash and its evidence_meta', () async {
+    test('a photo is made canonical: upright, fitted, stripped, then '
+        'hashed (T4-02)', () async {
+      final taken = img.Image(width: 2600, height: 1300);
+      img.fill(taken, color: img.ColorRgb8(200, 30, 30));
+      taken.exif.imageIfd.orientation = 6;
+      final evidenceId = await inspections.recordPhoto(
+        id,
+        fieldKey: 'external_photos',
+        category: 'external',
+        photo: photo(img.encodeJpg(taken)),
+      );
+      final row = await (db.select(
+        db.evidence,
+      )..where((e) => e.id.equals(evidenceId))).getSingle();
+      expect((row.width, row.height), (1024, 2048), reason: 'upright, 2048');
+      expect(row.mime, 'image/jpeg');
+      expect(row.sha256, sha256HexBytes(row.bytes!), reason: 'what is kept');
+      final stored = img.decodeJpg(row.bytes!)!;
+      expect(stored.exif.imageIfd.hasOrientation, isFalse);
+      final p = payloadOf((await envelopes('evidence_meta')).single);
+      expect((p['width'], p['height']), (1024, 2048));
+      expect(p['sha256'], row.sha256);
+      expect(p['meta'], isEmpty);
+    });
+
+    test('a caption is kept with the photo, trimmed and at most 500 '
+        'characters (T4-04)', () async {
+      final evidenceId = await inspections.recordPhoto(
+        id,
+        fieldKey: 'external_photos',
+        category: 'external',
+        photo: photo(img.encodeJpg(img.Image(width: 40, height: 30))),
+        caption: '  The front door  ',
+      );
+      final p = payloadOf((await envelopes('evidence_meta')).single);
+      expect(p['meta'], {'caption': 'The front door'});
+      final items = await inspections.watchEvidence(id).first;
+      expect(items.single.id, evidenceId);
+      expect(items.single.caption, 'The front door');
+
+      await inspections.recordPhoto(
+        id,
+        fieldKey: 'external_photos',
+        category: 'external',
+        photo: photo(img.encodeJpg(img.Image(width: 40, height: 30))),
+        caption: 'x' * 600,
+      );
+      await inspections.recordPhoto(
+        id,
+        fieldKey: 'external_photos',
+        category: 'external',
+        photo: photo(img.encodeJpg(img.Image(width: 40, height: 30))),
+        caption: '   ',
+      );
+      final metas = [
+        for (final e in await envelopes('evidence_meta')) payloadOf(e)['meta'],
+      ];
+      expect(metas.map((m) => ((m! as Map)['caption'] as String?)?.length), [
+        14,
+        500,
+        null,
+      ]);
+    });
+
+    test('a capture that is no image is kept as taken, and marked', () async {
       final bytes = [1, 2, 3, 4];
       final evidenceId = await inspections.recordPhoto(
         id,
@@ -382,6 +759,7 @@ void main() {
       expect(p['session_token_id'], _tokenId);
       expect(p['location'], {'lat': -26.2042, 'lng': 28.0474});
       expect(p['is_mocked'], isFalse);
+      expect(p['meta'], {'canonical': false});
       expect(await inspections.evidenceBytes(evidenceId), bytes);
     });
 
@@ -398,7 +776,8 @@ void main() {
       expect(await db.select(db.evidence).get(), isEmpty);
     });
 
-    test('a signature keeps the hash of its strokes', () async {
+    test('a signature keeps its strokes, their hash and who signed '
+        '(T4-05)', () async {
       final strokes = [
         [
           [1.0, 2.0, 0],
@@ -414,16 +793,30 @@ void main() {
           width: 600,
           height: 300,
           capturedAt: now,
+          padWidth: 300,
+          padHeight: 150,
         ),
+        signerName: ' Thandi Mokoena ',
+        signerDesignation: 'Owner',
       );
       final p = payloadOf((await envelopes('evidence_meta')).single);
       expect(p['evidence_id'], evidenceId);
       expect(p['type'], 'signature');
       expect(p['mime'], 'image/png');
       expect(p['width'], 600);
+      final meta = p['meta']! as Map<String, Object?>;
+      expect(meta['strokes_sha256'], payloadHash(strokes));
+      expect(meta['strokes'], strokes, reason: 'the vector strokes go too');
+      expect(meta['pad'], {'width': 300, 'height': 150});
+      expect(meta['signer_name'], 'Thandi Mokoena');
+      expect(meta['signer_designation'], 'Owner');
+      final item = (await inspections.watchEvidence(id).first).single;
       expect(
-        (p['meta']! as Map<String, Object?>)['strokes_sha256'],
-        payloadHash(strokes),
+        (item.signerName, item.signerDesignation),
+        (
+          'Thandi Mokoena',
+          'Owner',
+        ),
       );
     });
 

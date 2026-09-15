@@ -204,6 +204,19 @@ Future<void> _start(WidgetTester tester, ModuleRuntime runtime) async {
     'token ${inspection.sessionTokenId == null ? 'missing' : 'used'}, '
     'geofence ${inspection.geofence})',
   );
+  // Where the fix at the start didn't pass, the location check samples
+  // until a fix inside does, then moves on by itself (T4-07).
+  final checking = find.text('Location check');
+  if (checking.evaluate().isNotEmpty) {
+    _log('location check shown; waiting for a fix inside');
+    final end = DateTime.now().add(const Duration(seconds: 90));
+    while (checking.evaluate().isNotEmpty && DateTime.now().isBefore(end)) {
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+    if (checking.evaluate().isNotEmpty) _screen(tester, 'location check held');
+    expect(checking.evaluate(), isEmpty, reason: 'the location check passed');
+    _log('location check passed');
+  }
 
   await tester.enterText(find.byType(TextField).first, 'Walking Skeleton');
   await _tap(tester, find.text('Shop'));
@@ -214,6 +227,16 @@ Future<void> _start(WidgetTester tester, ModuleRuntime runtime) async {
   );
 
   await _tap(tester, find.byKey(const ValueKey('photo-take-external_photos')));
+  // The first photo on a phone explains the camera before the system asks
+  // (T4-01); the app remembers it after that.
+  const explain = ValueKey('camera-explain-continue');
+  if (await _waitFor(
+    tester,
+    find.byKey(explain),
+    timeout: const Duration(seconds: 5),
+  )) {
+    await _tap(tester, find.byKey(explain));
+  }
   expect(
     await _waitFor(
       tester,

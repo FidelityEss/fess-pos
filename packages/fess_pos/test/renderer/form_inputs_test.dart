@@ -380,11 +380,12 @@ void main() {
 
   testWidgets('a field this build cannot draw shows as its fallback, and the '
       'answer says so', (tester) async {
+    // Wave 2's rating isn't drawn by this build (T6-01).
     final c = await _show(tester, [
       {
-        'key': 'addr',
-        'type': 'address',
-        'label': 'Street address',
+        'key': 'impression',
+        'type': 'rating',
+        'label': 'Overall impression',
         'required': true,
         'fallback': {
           'type': 'textarea',
@@ -395,14 +396,14 @@ void main() {
     ]);
     expect(c.unsupportedVisible, ['stars'], reason: 'no fallback declared');
     expect(find.text(_copy('form.unsupported_field')), findsOneWidget);
-    expect(find.text('Street address *'), findsOneWidget);
-    await tester.enterText(find.byType(TextField), '12 Main Road, Soweto');
+    expect(find.text('Overall impression *'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Tidy and well stocked');
     await tester.pump();
-    expect(c.answers['addr'], {
-      'v': '12 Main Road, Soweto',
+    expect(c.answers['impression'], {
+      'v': 'Tidy and well stocked',
       'rendered_as': 'textarea',
     });
-    expect(c.errors.where((e) => e.fieldKey == 'addr'), isEmpty);
+    expect(c.errors.where((e) => e.fieldKey == 'impression'), isEmpty);
   });
 
   testWidgets('a computed value is shown, not asked for', (tester) async {

@@ -117,11 +117,32 @@ abstract final class MetaKeys {
   static const String createdAt = 'store_created_at';
   static const String createdByModule = 'store_created_by_module';
 
+  /// Evidence ids already reported as lost (JSON list), so each is reported
+  /// once (docs/12 §3).
+  static const String evidenceAnomaliesReported = 'evidence_anomalies_reported';
+
   /// JSON list of `{name, at}`: stores moved into `quarantine/` (D-52).
   static const String quarantinedStores = 'quarantined_stores';
 
   /// How many of [quarantinedStores] have gone out in a `client_error`.
   static const String quarantinedStoresReported = 'quarantined_stores_reported';
+
+  /// Set while an inspection is paused because the agent left the fence
+  /// (T4-07); its value is when.
+  static String geofencePaused(String inspectionId) =>
+      'geofence_paused.$inspectionId';
+
+  /// A job's check-in on arrival (T4-23): the fix, as `geofence_result`
+  /// carries one.
+  static String checkin(String jobId) => 'checkin.$jobId';
+
+  /// An inspection's breadcrumbs waiting to go, and how many batches went
+  /// (T4-08).
+  static String traces(String inspectionId) => 'traces.$inspectionId';
+
+  /// A resumable upload in progress for a piece of evidence (T4-13): its
+  /// address at the storage, so it carries on after the app was closed.
+  static String upload(String evidenceId) => 'upload.$evidenceId';
 }
 
 extension QuarantineLog on PosDatabase {

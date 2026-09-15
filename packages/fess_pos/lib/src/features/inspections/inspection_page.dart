@@ -3,14 +3,19 @@ import 'dart:typed_data';
 
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/domain/flows/flow_runner.dart';
+import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
+import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/features/inspections/capture_page.dart';
+import 'package:fess_pos/src/features/inspections/location_check_view.dart';
 import 'package:fess_pos/src/features/inspections/signature_pad_page.dart';
 import 'package:fess_pos/src/features/jobs/job_action_pages.dart';
 import 'package:fess_pos/src/features/jobs/job_pages.dart';
+import 'package:fess_pos/src/features/maps/job_map.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
+import 'package:fess_pos/src/platform/location.dart';
 import 'package:fess_pos/src/renderer/form/form_controller.dart';
 import 'package:fess_pos/src/renderer/form/form_services.dart';
 import 'package:fess_pos/src/renderer/form/form_view.dart';
@@ -49,6 +54,76 @@ final renderPlanProvider = FutureProvider.family<CompiledForm, String>((
   }
   return ref.watch(formCompilerProvider)(form);
 }, name: 'renderPlan');
+
+/// An inspection's evidence as the phone holds it, live, without the
+/// bytes: the evidence fields show captions and who signed from it.
+// ignore: specify_nonobvious_property_types
+final inspectionEvidenceProvider = StreamProvider.autoDispose
+    .family<List<EvidenceItem>, String>((ref, inspectionId) async* {
+      final inspections = await ref.watch(inspectionsProvider.future);
+      if (inspections != null) yield* inspections.watchEvidence(inspectionId);
+    }, name: 'inspectionEvidence');
+
+/// Asks for a photo's caption (`caption: optional | required`): the text,
+/// '' when an optional one is skipped, null when the photo is discarded.
+class _CaptionDialog extends StatefulWidget {
+  const _CaptionDialog({required this.required, required this.copy});
+
+  final bool required;
+  final String Function(String key) copy;
+
+  @override
+  State<_CaptionDialog> createState() => _CaptionDialogState();
+}
+
+class _CaptionDialogState extends State<_CaptionDialog> {
+  final TextEditingController _text = TextEditingController();
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = widget.copy;
+    final text = _text.text.trim();
+    return AlertDialog(
+      title: Text(copy('photo.caption.title')),
+      content: TextField(
+        key: const ValueKey('photo-caption'),
+        controller: _text,
+        autofocus: true,
+        maxLength: 500,
+        minLines: 1,
+        maxLines: 3,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: InputDecoration(hintText: copy('photo.caption.hint')),
+        onChanged: (_) => setState(() {}),
+      ),
+      actions: [
+        TextButton(
+          key: const ValueKey('photo-caption-skip'),
+          onPressed: () =>
+              Navigator.of(context).pop(widget.required ? null : ''),
+          child: Text(
+            copy(
+              widget.required ? 'photo.caption.discard' : 'photo.caption.skip',
+            ),
+          ),
+        ),
+        FilledButton(
+          key: const ValueKey('photo-caption-save'),
+          onPressed: text.isEmpty
+              ? null
+              : () => Navigator.of(context).pop(text),
+          child: Text(copy('photo.caption.save')),
+        ),
+      ],
+    );
+  }
+}
 
 T? _data<T>(AsyncValue<T> value) => switch (value) {
   AsyncData(:final value) => value,
@@ -96,9 +171,19 @@ Map<String, List<_FieldDef>> _fieldsBySection(Map<String, Object?> form) {
 
 /// What the flow reads: the form as the rules make it now.
 class _FlowData implements FlowData {
-  _FlowData(this.form, {required this.declarationStep});
+  _FlowData(
+    this.form, {
+    required this.declarationStep,
+    required this.checked,
+  });
 
   final FormController form;
+
+  /// Whether the location check has passed, as the page knows it now.
+  final bool Function() checked;
+
+  @override
+  bool get locationChecked => checked();
 
   /// Declaration fields have a step of their own, so they don't count on
   /// form pages.
@@ -162,6 +247,13 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
   bool _busy = false;
   String? _message;
 
+  /// Whether the location check has passed (T4-07).
+  bool _locationPassed = true;
+
+  /// Whether the agent left the fence and hasn't come back (B3.5).
+  bool _paused = false;
+  StreamSubscription<LocationFix>? _fixes;
+
   FlowPosition get _at => _path.last;
 
   @override
@@ -174,6 +266,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _saveTimer?.cancel();
+    unawaited(_fixes?.cancel());
     // Reads the answers before the controller goes; the write finishes on
     // its own.
     if (_unsaved) unawaited(_save());
@@ -212,11 +305,14 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
       initialUnknown: record.unknownDates,
       initialFlaggedDiffers: record.flaggedDiffers,
     )..addListener(_scheduleSave);
+    _locationPassed = record.locationPassed;
     final data = _flowData = _FlowData(
       controller,
       declarationStep: runner.steps.any((s) => s['type'] == 'declaration'),
+      checked: () => _locationPassed,
     );
     _path = _resume(record, runner, data);
+    unawaited(_watchFence(inspections));
   }
 
   /// Where a reopened inspection continues: the pages it went through, or
@@ -293,16 +389,82 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
   bool get _hasDeclarationStep =>
       _runner?.steps.any((s) => s['type'] == 'declaration') ?? false;
 
-  /// The declaration fields [step] asks for.
+  /// The declaration fields [step] asks for. When its `declaration_key`
+  /// names none of them, all of them: the analyser makes a form carry
+  /// exactly one declaration field but doesn't match it to the step, and a
+  /// declaration step must never be an empty page.
   Set<String> _declarationKeys(Map<String, Object?> step) {
     final key = _string(step['declaration_key']);
-    return {
+    final all = [
       for (final fields in _sections.values)
         for (final f in fields)
-          if (f.type == 'declaration' &&
-              (key == null || (_string(f.props['declaration_key']) == key)))
-            f.key,
+          if (f.type == 'declaration') f,
+    ];
+    final named = {
+      for (final f in all)
+        if (key == null || _string(f.props['declaration_key']) == key) f.key,
     };
+    return named.isNotEmpty ? named : {for (final f in all) f.key};
+  }
+
+  /// Whether any of the declaration fields [keys] holds an acceptance of a
+  /// version other than the one on the phone now: a newer version has to
+  /// be accepted again (docs/07 §4, D-77).
+  bool _declarationOutdated(Iterable<String> keys) {
+    final form = _form!;
+    final wanted = keys.toSet();
+    for (final fields in _sections.values) {
+      for (final f in fields) {
+        if (f.type != 'declaration' || !wanted.contains(f.key)) continue;
+        final value = form.value(f.key);
+        if (value is! Map<String, Object?> || value['accepted'] != true) {
+          continue;
+        }
+        final key = _string(f.props['declaration_key']) ?? f.key;
+        final current = _data(ref.read(declarationProvider(key)));
+        if (current != null && value['declaration_version_id'] != current.id) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /// The location check passed: on to the page after it, without the check
+  /// on the way back.
+  void _locationDone() {
+    if (!mounted) return;
+    _locationPassed = true;
+    final to = _runner!.firstFrom(FlowPosition(_at.step + 1), _flowData);
+    _go(to == null ? _path : [to]);
+  }
+
+  /// Watches the fence while the inspection is open (docs/07 §7 item 8):
+  /// leaving it pauses the inspection and coming back resumes it. The
+  /// answers stay as they are either way.
+  Future<void> _watchFence(Inspections inspections) async {
+    final plan = await inspections.geofencePlan(widget.inspectionId);
+    if (plan == null || !mounted) return;
+    if (plan.paused) setState(() => _paused = true);
+    final location = ref.read(platformServicesProvider).location;
+    if (!(await location.access()).granted || !mounted) return;
+    final monitor = ExitMonitor(plan.fence, paused: plan.paused);
+    _fixes = location.fixes(interval: plan.fixInterval).listen((fix) async {
+      final geo = geoFixOf(fix);
+      final verdict = plan.fence.judge(geo);
+      // Every fix watched is a breadcrumb (B3.4, T4-08).
+      await inspections.recordTrace(
+        widget.inspectionId,
+        geo,
+        inside: verdict.qualifies ? verdict.inside : null,
+      );
+      // Until the check passes, the check itself reads the location.
+      if (!_locationPassed) return;
+      final change = monitor.add(geo);
+      if (change == null) return;
+      await inspections.recordGeofenceChange(widget.inspectionId, change);
+      if (mounted) setState(() => _paused = change.paused);
+    });
   }
 
   /// The fields page [at] shows.
@@ -347,10 +509,18 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
     final at = _at;
     final step = runner.steps[at.step];
     final copy = ref.read(copyProvider);
+    if (step['type'] == 'location_check' && !_locationPassed) {
+      setState(() => _message = copy('inspection.location_first'));
+      return;
+    }
     final keys = _keysAt(at);
     _form!.touchAll(keys);
     if (_stepHasProblems(keys)) {
       setState(() => _message = copy('inspection.fix_answers'));
+      return;
+    }
+    if (_declarationOutdated(keys)) {
+      setState(() => _message = copy('inspection.declaration_changed'));
       return;
     }
     if (step['type'] == 'job_briefing' &&
@@ -467,6 +637,23 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
       });
       return;
     }
+    // An acceptance of an earlier declaration version is never sent.
+    final declarationKeys = [
+      for (final fields in _sections.values)
+        for (final f in fields)
+          if (f.type == 'declaration') f.key,
+    ];
+    if (_declarationOutdated(declarationKeys)) {
+      final at = _runner!
+          .shown(_flowData)
+          .where((p) => _keysAt(p).any(declarationKeys.contains))
+          .firstOrNull;
+      setState(() {
+        if (at != null) _path = [..._path, at];
+        _message = copy('inspection.declaration_changed');
+      });
+      return;
+    }
     final data = form.resolved?.data ?? const <String, Object?>{};
     final confirmed = await showDialog<bool>(
       context: context,
@@ -518,19 +705,57 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
     );
   }
 
+  /// A photo field's guidance, filled in from what the rules see.
+  String? _guidance(ResolvedField field) {
+    final guidance = field.props['guidance'];
+    final text = guidance is Map<String, Object?> ? guidance['text'] : null;
+    return text is String
+        ? renderTemplate(text, _form?.resolved?.data ?? const {})
+        : null;
+  }
+
   FormFieldServices _services(
     Inspections inspections,
     Map<String, Declaration?> declarations,
     String Function(String key) copy,
-  ) => FormFieldServices(
-    takePhoto: (context, field) async {
+    Map<String, EvidenceItem> evidence, {
+    String evidenceType = 'photo',
+  }) => FormFieldServices(
+    takePhoto: (context, field, shot) async {
+      final of = shot.of;
       final photo = await Navigator.of(context).push<CapturedPhoto>(
         MaterialPageRoute(
-          builder: (_) =>
-              CapturePage(title: field.label ?? copy('inspection.take_photo')),
+          builder: (_) => CapturePage(
+            title: field.label ?? copy('inspection.take_photo'),
+            guidance: _guidance(field),
+            progress: of == null
+                ? null
+                : renderTemplate(copy('photo.progress'), {
+                    'n': shot.number,
+                    'total': of,
+                  }),
+            requireLocation: field.props['require_gps'] == true,
+          ),
         ),
       );
       if (photo == null || !context.mounted) return null;
+      // The caption goes with the photo's record, so it's asked for now.
+      final policy = _string(field.props['caption']) ?? 'none';
+      String? caption;
+      if (policy == 'optional' || policy == 'required') {
+        caption = await showDialog<String>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) =>
+              _CaptionDialog(required: policy == 'required', copy: copy),
+        );
+        if (caption == null) {
+          // Discarded before it was stored: not evidence yet.
+          await photo.releaseSource();
+          return null;
+        }
+        if (!context.mounted) return null;
+      }
       return _stored(
         context,
         () => inspections.recordPhoto(
@@ -538,18 +763,52 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
           fieldKey: field.key,
           category: _category(field),
           photo: photo,
+          caption: caption,
+          type: evidenceType,
         ),
       );
     },
+    evidence: (id) => evidence[id],
+    pickPin: (context, field, current) async {
+      // Where the map opens: the pin so far, else the job's location,
+      // unless the field starts from the current one (T4-11).
+      final start =
+          GeoPoint.tryParse(current) ??
+          (field.props['initial'] == 'current'
+              ? null
+              : GeoPoint.tryParse(widget.job.data['location']));
+      final pin = await Navigator.of(context)
+          .push<({GeoPoint point, String source})>(
+            MaterialPageRoute(
+              builder: (_) => PinPickerPage(initial: start, title: field.label),
+            ),
+          );
+      if (pin == null) return null;
+      double round(double v) => (v * 1e6).roundToDouble() / 1e6;
+      return {
+        'lat': round(pin.point.lat),
+        'lng': round(pin.point.lng),
+        'source': pin.source,
+      };
+    },
     drawSignature: (context, field) async {
-      final nameField = _string(field.props['signer_name_field']);
+      // Who signs, as the answers say just before (docs/07 §4).
+      String? bound(String prop) {
+        final key = _string(field.props[prop]);
+        final value = key == null ? null : _form?.value(key);
+        return value == null ? null : '$value';
+      }
+
+      final name = bound('signer_name_field');
+      final designation = bound('signer_designation_field');
+      final minLength = field.props['min_stroke_length'];
       final signature = await Navigator.of(context).push<SignatureCapture>(
         MaterialPageRoute(
           builder: (_) => SignaturePadPage(
             title: field.label ?? copy('inspection.signature_title'),
-            signerName: nameField == null
-                ? null
-                : _string(_form?.value(nameField)),
+            signerName: name,
+            signerDesignation: designation,
+            minStrokeLength: minLength is num ? minLength.toDouble() : 0,
           ),
         ),
       );
@@ -562,6 +821,8 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
           widget.inspectionId,
           fieldKey: field.key,
           signature: signature,
+          signerName: name,
+          signerDesignation: designation,
         ),
       );
     },
@@ -657,6 +918,15 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
     switch (step['type']) {
       case 'job_briefing':
         return _briefing(step, at.step, form, copy);
+      case 'location_check':
+        return LocationCheckView(
+          inspections: _inspections!,
+          inspectionId: widget.inspectionId,
+          job: widget.job,
+          services: services,
+          onPassed: _locationDone,
+          overrideForm: _string(step['override_form']) ?? 'geofence_override',
+        );
       case 'form':
         return FormView(
           controller: form,
@@ -772,11 +1042,43 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
             _stepView(
               at,
               controller,
-              _services(inspections, declarations, copy),
+              _services(
+                inspections,
+                declarations,
+                copy,
+                {
+                  for (final e
+                      in _data(
+                            ref.watch(
+                              inspectionEvidenceProvider(widget.inspectionId),
+                            ),
+                          ) ??
+                          const <EvidenceItem>[])
+                    e.id: e,
+                },
+                // Photos on the location step are the override's (T4-10).
+                evidenceType: step['type'] == 'location_check'
+                    ? 'override_photo'
+                    : 'photo',
+              ),
               copy,
             ),
           ],
         );
+        if (_paused) {
+          // Nothing changes until the agent is back (B3.5); what was entered
+          // stays.
+          body = Column(
+            children: [
+              _PausedBanner(copy('inspection.paused')),
+              Expanded(
+                child: IgnorePointer(
+                  child: Opacity(opacity: 0.4, child: body),
+                ),
+              ),
+            ],
+          );
+        }
         bar = SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -793,7 +1095,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
                     key: ValueKey(
                       last ? 'inspection-submit' : 'inspection-next',
                     ),
-                    onPressed: _busy
+                    onPressed: _busy || _paused
                         ? null
                         : last
                         ? () => _submit(step)
@@ -839,6 +1141,37 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
       ),
       body: body,
       bottomNavigationBar: bar,
+    );
+  }
+}
+
+/// Shown while the inspection is paused because the agent left the fence.
+class _PausedBanner extends StatelessWidget {
+  const _PausedBanner(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ColoredBox(
+      key: const ValueKey('inspection-paused'),
+      color: scheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(Icons.location_off, color: scheme.onErrorContainer),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(color: scheme.onErrorContainer),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -10,12 +10,14 @@ import 'package:fess_pos/src/core/runtime/module_runtime.dart';
 import 'package:fess_pos/src/core/theme/pos_theme_data.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/local/repositories.dart';
+import 'package:fess_pos/src/data/outbox/outbox_store.dart';
 import 'package:fess_pos/src/domain/cards/cards.dart';
 import 'package:fess_pos/src/domain/forms/reason_codes.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/domain/maps/map_tiles.dart';
+import 'package:fess_pos/src/domain/sync/attention.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -87,6 +89,32 @@ final reasonCodesProvider = StreamProvider<List<ReasonCode>>((ref) async* {
 }, name: 'reasonCodes');
 
 /// The agent's own jobs, live.
+/// What the outbox holds, live, for the sync status (docs/08 §8).
+final syncStatusProvider = StreamProvider<OutboxStatus>((ref) async* {
+  yield* OutboxStore(
+    await ref.watch(localDatabaseProvider.future),
+  ).watchStatus();
+}, name: 'syncStatus');
+
+/// What the server couldn't take, newest first (T4-13).
+final needsAttentionProvider = StreamProvider<List<AttentionItem>>((
+  ref,
+) async* {
+  yield* OutboxStore(
+    await ref.watch(localDatabaseProvider.future),
+  ).watchNeedsAttention().map(
+    (rows) => [
+      for (final r in rows)
+        AttentionItem(
+          id: r.id,
+          type: r.type,
+          createdAt: r.createdAt,
+          reason: attentionReason(r.receipt, r.lastError),
+        ),
+    ],
+  );
+}, name: 'needsAttention');
+
 final myJobsProvider = StreamProvider<List<JobRecord>>((ref) async* {
   yield* (await ref.watch(jobRepositoryProvider.future)).watchMine();
 }, name: 'myJobs');

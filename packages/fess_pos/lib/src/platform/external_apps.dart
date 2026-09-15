@@ -1,19 +1,32 @@
 import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Hands the agent over to other apps on the phone (B2.5: "launch external
-/// navigation"). The host already ships `url_launcher`, so this adds no
-/// native code to it.
-// An interface, not a typedef: platform adapters are swapped as objects.
-// ignore: one_member_abstracts
+/// navigation"), and to the phone's settings. The host already ships
+/// `url_launcher` and `geolocator`, so this adds no native code to it.
 abstract interface class ExternalApps {
   /// Opens the phone's maps app with directions to [lat], [lng]; false when
   /// no app could take it.
   Future<bool> openDirections(double lat, double lng, {String? label});
+
+  /// Opens the host app's page in the phone's settings, where a permission
+  /// the agent refused can be turned on; false where there's none (web).
+  Future<bool> openAppSettings();
 }
 
 class LauncherExternalApps implements ExternalApps {
   const LauncherExternalApps();
+
+  @override
+  Future<bool> openAppSettings() async {
+    if (kIsWeb) return false;
+    try {
+      return await Geolocator.openAppSettings();
+    } on Object {
+      return false;
+    }
+  }
 
   @override
   Future<bool> openDirections(double lat, double lng, {String? label}) async {

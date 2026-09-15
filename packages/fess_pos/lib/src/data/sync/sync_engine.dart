@@ -118,6 +118,16 @@ class SyncEngine {
     _timer = Timer(nudgeDelay, () => unawaited(syncNow()));
   }
 
+  /// The upload lane; a failure there waits for the next run.
+  Future<int> _uploadLane(Future<int> Function() upload) async {
+    try {
+      return await upload();
+    } on Object catch (e, st) {
+      _log.warning('evidence uploads stopped', error: e, stackTrace: st);
+      return 0;
+    }
+  }
+
   Future<SyncRunReport> _run() async {
     final at = _clock();
     DrainReport? drained;
@@ -134,17 +144,16 @@ class SyncEngine {
         }
       }
       final origin = await _deviceOrigin();
-      if (origin != null) await outbox.reportQuarantinedStores(origin);
+      if (origin != null) {
+        await outbox.reportQuarantinedStores(origin);
+        await outbox.reportEvidenceAnomalies(origin);
+      }
 
       drained = await sender.drain();
+      // The upload lane runs beside the pull rather than before it
+      // (T4-13); what it records goes out once both are done.
       final upload = _uploadEvidence;
-      if (upload != null) {
-        try {
-          if (await upload() > 0) drained = await sender.drain();
-        } on Object catch (e, st) {
-          _log.warning('evidence uploads stopped', error: e, stackTrace: st);
-        }
-      }
+      final uploading = upload == null ? null : _uploadLane(upload);
       if (_canPull()) {
         try {
           pulled = await puller.pull();
@@ -155,6 +164,9 @@ class SyncEngine {
           error = e.code;
           _log.info('pull not done (${e.code}); next run carries on');
         }
+      }
+      if (uploading != null && await uploading > 0) {
+        drained = await sender.drain();
       }
       await outbox.purgeCommitted(_config.retainCommittedPayload);
       error ??= drained?.stoppedBy;

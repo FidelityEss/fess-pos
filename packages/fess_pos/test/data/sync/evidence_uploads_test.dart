@@ -121,6 +121,166 @@ void main() {
 
   tearDown(() => db.close());
 
+  Map<String, Object?> uploadGrant() => {
+    'state': 'upload',
+    'evidence_id': 'e1',
+    'bucket': 'evidence',
+    'path': 'bank/b/job/j/inspection/i/e1.jpg',
+    'signed_url': _signedUrl,
+    'content_type': 'image/jpeg',
+  };
+
+  Future<List<Map<String, Object?>>> clientErrors() async => [
+    for (final o in await (db.select(
+      db.outbox,
+    )..where((o) => o.type.equals('client_error'))).get())
+      for (final e
+          in ((jsonDecode(o.envelope) as Map<String, Object?>)['payload']!
+                  as Map<String, Object?>)['errors']!
+              as List<Object?>)
+        e! as Map<String, Object?>,
+  ];
+
+  group('resumable (T4-13)', () {
+    const endpoint =
+        'https://pos-qa.example.invalid/storage/v1/upload/resumable/sign';
+
+    Map<String, Object?> resumableGrant() => {
+      ...uploadGrant(),
+      'resumable': {
+        'endpoint': endpoint,
+        'headers': {'x-signature': 'sig'},
+      },
+    };
+
+    test(
+      'with a resumable grant the bytes go by TUS: created, then sent',
+      () async {
+        storage = (r) => switch (r.method) {
+          'POST' => http.Response(
+            '',
+            201,
+            headers: {'location': '/storage/v1/upload/resumable/sign/u1'},
+          ),
+          'PATCH' => http.Response('', 204, headers: {'upload-offset': '4'}),
+          _ => http.Response('', 500),
+        };
+        grant(resumableGrant());
+        expect(await uploads.run(), 1);
+        expect(puts.map((r) => r.method), ['POST', 'PATCH']);
+        final created = puts.first;
+        expect(created.url.toString(), endpoint);
+        expect(created.headers['upload-length'], '4');
+        expect(created.headers['x-signature'], 'sig');
+        expect(created.headers['tus-resumable'], '1.0.0');
+        expect(
+          created.headers['upload-metadata'],
+          contains(
+            base64Encode(utf8.encode('bank/b/job/j/inspection/i/e1.jpg')),
+          ),
+        );
+        final sent = puts.last;
+        expect(
+          sent.url.toString(),
+          'https://pos-qa.example.invalid/storage/v1/upload/resumable/sign/u1',
+        );
+        expect(sent.headers['upload-offset'], '0');
+        expect(sent.bodyBytes, bytes);
+        expect(await uploaded(), hasLength(1));
+      },
+    );
+
+    test(
+      'an interrupted upload carries on from where the storage has it',
+      () async {
+        var failPatch = true;
+        storage = (r) {
+          if (r.method == 'POST') {
+            return http.Response(
+              '',
+              201,
+              headers: {'location': '$endpoint/u1'},
+            );
+          }
+          if (r.method == 'PATCH' && failPatch) {
+            failPatch = false;
+            throw http.ClientException('the line dropped');
+          }
+          if (r.method == 'HEAD') {
+            return http.Response('', 200, headers: {'upload-offset': '2'});
+          }
+          return http.Response('', 204, headers: {'upload-offset': '4'});
+        };
+        grant(resumableGrant());
+        expect(await uploads.run(), 0, reason: 'it waits for the next run');
+        expect(await uploaded(), isEmpty);
+
+        puts.clear();
+        expect(await uploads.run(), 1);
+        expect(puts.map((r) => r.method), ['HEAD', 'PATCH']);
+        expect(puts.last.headers['upload-offset'], '2');
+        expect(puts.last.bodyBytes, bytes.sublist(2));
+        expect(await uploaded(), hasLength(1));
+      },
+    );
+
+    test('refused as resumable, the bytes go in one PUT', () async {
+      storage = (r) => r.method == 'POST'
+          ? http.Response('{"message":"not allowed"}', 400)
+          : http.Response('{"Key":"evidence/e1.jpg"}', 200);
+      grant(resumableGrant());
+      expect(await uploads.run(), 1);
+      expect(puts.map((r) => r.method), ['POST', 'PUT']);
+      expect(puts.last.url.toString(), _signedUrl);
+    });
+  });
+
+  group('T4-03', () {
+    test('a record purged after the server held it still lets the bytes go '
+        'up', () async {
+      grant(uploadGrant());
+      expect(await uploads.run(), 1);
+      expect(puts, hasLength(1));
+      expect(await uploaded(), hasLength(1));
+    });
+
+    test('bytes that no longer match their hash go up anyway, and it is '
+        'reported', () async {
+      await (db.update(db.evidence)..where((e) => e.id.equals('e1'))).write(
+        EvidenceCompanion(sha256: Value('f' * 64)),
+      );
+      await putMeta(OutboxState.committed);
+      grant(uploadGrant());
+      expect(await uploads.run(), 1);
+      expect(puts, hasLength(1), reason: 'never dropped');
+      final error = (await clientErrors()).single;
+      expect(error['kind'], 'local_hash_mismatch');
+      expect(error['code'], 'EVIDENCE_LOCAL_HASH_MISMATCH');
+      expect(error['detail'], {
+        'evidence_id': 'e1',
+        'recorded_sha256': 'f' * 64,
+        'local_sha256': sha256HexBytes(bytes),
+      });
+    });
+
+    test('evidence whose bytes are gone is reported once, and kept', () async {
+      await (db.update(db.evidence)..where((e) => e.id.equals('e1'))).write(
+        const EvidenceCompanion(bytes: Value(null)),
+      );
+      const origin = EnvelopeOrigin(
+        deviceId: testDeviceId,
+        clientType: 'native',
+      );
+      await outbox.reportEvidenceAnomalies(origin);
+      await outbox.reportEvidenceAnomalies(origin);
+      final error = (await clientErrors()).single;
+      expect(error['code'], 'EVIDENCE_BYTES_MISSING');
+      expect(error['kind'], 'recovery_anomaly');
+      expect((error['detail']! as Map)['evidence_id'], 'e1');
+      expect(await evidence(), isA<EvidenceRow>(), reason: 'nothing deleted');
+    });
+  });
+
   test('once the record is held, the bytes go up and it is said', () async {
     await putMeta(OutboxState.committed);
     grant({

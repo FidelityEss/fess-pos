@@ -150,4 +150,8 @@ abstract final class PosErrorCodes {
   static const String localStoreSchemaNewer = 'LOCAL_STORE_SCHEMA_NEWER';
   static const String cameraUnavailable = 'CAMERA_UNAVAILABLE';
   static const String cameraFailed = 'CAMERA_FAILED';
+
+  /// The user hasn't let the host app use the camera; only the phone's
+  /// settings can change that.
+  static const String cameraPermissionDenied = 'CAMERA_PERMISSION_DENIED';
 }
