@@ -1,4 +1,5 @@
 import 'package:fess_pos/src/core/di/providers.dart';
+import 'package:fess_pos/src/core/theme/pos_widgets.dart';
 import 'package:fess_pos/src/domain/app/app_spec.dart';
 import 'package:fess_pos/src/domain/forms/form_submissions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
@@ -171,16 +172,13 @@ class _RecordFormPageState extends ConsumerState<RecordFormPage> {
               ),
             ],
           );
-          submit = SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: FilledButton(
-                key: const ValueKey('record-form-submit'),
-                onPressed: _busy
-                    ? null
-                    : () => _submit(found, form, submissions, job, ruleContext),
-                child: Text(copy('form.submit')),
-              ),
+          submit = PosActionBar(
+            child: FilledButton(
+              key: const ValueKey('record-form-submit'),
+              onPressed: _busy
+                  ? null
+                  : () => _submit(found, form, submissions, job, ruleContext),
+              child: Text(copy('form.submit')),
             ),
           );
         case AsyncData(value: null):

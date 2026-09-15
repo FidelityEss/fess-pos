@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:fess_pos/src/core/di/providers.dart';
+import 'package:fess_pos/src/core/theme/pos_widgets.dart';
 import 'package:fess_pos/src/domain/flows/flow_runner.dart';
 import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
@@ -1090,39 +1091,36 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
             ],
           );
         }
-        bar = SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Row(
-              children: [
-                OutlinedButton(
-                  key: const ValueKey('inspection-back'),
-                  onPressed: _busy ? null : _back,
-                  child: Text(copy('inspection.back')),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    key: ValueKey(
-                      last ? 'inspection-submit' : 'inspection-next',
-                    ),
-                    onPressed: _busy || _paused
-                        ? null
-                        : last
-                        ? () => _submit(step)
-                        : _next,
-                    child: Text(
-                      last
-                          ? renderTemplate(
-                              label ?? copy('inspection.submit'),
-                              data,
-                            )
-                          : copy('inspection.next'),
-                    ),
+        bar = PosActionBar(
+          child: Row(
+            children: [
+              OutlinedButton(
+                key: const ValueKey('inspection-back'),
+                onPressed: _busy ? null : _back,
+                child: Text(copy('inspection.back')),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  key: ValueKey(
+                    last ? 'inspection-submit' : 'inspection-next',
+                  ),
+                  onPressed: _busy || _paused
+                      ? null
+                      : last
+                      ? () => _submit(step)
+                      : _next,
+                  child: Text(
+                    last
+                        ? renderTemplate(
+                            label ?? copy('inspection.submit'),
+                            data,
+                          )
+                        : copy('inspection.next'),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
         // Above the buttons, so it shows however long the page is.

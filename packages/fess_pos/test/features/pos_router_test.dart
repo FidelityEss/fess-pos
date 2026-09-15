@@ -180,7 +180,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Active leads'), findsOneWidget);
     expect(
-      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      tester
+          .widget<BottomNavigationBar>(find.byType(BottomNavigationBar))
+          .currentIndex,
       1,
       reason: 'the tile switched to its tab',
     );
@@ -191,7 +193,7 @@ void main() {
     await tester.pumpWidget(_router(_app(_tabs)));
     await tester.pumpAndSettle();
     expect(find.text('Hi Sipho'), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
 
     await tester.tap(find.text('Leads'));
     await tester.pumpAndSettle();
@@ -202,12 +204,16 @@ void main() {
     await tester.tap(find.text('Joe Spaza'));
     await tester.pumpAndSettle();
     expect(find.text('POS-j1'), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing, reason: 'over the tabs');
+    expect(
+      find.byType(BottomNavigationBar),
+      findsNothing,
+      reason: 'over the tabs',
+    );
 
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
     expect(find.text('Active leads'), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
   });
 
   testWidgets("a page's button opens the page it names", (tester) async {
@@ -233,7 +239,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(BottomNavigationBar), findsNothing);
     await tester.tap(find.byKey(const ValueKey('pos-menu')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('pos-nav-active_jobs')));
@@ -249,7 +255,7 @@ void main() {
     addTearDown(() => PosLogger.sink = null);
     await tester.pumpWidget(_router(_app(_tabs, home: 'nowhere')));
     await tester.pumpAndSettle();
-    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(BottomNavigationBar), findsNothing);
     expect(
       find.text('Hi Sipho'),
       findsOneWidget,

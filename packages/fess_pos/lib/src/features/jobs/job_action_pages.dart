@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:fess_pos/src/core/di/providers.dart';
+import 'package:fess_pos/src/core/theme/pos_tones.dart';
+import 'package:fess_pos/src/core/theme/pos_widgets.dart';
+import 'package:fess_pos/src/core/theme/tokens.g.dart';
 import 'package:fess_pos/src/domain/forms/reason_codes.dart';
 import 'package:fess_pos/src/domain/forms/reason_form.dart';
 import 'package:fess_pos/src/domain/geofence/geofence.dart';
@@ -28,6 +31,9 @@ T? _data<T>(AsyncValue<T> value) => switch (value) {
 String? _string(Object? v) => v is String ? v : null;
 
 Map<String, Object?>? _map(Object? v) => v is Map<String, Object?> ? v : null;
+
+/// The page's side padding: buttons line up with the header's back button.
+const double _gutter = PosTokens.componentPagePaddingX;
 
 /// The app definition in force (docs/04 §3.6) for [bankId]'s jobs, as the
 /// router checked it; the bundled one when none can be used (T3-17).
@@ -335,46 +341,43 @@ class _JobActionBarState extends ConsumerState<JobActionBar> {
         others.isEmpty) {
       return const SizedBox.shrink();
     }
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (inspections != null && canInspect && !open)
-              _CheckinPrompt(inspections: inspections, job: widget.job),
-            if (inspections != null && canInspect)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: FilledButton(
-                  key: ValueKey(
-                    open ? 'job-action-continue' : 'job-action-begin',
-                  ),
-                  onPressed: _busy ? null : () => _inspect(inspections, copy),
-                  child: Text(
-                    open
-                        ? copy('inspection.continue')
-                        : JobActionConfig.flowLabel(app, pageActions) ??
-                              copy('inspection.begin'),
-                  ),
+    return PosActionBar(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (inspections != null && canInspect && !open)
+            _CheckinPrompt(inspections: inspections, job: widget.job),
+          if (inspections != null && canInspect)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: FilledButton(
+                key: ValueKey(
+                  open ? 'job-action-continue' : 'job-action-begin',
+                ),
+                onPressed: _busy ? null : () => _inspect(inspections, copy),
+                child: Text(
+                  open
+                      ? copy('inspection.continue')
+                      : JobActionConfig.flowLabel(app, pageActions) ??
+                            copy('inspection.begin'),
                 ),
               ),
-            if (actions != null)
-              for (final a in allowed)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: _button(
-                    a,
-                    actions,
-                    JobActionConfig.of(app, a, actions: pageActions),
-                    copy,
-                  ),
+            ),
+          if (actions != null)
+            for (final a in allowed)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: _button(
+                  a,
+                  actions,
+                  JobActionConfig.of(app, a, actions: pageActions),
+                  copy,
                 ),
-            for (final b in others)
-              Padding(padding: const EdgeInsets.only(top: 8), child: b),
-          ],
-        ),
+              ),
+          for (final b in others)
+            Padding(padding: const EdgeInsets.only(top: 8), child: b),
+        ],
       ),
     );
   }
@@ -612,16 +615,13 @@ class _ReasonFormPageState extends ConsumerState<ReasonFormPage> {
         body = ListView(
           children: [FormView(controller: form, copy: copy)],
         );
-        submit = SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: FilledButton(
-              key: const ValueKey('reason-form-submit'),
-              onPressed: _busy
-                  ? null
-                  : () => _submit(found, fields, form, actions),
-              child: Text(copy('job.action.submit')),
-            ),
+        submit = PosActionBar(
+          child: FilledButton(
+            key: const ValueKey('reason-form-submit'),
+            onPressed: _busy
+                ? null
+                : () => _submit(found, fields, form, actions),
+            child: Text(copy('job.action.submit')),
           ),
         );
       case AsyncData(value: null):
@@ -780,6 +780,7 @@ class _ActionOutcomePageState extends ConsumerState<ActionOutcomePage> {
         }
         if (outcome == 'sending') {
           return Scaffold(
+            appBar: PosHeader(title: copy('shell.title')),
             body: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -806,6 +807,12 @@ class _ActionOutcomePageState extends ConsumerState<ActionOutcomePage> {
           });
         }
         final theme = Theme.of(context);
+        final onHero = theme.colorScheme.onPrimary;
+        final tone = switch (outcome) {
+          'success' => PosTone.success,
+          'failure' => PosTone.danger,
+          _ => PosTone.accent,
+        };
         return Scaffold(
           appBar: PosHeader(
             title: copy('shell.title'),
@@ -813,44 +820,80 @@ class _ActionOutcomePageState extends ConsumerState<ActionOutcomePage> {
           ),
           body: ListView(
             key: ValueKey('outcome-$outcome'),
-            padding: const EdgeInsets.all(24),
             children: [
-              Icon(
-                _icon(content.icon, outcome),
-                size: 64,
-                color: outcome == 'failure'
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.primary,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                content.title,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(content.message, textAlign: TextAlign.center),
-              if (detail != null) ...[
-                const SizedBox(height: 16),
-                Text(detail, textAlign: TextAlign.center),
-              ],
-              const SizedBox(height: 24),
-              for (final b in content.buttons)
-                if (_can(b))
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: b.action == 'home'
-                        ? FilledButton(
-                            key: ValueKey('outcome-${b.action}'),
-                            onPressed: () => _run(b, data),
-                            child: Text(b.label),
-                          )
-                        : OutlinedButton(
-                            key: ValueKey('outcome-${b.action}'),
-                            onPressed: () => _run(b, data),
-                            child: Text(b.label),
+              // As FESS's confirmation screens: the header's green runs on
+              // into the icon, the title and the message; the choices sit
+              // on white below.
+              ColoredBox(
+                color: theme.colorScheme.primary,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(_gutter, 16, _gutter, 40),
+                  child: Column(
+                    children: [
+                      DecoratedBox(
+                        decoration: const BoxDecoration(
+                          color: PosTokens.colorBackgroundPage,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Icon(
+                            _icon(content.icon, outcome),
+                            size: 40,
+                            color: posToneColors(tone).foreground,
                           ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        content.title,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: onHero,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        content.message,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: onHero,
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(_gutter, 24, _gutter, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (detail != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Text(detail, textAlign: TextAlign.center),
+                      ),
+                    for (final b in content.buttons)
+                      if (_can(b))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: b.action == 'home'
+                              ? FilledButton(
+                                  key: ValueKey('outcome-${b.action}'),
+                                  onPressed: () => _run(b, data),
+                                  child: Text(b.label),
+                                )
+                              : OutlinedButton(
+                                  key: ValueKey('outcome-${b.action}'),
+                                  onPressed: () => _run(b, data),
+                                  child: Text(b.label),
+                                ),
+                        ),
+                  ],
+                ),
+              ),
             ],
           ),
         );

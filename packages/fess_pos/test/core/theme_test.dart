@@ -3,11 +3,14 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:fess_pos/fess_pos.dart';
 import 'package:fess_pos/src/bootstrap/bootstrap_snapshot.dart';
 import 'package:fess_pos/src/core/theme/pos_theme_data.dart';
+import 'package:fess_pos/src/core/theme/pos_tones.dart';
 import 'package:fess_pos/src/core/theme/tokens.g.dart';
+import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -103,6 +106,123 @@ void main() {
       'packages/fess_pos/Montserrat',
     );
     expect(theme.textTheme.bodyMedium!.fontWeight, FontWeight.w600);
+  });
+
+  test('white and flat (D-97): no shadows; FESS buttons, fields and bar', () {
+    final theme = buildPosThemeData(PosBrand.resolve());
+    const white = Color(0xFFFFFFFF);
+    expect(theme.scaffoldBackgroundColor, white);
+    expect(theme.canvasColor, white);
+    expect(theme.cardTheme.elevation, 0);
+    expect(
+      (theme.cardTheme.shape! as RoundedRectangleBorder).side.color,
+      PosTokens.colorLineBorder,
+    );
+    expect(theme.appBarTheme.elevation, 0);
+    expect(theme.appBarTheme.centerTitle, isTrue);
+    expect(theme.dialogTheme.elevation, 0);
+
+    final primary = theme.filledButtonTheme.style!;
+    expect(primary.backgroundColor!.resolve({}), PosTokens.colorBrandPrimary);
+    expect(primary.foregroundColor!.resolve({}), white);
+    expect(primary.elevation!.resolve({}), 0);
+    expect(primary.minimumSize!.resolve({})!.height, 45);
+
+    // The secondary button: white, a 2 px gold outline, dark text.
+    final outline = theme.outlinedButtonTheme.style!;
+    final side = outline.side!.resolve({})!;
+    expect(side.color, PosTokens.colorBrandGold);
+    expect(side.width, 2);
+    expect(outline.backgroundColor!.resolve({}), white);
+    expect(outline.foregroundColor!.resolve({}), PosTokens.colorTextPrimary);
+
+    final input = theme.inputDecorationTheme;
+    expect(input.filled, isTrue);
+    expect(input.fillColor, white);
+    final border = input.enabledBorder! as OutlineInputBorder;
+    expect(border.borderRadius, BorderRadius.circular(8));
+    expect(border.borderSide.width, 2);
+    expect(border.borderSide.color, PosTokens.colorLineDivider);
+    expect(input.prefixIconColor, PosTokens.colorTextMuted);
+
+    final nav = theme.bottomNavigationBarTheme;
+    expect(nav.backgroundColor, white);
+    expect(nav.elevation, 0);
+    expect(nav.selectedItemColor, PosTokens.colorBrandPrimary);
+    expect(nav.unselectedItemColor, PosTokens.colorTextBody);
+  });
+
+  test("remote config's primary colour still reaches the header, buttons "
+      'and the bar (D-45)', () {
+    final theme = buildPosThemeData(
+      PosBrand.resolve(
+        config: BootstrapSnapshot.fromResolvedConfig(const {
+          'theme': {'primary_color': '#112233'},
+        }),
+      ),
+    );
+    const primary = Color(0xFF112233);
+    expect(theme.appBarTheme.backgroundColor, primary);
+    final button = theme.filledButtonTheme.style!;
+    expect(button.backgroundColor!.resolve({}), primary);
+    expect(theme.bottomNavigationBarTheme.selectedItemColor, primary);
+    expect(theme.inputDecorationTheme.focusedBorder!.borderSide.color, primary);
+  });
+
+  test('text reads at 4.5:1 or better: every tone on its tint, and the '
+      'buttons and bar (docs/14 §3)', () {
+    double contrast(Color a, Color b) {
+      final la = a.computeLuminance();
+      final lb = b.computeLuminance();
+      return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05);
+    }
+
+    for (final tone in PosTone.values) {
+      final colors = posToneColors(tone);
+      expect(
+        contrast(colors.foreground, colors.background),
+        greaterThanOrEqualTo(4.5),
+        reason: '$tone',
+      );
+    }
+    const white = Color(0xFFFFFFFF);
+    expect(contrast(white, PosTokens.colorBrandPrimary), greaterThan(4.5));
+    expect(
+      contrast(PosTokens.componentButtonOutlineText, white),
+      greaterThan(4.5),
+    );
+    expect(
+      contrast(
+        PosTokens.componentButtonDangerText,
+        PosTokens.componentButtonDangerBackground,
+      ),
+      greaterThan(4.5),
+    );
+    expect(
+      contrast(PosTokens.componentBottomNavInactiveItem, white),
+      greaterThan(4.5),
+    );
+  });
+
+  testWidgets('the header: a centred title and an outlined back button', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildPosThemeData(PosBrand.resolve()),
+        home: Scaffold(
+          appBar: PosHeader(title: 'Leads', onBack: () {}),
+        ),
+      ),
+    );
+    final ring = tester.widget<Container>(
+      find.byKey(const ValueKey('pos-back-ring')),
+    );
+    final decoration = ring.decoration! as BoxDecoration;
+    expect(decoration.color, isNull, reason: 'a ring, not a filled circle');
+    expect(decoration.border!.top.color, PosTokens.componentHeaderBackColor);
+    final width = tester.getSize(find.byType(Scaffold)).width;
+    expect(tester.getCenter(find.text('Leads')).dx, closeTo(width / 2, 1));
   });
 
   test('Montserrat is bundled for every weight the tokens use, with its '

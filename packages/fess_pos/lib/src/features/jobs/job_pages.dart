@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fess_pos/src/core/content/bundled_views.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
+import 'package:fess_pos/src/core/theme/pos_widgets.dart';
 import 'package:fess_pos/src/domain/cards/cards.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
@@ -164,17 +165,17 @@ Widget? _pageActions(
         ),
   ];
   if (buttons.isEmpty) return null;
-  return SafeArea(
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final b in buttons)
-            Padding(padding: const EdgeInsets.only(top: 8), child: b),
-        ],
-      ),
+  return PosActionBar(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < buttons.length; i++)
+          Padding(
+            padding: EdgeInsets.only(top: i == 0 ? 0 : 12),
+            child: buttons[i],
+          ),
+      ],
     ),
   );
 }

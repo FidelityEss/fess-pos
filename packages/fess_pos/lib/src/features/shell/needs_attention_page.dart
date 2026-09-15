@@ -1,4 +1,7 @@
 import 'package:fess_pos/src/core/di/providers.dart';
+import 'package:fess_pos/src/core/theme/pos_tones.dart';
+import 'package:fess_pos/src/core/theme/pos_widgets.dart';
+import 'package:fess_pos/src/core/theme/tokens.g.dart';
 import 'package:fess_pos/src/domain/sync/lost_store.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart' show renderTemplate;
@@ -12,7 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// them, battery settings that can hold background sending back, with the
 /// way to change them (T5-02), and any store that could never be opened
 /// again with work on it (T5-13): what was lost as far as the phone knows,
-/// until the agent acknowledges it.
+/// until the agent acknowledges it. Items are flat rows (D-97).
 class NeedsAttentionPage extends ConsumerWidget {
   const NeedsAttentionPage({super.key});
 
@@ -30,6 +33,8 @@ class NeedsAttentionPage extends ConsumerWidget {
     'sync_report',
     'client_error',
   };
+
+  static const double _gutter = PosTokens.componentPagePaddingX;
 
   static String _when(String iso) {
     final at = DateTime.tryParse(iso)?.toLocal();
@@ -50,29 +55,28 @@ class NeedsAttentionPage extends ConsumerWidget {
       AsyncData(:final value) => value,
       _ => const <LostStore>[],
     };
-    final lostCards = [
+    final problem = posToneColors(PosTone.danger).foreground;
+    final lostRows = [
+      if (lost.isNotEmpty) const Divider(height: 1, thickness: 1),
       for (final store in lost)
-        Card(
+        PosListRow(
           key: ValueKey('lost-${store.name}'),
-          child: ListTile(
-            leading: const Icon(Icons.report_outlined),
-            title: Text(copy('attention.lost.title')),
-            subtitle: Text(
-              store.outcome == LostStoreOutcome.unsentUnrecoverable
-                  ? renderTemplate(copy('attention.lost.unsent'), {
-                      'count': store.waiting,
-                      'at': _when(store.oldestPendingAt ?? store.at),
-                    })
-                  : renderTemplate(copy('attention.lost.unknown'), {
-                      'at': _when(store.at),
-                    }),
-            ),
-          ),
+          icon: Icons.report_outlined,
+          iconColor: problem,
+          title: copy('attention.lost.title'),
+          description: store.outcome == LostStoreOutcome.unsentUnrecoverable
+              ? renderTemplate(copy('attention.lost.unsent'), {
+                  'count': store.waiting,
+                  'at': _when(store.oldestPendingAt ?? store.at),
+                })
+              : renderTemplate(copy('attention.lost.unknown'), {
+                  'at': _when(store.at),
+                }),
         ),
       if (lost.isNotEmpty)
-        Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: TextButton(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(_gutter, 16, _gutter, 8),
+          child: OutlinedButton(
             key: const ValueKey('lost-acknowledge'),
             onPressed: () => ref.read(acknowledgeLostStoresProvider)(),
             child: Text(copy('attention.lost.ok')),
@@ -83,42 +87,48 @@ class NeedsAttentionPage extends ConsumerWidget {
       AsyncData(value: final items)
           when items.isEmpty && lost.isEmpty && !restricted =>
         Center(
-          child: Text(
-            copy('attention.none'),
-            key: const ValueKey('attention-none'),
+          child: Padding(
+            padding: const EdgeInsets.all(_gutter),
+            child: Text(
+              copy('attention.none'),
+              key: const ValueKey('attention-none'),
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       AsyncData(value: final items) => ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
           if (restricted) const _BatteryCard(),
-          ...lostCards,
+          ...lostRows,
           if (items.isNotEmpty) ...[
-            if (lost.isNotEmpty || restricted) const SizedBox(height: 12),
-            Text(copy('attention.explain')),
-            const SizedBox(height: 12),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                _gutter,
+                lost.isNotEmpty ? 16 : 0,
+                _gutter,
+                16,
+              ),
+              child: Text(copy('attention.explain')),
+            ),
+            const Divider(height: 1, thickness: 1),
           ],
           for (final item in items)
-            Card(
+            PosListRow(
               key: ValueKey('attention-${item.id}'),
-              child: ListTile(
-                leading: const Icon(Icons.error_outline),
-                title: Text(
-                  copy(
-                    'attention.type.'
-                    '${_named.contains(item.type) ? item.type : 'other'}',
-                  ),
-                ),
-                subtitle: Text(
-                  [
-                    renderTemplate(copy('attention.saved_at'), {
-                      'at': _when(item.createdAt),
-                    }),
-                    if (item.reason case final String code)
-                      renderTemplate(copy('attention.reason'), {'code': code}),
-                  ].join('\n'),
-                ),
+              icon: Icons.error_outline,
+              iconColor: problem,
+              title: copy(
+                'attention.type.'
+                '${_named.contains(item.type) ? item.type : 'other'}',
               ),
+              description: [
+                renderTemplate(copy('attention.saved_at'), {
+                  'at': _when(item.createdAt),
+                }),
+                if (item.reason case final String code)
+                  renderTemplate(copy('attention.reason'), {'code': code}),
+              ].join('\n'),
             ),
         ],
       ),
@@ -136,7 +146,8 @@ class NeedsAttentionPage extends ConsumerWidget {
 }
 
 /// How to let the app send in the background (T5-02, docs/12 §9). Asked
-/// again when the agent comes back from the phone's settings.
+/// again when the agent comes back from the phone's settings. A box, since
+/// it carries a button.
 class _BatteryCard extends ConsumerStatefulWidget {
   const _BatteryCard();
 
@@ -164,38 +175,55 @@ class _BatteryCardState extends ConsumerState<_BatteryCard> {
   @override
   Widget build(BuildContext context) {
     final copy = ref.watch(copyProvider);
-    return Card(
+    final tone = posToneColors(PosTone.warning);
+    return PosBox(
       key: const ValueKey('attention-battery'),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.battery_alert_outlined),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    copy('attention.battery.title'),
-                    style: Theme.of(context).textTheme.titleMedium,
+      margin: const EdgeInsets.fromLTRB(
+        NeedsAttentionPage._gutter,
+        0,
+        NeedsAttentionPage._gutter,
+        16,
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: tone.background,
+                  shape: BoxShape.circle,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.battery_alert_outlined,
+                    size: 22,
+                    color: tone.foreground,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(copy('attention.battery.body')),
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: TextButton(
-                key: const ValueKey('attention-battery-open'),
-                onPressed: () =>
-                    ref.read(platformServicesProvider).power.openSettings(),
-                child: Text(copy('attention.battery.open')),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  copy('attention.battery.title'),
+                  style: posRowTitleStyle(context).copyWith(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(copy('attention.battery.body')),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            key: const ValueKey('attention-battery-open'),
+            onPressed: () =>
+                ref.read(platformServicesProvider).power.openSettings(),
+            icon: const Icon(Icons.settings_outlined),
+            label: Text(copy('attention.battery.open')),
+          ),
+        ],
       ),
     );
   }
