@@ -1,8 +1,8 @@
 'use client';
 
 // The settings of one question (form field or job attribute): label, help, key, required, visibility, the type's own
-// props (generated from the engine catalogue with plain-language labels), answers, checks and risk flags. Rules are
-// shown as sentences; their JSON is editable in Advanced view only (the visual rule builder is T3-10).
+// props (generated from the engine catalogue with plain-language labels), answers, checks and risk flags. Conditions are
+// sentences built from dropdowns (rule-builder.tsx, T3-10); their JSON stays editable in Advanced view.
 import { Plus } from 'lucide-react';
 import { type ReactNode, useId, useState } from 'react';
 import { toast } from 'sonner';
@@ -16,12 +16,13 @@ import { cn } from '@/lib/utils';
 import { componentWording, displayLabel, enumLabel, propLabel } from './catalogue-ui';
 import { asArr, asObj, asStr, getIn, isRule, KEY_PATTERN, type Obj, type Path, setProp, toKey, uniqueKey, updateIn } from './doc';
 import { OptionsEditor } from './options-editor';
+import { ConditionEditor, VisibilityControl } from './rule-builder';
 import { conditionText, type RuleVocabulary, slotSentence, valueText } from './rule-english';
+import type { Subject } from './rule-subjects';
 import {
   AdvancedJsonButton,
   CheckList,
   Hint,
-  JsonPartEditor,
   ListField,
   NumberField,
   Row,
@@ -109,11 +110,7 @@ function Segmented<T extends string>({ value, options, onChange, label }: { valu
   );
 }
 
-function starterRule(vocabKey: string | undefined): unknown {
-  return vocabKey ? { '==': [{ var: `answers.${vocabKey}` }, true] } : { '==': [{ var: 'job.attributes.risk_tier' }, 'high'] };
-}
-
-/** Optional / Required / Only sometimes. */
+/** Optional / Required / Only sometimes (the condition is built as a sentence). */
 function RuleOrFlag({
   slot,
   title,
@@ -121,6 +118,7 @@ function RuleOrFlag({
   onChange,
   vocab,
   previousKey,
+  subjects = [],
   offLabel,
   onLabel,
   allowRule = true,
@@ -131,12 +129,12 @@ function RuleOrFlag({
   onChange: (v: unknown) => void;
   vocab: RuleVocabulary;
   previousKey?: string;
+  subjects?: readonly Subject[];
   offLabel: string;
   onLabel: string;
   /** Offer "Only sometimes" (always shown when a condition is already set). */
   allowRule?: boolean;
 }) {
-  const advanced = useIsAdvanced();
   const [writing, setWriting] = useState(false);
   const mode = value === true ? 'on' : isRule(value) ? 'rule' : 'off';
   function choose(next: 'on' | 'off' | 'rule') {
@@ -163,22 +161,21 @@ function RuleOrFlag({
           ...(allowRule || mode === 'rule' ? [{ value: 'rule' as const, label: 'Only sometimes' }] : []),
         ]}
       />
-      {mode === 'rule' ? <RuleLine sentence={slotSentence(slot, value, vocab)} rule={value} onChange={onChange} /> : null}
-      {writing && mode !== 'rule' ? (
-        advanced ? (
-          <JsonPartEditor
-            value={starterRule(previousKey)}
-            label="Condition (JSON logic)"
-            rows={5}
-            onCancel={() => setWriting(false)}
-            onApply={(v) => {
-              onChange(v);
-              setWriting(false);
-            }}
-          />
-        ) : (
-          <Hint>Setting conditions here is coming soon. For now, switch to Advanced view to add one.</Hint>
-        )
+      {mode === 'rule' || writing ? (
+        <ConditionEditor
+          key="condition"
+          rule={mode === 'rule' ? value : undefined}
+          onChange={(v) => {
+            onChange(v);
+            setWriting(false);
+          }}
+          onCancel={() => setWriting(false)}
+          subjects={subjects}
+          vocab={vocab}
+          slot={slot}
+          lead={slot === 'required' ? 'Required when' : 'Can’t be changed when'}
+          startPath={previousKey ? `answers.${previousKey}` : undefined}
+        />
       ) : null}
     </Row>
   );
@@ -305,6 +302,8 @@ export function FieldInspector({
   takenKeys,
   fieldChoices,
   previousKey,
+  subjects = [],
+  ownSubjects = [],
 }: {
   path: Path;
   field: Obj;
@@ -315,6 +314,10 @@ export function FieldInspector({
   fieldChoices: { value: string; label: string }[];
   /** Key of the question before this one (a sensible first condition to start from). */
   previousKey?: string;
+  /** What "when it shows" / "required when" can check (this question left out, later ones marked). */
+  subjects?: readonly Subject[];
+  /** What a check or a risk flag can read (this question included). */
+  ownSubjects?: readonly Subject[];
 }) {
   const advanced = useIsAdvanced();
   const { readOnly, fresh, refs } = useStudio();
@@ -501,14 +504,25 @@ export function FieldInspector({
               onChange={(v) => set('required', v)}
               vocab={vocab}
               previousKey={previousKey}
+              subjects={subjects}
               offLabel="Optional"
               onLabel={mode === 'job_schema' ? 'Must be filled in' : 'Required'}
               allowRule={mode === 'form'}
             />
           ) : null}
-          {mode === 'form' ? <Visibility field={field} vocab={vocab} previousKey={previousKey} onChange={(v) => set('visible', v)} onRemove={() => removeWithUndo('visible', 'Condition')} /> : null}
+          {mode === 'form' ? <Visibility field={field} vocab={vocab} subjects={subjects} previousKey={previousKey} onChange={(v) => set('visible', v)} /> : null}
           {advanced && hasValue ? (
-            <RuleOrFlag slot="read_only" title="Can the agent change it?" value={field.read_only} onChange={(v) => set('read_only', v)} vocab={vocab} previousKey={previousKey} offLabel="Editable" onLabel="Read-only" />
+            <RuleOrFlag
+              slot="read_only"
+              title="Can the agent change it?"
+              value={field.read_only}
+              onChange={(v) => set('read_only', v)}
+              vocab={vocab}
+              previousKey={previousKey}
+              subjects={subjects}
+              offLabel="Editable"
+              onLabel="Read-only"
+            />
           ) : field.read_only === true ? (
             <p className="text-sm text-muted-foreground">The agent can’t change this answer.</p>
           ) : null}
@@ -516,7 +530,7 @@ export function FieldInspector({
       ) : mode === 'form' ? (
         <div className="grid gap-4">
           <SubHeading>When it shows</SubHeading>
-          <Visibility field={field} vocab={vocab} previousKey={previousKey} onChange={(v) => set('visible', v)} onRemove={() => removeWithUndo('visible', 'Condition')} />
+          <Visibility field={field} vocab={vocab} subjects={subjects} previousKey={previousKey} onChange={(v) => set('visible', v)} />
         </div>
       ) : null}
 
@@ -539,7 +553,7 @@ export function FieldInspector({
       ) : null}
 
       {/* Automatic values, checks, risk */}
-      {field.value !== undefined || field.default !== undefined || validate.length > 0 || hasRisk || (advanced && hasValue && !readOnly) ? (
+      {field.value !== undefined || field.default !== undefined || validate.length > 0 || hasRisk || (hasValue && !readOnly && mode === 'form') ? (
         <div className="grid gap-3">
           <SubHeading>Checks and flags</SubHeading>
           {field.value !== undefined ? (
@@ -550,9 +564,14 @@ export function FieldInspector({
           ) : null}
           {validate.map((rule, i) => (
             <div key={i} className="grid gap-2 rounded-md border bg-card p-2.5">
-              <RuleLine
-                sentence={<>Checks that {conditionText(rule.rule, vocab).replace(/^./, (c) => c.toLowerCase())}.</>}
+              <ConditionEditor
                 rule={rule.rule}
+                describe={(r) => <>Checks that {conditionText(r, vocab).replace(/^./, (c) => c.toLowerCase())}.</>}
+                subjects={ownSubjects}
+                vocab={vocab}
+                slot="filter"
+                lead="It passes when"
+                startPath={`answers.${key}`}
                 onChange={(v) => update((d) => setProp(d, [...path, 'validate', i], 'rule', v) as Obj)}
                 onRemove={() => {
                   const old = field.validate;
@@ -572,10 +591,15 @@ export function FieldInspector({
           ))}
           {hasRisk ? (
             <div className="grid gap-2 rounded-md border border-amber-200 bg-amber-50/40 p-2.5">
-              <RuleLine
+              <ConditionEditor
                 tone="warning"
-                sentence={<>Flags {enumLabel(asStr(risk.level)).toLowerCase()} risk when {conditionText(risk.when, vocab).replace(/^./, (c) => c.toLowerCase())}.</>}
+                describe={(r) => <>Flags {enumLabel(asStr(risk.level)).toLowerCase()} risk when {conditionText(r, vocab).replace(/^./, (c) => c.toLowerCase())}.</>}
                 rule={risk.when}
+                subjects={ownSubjects}
+                vocab={vocab}
+                slot="filter"
+                lead="Flag it when"
+                startPath={`answers.${key}`}
                 onChange={(v) => update((d) => setProp(d, [...path, 'risk_indicator'], 'when', v) as Obj)}
                 onRemove={() => removeWithUndo('risk_indicator', 'Risk flag')}
                 removeLabel="Remove flag"
@@ -595,7 +619,7 @@ export function FieldInspector({
               </div>
             </div>
           ) : null}
-          {advanced && !readOnly && hasValue ? (
+          {!readOnly && hasValue && mode === 'form' ? (
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -652,38 +676,18 @@ export function FieldInspector({
   );
 }
 
-function Visibility({ field, vocab, previousKey, onChange, onRemove }: { field: Obj; vocab: RuleVocabulary; previousKey?: string; onChange: (v: unknown) => void; onRemove: () => void }) {
-  const advanced = useIsAdvanced();
-  const { readOnly } = useStudio();
-  const [writing, setWriting] = useState(false);
-  const v = field.visible;
+/** "When it shows": Always / Only when… (a sentence built from dropdowns) / Never. */
+function Visibility({ field, vocab, subjects, previousKey, onChange }: { field: Obj; vocab: RuleVocabulary; subjects: readonly Subject[]; previousKey?: string; onChange: (v: unknown) => void }) {
   return (
-    <Row label="When it shows">
-      {isRule(v) ? (
-        <RuleLine sentence={slotSentence('visible', v, vocab)} rule={v} onChange={onChange} onRemove={onRemove} removeLabel="Always show" />
-      ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm">{v === false ? 'Never (hidden)' : 'Always'}</span>
-          {advanced && !readOnly && !writing ? (
-            <Button type="button" size="sm" variant="outline" onClick={() => setWriting(true)}>
-              <Plus /> Show only when…
-            </Button>
-          ) : null}
-        </div>
-      )}
-      {writing ? (
-        <JsonPartEditor
-          value={starterRule(previousKey)}
-          label="Show when (JSON logic)"
-          rows={5}
-          onCancel={() => setWriting(false)}
-          onApply={(nv) => {
-            onChange(nv);
-            setWriting(false);
-          }}
-        />
-      ) : null}
-    </Row>
+    <VisibilityControl
+      value={field.visible}
+      onChange={onChange}
+      subjects={subjects}
+      vocab={vocab}
+      slot="visible"
+      lead="Show it when"
+      startPath={previousKey ? `answers.${previousKey}` : undefined}
+    />
   );
 }
 

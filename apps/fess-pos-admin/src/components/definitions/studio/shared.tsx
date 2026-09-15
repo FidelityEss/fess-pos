@@ -387,8 +387,9 @@ export function JsonPartEditor({ value, onApply, onCancel, label, rows = 8 }: { 
 }
 
 /**
- * A rule shown as a plain-English sentence. In Advanced view (and when editable) "Edit condition" opens the rule JSON;
- * the visual rule builder is T3-10. Existing rules are always kept intact.
+ * A rule shown as a plain-English sentence, for rules that work out a value (a calculated answer, a minimum that
+ * depends on an answer). In Advanced view "Edit condition" opens its JSON. Conditions (when it shows, required when,
+ * checks, risk flags) use ConditionEditor in rule-builder.tsx instead. Existing rules are always kept intact.
  */
 export function RuleLine({
   sentence,

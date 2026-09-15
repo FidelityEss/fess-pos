@@ -45,7 +45,9 @@ import {
 import { FieldInspector } from './field-inspector';
 import { localAdvice } from './local-advice';
 import { type RuleVocabulary, slotSentence } from './rule-english';
-import { AdvancedJsonButton, type EditorProps, IconAction, JsonPartEditor, ReorderButtons, RuleLine, SelectField, SwitchField, TextField, type Update, useDragReorder, useStudio } from './shared';
+import { VisibilityControl } from './rule-builder';
+import { ruleSubjects } from './rule-subjects';
+import { AdvancedJsonButton, type EditorProps, IconAction, ReorderButtons, SelectField, SwitchField, TextField, type Update, useDragReorder, useStudio } from './shared';
 import { buildVocab } from './vocab';
 
 type Mode = 'form' | 'job_schema';
@@ -125,7 +127,7 @@ function FieldRowCard({
   onAddBelow?: () => void;
 }) {
   const advanced = useIsAdvanced();
-  const { readOnly, fresh } = useStudio();
+  const { readOnly, fresh, refs } = useStudio();
   const path = [...arrayPath, index];
   const pk = pathKey(path);
   const isSelected = selected === pk;
@@ -142,6 +144,10 @@ function FieldRowCard({
   const topLevelFormField = ctx.mode === 'form' && arrayPath.length === 3 && arrayPath[0] === 'sections';
   const currentSection = topLevelFormField ? (arrayPath[1] as number) : -1;
   const root = ctx.mode === 'job_schema' ? 'attributes' : 'sections';
+  // What its conditions can check, worked out only while its settings are open.
+  const conditionsOpen = isSelected && ctx.mode === 'form';
+  const subjects = useMemo(() => (conditionsOpen ? ruleSubjects(doc, refs.bundle.jobSchema, { currentKey: key }) : []), [conditionsOpen, doc, refs.bundle.jobSchema, key]);
+  const ownSubjects = useMemo(() => (conditionsOpen ? ruleSubjects(doc, refs.bundle.jobSchema) : []), [conditionsOpen, doc, refs.bundle.jobSchema]);
 
   function duplicate() {
     update((d) => {
@@ -270,6 +276,8 @@ function FieldRowCard({
             takenKeys={ctx.takenKeys}
             fieldChoices={ctx.fieldChoices.filter((c) => c.value !== key)}
             previousKey={previousKey}
+            subjects={subjects}
+            ownSubjects={ownSubjects}
           />
         </div>
       ) : null}
@@ -421,10 +429,10 @@ export function useListCtx(doc: Obj, mode: Mode, allow?: (spec: ComponentSpec) =
   }, [doc, mode, allow, refs.bundle.jobSchema]);
 }
 
-function SectionSettings({ index, section, update, vocab }: { index: number; section: Obj; update: Update; vocab: RuleVocabulary }) {
+function SectionSettings({ index, section, update, vocab, doc }: { index: number; section: Obj; update: Update; vocab: RuleVocabulary; doc: Obj }) {
   const advanced = useIsAdvanced();
-  const { readOnly, fresh } = useStudio();
-  const [writing, setWriting] = useState(false);
+  const { fresh, refs } = useStudio();
+  const subjects = useMemo(() => ruleSubjects(doc, refs.bundle.jobSchema), [doc, refs.bundle.jobSchema]);
   const path = ['sections', index];
   const set = (k: string, v: unknown) => update((d) => setProp(d, path, k, v) as Obj);
   const key = asStr(section.key);
@@ -465,33 +473,7 @@ function SectionSettings({ index, section, update, vocab }: { index: number; sec
           </p>
         </Details>
       )}
-      <div className="grid gap-1.5">
-        <span className="text-sm font-medium">When it shows</span>
-        {isRule(section.visible) ? (
-          <RuleLine sentence={slotSentence('visible', section.visible, vocab)} rule={section.visible} onChange={(v) => set('visible', v)} onRemove={() => set('visible', undefined)} removeLabel="Always show" />
-        ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm">{section.visible === false ? 'Never shown' : 'Always'}</span>
-            {advanced && !readOnly && !writing ? (
-              <Button type="button" size="sm" variant="outline" onClick={() => setWriting(true)}>
-                <Plus /> Show only when…
-              </Button>
-            ) : null}
-          </div>
-        )}
-        {writing ? (
-          <JsonPartEditor
-            value={{ '==': [{ var: 'job.attributes.risk_tier' }, 'high'] }}
-            label="Show this section when (JSON logic)"
-            rows={5}
-            onCancel={() => setWriting(false)}
-            onApply={(v) => {
-              set('visible', v);
-              setWriting(false);
-            }}
-          />
-        ) : null}
-      </div>
+      <VisibilityControl value={section.visible} onChange={(v) => set('visible', v)} subjects={subjects} vocab={vocab} lead="Show this section when" />
       <SwitchField label="Start this section on a new page (PDF report)" checked={section.page_break === true} onChange={(v) => set('page_break', v ? true : undefined)} />
       <AdvancedJsonButton
         value={Object.fromEntries(Object.entries(section).filter(([k]) => k !== 'fields'))}
@@ -587,7 +569,7 @@ function SectionCard({
         ) : null}
       </div>
       {where ? <div className="flex flex-wrap items-center gap-1.5 border-b bg-slate-50/60 px-3 py-1.5 text-sm">{where}</div> : null}
-      {isSelected ? <SectionSettings index={index} section={section} update={update} vocab={ctx.vocab} /> : null}
+      {isSelected ? <SectionSettings index={index} section={section} update={update} vocab={ctx.vocab} doc={doc} /> : null}
       {!collapsed ? (
         <div className="p-3">
           <FieldList arrayPath={['sections', index, 'fields']} doc={doc} update={update} selected={selected} onSelect={onSelect} ctx={ctx} addLabel="Add a question" />

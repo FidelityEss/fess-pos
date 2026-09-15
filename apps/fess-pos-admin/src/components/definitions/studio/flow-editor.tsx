@@ -20,7 +20,9 @@ import { ACTION_LABEL, enumLabel, stepWording } from './catalogue-ui';
 import { DocumentHeader } from './document-header';
 import { asArr, asObj, asStr, insertAt, isRule, moveItem, type Obj, remapSelection, removeAt, setProp, uniqueKey, updateIn } from './doc';
 import { ChoiceDialog } from './pickers';
+import { VisibilityControl } from './rule-builder';
 import { slotSentence } from './rule-english';
+import { ruleSubjects } from './rule-subjects';
 import {
   AdvancedJsonButton,
   CheckList,
@@ -332,6 +334,7 @@ function StepInspector({
   const ownSections = stepForm && stepForm !== flowForm ? formSections(refs.bundle.forms?.[stepForm]) : sections;
   const viewOptions = refs.families.view.map((v) => ({ value: v.key, label: v.title }));
   const formOptions = refs.families.form.map((f) => ({ value: f.key, label: f.title }));
+  const stepSubjects = useMemo(() => ruleSubjects(refs.bundle.forms?.[stepForm || flowForm], refs.bundle.jobSchema), [refs.bundle.forms, refs.bundle.jobSchema, stepForm, flowForm]);
 
   return (
     <div className="grid gap-5">
@@ -426,13 +429,7 @@ function StepInspector({
       ) : null}
 
       {spec?.removable || isRule(step.visible) ? (
-        <Row label="When it shows">
-          {isRule(step.visible) ? (
-            <RuleLine sentence={slotSentence('step_visible', step.visible, vocab)} rule={step.visible} onChange={(v) => set('visible', v)} onRemove={() => set('visible', undefined)} removeLabel="Always show" />
-          ) : (
-            <span className="text-sm">Always</span>
-          )}
-        </Row>
+        <VisibilityControl value={step.visible} onChange={(v) => set('visible', v)} subjects={stepSubjects} vocab={vocab} slot="step_visible" lead="Show this step when" />
       ) : null}
       {step.next !== undefined ? (
         <Row label="After this step">
