@@ -13,7 +13,14 @@ abstract interface class ExternalApps {
   /// Opens the host app's page in the phone's settings, where a permission
   /// the agent refused can be turned on; false where there's none (web).
   Future<bool> openAppSettings();
+
+  /// Starts a call, a text message or an email to [address] in the phone's
+  /// own app; false when none could take it.
+  Future<bool> openContact(ContactChannel channel, String address);
 }
+
+/// How a `contact` is reached.
+enum ContactChannel { call, sms, email }
 
 class LauncherExternalApps implements ExternalApps {
   const LauncherExternalApps();
@@ -23,6 +30,17 @@ class LauncherExternalApps implements ExternalApps {
     if (kIsWeb) return false;
     try {
       return await Geolocator.openAppSettings();
+    } on Object {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> openContact(ContactChannel channel, String address) async {
+    final uri = contactUri(channel, address);
+    if (uri == null) return false;
+    try {
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
     } on Object {
       return false;
     }
@@ -83,4 +101,22 @@ List<Uri> directionsUris(
     ],
     _ => [google],
   };
+}
+
+/// The address that starts [channel] to [address], or null when [address]
+/// can't be one. A number keeps its digits and a leading `+`.
+@visibleForTesting
+Uri? contactUri(ContactChannel channel, String address) {
+  final a = address.trim();
+  if (channel == ContactChannel.email) {
+    final valid = RegExp(r'^[^@\s]+@[^@\s]+$').hasMatch(a);
+    return valid ? Uri(scheme: 'mailto', path: a) : null;
+  }
+  final digits = a.replaceAll(RegExp(r'\D'), '');
+  if (digits.length < 3) return null;
+  final number = a.startsWith('+') ? '+$digits' : digits;
+  return Uri(
+    scheme: channel == ContactChannel.call ? 'tel' : 'sms',
+    path: number,
+  );
 }

@@ -248,6 +248,138 @@ void main() {
     expect(find.text('1'), findsOneWidget);
   });
 
+  testWidgets('an action button opens its page; one with no target is left '
+      'out (T3-05)', (tester) async {
+    final opened = <Map<String, Object?>>[];
+    await _render(
+      tester,
+      const [
+        {
+          'type': 'action_button',
+          'label': 'Site safety check',
+          'icon': 'form',
+          'on_tap': {'page': 'safety_check'},
+        },
+        {'type': 'action_button', 'label': 'Nowhere'},
+        {
+          'type': 'action_button',
+          'key': 'card',
+          'label': 'My card',
+          'style': 'secondary',
+          'on_tap': {'page': 'agent_card'},
+        },
+      ],
+      RenderContext(
+        data: const {},
+        onNavigate: (target, data) => opened.add(target),
+      ),
+    );
+    expect(find.text('Nowhere'), findsNothing);
+    expect(
+      tester.widget(
+        find.byKey(const ValueKey('action-button-Site safety check')),
+      ),
+      isA<FilledButton>(),
+    );
+    expect(
+      tester.widget(find.byKey(const ValueKey('action-button-card'))),
+      isA<OutlinedButton>(),
+    );
+    await tester.tap(find.text('Site safety check'));
+    await tester.tap(find.text('My card'));
+    expect(opened, [
+      {'page': 'safety_check'},
+      {'page': 'agent_card'},
+    ]);
+  });
+
+  testWidgets('a contact offers the calls, texts and emails its actions '
+      'name, where the screen can open them (T3-05)', (tester) async {
+    const items = [
+      {
+        'type': 'contact',
+        'label': 'Contact',
+        'bind': 'job.contact',
+        'actions': ['call', 'email'],
+      },
+    ];
+    const data = <String, Object?>{
+      'job': {
+        'contact': {
+          'name': 'Thandi',
+          'phone': '+27 82 000 1111',
+          'email': 't@example.com',
+        },
+      },
+    };
+    await _render(tester, items, const RenderContext(data: data));
+    expect(find.text('Thandi\n+27 82 000 1111\nt@example.com'), findsOneWidget);
+    expect(find.byKey(const ValueKey('contact-call')), findsNothing);
+
+    final opened = <(String, String)>[];
+    await _render(
+      tester,
+      items,
+      RenderContext(data: data, openContact: (c, a) => opened.add((c, a))),
+    );
+    expect(find.byKey(const ValueKey('contact-sms')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('contact-call')));
+    await tester.tap(find.byKey(const ValueKey('contact-email')));
+    expect(opened, [('call', '+27 82 000 1111'), ('email', 't@example.com')]);
+  });
+
+  testWidgets('an announcement shows its title and Markdown text', (
+    tester,
+  ) async {
+    await _render(tester, const [
+      {
+        'type': 'announcement',
+        'tone': 'warning',
+        'title': 'Heads up',
+        'text': 'Visits **pause** on 24 September.',
+      },
+      {'type': 'announcement', 'text': ' '},
+    ], const RenderContext(data: {}));
+    expect(find.text('Heads up'), findsOneWidget);
+    expect(find.text('Visits pause on 24 September.'), findsOneWidget);
+  });
+
+  testWidgets('evidence status: all sent, some waiting, some held '
+      '(T3-05)', (tester) async {
+    Future<String?> shown(Map<String, Object?> counts) async {
+      await _render(
+        tester,
+        const [
+          {'type': 'evidence_status', 'bind': 'inspection.evidence'},
+        ],
+        RenderContext(
+          data: {
+            'inspection': {'evidence': counts},
+          },
+        ),
+      );
+      final chip = find.byKey(const ValueKey('evidence-status'));
+      if (chip.evaluate().isEmpty) return null;
+      return tester
+          .widget<Text>(find.descendant(of: chip, matching: find.byType(Text)))
+          .data;
+    }
+
+    expect(
+      await shown({'total': 3, 'sent': 3, 'waiting': 0, 'held': 0}),
+      'All 3 uploaded',
+    );
+    expect(
+      await shown({'total': 3, 'sent': 1, 'waiting': 2, 'held': 0}),
+      '1 of 3 uploaded; the rest will send automatically',
+    );
+    expect(
+      await shown({'total': 3, 'sent': 1, 'waiting': 1, 'held': 1}),
+      '1 of 3 need attention',
+    );
+    expect(await shown({'total': 0}), isNull);
+  });
+
   test('templates and schedule text', () {
     expect(
       fillTemplate('Hi {{ agent.first_name }}{{missing}}', {

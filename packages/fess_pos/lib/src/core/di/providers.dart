@@ -269,17 +269,44 @@ final agentTotalsProvider = StreamProvider<Map<String, Object?>?>((
 
 /// Copy by key: the server's `core` content strings over the bundled
 /// defaults (docs/04 §3.5).
-final copyProvider = Provider<String Function(String key)>((ref) {
-  final content = switch (ref.watch(
-    activeDefinitionProvider((kind: 'content', key: 'core', bankId: null)),
-  )) {
-    AsyncData(:final value) => value,
-    _ => null,
-  };
-  final strings = content?['strings'];
-  final server = strings is Map<String, Object?> ? strings : null;
-  return (key) {
-    final s = server?[key];
-    return s is String ? s : BundledCopy.text(key);
-  };
-}, name: 'copy');
+final copyProvider = Provider<String Function(String key)>(
+  (ref) => ref.watch(bankCopyProvider(null)),
+  name: 'copy',
+);
+
+/// Copy by key on a job's pages (B4.18): the job's bank's own `core`
+/// strings, then the default `core`, then the bundled defaults. A bank's
+/// content needs only the keys it changes.
+// ignore: specify_nonobvious_property_types
+final bankCopyProvider = Provider.family<String Function(String key), String?>(
+  (ref, bankId) {
+    Map<String, Object?>? strings(String? bank) {
+      final content = switch (ref.watch(
+        activeDefinitionProvider((kind: 'content', key: 'core', bankId: bank)),
+      )) {
+        AsyncData(:final value) => value,
+        _ => null,
+      };
+      final s = content?['strings'];
+      return s is Map<String, Object?> ? s : null;
+    }
+
+    final base = strings(null);
+    final bank = bankId == null ? null : strings(bankId);
+    return (key) {
+      final s = bank?[key] ?? base?[key];
+      return s is String ? s : BundledCopy.text(key);
+    };
+  },
+  name: 'bankCopy',
+);
+
+/// An inspection's evidence as the phone holds it, live, without the
+/// bytes: the evidence fields show captions and who signed from it, and
+/// the job's receipt how its uploads are getting on.
+// ignore: specify_nonobvious_property_types
+final inspectionEvidenceProvider = StreamProvider.autoDispose
+    .family<List<EvidenceItem>, String>((ref, inspectionId) async* {
+      final inspections = await ref.watch(inspectionsProvider.future);
+      if (inspections != null) yield* inspections.watchEvidence(inspectionId);
+    }, name: 'inspectionEvidence');

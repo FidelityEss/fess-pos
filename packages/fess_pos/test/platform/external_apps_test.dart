@@ -40,6 +40,24 @@ void main() {
     expect(uris, hasLength(2));
   });
 
+  test('contacts: a number keeps its digits and a leading +; an address '
+      'must be one (T3-05)', () {
+    expect(
+      contactUri(ContactChannel.call, '+27 (82) 000-1111').toString(),
+      'tel:+27820001111',
+    );
+    expect(
+      contactUri(ContactChannel.sms, '082 000 1111').toString(),
+      'sms:0820001111',
+    );
+    expect(
+      contactUri(ContactChannel.email, ' t@example.com ').toString(),
+      'mailto:t@example.com',
+    );
+    expect(contactUri(ContactChannel.call, 'n/a'), isNull);
+    expect(contactUri(ContactChannel.email, 'not an address'), isNull);
+  });
+
   test('the web: Google Maps only', () {
     final uris = directionsUris(
       -26.19,

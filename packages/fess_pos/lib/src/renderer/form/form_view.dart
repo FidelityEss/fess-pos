@@ -5,6 +5,7 @@ import 'package:fess_pos/src/core/theme/tokens.g.dart';
 import 'package:fess_pos/src/core/time/device_time.dart';
 import 'package:fess_pos/src/renderer/form/form_controller.dart';
 import 'package:fess_pos/src/renderer/form/form_services.dart';
+import 'package:fess_pos/src/renderer/markdown.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -193,7 +194,7 @@ class FormView extends StatelessWidget {
       'info' => Padding(
         key: key,
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(f.text ?? ''),
+        child: PosMarkdown(f.text ?? ''),
       ),
       'callout' => Padding(
         key: key,

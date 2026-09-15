@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:fess_pos/src/core/content/bundled_views.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/domain/cards/cards.dart';
+import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/features/cards/agent_card_page.dart';
@@ -8,6 +11,7 @@ import 'package:fess_pos/src/features/jobs/job_action_pages.dart';
 import 'package:fess_pos/src/features/maps/job_map.dart';
 import 'package:fess_pos/src/features/shell/needs_attention_page.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
+import 'package:fess_pos/src/platform/external_apps.dart';
 import 'package:fess_pos/src/renderer/render_context.dart';
 import 'package:fess_pos/src/renderer/template.dart';
 import 'package:fess_pos/src/renderer/view_renderer.dart';
@@ -35,6 +39,52 @@ T? _data<T>(AsyncValue<T> value) => switch (value) {
   AsyncData(:final value) => value,
   _ => null,
 };
+
+/// What `evidence_status` binds to: how many items an inspection has, how
+/// many reached the server, how many wait on the phone and how many are
+/// held (quarantined).
+Map<String, Object?> evidenceCounts(Iterable<EvidenceItem> items) {
+  var sent = 0;
+  var waiting = 0;
+  var held = 0;
+  for (final item in items) {
+    switch (item.state) {
+      case 'uploaded' || 'verified':
+        sent++;
+      case 'quarantined':
+        held++;
+      default:
+        waiting++;
+    }
+  }
+  return {
+    'total': sent + waiting + held,
+    'sent': sent,
+    'waiting': waiting,
+    'held': held,
+  };
+}
+
+/// Calls, texts or emails a `contact` in the phone's own app, and says so
+/// when no app could.
+Future<void> _openContact(
+  BuildContext context,
+  WidgetRef ref,
+  String Function(String key) copy,
+  String channel,
+  String address,
+) async {
+  final apps = ref.read(platformServicesProvider).externalApps;
+  final opened = await apps.openContact(
+    ContactChannel.values.byName(channel),
+    address,
+  );
+  if (!opened && context.mounted) {
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(SnackBar(content: Text(copy('contact.no_app'))));
+  }
+}
 
 /// The items of view [key] in force (for [bankId]), or the bundled view
 /// until one arrives.
@@ -143,10 +193,14 @@ class JobDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final copy = ref.watch(copyProvider);
     final job = ref.watch(jobProvider(jobId));
-    final agent = _data(ref.watch(agentProvider));
     final record = _data(job);
+    final copy = ref.watch(bankCopyProvider(record?.bankId));
+    final agent = _data(ref.watch(agentProvider));
+    final latest = _data(ref.watch(latestInspectionProvider(jobId)));
+    final evidence = latest == null
+        ? null
+        : _data(ref.watch(inspectionEvidenceProvider(latest.id)));
     final items = viewItems(ref, 'job_detail', bankId: record?.bankId);
     final title = record == null
         ? copy('shell.title')
@@ -165,9 +219,19 @@ class JobDetailPage extends ConsumerWidget {
                   now: DateTime.now(),
                   url: (token) => ref.read(verifyUrlProvider)(token),
                 ),
+                // The last inspection and how its uploads are getting on
+                // (`evidence_status`).
+                if (latest != null)
+                  'inspection': {
+                    'status': latest.status,
+                    'evidence': evidenceCounts(evidence ?? const []),
+                  },
               },
               copy: copy,
               today: todayIso(),
+              openContact: (channel, address) => unawaited(
+                _openContact(context, ref, copy, channel, address),
+              ),
               mapPreview: (item, location) {
                 final height = item['height'];
                 return JobMapPreview(

@@ -55,15 +55,6 @@ final renderPlanProvider = FutureProvider.family<CompiledForm, String>((
   return ref.watch(formCompilerProvider)(form);
 }, name: 'renderPlan');
 
-/// An inspection's evidence as the phone holds it, live, without the
-/// bytes: the evidence fields show captions and who signed from it.
-// ignore: specify_nonobvious_property_types
-final inspectionEvidenceProvider = StreamProvider.autoDispose
-    .family<List<EvidenceItem>, String>((ref, inspectionId) async* {
-      final inspections = await ref.watch(inspectionsProvider.future);
-      if (inspections != null) yield* inspections.watchEvidence(inspectionId);
-    }, name: 'inspectionEvidence');
-
 /// Asks for a photo's caption (`caption: optional | required`): the text,
 /// '' when an optional one is skipped, null when the photo is discarded.
 class _CaptionDialog extends StatefulWidget {
@@ -967,7 +958,7 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
 
   @override
   Widget build(BuildContext context) {
-    final copy = ref.watch(copyProvider);
+    final copy = ref.watch(bankCopyProvider(widget.job.bankId));
     final inspections = _data(ref.watch(inspectionsProvider));
     final record = _data(ref.watch(inspectionProvider(widget.inspectionId)));
     final form = record == null

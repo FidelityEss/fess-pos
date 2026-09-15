@@ -50,7 +50,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
 
   @override
   Widget build(BuildContext context) {
-    final copy = ref.watch(copyProvider);
+    final copy = ref.watch(bankCopyProvider(widget.job.bankId));
     final plan = widget.plan;
     final result = _result;
     return Scaffold(

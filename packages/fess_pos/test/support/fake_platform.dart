@@ -105,6 +105,14 @@ class FakeExternalApps implements ExternalApps {
     return opens;
   }
 
+  final List<(ContactChannel, String)> contacts = [];
+
+  @override
+  Future<bool> openContact(ContactChannel channel, String address) async {
+    contacts.add((channel, address));
+    return opens;
+  }
+
   int settingsOpened = 0;
 
   @override

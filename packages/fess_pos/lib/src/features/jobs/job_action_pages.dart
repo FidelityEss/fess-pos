@@ -191,7 +191,7 @@ class _JobActionBarState extends ConsumerState<JobActionBar> {
 
   @override
   Widget build(BuildContext context) {
-    final copy = ref.watch(copyProvider);
+    final copy = ref.watch(bankCopyProvider(widget.job.bankId));
     final actions = _data(ref.watch(jobActionsProvider));
     final inspections = _data(ref.watch(inspectionsProvider));
     final latest = _data(ref.watch(latestInspectionProvider(widget.job.id)));
@@ -304,14 +304,18 @@ class _CheckinPromptState extends ConsumerState<_CheckinPrompt> {
     await _load();
     if ((done ?? false) && mounted) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(ref.read(copyProvider)('checkin.done'))),
+        SnackBar(
+          content: Text(
+            ref.read(bankCopyProvider(widget.job.bankId))('checkin.done'),
+          ),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final copy = ref.watch(copyProvider);
+    final copy = ref.watch(bankCopyProvider(widget.job.bankId));
     final plan = _plan;
     if (plan == null || !plan.prompt) return const SizedBox.shrink();
     if (plan.checkedIn(DateTime.now())) {
@@ -441,7 +445,7 @@ class _ReasonFormPageState extends ConsumerState<ReasonFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    final copy = ref.watch(copyProvider);
+    final copy = ref.watch(bankCopyProvider(widget.job.bankId));
     final formKey = widget.config.form ?? _category;
     final definition = ref.watch(
       activeDefinitionVersionProvider((
@@ -551,7 +555,7 @@ class _ActionOutcomePageState extends ConsumerState<ActionOutcomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final copy = ref.watch(copyProvider);
+    final copy = ref.watch(bankCopyProvider(widget.bankId));
     final app = _app(ref, widget.bankId);
     return StreamBuilder<DeliveryState>(
       stream: _delivery,

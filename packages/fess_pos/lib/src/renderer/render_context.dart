@@ -13,6 +13,7 @@ class RenderContext {
     this.onNavigate,
     this.today,
     this.mapPreview,
+    this.openContact,
   });
 
   /// What items bind to and rules read: `job`, `agent`, `stats`, `sync`.
@@ -41,6 +42,11 @@ class RenderContext {
   final Widget? Function(Map<String, Object?> item, Object? location)?
   mapPreview;
 
+  /// Starts a call, a text message or an email (`call`, `sms`, `email`) to
+  /// a `contact` item's number or address; the screen supplies it. Without
+  /// one, contacts show without their buttons.
+  final void Function(String channel, String address)? openContact;
+
   /// The same context with other data, e.g. one job of a list.
   RenderContext withData(Map<String, Object?> data) => RenderContext(
     data: data,
@@ -50,5 +56,6 @@ class RenderContext {
     onNavigate: onNavigate,
     today: today,
     mapPreview: mapPreview,
+    openContact: openContact,
   );
 }

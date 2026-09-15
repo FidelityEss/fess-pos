@@ -37,6 +37,12 @@ abstract final class BundledViews {
     },
     {'type': 'address_block', 'label': 'Address', 'bind': 'job.address'},
     {'type': 'map_preview', 'bind': 'job.location', 'height': 180},
+    // How the last inspection's uploads are getting on (the receipt).
+    {
+      'type': 'evidence_status',
+      'label': 'Evidence',
+      'bind': 'inspection.evidence',
+    },
     {'type': 'job_card', 'show_photo': true, 'show_qr': true},
   ];
 
