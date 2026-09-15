@@ -7,6 +7,7 @@ import 'package:fess_pos/src/domain/app/app_spec.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/navigation/pos_link.dart';
+import 'package:fess_pos/src/features/forms/record_form_page.dart';
 import 'package:fess_pos/src/features/jobs/job_action_pages.dart';
 import 'package:fess_pos/src/features/jobs/job_pages.dart';
 import 'package:fess_pos/src/features/shell/needs_attention_page.dart';
@@ -54,6 +55,18 @@ class PosRouter extends ConsumerStatefulWidget {
       return;
     }
     Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  /// Home, then [target] for [data]'s job, e.g. an outcome page's "start
+  /// another" button; outside a router, just back to the first page.
+  static void goHomeAndOpen(
+    BuildContext context,
+    Map<String, Object?> target,
+    Map<String, Object?> data,
+  ) {
+    final router = context.findAncestorStateOfType<PosRouterState>();
+    goHome(context);
+    router?.open(target, data);
   }
 
   @override
@@ -329,9 +342,12 @@ class _PageHost extends ConsumerWidget {
           onMenu: onMenu,
           onNavigate: router.open,
         );
+      case AppPage(type: 'form_page')
+          when spec.string('action') == 'record.submit':
+        // The generic form page (T3-19, B4.23).
+        return RecordFormPage(key: key, page: spec, jobId: id, onBack: back);
       case AppPage(type: 'form_page'):
-        // A job's own action (B2.3, B2.4); other actions come with the
-        // generic form page (T3-19).
+        // A job's own action (B2.3, B2.4).
         final action = JobAction.values
             .where(
               (a) =>

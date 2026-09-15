@@ -691,6 +691,8 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
           result: result,
           actions: inspections,
           bankId: widget.job.bankId,
+          jobId: widget.job.id,
+          data: {'job': jobViewData(widget.job)},
         ),
       ),
     );

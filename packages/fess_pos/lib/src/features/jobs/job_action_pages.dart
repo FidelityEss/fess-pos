@@ -14,6 +14,7 @@ import 'package:fess_pos/src/features/jobs/job_pages.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
 import 'package:fess_pos/src/renderer/form/form_controller.dart';
 import 'package:fess_pos/src/renderer/form/form_view.dart';
+import 'package:fess_pos/src/renderer/icons.dart';
 import 'package:fess_pos/src/renderer/template.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart' show ResolveContext;
 import 'package:flutter/material.dart';
@@ -119,8 +120,19 @@ class JobActionConfig {
   }
 }
 
+/// One outcome page button: its label, its action (`home`, `retry`,
+/// `back`, `receipt`, `page` or `start_flow`) and, for the last two, its
+/// target.
+typedef OutcomeButton = ({
+  String label,
+  String action,
+  Map<String, Object?>? target,
+});
+
 /// What an outcome page shows (docs/04 §3.7): the app definition's page
-/// for the outcome in its `default` set, or bundled copy.
+/// for the outcome in the form's or flow's outcome set (else `default`),
+/// or bundled copy. Its title, message and labels are templates over
+/// [OutcomeContent.of]'s data, e.g. `{{pending}}` or `{{job.reference}}`.
 @immutable
 class OutcomeContent {
   const OutcomeContent({
@@ -128,32 +140,41 @@ class OutcomeContent {
     required this.message,
     required this.buttons,
     this.icon,
+    this.autoReturnS,
   });
 
   factory OutcomeContent.of(
     Map<String, Object?>? app,
     String outcome,
-    String Function(String key) copy,
-  ) {
-    final set = _map(_map(app?['outcome_sets'])?['default']);
-    final page = _map(_map(app?['pages'])?[set?[outcome]]);
-    final buttons = [
+    String Function(String key) copy, {
+    String set = 'default',
+    Map<String, Object?> data = const {},
+  }) {
+    final sets = _map(app?['outcome_sets']);
+    final chosen = _map(sets?[set]) ?? _map(sets?['default']);
+    final page = _map(_map(app?['pages'])?[chosen?[outcome]]);
+    String fill(String s) => fillTemplate(s, data);
+    final buttons = <OutcomeButton>[
       if (page?['buttons'] case final List<Object?> list)
         for (final b in list.whereType<Map<String, Object?>>())
           if (_string(b['label']) case final String label)
             if (_string(b['action']) case final String action)
-              (label: label, action: action),
+              (label: fill(label), action: action, target: _map(b['target'])),
     ];
+    final autoReturn = page?['auto_return_s'];
     return OutcomeContent(
-      title: _string(page?['title']) ?? copy('outcome.$outcome.title'),
-      message: _string(page?['message']) ?? copy('outcome.$outcome.message'),
+      title: fill(_string(page?['title']) ?? copy('outcome.$outcome.title')),
+      message: fill(
+        _string(page?['message']) ?? copy('outcome.$outcome.message'),
+      ),
       icon: _string(page?['icon']),
+      autoReturnS: autoReturn is int && autoReturn > 0 ? autoReturn : null,
       buttons: buttons.isNotEmpty
           ? buttons
           : [
               if (outcome == 'failure')
-                (label: copy('outcome.retry'), action: 'retry'),
-              (label: copy('outcome.home'), action: 'home'),
+                (label: copy('outcome.retry'), action: 'retry', target: null),
+              (label: copy('outcome.home'), action: 'home', target: null),
             ],
     );
   }
@@ -161,7 +182,10 @@ class OutcomeContent {
   final String title;
   final String message;
   final String? icon;
-  final List<({String label, String action})> buttons;
+  final List<OutcomeButton> buttons;
+
+  /// Seconds after which a success or a saved outcome goes home by itself.
+  final int? autoReturnS;
 }
 
 /// Begins [job]'s inspection, or opens the one in progress (T4-27), and
@@ -544,13 +568,14 @@ class _ReasonFormPageState extends ConsumerState<ReasonFormPage> {
     );
     if (!mounted) return;
     setState(() => _busy = false);
-    await Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => ActionOutcomePage(
-          result: result,
-          actions: actions,
-          bankId: widget.job.bankId,
-        ),
+    await showOutcome(
+      context,
+      ActionOutcomePage(
+        result: result,
+        actions: actions,
+        bankId: widget.job.bankId,
+        jobId: widget.job.id,
+        data: {'job': jobViewData(widget.job)},
       ),
     );
   }
@@ -616,6 +641,17 @@ class _ReasonFormPageState extends ConsumerState<ReasonFormPage> {
   }
 }
 
+/// Shows a form's [outcome] page. What was recorded replaces the form;
+/// when nothing was, the outcome opens over it, so "try again" comes back
+/// to the answers (docs/12 §5: nothing captured is lost).
+Future<void> showOutcome(BuildContext context, ActionOutcomePage outcome) {
+  final route = MaterialPageRoute<void>(builder: (_) => outcome);
+  final navigator = Navigator.of(context);
+  return outcome.result.status == JobActionStatus.recorded
+      ? navigator.pushReplacement(route)
+      : navigator.push(route);
+}
+
 /// How an action ended (docs/04 §3.7): received by the server, saved on
 /// the phone to send later, or not done. While the first send runs it says
 /// so; a receipt that arrives later still turns "saved" into "received".
@@ -624,14 +660,27 @@ class ActionOutcomePage extends ConsumerStatefulWidget {
     required this.result,
     required this.actions,
     this.bankId,
+    this.outcomes = 'default',
+    this.jobId,
+    this.data = const {},
     super.key,
   });
 
   final JobActionResult result;
 
-  /// Follows the envelope: a job action's, or an inspection's submission.
+  /// Follows the envelope: a job action's, an inspection's submission or a
+  /// form's.
   final DeliveryTracker actions;
   final String? bankId;
+
+  /// The form's or flow's outcome set (`outcomes`).
+  final String outcomes;
+
+  /// The job it was about: its receipt opens from here.
+  final String? jobId;
+
+  /// What the page's templates read, e.g. `job`; `pending` is added.
+  final Map<String, Object?> data;
 
   @override
   ConsumerState<ActionOutcomePage> createState() => _ActionOutcomePageState();
@@ -640,6 +689,13 @@ class ActionOutcomePage extends ConsumerStatefulWidget {
 class _ActionOutcomePageState extends ConsumerState<ActionOutcomePage> {
   Stream<DeliveryState>? _delivery;
   bool _sending = false;
+  Timer? _autoReturn;
+
+  @override
+  void dispose() {
+    _autoReturn?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -655,13 +711,37 @@ class _ActionOutcomePageState extends ConsumerState<ActionOutcomePage> {
     );
   }
 
-  void _run(String action) {
+  /// Whether this page can do [button]'s action.
+  bool _can(OutcomeButton button) => switch (button.action) {
+    'home' || 'retry' || 'back' => true,
+    'receipt' => widget.jobId != null,
+    'page' || 'start_flow' => button.target != null,
+    _ => false,
+  };
+
+  void _run(OutcomeButton button, Map<String, Object?> data) {
     final navigator = Navigator.of(context);
-    switch (action) {
-      case 'retry':
+    final target = button.target;
+    switch (button.action) {
+      case 'retry' || 'back':
         navigator.pop();
       case 'home':
         PosRouter.goHome(context);
+      case 'receipt':
+        unawaited(
+          navigator.push(
+            MaterialPageRoute<void>(
+              builder: (context) => ViewPage(
+                view: 'receipt',
+                pageKey: 'receipt',
+                jobId: widget.jobId,
+                onBack: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ),
+        );
+      case 'page' || 'start_flow' when target != null:
+        PosRouter.goHomeAndOpen(context, target, data);
     }
   }
 
@@ -669,6 +749,11 @@ class _ActionOutcomePageState extends ConsumerState<ActionOutcomePage> {
   Widget build(BuildContext context) {
     final copy = ref.watch(bankCopyProvider(widget.bankId));
     final app = _app(ref, widget.bankId);
+    final sync = _data(ref.watch(syncStatusProvider));
+    final data = <String, Object?>{
+      ...widget.data,
+      'pending': sync?.pending ?? 0,
+    };
     return StreamBuilder<DeliveryState>(
       stream: _delivery,
       builder: (context, snapshot) {
@@ -706,12 +791,24 @@ class _ActionOutcomePageState extends ConsumerState<ActionOutcomePage> {
             ),
           );
         }
-        final content = OutcomeContent.of(app, outcome, copy);
+        final content = OutcomeContent.of(
+          app,
+          outcome,
+          copy,
+          set: widget.outcomes,
+          data: data,
+        );
+        final seconds = content.autoReturnS;
+        if (seconds != null && outcome != 'failure' && _autoReturn == null) {
+          _autoReturn = Timer(Duration(seconds: seconds), () {
+            if (mounted) PosRouter.goHome(this.context);
+          });
+        }
         final theme = Theme.of(context);
         return Scaffold(
           appBar: PosHeader(
             title: copy('shell.title'),
-            onBack: () => _run('home'),
+            onBack: () => PosRouter.goHome(context),
           ),
           body: ListView(
             key: ValueKey('outcome-$outcome'),
@@ -738,16 +835,18 @@ class _ActionOutcomePageState extends ConsumerState<ActionOutcomePage> {
               ],
               const SizedBox(height: 24),
               for (final b in content.buttons)
-                if (b.action == 'home' || b.action == 'retry')
+                if (_can(b))
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: b.action == 'home'
                         ? FilledButton(
-                            onPressed: () => _run(b.action),
+                            key: ValueKey('outcome-${b.action}'),
+                            onPressed: () => _run(b, data),
                             child: Text(b.label),
                           )
                         : OutlinedButton(
-                            onPressed: () => _run(b.action),
+                            key: ValueKey('outcome-${b.action}'),
+                            onPressed: () => _run(b, data),
                             child: Text(b.label),
                           ),
                   ),
@@ -759,16 +858,13 @@ class _ActionOutcomePageState extends ConsumerState<ActionOutcomePage> {
   }
 }
 
-IconData _icon(String? name, String outcome) => switch (name) {
-  'check_circle' => Icons.check_circle,
-  'cloud_upload' => Icons.cloud_upload,
-  'error' => Icons.error,
-  _ => switch (outcome) {
-    'success' => Icons.check_circle,
-    'saved' => Icons.cloud_upload,
-    _ => Icons.error,
-  },
-};
+IconData _icon(String? name, String outcome) =>
+    posIcon(name) ??
+    switch (outcome) {
+      'success' => Icons.check_circle,
+      'saved' => Icons.cloud_upload,
+      _ => Icons.error,
+    };
 
 class _Message extends StatelessWidget {
   const _Message(this.message);

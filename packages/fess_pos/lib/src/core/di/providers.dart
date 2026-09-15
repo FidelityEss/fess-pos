@@ -16,6 +16,7 @@ import 'package:fess_pos/src/data/local/repositories.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart';
 import 'package:fess_pos/src/domain/app/app_spec.dart';
 import 'package:fess_pos/src/domain/cards/cards.dart';
+import 'package:fess_pos/src/domain/forms/form_submissions.dart';
 import 'package:fess_pos/src/domain/forms/reason_codes.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
@@ -158,6 +159,13 @@ final activeDefinitionVersionProvider =
 final jobActionsProvider = FutureProvider<JobActions?>(
   (ref) => ref.watch(moduleRuntimeProvider).jobActions(),
   name: 'jobActions',
+);
+
+/// Recording generic form submissions (`record.submit`, T3-19); null in
+/// builds without the POS API client.
+final formSubmissionsProvider = FutureProvider<FormSubmissions?>(
+  (ref) => ref.watch(moduleRuntimeProvider).formSubmissions(),
+  name: 'formSubmissions',
 );
 
 /// Inspections (T4-27); null in builds without the POS API client.

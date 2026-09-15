@@ -17,6 +17,8 @@ abstract final class BundledCopy {
     'page.unavailable': "This page isn't available in this version of the app.",
     'page.agent_card.title': 'My authorisation card',
     'page.active_jobs.title': 'Active leads',
+    'page.receipt.title': 'Receipt',
+    'form.submit': 'Send',
     'nav.menu': 'Menu',
     'list.group.none': 'Other',
     'sync.synced': 'Synced',

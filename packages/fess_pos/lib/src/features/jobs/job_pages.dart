@@ -258,6 +258,8 @@ class ViewPage extends ConsumerWidget {
           'inspection': {
             'status': latest.status,
             'evidence': evidenceCounts(evidence ?? const []),
+            // The same counts where the seeded receipt view binds them.
+            'receipt': evidenceCounts(evidence ?? const []),
           },
       },
     };
