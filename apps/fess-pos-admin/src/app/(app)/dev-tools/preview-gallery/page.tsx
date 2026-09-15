@@ -98,7 +98,8 @@ export default function PreviewGalleryPage() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className={cn('pb-6')}>
-                        <DefinitionPreview kind={r.kind} definition={r.definition} bundle={bundle} focus={focus || null} />
+                        {/* The drawing: one phone app per card would start dozens of apps at once (T3-12). */}
+                        <DefinitionPreview kind={r.kind} definition={r.definition} bundle={bundle} focus={focus || null} renderer="drawing" />
                       </CardContent>
                     </Card>
                   ))}

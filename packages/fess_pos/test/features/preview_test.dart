@@ -2,11 +2,16 @@ import 'dart:async';
 
 import 'package:fess_pos/src/core/content/bundled_copy.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
+import 'package:fess_pos/src/core/preview/preview_scope.dart';
+import 'package:fess_pos/src/core/theme/pos_theme_data.dart';
 import 'package:fess_pos/src/domain/preview/preview_request.dart';
+import 'package:fess_pos/src/features/inspections/inspection_page.dart'
+    show formCompilerProvider;
 import 'package:fess_pos/src/features/preview/preview_entry.dart';
 import 'package:fess_pos/src/features/preview/preview_link_page.dart';
 import 'package:fess_pos/src/features/preview/preview_sandbox.dart';
 import 'package:fess_pos/src/platform/preview/preview_bridge.dart';
+import 'package:fess_pos_engine/fess_pos_engine.dart' show compileForm;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -95,6 +100,38 @@ const Map<String, Object?> _app = {
   },
 };
 
+const Map<String, Object?> _safetyForm = {
+  'kind': 'form',
+  'family': 'site_safety',
+  'sections': [
+    {
+      'key': 's',
+      'fields': [
+        {
+          'key': 'hazards',
+          'type': 'text',
+          'label': 'Hazards seen',
+          'required': true,
+        },
+      ],
+    },
+  ],
+};
+
+const Map<String, Object?> _flow = {
+  'kind': 'flow',
+  'family': 'safety_flow',
+  'form_family': 'site_safety',
+  'steps': [
+    {'type': 'location_check'},
+    {
+      'type': 'form',
+      'sections': ['s'],
+    },
+    {'type': 'submit', 'label': 'Send'},
+  ],
+};
+
 PreviewRequest _preview(String kind, Map<String, Object?> definition) =>
     PreviewRequest(
       kind: kind,
@@ -161,17 +198,132 @@ void main() {
     );
   });
 
-  testWidgets("a flow draft says flows can't be previewed here yet", (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _sandbox(_preview('flow', const {'kind': 'flow', 'family': 'f'})),
+  testWidgets('a flow draft walks through its questions, kept in memory '
+      'only (T3-12)', (tester) async {
+    const request = PreviewRequest(
+      kind: 'flow',
+      definition: _flow,
+      bundle: {
+        'views': _views,
+        'forms': {'site_safety': _safetyForm},
+      },
+      context: _context,
     );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PreviewSandbox(
+          request: request,
+          platform: fakePlatform(),
+          testOverrides: [
+            formCompilerProvider.overrideWithValue(
+              (form) async => compileForm(form),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    // It opens at once, on the first page after the location check, which
+    // a preview has nothing to judge by.
+    expect(find.byKey(const ValueKey('inspection-step-0')), findsOneWidget);
+    expect(find.text('Hazards seen *'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'None');
+    await tester.pumpAndSettle();
+
+    // Back: the flow can be walked again from the start.
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('preview-flow-intro')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('preview-flow-start')));
+    await tester.pumpAndSettle();
+    expect(find.text('None'), findsOneWidget, reason: 'the draft is kept');
+  });
+
+  testWidgets("a flow draft without its questions says it can't be walked "
+      'through', (tester) async {
+    await tester.pumpWidget(_sandbox(_preview('flow', _flow)));
     await tester.pumpAndSettle();
     expect(
       find.text(BundledCopy.text('preview.flow_unavailable')),
       findsOneWidget,
     );
+    expect(previewProblems(_preview('flow', _flow)), [
+      contains("questions (site_safety) aren't in the preview"),
+    ]);
+    expect(
+      previewProblems(
+        _preview('flow', const {'kind': 'flow', 'family': 'f', 'steps': []}),
+      ),
+      [contains("doesn't name its questions")],
+    );
+  });
+
+  test('a preview names its definitions by preview version ids, and takes '
+      'the look being tried', () {
+    final request = PreviewRequest.fromJson({
+      'kind': 'flow',
+      'definition': _flow,
+      'bundle': {
+        'forms': {'site_safety': _safetyForm},
+        'declarations': {
+          'agent_declaration': {'title': 'I declare', 'text': 'All true.'},
+        },
+      },
+      'theme': {'primary_color': '#123456', 'font_family': 'Roboto'},
+    })!;
+    expect(
+      request.definitionOfVersion(previewVersionId('form', 'site_safety')),
+      _safetyForm,
+    );
+    expect(
+      request.definitionOfVersion(previewVersionId('flow', 'safety_flow')),
+      _flow,
+    );
+    expect(request.definitionOfVersion('0192d4e0-real-version'), isNull);
+    final declaration = previewDeclaration(request, 'agent_declaration');
+    expect(declaration?.text, 'All true.');
+    expect(declaration?.title, 'I declare');
+    final brand = previewBrand(request);
+    expect(brand.primary, const Color(0xFF123456));
+    expect(brand.fontFamily, 'Roboto');
+    expect(
+      previewBrand(_preview('app', _app)).primary,
+      PosBrand.resolve().primary,
+      reason: 'no theme: the brand',
+    );
+  });
+
+  testWidgets('a new request starts the preview afresh, even with a '
+      "flow's inspection open", (tester) async {
+    Widget sandbox(PreviewRequest request) => MaterialApp(
+      home: PreviewSandbox(
+        request: request,
+        platform: fakePlatform(),
+        testOverrides: [
+          formCompilerProvider.overrideWithValue(
+            (form) async => compileForm(form),
+          ),
+        ],
+      ),
+    );
+    // A new object each time, as each message from the studio is.
+    PreviewRequest flow() => PreviewRequest(
+      kind: 'flow',
+      definition: _flow,
+      bundle: const {
+        'forms': {'site_safety': _safetyForm},
+      },
+      context: Map.of(_context),
+    );
+    await tester.pumpWidget(sandbox(flow()));
+    await tester.pumpAndSettle();
+    expect(find.text('Hazards seen *'), findsOneWidget);
+
+    // The studio sends the draft again, e.g. after an edit.
+    await tester.pumpWidget(sandbox(flow()));
+    await tester.pumpAndSettle();
+    expect(find.text('Hazards seen *'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
   testWidgets('the preview app says it is ready, draws what the studio '

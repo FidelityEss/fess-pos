@@ -42,6 +42,10 @@ class _PreviewLinkPageState extends ConsumerState<PreviewLinkPage> {
           );
         }
         final done = snapshot.connectionState == ConnectionState.done;
+        // Unknown or expired: a new link. Couldn't fetch: try again.
+        final said = snapshot.hasError
+            ? 'preview.offline'
+            : 'preview.unavailable';
         return Scaffold(
           appBar: PosHeader(title: copy('preview.label'), onBack: _close),
           body: Center(
@@ -49,7 +53,8 @@ class _PreviewLinkPageState extends ConsumerState<PreviewLinkPage> {
                 ? Padding(
                     padding: const EdgeInsets.all(32),
                     child: Text(
-                      copy('preview.unavailable'),
+                      copy(said),
+                      key: ValueKey('preview-link-$said'),
                       textAlign: TextAlign.center,
                     ),
                   )

@@ -16,6 +16,7 @@ abstract final class EndpointGroup {
   static const String ingest = 'ingest';
   static const String device = 'device';
   static const String evidence = 'evidence';
+  static const String preview = 'preview';
 }
 
 /// The POS API for the module (docs/03 §4): the session (exchange, refresh,
@@ -162,6 +163,16 @@ class PosApiClient {
     userId: userId,
   )).body;
 
+  /// `GET /v1/preview/<token>` (docs/04 §10, T3-12): the draft a "Preview
+  /// on a phone" link names, `{kind, definition, bundle, context}`, for the
+  /// current user.
+  Future<Map<String, Object?>> previewDraft(String token) async =>
+      (await _agentCall(
+        '/preview/${Uri.encodeComponent(token)}',
+        null,
+        group: EndpointGroup.preview,
+      )).body;
+
   /// `GET /v1/health`: no session needed.
   Future<Map<String, Object?>> health() async =>
       (await transport.get('/health')).body;
@@ -195,9 +206,10 @@ class PosApiClient {
     );
   }
 
+  /// A POST of [body] to [path], or a GET when [body] is null.
   Future<ApiResponse> _agentCall(
     String path,
-    Object body, {
+    Object? body, {
     required String group,
     String? userId,
   }) async {
@@ -231,7 +243,9 @@ class PosApiClient {
       final response = await _withFreshToken(
         id,
         session,
-        (token) => transport.post(path, body, accessToken: token),
+        (token) => body == null
+            ? transport.get(path, accessToken: token)
+            : transport.post(path, body, accessToken: token),
       );
       gate.recordSuccess();
       return response;

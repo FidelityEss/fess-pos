@@ -13,6 +13,9 @@
 /out/
 *.tsbuildinfo
 
+# The phone app's web build for the live preview (scripts/build-module-preview.mjs, about 19 MB; D-101): built, not committed
+/public/module-preview/
+
 # Local environment — never commit (commit .env.example only)
 .env.local
 .env.staging

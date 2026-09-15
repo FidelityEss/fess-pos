@@ -21,7 +21,8 @@ const String previewRender = 'fess_pos.preview.render';
 const String previewRendered = 'fess_pos.preview.rendered';
 
 /// What the preview can't draw as the request stands: an app definition's
-/// problems (the module would stand the bundled app in), or a flow (T3-12).
+/// problems (the module would stand the bundled app in), or a flow whose
+/// questions it doesn't carry (it can't be walked through, T3-12).
 List<String> previewProblems(PreviewRequest request) {
   switch (request.kind) {
     case 'app':
@@ -35,7 +36,19 @@ List<String> previewProblems(PreviewRequest request) {
         return e.problems;
       }
     case 'flow':
-      return const ["flows can't be previewed in the app yet"];
+      final form = request.definition['form_family'];
+      if (form is! String) {
+        const unnamed =
+            "the flow doesn't name its questions (form_family), so it can't "
+            'be walked through';
+        return const [unnamed];
+      }
+      if (request.definitionOf('form', form) == null) {
+        final missing =
+            "the flow's questions ($form) aren't in the preview, so it can't "
+            'be walked through';
+        return [missing];
+      }
   }
   return const [];
 }

@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
     "test:e2e": "playwright test",
+    "module-preview": "node scripts/build-module-preview.mjs",
     "dev:qa": "node --env-file=.env.qa ./node_modules/next/dist/bin/next dev -p 3001",
     "dev:prod": "node --env-file=.env.production ./node_modules/next/dist/bin/next dev -p 3002"
   },
