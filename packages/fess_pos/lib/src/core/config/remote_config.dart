@@ -60,6 +60,10 @@ class RemoteConfig {
   Duration get retainCommittedPayload =>
       Duration(days: integer('sync.retain_committed_payload_days'));
 
+  /// How often the device reports on its sync (`sync_report`, T5-02).
+  Duration get syncReportInterval =>
+      Duration(seconds: integer('sync.report_interval_s'));
+
   /// How often the host identity is re-verified (docs/07 §2).
   Duration get reverifyEvery => Duration(hours: integer('auth.reverify_hours'));
 

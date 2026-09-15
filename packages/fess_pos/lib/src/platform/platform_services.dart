@@ -6,8 +6,10 @@ import 'package:fess_pos/src/platform/external_apps.dart';
 import 'package:fess_pos/src/platform/integrity.dart';
 import 'package:fess_pos/src/platform/location.dart';
 import 'package:fess_pos/src/platform/module_storage.dart';
+import 'package:fess_pos/src/platform/power.dart';
 import 'package:fess_pos/src/platform/secure_store.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:meta/meta.dart';
 
 /// Every platform service the module uses, behind interfaces (docs/03 §2,
@@ -25,6 +27,7 @@ class PlatformServices {
     required this.integrity,
     required this.backgroundWork,
     required this.externalApps,
+    this.power = const UnavailablePowerRestrictions(),
   });
 
   /// The real adapters. Creating them touches no platform channel; that
@@ -41,6 +44,9 @@ class PlatformServices {
         ? const UnavailableBackgroundWork()
         : const WorkmanagerBackgroundWork(),
     externalApps: const LauncherExternalApps(),
+    power: !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+        ? const ChannelPowerRestrictions()
+        : const UnavailablePowerRestrictions(),
   );
 
   final SecureStore secureStore;
@@ -52,4 +58,7 @@ class PlatformServices {
   final IntegritySignalsProvider integrity;
   final BackgroundWorkScheduler backgroundWork;
   final ExternalApps externalApps;
+
+  /// Android's battery optimisation and background restriction (T5-02).
+  final PowerRestrictions power;
 }

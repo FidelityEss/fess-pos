@@ -74,7 +74,8 @@
   "sync": {
     "foreground_interval_s": 60,
     "idle_interval_s": 900,
-    "retain_committed_payload_days": 30
+    "retain_committed_payload_days": 30,
+    "report_interval_s": 21600
   },
   "storage": {
     "cap_mb": 500,

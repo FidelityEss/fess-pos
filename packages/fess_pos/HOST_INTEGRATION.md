@@ -26,7 +26,11 @@ dependencies:
   and `path_provider 2.1.4`), `latlong2` and `qr` (pure Dart). Directions use `url_launcher`, which FESS already ships
   (6.3.1). None of them needs host code, permissions or plist keys.
 - Background sync uses `workmanager` 0.7.0, the last release on this toolchain floor (planning pack D-94). Android
-  needs nothing from the host; iOS needs the entries in §6.
+  needs no host code; iOS needs the entries in §6. `workmanager` adds the `POST_NOTIFICATIONS` permission to the
+  merged Android manifest (a host that shows push notifications usually declares it already); the module never asks
+  for it.
+- The module has a small Android part of its own (`android/`, the battery checks, D-95). It declares no permissions
+  and uses the host's Android Gradle plugin and Kotlin versions.
 
 ## 2. Wiring (the only host code)
 
@@ -71,6 +75,7 @@ generated files, so FlutterFlow regeneration can't lose it.
 | Microphone | Not used: the camera opens with audio off, and no audio permission is requested |
 | R8 / ProGuard | No rules needed: checked with a release build |
 | Syncing | After `signIn` the module sends and pulls on its own: on a timer from its remote config, when the network comes back, when POS opens and on a forwarded push. Uploads carry on after sign-out. Nothing for the host to schedule, except the one background call above. After `registerBackgroundWork()`, it also sends and uploads in the background: every 15 minutes when there is a network, and once more when the app is left with unsent work. Pulls wait for the app (planning pack D-94) |
+| Battery optimisation (Android) | The module checks battery optimisation and background restriction itself. While either can hold sending back, it shows the agent how to exempt the app in the phone's settings, and reports it to the server. No permission, no host code (planning pack D-95) |
 | Sign-out warning | `PosModule.pendingWork()` counts what hasn't reached the server (envelopes and photos). Warn with it before signing out; uploads carry on after sign-out, so nothing is lost either way. `signOut(purge: true)` isn't available yet (D-21) |
 | iOS SQLCipher | When the host also links the system SQLite (FESS does, through `sqflite` and Firebase), SQLCipher would never be linked. The module's own pod (`ios/fess_pos.podspec`, link settings only) makes the linker require a function only SQLCipher has, so SQLCipher is always linked; `pod install` applies it, and the host's project is untouched. Verified in a FESS-shaped app. **Effect on the host:** the app's other SQLite users (FESS's `sqflite`, Firebase) then run on SQLCipher's SQLite engine — still plain and unencrypted, with compatible files, because SQLCipher encrypts only with a key. If anything ever regressed, the module refuses to store anything in clear (`LOCAL_STORE_NOT_ENCRYPTED`) |
 

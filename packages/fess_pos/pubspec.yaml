@@ -62,11 +62,15 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # An iOS pod with link settings only (ios/fess_pos.podspec): it keeps
+  # iOS: a pod with link settings only (ios/fess_pos.podspec): it keeps
   # SQLCipher linked when the host also links the system SQLite (D-55).
-  # No Dart plugin class and nothing on other platforms.
+  # Android: FessPosPlugin (android/), battery optimisation and background
+  # restriction (T5-02, D-95). No Dart plugin class; nothing on the web.
   plugin:
     platforms:
+      android:
+        package: com.fidelityess.fess_pos
+        pluginClass: FessPosPlugin
       ios:
         ffiPlugin: true
   # Montserrat, the FESS typeface (docs/14), bundled so the module's look

@@ -73,6 +73,7 @@ const Map<String, Object?> bundledConfigDefaults = <String, Object?>{
     'foreground_interval_s': 60,
     'idle_interval_s': 900,
     'retain_committed_payload_days': 30,
+    'report_interval_s': 21600,
   },
   'storage': <String, Object?>{
     'cap_mb': 500,
@@ -168,6 +169,11 @@ const Map<String, ConfigLeaf> configLeaves = {
     ConfigType.integer,
     min: 7,
     max: 365,
+  ),
+  'sync.report_interval_s': ConfigLeaf(
+    ConfigType.integer,
+    min: 900,
+    max: 86400,
   ),
   'storage.cap_mb': ConfigLeaf(ConfigType.integer, min: 100, max: 4096),
   'storage.block_new_work_at_pct': ConfigLeaf(

@@ -7,6 +7,7 @@ import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/domain/preview/preview_request.dart';
 import 'package:fess_pos/src/domain/sync/attention.dart';
 import 'package:fess_pos/src/domain/sync/lost_store.dart';
+import 'package:fess_pos/src/domain/sync/power_status.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 
@@ -94,6 +95,7 @@ List<Override> previewOverrides(
     lostStoresProvider.overrideWith(
       (ref) => Stream.value(const <LostStore>[]),
     ),
+    powerStatusProvider.overrideWith((ref) async => PowerStatus.unknown),
     offlineReadyJobsProvider.overrideWith((ref) => Stream.value({job.id})),
     needsAttentionProvider.overrideWith(
       (ref) => Stream.value(const <AttentionItem>[]),

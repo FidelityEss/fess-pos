@@ -29,6 +29,7 @@ import 'package:fess_pos/src/domain/preview/preview_request.dart';
 import 'package:fess_pos/src/domain/storage/storage_budget.dart';
 import 'package:fess_pos/src/domain/sync/attention.dart';
 import 'package:fess_pos/src/domain/sync/lost_store.dart';
+import 'package:fess_pos/src/domain/sync/power_status.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,6 +43,14 @@ final moduleRuntimeProvider = Provider<ModuleRuntime>(
 final platformServicesProvider = Provider<PlatformServices>(
   (ref) => ref.watch(moduleRuntimeProvider).dependencies.platform,
   name: 'platformServices',
+);
+
+/// What the phone does to hold background sync back (T5-02), asked afresh
+/// each time it is read, e.g. after the agent returns from the settings.
+// ignore: specify_nonobvious_property_types
+final powerStatusProvider = FutureProvider.autoDispose<PowerStatus>(
+  (ref) => ref.watch(platformServicesProvider).power.status(),
+  name: 'powerStatus',
 );
 
 /// The local store, opened on first use (T1-20).

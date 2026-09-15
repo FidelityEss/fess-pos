@@ -251,6 +251,12 @@ abstract final class BundledCopy {
         "Work saved on this phone before {{at}} couldn't be opened. It's "
         'kept, and reported to your administrator.',
     'attention.lost.ok': 'I understand',
+    'attention.battery.title': 'Your phone may hold back sending',
+    'attention.battery.body':
+        "This phone's battery settings can stop POS sending your work while "
+        "it's in the background. Let the app run without battery "
+        'restrictions, then come back here.',
+    'attention.battery.open': 'Open battery settings',
     'attention.saved_at': 'Saved {{at}}',
     'attention.reason': 'Reason: {{code}}',
     'attention.type.submission': 'Inspection submission',

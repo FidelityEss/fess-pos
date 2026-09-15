@@ -229,6 +229,9 @@ class ViewPage extends ConsumerWidget {
     final totals = _data(ref.watch(agentTotalsProvider));
     final sync = _data(ref.watch(syncStatusProvider));
     final syncing = _data(ref.watch(syncingProvider)) ?? false;
+    // Battery settings that can hold sending back count as one more thing
+    // needing attention (T5-02).
+    final restricted = _data(ref.watch(powerStatusProvider))?.restricted;
     final ready =
         _data(ref.watch(offlineReadyJobsProvider)) ?? const <String>{};
     final latest = id == null
@@ -250,7 +253,10 @@ class ViewPage extends ConsumerWidget {
       if (sync != null)
         'sync': {
           'pending': sync.pending,
-          'needs_attention': sync.needsAttention + sync.lostStores,
+          'needs_attention':
+              sync.needsAttention +
+              sync.lostStores +
+              ((restricted ?? false) ? 1 : 0),
           'photos': sync.evidenceWaiting,
           'syncing': syncing,
         },

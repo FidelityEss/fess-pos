@@ -35,6 +35,7 @@ import 'package:fess_pos/src/data/sync/evidence_uploads.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
 import 'package:fess_pos/src/data/sync/sections.dart';
 import 'package:fess_pos/src/data/sync/sync_engine.dart';
+import 'package:fess_pos/src/data/sync/sync_report.dart';
 import 'package:fess_pos/src/domain/forms/form_submissions.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
@@ -538,6 +539,18 @@ final class ModuleRuntime {
   SyncEngine _newSyncEngine(PosApiClient client, PosDatabase db) {
     final outbox = _outboxFor(db);
     const clientType = _clientType;
+    // The device's report on its sync (T5-02). The web build has no device
+    // to report: no free storage, no battery settings.
+    final reporter = kIsWeb
+        ? null
+        : SyncReporter(
+            outbox: outbox,
+            power: dependencies.platform.power.status,
+            freeDiskBytes: dependencies.platform.deviceInfo.freeDiskBytes,
+            configVersionId: () => _bootstrap.configVersionId,
+            capabilities: capabilityReport(clientType, null),
+            clock: dependencies.clock,
+          );
     return SyncEngine(
       sender: OutboxSender(store: outbox, client: client),
       puller: PullEngine(
@@ -591,6 +604,10 @@ final class ModuleRuntime {
           clock: dependencies.clock,
         ).run(config.retainCommittedPayload);
       },
+      report: reporter == null
+          ? null
+          : (config, origin) =>
+                reporter.reportIfDue(origin, every: config.syncReportInterval),
       clock: dependencies.clock,
     );
   }
