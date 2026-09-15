@@ -69,6 +69,14 @@ export interface InvitePerson {
 
 export type InviteBody = { email: string; user_id: Uuid } | { email: string; person: InvitePerson };
 
+/** A sign-in link (a new password) for someone who has signed up, as POST /v1/admin/users/:id/sign-in-link returns it. */
+export interface SignInLinkResult {
+  sign_in_link: { id: Uuid; user_id: Uuid; email: string; expires_at: string; email_sent: boolean; email_error: EmailProblem | null };
+  link: string;
+  email_sent: boolean;
+  email_error: EmailProblem | null;
+}
+
 const BASE = '/v1/admin/invitations';
 const seg = encodeURIComponent;
 
@@ -80,6 +88,8 @@ export const invitationsApi = {
   /** The link that is waiting (the emailed one). Copying doesn't change it. */
   copyLink: (id: string) => api<LinkResult>('POST', `${BASE}/${seg(id)}/link`, {}),
   cancel: (id: string, reason?: string) => api<InvitationRecord>('POST', `${BASE}/${seg(id)}/cancel`, reason ? { reason } : {}),
+  /** A new sign-in link for someone who has signed up (forgotten password): emailed when possible, and for copying. */
+  signInLink: (userId: string) => api<SignInLinkResult>('POST', `/v1/admin/users/${seg(userId)}/sign-in-link`, {}),
 };
 
 export const waitingKey = (userId?: string | null) => ['invitations', 'waiting', userId ?? 'all'] as const;
@@ -121,6 +131,10 @@ export function linkProblem(error: unknown): string | null {
       return 'This link was cancelled.';
     case 'accepted':
       return 'They’ve already signed up.';
+    case 'not_signed_up':
+      return 'They haven’t finished signing up yet, so there’s no password to replace. Send or resend their registration link instead.';
+    case 'inactive':
+      return 'This person is switched off. Switch them back on first.';
     default:
       return null;
   }

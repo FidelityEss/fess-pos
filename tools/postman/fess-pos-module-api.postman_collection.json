@@ -281,6 +281,11 @@
       "key": "uploadContent",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "previewToken",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -2713,6 +2718,147 @@
             "url": "{{apiBaseUrl}}/v1/no-such-endpoint",
             "auth": {
               "type": "noauth"
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "eval(pm.variables.get('posLib')).checkError(404, 'NOT_FOUND');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "09b Preview on a phone",
+      "description": "An admin makes a short-lived link to a draft; the agent's phone opens it with its own session and draws it in the module's preview sandbox, where nothing is kept (docs/04 §10, D-101). Only the token's SHA-256 is stored; unknown and expired links both answer 404.",
+      "item": [
+        {
+          "name": "Make a preview link (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishableKey}}",
+                "type": "text"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{apiBaseUrl}}/v1/admin/preview-links",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"form\",\n  \"definition\": {\n    \"kind\": \"form\",\n    \"family\": \"postman_preview\",\n    \"title\": \"Postman preview\",\n    \"sections\": [\n      {\n        \"key\": \"about\",\n        \"fields\": [\n          {\n            \"key\": \"q1\",\n            \"type\": \"text\",\n            \"label\": \"A question\"\n          }\n        ]\n      }\n    ]\n  },\n  \"bundle\": {},\n  \"context\": {\n    \"today\": \"2026-09-15\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.test('the token is shown once, with a link per platform', () => {",
+                  "  pm.expect(b.token).to.match(/^[0-9A-Za-z_-]{43}$/);",
+                  "  pm.expect(b.path).to.eql('/pos/preview/' + b.token);",
+                  "  pm.expect(Object.keys(b.links).length).to.be.above(0);",
+                  "});",
+                  "pm.collectionVariables.set('previewToken', b.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Open the link (agent)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishableKey}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{apiBaseUrl}}/v1/preview/{{previewToken}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('the preview request', () => {",
+                  "  pm.expect(r.kind).to.eql('form');",
+                  "  pm.expect(r.definition.title).to.eql('Postman preview');",
+                  "  pm.expect(r.expires_at).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown link → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{publishableKey}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{apiBaseUrl}}/v1/preview/unknown-token-0000000000000000",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
             },
             "description": ""
           },

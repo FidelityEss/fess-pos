@@ -163,7 +163,11 @@ class AgentCardSummary extends StatelessWidget {
                   style: posRowTitleStyle(context).copyWith(fontSize: 16),
                 ),
                 const SizedBox(height: 6),
-                CardStatus(state: _map(ctx.data['card'])['state'], ctx: ctx),
+                CardStatus(
+                  state: _map(ctx.data['card'])['state'],
+                  ctx: ctx,
+                  short: true,
+                ),
               ],
             ),
           ),
@@ -186,17 +190,25 @@ class AgentCardSummary extends StatelessWidget {
 }
 
 /// Whether the card authorises the agent now: a readable chip (docs/14 §3).
+/// [short] is the home card's wording (`card.status_active_short`), which
+/// fits one line on a small phone; the card page keeps the full wording.
 class CardStatus extends StatelessWidget {
-  const CardStatus({required this.state, required this.ctx, super.key});
+  const CardStatus({
+    required this.state,
+    required this.ctx,
+    this.short = false,
+    super.key,
+  });
 
   final Object? state;
   final RenderContext ctx;
+  final bool short;
 
   @override
   Widget build(BuildContext context) {
     final (text, tone, icon) = switch (state) {
       'valid' => (
-        ctx.copy('card.status_active'),
+        ctx.copy(short ? 'card.status_active_short' : 'card.status_active'),
         PosTone.success,
         Icons.verified_user_outlined,
       ),

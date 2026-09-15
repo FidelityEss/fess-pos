@@ -21,6 +21,7 @@ import { useMutationWithToast } from '@/lib/mutations';
 import { type BankCreateBody, bankCreateSchema, type BankUpdateBody, bankUpdateSchema } from '@/lib/schemas';
 import { useStaff } from '@/lib/staff';
 import type { Bank, BillingSettings } from '@/lib/types';
+import { BankApiAccess } from './bank-api-access';
 import { BillingSettingsEditor, cleanBillingSettings } from './billing-settings-editor';
 
 interface ContactRow {
@@ -243,6 +244,14 @@ function BankForm({ bank, onDone }: { bank: Bank | null; onDone: () => void }) {
             </div>
           </div>
         </FormSection>
+
+        {/* API keys act at once (their own buttons and dialogs), apart from Save. Admins with the bank in scope only (D-100). */}
+        {!isNew && staff.isAdmin && staff.canAccessBank(bank.id) ? (
+          <>
+            <Separator />
+            <BankApiAccess bank={bank} canEdit={canEdit} />
+          </>
+        ) : null}
 
         <Separator />
         <FormSection title="Export settings" description="Most banks don’t need these. Leave them empty to use the standard exports.">

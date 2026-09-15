@@ -40,7 +40,7 @@ export async function download(bucket: string, path: string): Promise<Uint8Array
   return new Uint8Array(await data.arrayBuffer());
 }
 
-export async function uploadOnce(bucket: string, path: string, bytes: Uint8Array, contentType: string): Promise<'created' | 'exists'> {
+export async function uploadOnce(bucket: string, path: string, bytes: Uint8Array | Blob, contentType: string): Promise<'created' | 'exists'> {
   const { error } = await service().storage.from(bucket).upload(path, bytes, { upsert: false, contentType });
   if (!error) return 'created';
   if (/exist|duplicate/i.test(error.message)) return 'exists';
@@ -56,8 +56,10 @@ export async function exists(bucket: string, path: string): Promise<boolean> {
   return (data ?? []).some((o) => o.name === name);
 }
 
-export async function signedReadUrl(bucket: string, path: string, expiresInSeconds = 900): Promise<string> {
-  const { data, error } = await service().storage.from(bucket).createSignedUrl(path, Math.min(expiresInSeconds, 900));
+/** A read link valid ≤ 15 min. With `downloadAs`, the browser saves the file under that name (exports, T6-03). */
+export async function signedReadUrl(bucket: string, path: string, expiresInSeconds = 900, downloadAs?: string): Promise<string> {
+  const { data, error } = await service().storage.from(bucket)
+    .createSignedUrl(path, Math.min(expiresInSeconds, 900), downloadAs ? { download: downloadAs } : undefined);
   if (error || !data) throw new PosError('NOT_FOUND', 'object not found');
   return publicUrl(data.signedUrl);
 }

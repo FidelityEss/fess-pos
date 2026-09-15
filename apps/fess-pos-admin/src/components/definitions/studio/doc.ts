@@ -71,6 +71,13 @@ export function moveItem(doc: unknown, arrayPath: Path, from: number, to: number
   });
 }
 
+/** Move item `from` of the array at `fromPath` to position `to` of a different array at `toPath` (neither inside the other). */
+export function moveAcross(doc: unknown, fromPath: Path, from: number, toPath: Path, to: number): unknown {
+  const item = getIn(doc, [...fromPath, from]);
+  if (item === undefined) return doc;
+  return insertAt(removeAt(doc, fromPath, from), toPath, to, item);
+}
+
 /** Rename an object key in place (keeping key order). */
 export function renameKey(obj: Obj, from: string, to: string): Obj {
   const out: Obj = {};

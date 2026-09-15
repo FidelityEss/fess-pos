@@ -7,8 +7,12 @@
 //   POST /invitations/:id/link        Copy link: the link that is waiting, the same one as in the email
 //   POST /invitations/:id/cancel      the link stops working and its unused sign-in is removed
 //   POST /invitations/accept          the registration page, once the new person has chosen a password
+//   POST /users/:id/sign-in-link      a new sign-in link for someone who has signed up and forgotten their password:
+//                                     Supabase Auth's password-reset token, emailed when possible and returned for Copy
+//                                     link; it opens /register?type=recovery (pos_rpc.admin_sign_in_link_*, migration
+//                                     20260915140000). "Forgot your password?" on /sign-in asks Supabase Auth directly.
 //
-// The link is a credential until it is used: responses are no-store, and it is never logged.
+// A link is a credential until it is used: responses are no-store, and it is never logged.
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { requirePermission } from '../../../_shared/auth.ts';
@@ -81,8 +85,9 @@ function registerUrl(c: AdminContext): string {
   return `${url.origin}/register`;
 }
 
-function linkFor(url: string, tokenHash: string): string {
-  return `${url}?token_hash=${encodeURIComponent(tokenHash)}&type=invite`;
+/** type=invite: a registration link; type=recovery: a sign-in link (a new password). Both open /register. */
+function linkFor(url: string, tokenHash: string, type: 'invite' | 'recovery' = 'invite'): string {
+  return `${url}?token_hash=${encodeURIComponent(tokenHash)}&type=${type}`;
 }
 
 interface AuthErrorLike {
@@ -130,11 +135,29 @@ async function removeAuthAccount(authUid: string): Promise<void> {
   }
 }
 
-function tokenOrFail(fromDb: string | null | undefined, fromLink: string | null): string {
+function tokenOrFail(fromDb: string | null | undefined, fromLink: string | null, what = 'registration link'): string {
   const token = fromDb || fromLink;
-  if (!token) throw new PosError('UNAVAILABLE', 'the registration link is not ready yet; use Copy link in a moment');
-  if (fromDb && fromLink && fromDb !== fromLink) log('warn', 'invite token from the database differs from generateLink; using the database one');
+  if (!token) throw new PosError('UNAVAILABLE', `the ${what} is not ready yet; try again in a moment`);
+  if (fromDb && fromLink && fromDb !== fromLink) log('warn', `${what} token from the database differs from generateLink; using the database one`);
   return token;
+}
+
+/**
+ * A sign-in (password-reset) link for someone who has signed up: Supabase Auth emails it when it can. When the email
+ * can't go (the same limits as a registration link, D-96 (4)), the link is made without an email for Copy link. Either
+ * way the token is read back from the database afterwards, so the copied link is the emailed one.
+ */
+async function issueSignInLink(email: string, redirectTo: string): Promise<Omit<Issued, 'authUid'>> {
+  const sent = await service().auth.resetPasswordForEmail(email, { redirectTo });
+  if (!sent.error) return { tokenHash: null, emailSent: true, emailError: null };
+  const emailError = emailErrorKind(sent.error as AuthErrorLike);
+  log('warn', 'sign-in link email not sent; link made for copying', { reason: emailError, auth_code: (sent.error as AuthErrorLike).code ?? null });
+  const made = await service().auth.admin.generateLink({ type: 'recovery', email, options: { redirectTo } });
+  if (made.error) {
+    log('error', 'could not make a sign-in link', { auth_code: (made.error as AuthErrorLike | null)?.code ?? null });
+    throw new PosError('UNAVAILABLE', 'Supabase Auth could not make the sign-in link; try again');
+  }
+  return { tokenHash: made.data.properties?.hashed_token ?? null, emailSent: false, emailError };
 }
 
 invitationRoutes.post('/invitations', admin, async (c) => {
@@ -205,6 +228,26 @@ invitationRoutes.post('/invitations/:id/cancel', admin, async (c) => {
   ]);
   if (result.remove_auth_uid) await removeAuthAccount(result.remove_auth_uid);
   return c.json(result.invitation);
+});
+
+// "Send a new sign-in link" on a person's page: for an admin or bank viewer who has signed up (forgotten password). The
+// database checks actor, scope and that they have signed up before Supabase Auth is asked, and again when it is recorded.
+invitationRoutes.post('/users/:id/sign-in-link', admin, async (c) => {
+  const id = uuidParam(c, 'id');
+  await readJson(c, z.object({}).strict());
+  const redirectTo = registerUrl(c);
+  const target = await adminRpc<{ user_id: string; auth_uid: string; email: string }>(c, 'admin_sign_in_link_check', [[id, 'uuid']]);
+  const issued = await issueSignInLink(target.email, redirectTo);
+  const result = await adminRpc<{ sign_in_link: Record<string, unknown>; token_hash: string | null }>(c, 'admin_sign_in_link_sent', [
+    [id, 'uuid'], [target.auth_uid, 'uuid'], [issued.emailSent, 'boolean'], [issued.emailError, 'text'], [redirectTo, 'text'],
+  ]);
+  c.header('cache-control', 'no-store');
+  return c.json({
+    sign_in_link: result.sign_in_link,
+    link: linkFor(redirectTo, tokenOrFail(result.token_hash, issued.tokenHash, 'sign-in link'), 'recovery'),
+    email_sent: issued.emailSent,
+    email_error: issued.emailError,
+  }, 201);
 });
 
 // The new person themself (admin or bank viewer), right after choosing a password on the registration page.

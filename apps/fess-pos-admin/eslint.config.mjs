@@ -8,7 +8,8 @@ const compat = new FlatCompat({ baseDirectory: __dirname });
 const config = [
   {
     // .next-*: extra build dirs (NEXT_DIST_DIR), e.g. .next-staging from `pnpm dev:staging`.
-    ignores: ['.next/**', '.next-*/**', 'node_modules/**', 'playwright-report/**', 'test-results/**', 'next-env.d.ts'],
+    // public/module-preview: the phone app's compiled web build (scripts/build-module-preview.mjs, D-101).
+    ignores: ['.next/**', '.next-*/**', 'node_modules/**', 'playwright-report/**', 'test-results/**', 'next-env.d.ts', 'public/module-preview/**'],
   },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {

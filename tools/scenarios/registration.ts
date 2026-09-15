@@ -3,7 +3,11 @@
 //   1. the seed admin (signed in with a password alone) adds a new bank-scoped administrator and sends the link;
 //   2. Copy link gives the same link; the password rules are enforced; the link works once;
 //   3. the new person signs in with their password alone and reads admin data that needed the second step before D-96;
-//   4. they leave the "waiting to sign up" list; then they are switched off (hard revoke), since pos rows are never deleted.
+//   4. they leave the "waiting to sign up" list;
+//   5. they forget their password: the admin sends a new sign-in link (Supabase Auth's password-reset token, opening
+//      /register?type=recovery), who may and who may not get one, the link works once, the old password stops working
+//      and the new one signs in; "Forgot your password?" gets the same answer from Supabase Auth for an unknown address;
+//   6. they are switched off (hard revoke), since pos rows are never deleted.
 //
 //   POS_PUBLISHABLE_KEY=<QA publishable key> deno run -A --node-modules-dir=none --config tools/scenarios/deno.json tools/scenarios/registration.ts
 //
@@ -11,7 +15,7 @@
 // account, whose id is printed at the end so it can be removed (Supabase's built-in mailer won't deliver to the test
 // address, so the link is copied rather than emailed — which is the point of Copy link).
 import { ApiError, call } from './lib/api.ts';
-import { env, refuseProduction, target } from './lib/env.ts';
+import { adminOrigin, env, refuseProduction, target } from './lib/env.ts';
 import { registerWithLink, Staff, type StaffCreds, strongPassword } from './lib/staff.ts';
 import { Check } from './lib/util.ts';
 
@@ -19,8 +23,13 @@ refuseProduction('The registration-link check');
 const check = new Check();
 const statePath = `${Deno.env.get('HOME')}/.fess-pos/seed-state-${target}.json`;
 let creds: StaffCreds | undefined;
+let readerCreds: StaffCreds | undefined;
+let agentId: string | undefined;
 try {
-  creds = JSON.parse(Deno.readTextFileSync(statePath)).admin;
+  const state = JSON.parse(Deno.readTextFileSync(statePath));
+  creds = state.admin;
+  readerCreds = state.staff?.reader;
+  agentId = state.agents?.['SEED-AG01'];
 } catch {
   // reported just below
 }
@@ -57,6 +66,8 @@ const copied = await admin.fromPanel<{ link: string }>(`/invitations/${sent.invi
 check.eq(copied.link, sent.link, 'Copy link gives the same link, and the emailed one keeps working');
 await expectCode('a second link for the same person is refused (Resend instead)', 'ALREADY_EXISTS',
   () => admin.fromPanel('/invitations', { email: `other+${stamp}@example.com`, user_id: sent.user.id }));
+await expectCode('no sign-in link before they have chosen a password (their registration link instead)', 'CONFLICT',
+  () => admin.fromPanel(`/users/${sent.user.id}/sign-in-link`));
 
 console.log('── the new person opens the link and chooses a password');
 const url = new URL(copied.link);
@@ -111,10 +122,62 @@ const waiting = await fetch(`${env.supabaseUrl}/rest/v1/rpc/admin_invitations_wa
 }).then((r) => r.json());
 check.eq(JSON.stringify(waiting), '[]', 'they have left the “waiting to sign up” list');
 
+console.log('── they forget their password: the admin sends a new sign-in link');
+const authHeaders = { apikey: env.publishableKey, 'content-type': 'application/json' };
+type SignIn = { sign_in_link: { email: string; expires_at: string; sent_by: string }; link: string; email_sent: boolean; email_error: string | null };
+const reset = await admin.fromPanel<SignIn>(`/users/${sent.user.id}/sign-in-link`);
+console.log(`  ${reset.email_sent ? 'emailed' : `not emailed (${reset.email_error}), link made for copying`}`);
+const resetUrl = new URL(reset.link);
+check.ok(reset.link.startsWith(`${adminOrigin}/register?token_hash=`) && resetUrl.searchParams.get('type') === 'recovery',
+  'the sign-in link opens the panel’s /register page to choose a new password');
+check.ok(reset.sign_in_link.email === email && reset.sign_in_link.sent_by === creds.user_id,
+  'it goes to the address they sign in with, and who sent it is recorded');
+const resetHours = (Date.parse(reset.sign_in_link.expires_at) - Date.now()) / 3_600_000;
+check.ok(resetHours > 0.9 && resetHours <= 24, `the sign-in link is recorded with its expiry (${resetHours.toFixed(2)} h)`);
+if (readerCreds?.password) {
+  const reader = new Staff('seed bank viewer', readerCreds);
+  await reader.login();
+  await expectCode('a bank viewer cannot send sign-in links', 'FORBIDDEN', () => reader.fromPanel(`/users/${sent.user.id}/sign-in-link`));
+}
+if (agentId) {
+  await expectCode('an agent gets no sign-in link (they use the FESS app)', 'CONFLICT', () => admin.fromPanel(`/users/${agentId}/sign-in-link`));
+}
+const verify = (token: string | null) =>
+  fetch(`${env.supabaseUrl}/auth/v1/verify`, { method: 'POST', headers: authHeaders, body: JSON.stringify({ type: 'recovery', token_hash: token }) })
+    .then(async (r) => ({ status: r.status, body: await r.json() }));
+const opened = await verify(resetUrl.searchParams.get('token_hash'));
+check.eq(opened.status, 200, 'Supabase Auth accepts the sign-in link and signs them in');
+const newPassword = strongPassword();
+const changed = await fetch(`${env.supabaseUrl}/auth/v1/user`, {
+  method: 'PUT',
+  headers: { ...authHeaders, authorization: `Bearer ${opened.body.access_token}` },
+  body: JSON.stringify({ password: newPassword }),
+});
+check.eq(changed.status, 200, 'they choose a new password');
+await changed.body?.cancel();
+const again = await verify(resetUrl.searchParams.get('token_hash'));
+check.ok(again.status !== 200, `the sign-in link works only once (${again.status})`);
+const oldTry = await fetch(`${env.supabaseUrl}/auth/v1/token?grant_type=password`, {
+  method: 'POST', headers: authHeaders, body: JSON.stringify({ email, password }),
+});
+check.eq(oldTry.status, 400, 'the old password no longer works');
+await oldTry.body?.cancel();
+const renewed = new Staff('reset admin', { user_id: sent.user.id, email, password: newPassword });
+await renewed.login();
+check.eq((await renewed.api<{ id: string }>('GET', '/me')).id, sent.user.id, 'they sign in with the new password');
+
+console.log('── “Forgot your password?” on the sign-in page (Supabase Auth directly)');
+const unknown = await fetch(`${env.supabaseUrl}/auth/v1/recover`, {
+  method: 'POST', headers: authHeaders, body: JSON.stringify({ email: `nobody+${stamp}@example.com` }),
+});
+check.eq(unknown.status, 200, 'an address with no account gets an ordinary answer (and the page says the same thing whatever the answer)');
+await unknown.body?.cancel();
+
 console.log('── clean-up');
 const off = await admin.api<{ mode: string }>('POST', `/users/${sent.user.id}/deactivate`, { mode: 'hard_revoke', reason: 'registration-link check (QA test person)' });
 check.eq(off.mode, 'hard_revoke', 'the test person is switched off');
-await expectCode('once switched off, their sign-in no longer reaches the admin API', 'FORBIDDEN', () => person.api('GET', '/me'));
+await expectCode('once switched off, their sign-in no longer reaches the admin API', 'FORBIDDEN', () => renewed.api('GET', '/me'));
+await expectCode('and they can no longer be sent a sign-in link', 'CONFLICT', () => admin.fromPanel(`/users/${sent.user.id}/sign-in-link`));
 console.log(`  Auth account to remove on QA: ${sent.user.admin_auth_uid} (${email})`);
 
 Deno.exit(check.summary());

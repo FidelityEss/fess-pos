@@ -2,6 +2,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -73,7 +74,6 @@ export function SignInForm() {
       footer={
         <>
           <p className="text-center">New here? Open the registration link from your invitation email to choose your password.</p>
-          <p className="text-center">Forgotten your password? Ask an administrator for help.</p>
         </>
       }
     >
@@ -83,7 +83,12 @@ export function SignInForm() {
           <Input id="email" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="password">Password</Label>
+            <Link href="/forgot-password" className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground">
+              Forgot your password?
+            </Link>
+          </div>
           <Input
             id="password"
             type="password"

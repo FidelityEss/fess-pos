@@ -67,6 +67,8 @@ function PublishDialog({
   analyseError,
   onPublished,
   relatedForm,
+  previousDoc,
+  nextVersion,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -77,6 +79,10 @@ function PublishDialog({
   analyseError: unknown;
   onPublished: (versionId: string | null) => void;
   relatedForm?: unknown;
+  /** The newest published version's document (names what's removed). */
+  previousDoc?: unknown;
+  /** The number the new version will get. */
+  nextVersion: number;
 }) {
   const advanced = useIsAdvanced();
   const queryClient = useQueryClient();
@@ -136,7 +142,7 @@ function PublishDialog({
           <DialogDescription>
             {advanced
               ? `Publishing records a version that never changes, with its fingerprint (hash), for ${family.kind}/${family.key}. Agents only see it once you make it live.`
-              : 'Publishing saves this as a new version that can never be changed. Agents only see it once you make it live.'}
+              : `Publishing saves this as version ${nextVersion}, which can never be changed. Nothing changes for agents until you make it live.`}
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[55vh] space-y-3 overflow-y-auto">
@@ -155,7 +161,7 @@ function PublishDialog({
                   <AlertDescription>Fix the problems below, check again, then publish.</AlertDescription>
                 </Alert>
               ) : null}
-              <AnalysisResultView result={shown} doc={definition} relatedForm={relatedForm} />
+              <AnalysisResultView result={shown} doc={definition} relatedForm={relatedForm} previousDoc={previousDoc} />
             </>
           ) : null}
           <div className="grid gap-1.5">
@@ -180,7 +186,18 @@ function PublishDialog({
 }
 
 /** Draft editor: JSON bound to pos.definition_drafts with debounced autosave, analysis, diff vs latest, and publish. */
-export function DraftEditor({ family, versions, canEdit }: { family: DefinitionFamily; versions: VersionLite[]; canEdit: boolean }) {
+export function DraftEditor({
+  family,
+  versions,
+  canEdit,
+  openPublishSignal = 0,
+}: {
+  family: DefinitionFamily;
+  versions: VersionLite[];
+  canEdit: boolean;
+  /** Bump to open the publish dialog from outside (the page's "Publish the changes…" next step). */
+  openPublishSignal?: number;
+}) {
   const staff = useStaff();
   const advanced = useIsAdvanced();
   const refs = useStudioRefs(family);
@@ -326,6 +343,15 @@ export function DraftEditor({ family, versions, canEdit }: { family: DefinitionF
     setPublishOpen(true);
   }
 
+  // "Publish the changes…" from the page header opens the same dialog, once the draft has loaded.
+  const lastSignal = useRef(openPublishSignal);
+  useEffect(() => {
+    if (!initialised || openPublishSignal === lastSignal.current) return;
+    lastSignal.current = openPublishSignal;
+    if (canEdit) openPublish();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open once per signal
+  }, [openPublishSignal, initialised]);
+
   function onPublished(versionId: string | null) {
     if (versionId && definition) {
       setBaseId(versionId);
@@ -436,7 +462,7 @@ export function DraftEditor({ family, versions, canEdit }: { family: DefinitionF
             {analyse.error ? (
               <ApiErrorAlert error={analyse.error} title="Couldn’t check the draft" />
             ) : analysis ? (
-              <AnalysisResultView result={analysis} doc={definition} relatedForm={relatedForm} onLocate={(target) => setSelected(target)} />
+              <AnalysisResultView result={analysis} doc={definition} relatedForm={relatedForm} previousDoc={latestQ.data?.definition} onLocate={(target) => setSelected(target)} />
             ) : null}
           </CardContent>
         </Card>
@@ -493,6 +519,8 @@ export function DraftEditor({ family, versions, canEdit }: { family: DefinitionF
         analyseError={analyse.error}
         onPublished={onPublished}
         relatedForm={relatedForm}
+        previousDoc={latestQ.data?.definition}
+        nextVersion={(latest?.version ?? 0) + 1}
       />
     </div>
   );

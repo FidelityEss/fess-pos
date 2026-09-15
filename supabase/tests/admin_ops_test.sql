@@ -98,7 +98,10 @@ select is(pg_temp.err($$select pos_rpc.admin_export_request('a0000000-0000-0000-
           'POS:VALIDATION_FAILED', 'bank-scoped admin must choose a bank');
 select is(pg_temp.err($$select pos_rpc.admin_export_request('a0000000-0000-0000-0000-000000000002', 'csv', '{"bank_id":"10000000-0000-0000-0000-00000000000b"}', null)$$),
           'POS:FORBIDDEN', 'export of another bank refused');
-select is((pos_rpc.admin_export_request('a0000000-0000-0000-0000-000000000002', 'billing_csv', '{"bank_id":"10000000-0000-0000-0000-00000000000a"}', null) ->> 'status'),
+-- Billing lists have no worker yet (exports.formats_ready, D-102): refused rather than left waiting. 11_exports covers the rest.
+select is(pg_temp.err($$select pos_rpc.admin_export_request('a0000000-0000-0000-0000-000000000002', 'billing_csv', '{"bank_id":"10000000-0000-0000-0000-00000000000a"}', null)$$),
+          'POS:VALIDATION_FAILED', 'a format with no worker yet is refused');
+select is((pos_rpc.admin_export_request('a0000000-0000-0000-0000-000000000002', 'csv', '{"bank_id":"10000000-0000-0000-0000-00000000000a"}', null) ->> 'status'),
           'queued', 'export queued');
 select ok((select count(*) > 0 from pgmq.q_export), 'export message enqueued in the same transaction');
 select is(pg_temp.err($$select pos_rpc.admin_server_epoch_rotate('a0000000-0000-0000-0000-000000000002', 'restore')$$), 'POS:FORBIDDEN', 'epoch rotation needs a global admin');
