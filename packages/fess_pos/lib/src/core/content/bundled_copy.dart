@@ -18,6 +18,12 @@ abstract final class BundledCopy {
     'page.agent_card.title': 'My authorisation card',
     'page.active_jobs.title': 'Active leads',
     'page.receipt.title': 'Receipt',
+    'storage.sync_required':
+        "There isn't room on this phone for a new inspection. Connect to "
+        'sync so finished work can leave the phone, or free up space.',
+    'storage.capture_full':
+        "The phone's storage is full. Free up space to take photos; your "
+        'answers are kept.',
     'preview.label': 'Preview',
     'preview.waiting': 'Waiting for something to preview…',
     'preview.unavailable':

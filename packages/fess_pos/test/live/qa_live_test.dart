@@ -33,6 +33,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 class _LiveDevice implements DeviceInfoProvider {
   @override
+  Future<int?> freeDiskBytes() async => null;
+
+  @override
   Future<DeviceDescription> describe() async => const DeviceDescription(
     clientType: 'native',
     os: 'android',

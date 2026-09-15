@@ -49,6 +49,7 @@ class SyncEngine {
     Future<void> Function(RemoteConfig config)? reverify,
     void Function(PullReport report)? onPulled,
     Future<int> Function()? uploadEvidence,
+    Future<void> Function(RemoteConfig config)? housekeeping,
     DateTime Function()? clock,
     this.nudgeDelay = const Duration(seconds: 2),
   }) : _deviceOrigin = deviceOrigin,
@@ -56,6 +57,7 @@ class SyncEngine {
        _reverify = reverify,
        _onPulled = onPulled,
        _uploadEvidence = uploadEvidence,
+       _housekeeping = housekeeping,
        _clock = clock ?? DateTime.now;
 
   final OutboxSender sender;
@@ -70,6 +72,10 @@ class SyncEngine {
   /// The evidence upload lane (docs/12 §6); returns how many uploads it
   /// recorded, which then go out as `evidence_uploaded`.
   final Future<int> Function()? _uploadEvidence;
+
+  /// Clears what the server holds and the phone no longer needs (docs/08
+  /// §4), after each run.
+  final Future<void> Function(RemoteConfig config)? _housekeeping;
   final DateTime Function() _clock;
 
   RemoteConfig _config = RemoteConfig.bundled;
@@ -169,6 +175,11 @@ class SyncEngine {
         drained = await sender.drain();
       }
       await outbox.purgeCommitted(_config.retainCommittedPayload);
+      try {
+        await _housekeeping?.call(_config);
+      } on Object catch (e) {
+        _log.warning('local clean-up not done (${e.runtimeType}); next run');
+      }
       error ??= drained?.stoppedBy;
     } on Object catch (e, st) {
       error = e is PosException ? e.code : 'SYNC_FAILED';

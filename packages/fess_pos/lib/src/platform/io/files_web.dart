@@ -9,5 +9,7 @@ Future<void> writeBytes(String path, Uint8List bytes) =>
 
 Future<void> deleteFileIfExists(String path) async {}
 
+Future<int> directorySize(String path) async => 0;
+
 Future<void> ensureDirectory(String path) =>
     Future.error(UnsupportedError('there is no file system on the web'));

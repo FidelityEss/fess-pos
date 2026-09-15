@@ -16,6 +16,7 @@ import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
+import 'package:fess_pos/src/domain/storage/storage_budget.dart';
 import 'package:fess_pos/src/platform/camera.dart';
 import 'package:fess_pos/src/platform/integrity.dart';
 import 'package:fess_pos/src/platform/location.dart';
@@ -336,6 +337,35 @@ void main() {
         (await inspections.begin(job())).status,
         BeginStatus.unavailable,
       );
+    });
+
+    test('no new inspection when the phone is short of room: sync first; '
+        'one already open carries on (T5-08)', () async {
+      final outbox = OutboxStore(db, clock: () => now);
+      final full = DriftInspections(
+        outbox: outbox,
+        recorder: ActionRecorder(outbox),
+        origin: () async => const EnvelopeOrigin(
+          deviceId: testDeviceId,
+          clientType: 'native',
+          userId: 'u-1',
+          sessionId: 's-1',
+        ),
+        send: () async {},
+        location: location,
+        integrity: const UnavailableIntegritySignals(),
+        diagnostics: () async => const {},
+        clock: () => now,
+        storageUse: () async =>
+            const StorageUse(usedBytes: 450 * 1024 * 1024, freeBytes: 1 << 32),
+      );
+      final before = (await jobRow()).status;
+      expect((await full.begin(job())).status, BeginStatus.storageFull);
+      expect(await envelopes('inspection_started'), isEmpty);
+      expect((await jobRow()).status, before);
+
+      final open = await inspections.begin(job());
+      expect((await full.begin(job())).inspectionId, open.inspectionId);
     });
 
     test('with no location fix it still begins, and says so', () async {

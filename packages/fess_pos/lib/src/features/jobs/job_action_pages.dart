@@ -214,6 +214,7 @@ Future<void> openInspection(
   }
   final message = switch (result.status) {
     BeginStatus.definitionsMissing => copy('inspection.definitions_missing'),
+    BeginStatus.storageFull => copy('storage.sync_required'),
     BeginStatus.unavailable => copy('job.action.unavailable'),
     _ => copy('job.action.not_allowed'),
   };

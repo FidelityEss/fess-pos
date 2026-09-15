@@ -76,6 +76,12 @@ class FakeCamera implements CameraService {
 }
 
 class FakeDeviceInfo implements DeviceInfoProvider {
+  /// What [freeDiskBytes] answers.
+  int? freeBytes;
+
+  @override
+  Future<int?> freeDiskBytes() async => freeBytes;
+
   @override
   Future<DeviceDescription> describe() async => const DeviceDescription(
     clientType: 'native',

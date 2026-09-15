@@ -13,6 +13,7 @@ import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/observability/pos_observability.dart';
 import 'package:fess_pos/src/core/version.dart';
 import 'package:fess_pos/src/data/local/form_submissions_store.dart';
+import 'package:fess_pos/src/data/local/housekeeping.dart';
 import 'package:fess_pos/src/data/local/inspection_store.dart';
 import 'package:fess_pos/src/data/local/job_actions_store.dart';
 import 'package:fess_pos/src/data/local/local_store.dart';
@@ -39,7 +40,9 @@ import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/domain/navigation/pos_link.dart';
 import 'package:fess_pos/src/domain/preview/preview_request.dart';
 import 'package:fess_pos/src/domain/session/session_gateway.dart';
+import 'package:fess_pos/src/domain/storage/storage_budget.dart';
 import 'package:fess_pos/src/platform/connectivity.dart';
+import 'package:fess_pos/src/platform/io/files.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:fess_pos/src/platform/secure_store.dart';
 import 'package:flutter/foundation.dart' show ValueNotifier, kIsWeb;
@@ -314,9 +317,25 @@ final class ModuleRuntime {
   }
 
   /// Drafts for "Preview on phone" links (docs/04 §10). None until the
-  /// server serves them by token (T3-33): a preview link then says the
+  /// server serves them by token (T3-12): a preview link then says the
   /// preview isn't available.
   Future<PreviewDrafts?> previewDrafts() async => null;
+
+  /// How the phone's storage stands for new work (docs/08 §5): what the
+  /// module's folder takes and what the phone has free. What can't be read
+  /// counts as room: a storage figure never stops work by failing.
+  Future<StorageUse> storageUse() async {
+    try {
+      final dir = await dependencies.platform.storage.moduleDirectory();
+      return StorageUse(
+        usedBytes: dir == null ? 0 : await directorySize(dir),
+        freeBytes: await dependencies.platform.deviceInfo.freeDiskBytes(),
+      );
+    } on Object catch (e) {
+      _log.warning('storage could not be measured (${e.runtimeType})');
+      return StorageUse.unknown;
+    }
+  }
 
   /// Generic form submissions (`record.submit`, T3-19), recorded under the
   /// signed-in user's session; null in builds without the POS API client.
@@ -353,6 +372,7 @@ final class ModuleRuntime {
       integrity: platform.integrity,
       diagnostics: _diagnostics,
       clock: dependencies.clock,
+      storageUse: storageUse,
     );
   }
 
@@ -480,6 +500,12 @@ final class ModuleRuntime {
         if (snapshot != null) _bootstrap = snapshot;
         _prefetchTiles();
         unawaited(_reconcilePush());
+      },
+      housekeeping: (config) async {
+        await LocalHousekeeping(
+          db,
+          clock: dependencies.clock,
+        ).run(config.retainCommittedPayload);
       },
       clock: dependencies.clock,
     );
