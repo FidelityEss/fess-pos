@@ -72,9 +72,10 @@ generated files, so FlutterFlow regeneration can't lose it.
 
 ## 4. Web (preview now, fallback later)
 
-- The web build must serve `sqlite3.wasm` (from the `sqlite3` 2.9.x release) and `drift_worker.js` (drift 2.31's web
-  worker) next to `index.html`. The module will bundle them (T3-24); until then the web build compiles but the local
-  store can't open.
+- The web build must serve `sqlite3.wasm` (from the `sqlite3` 2.9.4 release, the version the module pins) and
+  `drift_worker.js` (drift 2.31's web worker) next to `index.html`. Both are in the harness's `example/web/`; a web
+  host copies them into its own `web/` folder. `tool/drift_worker.dart` rebuilds the worker after a drift upgrade.
+  They aren't package assets, so phone apps don't carry them (T3-24).
 - The web store isn't encrypted, and every web record carries `client_type = web` (planning pack `docs/13` §8).
 
 ## 5. Files the module keeps
