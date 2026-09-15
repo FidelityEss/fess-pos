@@ -1,11 +1,12 @@
 'use client';
 
 // The registration page (D-96, T2-37): opened from the link an admin sent. The person chooses a password and lands in the
-// admin panel with the access they were given. The link's token is spent only when they submit the password, so a mail
-// scanner that opens the link can't use it up. Understands:
-//   ?token_hash=…&type=invite     the panel's own links (the POS email template and Copy link)
-//   #access_token=…&type=invite   Supabase Auth's default email, if the POS template isn't installed on the project
-//   #error_code=otp_expired…      a used or expired link, from that default email
+// admin panel with the access they were given. The same page takes a sign-in link (type=recovery), from "Forgot your
+// password?" or "Send a new sign-in link": the person chooses a new password and is signed in. The link's token is spent
+// only when they submit the password, so a mail scanner that opens the link can't use it up. Understands:
+//   ?token_hash=…&type=invite|recovery     the panel's own links (the POS email templates and Copy link)
+//   #access_token=…&type=invite|recovery   Supabase Auth's default emails, if the POS templates aren't installed
+//   #error_code=otp_expired…               a used or expired link, from those default emails
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Check, Circle, Eye, EyeOff, LinkIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -23,22 +24,31 @@ import { getSupabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { AuthCard } from './auth-card';
 
+/** invite: a registration link (first password); recovery: a sign-in link (a new password). */
+type Purpose = 'invite' | 'recovery';
+
 type LinkState =
-  | { kind: 'token'; tokenHash: string }
-  | { kind: 'session'; accessToken: string; refreshToken: string }
-  | { kind: 'broken'; reason: 'used_or_expired' | 'missing' };
+  | { kind: 'token'; tokenHash: string; purpose: Purpose }
+  | { kind: 'session'; accessToken: string; refreshToken: string; purpose: Purpose }
+  | { kind: 'broken'; reason: 'used_or_expired' | 'missing'; purpose: Purpose | null };
+
+function purposeOf(type: string | null): Purpose | null {
+  return type === 'invite' || type === 'recovery' ? type : null;
+}
 
 function readLink(): LinkState {
   const query = new URLSearchParams(window.location.search);
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-  if (hash.get('error_code') || hash.get('error')) return { kind: 'broken', reason: 'used_or_expired' };
+  const purpose = purposeOf(query.get('type')) ?? purposeOf(hash.get('type'));
+  if (hash.get('error_code') || hash.get('error')) return { kind: 'broken', reason: 'used_or_expired', purpose };
   const tokenHash = query.get('token_hash');
   const type = query.get('type');
-  if (tokenHash && (!type || type === 'invite')) return { kind: 'token', tokenHash };
+  if (tokenHash && (!type || purpose)) return { kind: 'token', tokenHash, purpose: purpose ?? 'invite' };
   const accessToken = hash.get('access_token');
   const refreshToken = hash.get('refresh_token');
-  if (accessToken && refreshToken && hash.get('type') === 'invite') return { kind: 'session', accessToken, refreshToken };
-  return { kind: 'broken', reason: 'missing' };
+  const hashPurpose = purposeOf(hash.get('type'));
+  if (accessToken && refreshToken && hashPurpose) return { kind: 'session', accessToken, refreshToken, purpose: hashPurpose };
+  return { kind: 'broken', reason: 'missing', purpose };
 }
 
 function plainPasswordError(error: { message: string; code?: string }): string {
@@ -99,10 +109,10 @@ export function RegisterFlow() {
         await supabase.auth.signOut({ scope: 'local' });
         const { error: linkError } =
           link.kind === 'token'
-            ? await supabase.auth.verifyOtp({ token_hash: link.tokenHash, type: 'invite' })
+            ? await supabase.auth.verifyOtp({ token_hash: link.tokenHash, type: link.purpose })
             : await supabase.auth.setSession({ access_token: link.accessToken, refresh_token: link.refreshToken });
         if (linkError) {
-          setLink({ kind: 'broken', reason: 'used_or_expired' });
+          setLink({ kind: 'broken', reason: 'used_or_expired', purpose: link.purpose });
           setPhase('form');
           return;
         }
@@ -115,7 +125,8 @@ export function RegisterFlow() {
         setPhase('form');
         return;
       }
-      // Marks the link as used in the People list. The list also works this out on its own, so a failure here is harmless.
+      // Marks a registration link as used in the People list (also after a sign-in link, for someone who never finished
+      // signing up). The list also works this out on its own, so a failure here is harmless.
       await api('POST', '/v1/admin/invitations/accept', {}).catch(() => undefined);
       queryClient.removeQueries({ queryKey: queryKeys.me });
       setPhase('done');
@@ -126,17 +137,20 @@ export function RegisterFlow() {
     }
   }
 
-  if (!link) return <PageSpinner label="Opening your registration link…" />;
+  if (!link) return <PageSpinner label="Opening your link…" />;
 
   if (link.kind === 'broken') {
     const used = link.reason === 'used_or_expired';
+    const signIn = link.purpose === 'recovery';
     return (
       <AuthCard
-        title={used ? 'This link no longer works' : 'Open the link from your invitation email'}
+        title={used ? 'This link no longer works' : 'Open the link from your email'}
         description={
           used
-            ? 'Registration links work once, and only for a limited time. Ask your admin for a new link.'
-            : 'This page finishes setting up your account, and it needs the link your admin sent you. If you can’t find it, ask your admin for a new link.'
+            ? signIn
+              ? 'Sign-in links work once, and only for a limited time. Ask for a new one below.'
+              : 'Registration links work once, and only for a limited time. Ask your admin for a new link.'
+            : 'This page sets your password, and it needs the link from your email: the invitation your admin sent, or a sign-in link you asked for.'
         }
         wide
         footer={
@@ -151,9 +165,24 @@ export function RegisterFlow() {
         <Alert variant={used ? 'warning' : 'info'}>
           <LinkIcon />
           <AlertDescription>
-            {used
-              ? 'Your admin can send a new link from the People page. It replaces this one.'
-              : 'Your admin can send you a link, or copy one for you, from the People page.'}
+            {signIn ? (
+              <>
+                Get a new sign-in link from{' '}
+                <Link href="/forgot-password" className="font-medium underline underline-offset-2">
+                  Forgot your password?
+                </Link>
+                , or ask your admin to send you one.
+              </>
+            ) : used ? (
+              'Your admin can send a new link from the People page. It replaces this one.'
+            ) : (
+              <>
+                Your admin can send you a registration link from the People page. Signed up before and forgotten your password? Use{' '}
+                <Link href="/forgot-password" className="font-medium underline underline-offset-2">
+                  Forgot your password?
+                </Link>
+              </>
+            )}
           </AlertDescription>
         </Alert>
       </AuthCard>
@@ -162,10 +191,15 @@ export function RegisterFlow() {
 
   if (phase === 'done') return <PageSpinner label="You’re all set. Opening the admin panel…" />;
 
+  const reset = link.purpose === 'recovery';
   return (
     <AuthCard
-      title="Choose your password"
-      description="Welcome to the FESS POS admin panel. Choose a password to finish setting up your account. From now on you’ll sign in with your email address and this password."
+      title={reset ? 'Choose a new password' : 'Choose your password'}
+      description={
+        reset
+          ? 'Choose a new password for your FESS POS admin panel account. Once you save it, your old password stops working and you’re signed in.'
+          : 'Welcome to the FESS POS admin panel. Choose a password to finish setting up your account. From now on you’ll sign in with your email address and this password.'
+      }
       wide
     >
       <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
