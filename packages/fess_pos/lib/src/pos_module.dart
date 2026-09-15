@@ -10,7 +10,6 @@ import 'package:fess_pos/src/core/version.dart';
 import 'package:fess_pos/src/domain/navigation/pos_link.dart';
 import 'package:fess_pos/src/features/preview/preview_entry.dart';
 import 'package:fess_pos/src/features/shell/pos_entry_point.dart';
-import 'package:fess_pos/src/platform/background_work.dart';
 import 'package:flutter/widgets.dart';
 
 const PosLogger _log = PosLogger('module');
@@ -101,22 +100,18 @@ abstract final class PosModule {
     return true;
   }
 
-  /// Registers the module's background sync with the platform. The host
-  /// calls it once in `main()` (D-36). Not wired yet (T5-01).
+  /// Registers the module's background sync with the platform (D-36,
+  /// T5-01): a periodic sync, and one more when the app is left with work
+  /// the server doesn't hold yet. The host calls it once in `main()`, after
+  /// [initialize]; before it, this throws `NOT_INITIALIZED`. Nothing happens
+  /// on the web. iOS needs the host entries in HOST_INTEGRATION.
   static Future<void> registerBackgroundWork() async {
-    final scheduler =
-        ModuleRuntime.current?.dependencies.platform.backgroundWork ??
-        const UnavailableBackgroundWork();
-    if (!scheduler.supported) {
-      _log.info('background work is not available yet (T5-01)');
-      return;
-    }
-    await scheduler.register();
+    await ModuleRuntime.require.registerBackgroundWork();
   }
 
   /// Runs one sync, for a host that owns its own background dispatcher
-  /// (D-36): sends what is queued and pulls if the user is signed in. The
-  /// module's own background scheduling is T5-01.
+  /// (D-36) instead of calling [registerBackgroundWork]: sends what is
+  /// queued and pulls if the user is signed in.
   static Future<void> runBackgroundSync() async {
     await ModuleRuntime.current?.runSync(keepRunning: false);
   }

@@ -98,6 +98,7 @@ void main() {
       'package:sqlcipher_flutter_libs/',
       'package:sqlite3/',
       'package:url_launcher/',
+      'package:workmanager/',
       'package:drift/native.dart',
       'package:drift/wasm.dart',
     ];

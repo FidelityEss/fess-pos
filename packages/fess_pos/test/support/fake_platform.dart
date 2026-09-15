@@ -128,10 +128,26 @@ class FakeExternalApps implements ExternalApps {
   }
 }
 
+/// Records what the module asks the platform to schedule.
+class FakeBackgroundWork implements BackgroundWorkScheduler {
+  int registered = 0;
+  int syncSoonCalls = 0;
+
+  @override
+  bool get supported => true;
+
+  @override
+  Future<void> register(void Function() dispatcher) async => registered++;
+
+  @override
+  Future<void> syncSoon() async => syncSoonCalls++;
+}
+
 PlatformServices fakePlatform({
   SecureStore? secureStore,
   ModuleStorage? storage,
   ExternalApps? externalApps,
+  BackgroundWorkScheduler? backgroundWork,
 }) => PlatformServices(
   secureStore: secureStore ?? MemorySecureStore(),
   connectivity: FakeConnectivity(),
@@ -140,6 +156,6 @@ PlatformServices fakePlatform({
   deviceInfo: FakeDeviceInfo(),
   storage: storage ?? FakeModuleStorage(),
   integrity: const UnavailableIntegritySignals(),
-  backgroundWork: const UnavailableBackgroundWork(),
+  backgroundWork: backgroundWork ?? const UnavailableBackgroundWork(),
   externalApps: externalApps ?? FakeExternalApps(),
 );

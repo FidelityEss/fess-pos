@@ -7,6 +7,7 @@ import 'package:fess_pos/src/platform/integrity.dart';
 import 'package:fess_pos/src/platform/location.dart';
 import 'package:fess_pos/src/platform/module_storage.dart';
 import 'package:fess_pos/src/platform/secure_store.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:meta/meta.dart';
 
 /// Every platform service the module uses, behind interfaces (docs/03 §2,
@@ -36,7 +37,9 @@ class PlatformServices {
     deviceInfo: PluginDeviceInfoProvider(),
     storage: const AppSupportModuleStorage(),
     integrity: const UnavailableIntegritySignals(),
-    backgroundWork: const UnavailableBackgroundWork(),
+    backgroundWork: kIsWeb
+        ? const UnavailableBackgroundWork()
+        : const WorkmanagerBackgroundWork(),
     externalApps: const LauncherExternalApps(),
   );
 

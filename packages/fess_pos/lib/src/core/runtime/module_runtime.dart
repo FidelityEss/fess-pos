@@ -11,6 +11,7 @@ import 'package:fess_pos/src/contract/identity.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/observability/pos_observability.dart';
+import 'package:fess_pos/src/core/runtime/background_sync.dart';
 import 'package:fess_pos/src/core/version.dart';
 import 'package:fess_pos/src/data/local/custody_note.dart';
 import 'package:fess_pos/src/data/local/form_submissions_store.dart';
@@ -47,6 +48,7 @@ import 'package:fess_pos/src/platform/io/files.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:fess_pos/src/platform/secure_store.dart';
 import 'package:flutter/foundation.dart' show ValueNotifier, kIsWeb;
+import 'package:flutter/widgets.dart' show AppLifecycleListener;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meta/meta.dart';
 import 'package:sentry/sentry.dart' show Transport;
@@ -251,6 +253,41 @@ final class ModuleRuntime {
 
   void _custodyNoteFailed(Object e) =>
       _log.warning('custody note not written (${e.runtimeType})');
+
+  AppLifecycleListener? _lifecycle;
+
+  /// Registers background sync with the platform (T5-01, D-36, D-94):
+  /// saves what a background run starts from, registers the periodic sync,
+  /// and from then on asks for one more sync whenever the app is left with
+  /// work the server doesn't hold yet.
+  Future<void> registerBackgroundWork() async {
+    final scheduler = dependencies.platform.backgroundWork;
+    if (!scheduler.supported) {
+      _log.info('background work is not available on this platform');
+      return;
+    }
+    await saveBackgroundBootstrap(
+      dependencies.platform.secureStore,
+      config.bootstrap,
+    );
+    await scheduler.register(posBackgroundDispatcher);
+    _lifecycle ??= AppLifecycleListener(
+      onHide: () => unawaited(_syncSoonIfWaiting()),
+    );
+  }
+
+  /// On leaving the app: one more sync in the background, if the store
+  /// is open and holds work the server doesn't have yet.
+  Future<void> _syncSoonIfWaiting() async {
+    if (_localStore == null) return;
+    try {
+      if (await pendingWork() > 0) {
+        await dependencies.platform.backgroundWork.syncSoon();
+      }
+    } on Object catch (e) {
+      _log.warning('background sync not scheduled (${e.runtimeType})');
+    }
+  }
 
   StreamSubscription<NetworkState>? _network;
 
@@ -670,6 +707,8 @@ final class ModuleRuntime {
     _network = null;
     await _custodyNote?.cancel();
     _custodyNote = null;
+    _lifecycle?.dispose();
+    _lifecycle = null;
     container.dispose();
     pendingLink.dispose();
     dependencies.apiClient?.close();

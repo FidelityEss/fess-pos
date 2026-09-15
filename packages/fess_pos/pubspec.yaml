@@ -51,6 +51,7 @@ dependencies:
   # UUIDv7 for device, request and envelope ids (docs/03 §7). FESS locks 4.5.1.
   url_launcher: ^6.3.1
   uuid: ^4.5.1
+  workmanager: ^0.7.0
 
 dev_dependencies:
   build_runner: ^2.4.0
