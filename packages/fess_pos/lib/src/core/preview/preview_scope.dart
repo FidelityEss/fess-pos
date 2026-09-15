@@ -1,14 +1,20 @@
+import 'package:fess_pos/src/contract/theme.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
+import 'package:fess_pos/src/core/preview/preview_inspections.dart';
+import 'package:fess_pos/src/core/theme/pos_theme_data.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart' show OutboxStatus;
 import 'package:fess_pos/src/domain/forms/form_submissions.dart';
 import 'package:fess_pos/src/domain/forms/reason_codes.dart';
+import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/domain/preview/preview_request.dart';
+import 'package:fess_pos/src/domain/storage/storage_budget.dart';
 import 'package:fess_pos/src/domain/sync/attention.dart';
 import 'package:fess_pos/src/domain/sync/lost_store.dart';
 import 'package:fess_pos/src/domain/sync/power_status.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
+import 'package:flutter/material.dart' show Color;
 import 'package:flutter_riverpod/misc.dart' show Override;
 
 /// What a preview's definitions are named by: there is no pinned version.
@@ -40,11 +46,47 @@ JobRecord previewJob(PreviewRequest request) {
   );
 }
 
+/// The brand a preview draws with: the request's `theme` over the design
+/// tokens, as remote config's `theme.*` would set it (D-45).
+PosBrand previewBrand(PreviewRequest request) {
+  final hex = request.theme['primary_color'];
+  final font = request.theme['font_family'];
+  final rgb = hex is String && RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(hex)
+      ? int.parse(hex.substring(1), radix: 16)
+      : null;
+  return PosBrand.resolve(
+    host: PosTheme(
+      primaryColor: rgb == null ? null : Color(0xFF000000 | rgb),
+      fontFamily: font is String && font.trim().isNotEmpty ? font : null,
+    ),
+  );
+}
+
+/// A declaration's wording as the preview carries it (`bundle.declarations`,
+/// `{key: {title, text}}`); null when it doesn't.
+Declaration? previewDeclaration(PreviewRequest request, String key) {
+  final all = request.bundle['declarations'];
+  final d = all is Map<String, Object?> ? all[key] : null;
+  if (d is! Map<String, Object?>) return null;
+  final text = d['text'];
+  final title = d['title'];
+  if (text is! String) return null;
+  return Declaration(
+    id: previewVersionId('declaration', key),
+    key: key,
+    version: 1,
+    text: text,
+    title: title is String ? title : null,
+  );
+}
+
 /// The overrides that keep a preview in its sandbox (docs/04 §10). Every
 /// definition comes from [request]; the job, the agent and the totals are
 /// its sample ones; nothing reads the local store or calls the server; job
 /// actions and form submissions end as if the server had them and record
-/// nothing. [platform] opens the phone's own apps (calls, maps).
+/// nothing, and an inspection's answers and photos stay in memory
+/// ([PreviewInspections]). [platform] opens the phone's own apps (calls,
+/// maps).
 List<Override> previewOverrides(
   PreviewRequest request, {
   PlatformServices? platform,
@@ -52,7 +94,17 @@ List<Override> previewOverrides(
   final job = previewJob(request);
   final agent = request.context['agent'];
   final stats = request.context['stats'];
+  final brand = previewBrand(request);
   return [
+    posBrandProvider.overrideWithValue(brand),
+    posThemeDataProvider.overrideWithValue(buildPosThemeData(brand)),
+    definitionVersionProvider.overrideWith(
+      (ref, versionId) async => request.definitionOfVersion(versionId),
+    ),
+    declarationProvider.overrideWith(
+      (ref, key) => Stream.value(previewDeclaration(request, key)),
+    ),
+    storageUseProvider.overrideWith((ref) async => StorageUse.unknown),
     activeDefinitionProvider.overrideWith(
       (ref, key) => Stream.value(request.definitionOf(key.kind, key.key)),
     ),
@@ -100,8 +152,11 @@ List<Override> previewOverrides(
     needsAttentionProvider.overrideWith(
       (ref) => Stream.value(const <AttentionItem>[]),
     ),
-    latestInspectionProvider.overrideWith((ref, id) => Stream.value(null)),
-    inspectionsProvider.overrideWith((ref) async => null),
+    inspectionsProvider.overrideWith((ref) {
+      final inspections = PreviewInspections(request);
+      ref.onDispose(inspections.dispose);
+      return inspections;
+    }),
     reasonCodesProvider.overrideWith(
       (ref) => Stream.value(const <ReasonCode>[]),
     ),

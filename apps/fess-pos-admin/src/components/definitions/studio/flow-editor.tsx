@@ -3,7 +3,8 @@
 // Flow editor: the ordered steps of a journey (docs/04 §3.2, docs/11 §6) — which sections of the linked form each
 // Questions step shows, the declaration, the submit confirmation. Integrity steps (location check, declaration,
 // submit) can be moved and configured but not removed.
-import { AlertTriangle, Lock, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, Flag, Lock, Play, Plus, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { StructuredView } from '@/components/structured-view';
@@ -19,7 +20,9 @@ import { ACTION_LABEL, enumLabel, stepWording } from './catalogue-ui';
 import { DocumentHeader } from './document-header';
 import { asArr, asObj, asStr, insertAt, isRule, moveItem, type Obj, remapSelection, removeAt, setProp, uniqueKey, updateIn } from './doc';
 import { ChoiceDialog } from './pickers';
+import { VisibilityControl } from './rule-builder';
 import { slotSentence } from './rule-english';
+import { ruleSubjects } from './rule-subjects';
 import {
   AdvancedJsonButton,
   CheckList,
@@ -85,6 +88,7 @@ export function FlowEditor(props: EditorProps) {
   const steps = asArr(doc.steps).map(asObj);
   const formKey = asStr(doc.form_family);
   const form = formKey ? refs.bundle.forms?.[formKey] : undefined;
+  const formRef = refs.families.form.find((f) => f.key === formKey);
   const sections = useMemo(() => formSections(form), [form]);
   const vocab = useMemo(() => buildVocab(form, refs.bundle.jobSchema), [form, refs.bundle.jobSchema]);
   const titleOf = (k: string) => sections.find((s) => s.key === k)?.title ?? k;
@@ -146,6 +150,13 @@ export function FlowEditor(props: EditorProps) {
             unsetLabel="Send the visit in (default)"
           />
         </div>
+        {formRef?.id ? (
+          <p className="text-sm">
+            <Link href={`/definitions/${formRef.id}`} className="font-medium text-primary hover:underline">
+              Open the questions “{formRef.title}”
+            </Link>
+          </p>
+        ) : null}
       </DocumentHeader>
 
       {form && uncovered.length > 0 ? (
@@ -167,12 +178,24 @@ export function FlowEditor(props: EditorProps) {
       <Card>
         <CardContent className="grid gap-3 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-base font-semibold">Steps, in order</h3>
+            <div>
+              <h3 className="text-base font-semibold">The agent’s journey, step by step</h3>
+              <Hint>Top to bottom, in the order the agent goes through a visit. Click a step to change it.</Hint>
+            </div>
             <span className="text-sm text-muted-foreground">
               <Lock className="mr-1 inline size-3.5" /> Locked steps protect the visit record and can’t be removed.
             </span>
           </div>
-          <ol className="grid gap-2">
+          <ol className="grid" aria-label="The agent’s journey">
+            <li className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2">
+              <div className="flex flex-col items-center" aria-hidden>
+                <span className="mt-1 flex size-6 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                  <Play className="size-3.5" />
+                </span>
+                <span className="w-px flex-1 bg-border" />
+              </div>
+              <p className="pb-3 pt-1 text-sm text-muted-foreground">The agent opens the job and starts the visit.</p>
+            </li>
             {steps.map((s, i) => {
               const type = asStr(s.type);
               const w = stepWording(type);
@@ -180,8 +203,25 @@ export function FlowEditor(props: EditorProps) {
               const pk = `steps/${i}`;
               const isSel = selected === pk;
               const locked = spec?.integrity ?? false;
+              const summary = stepSummary(s, titleOf, familyTitle, declarationTitle);
               return (
-                <li key={i} {...drag.target(i)} className={cn('rounded-lg border bg-card', isSel && 'border-primary ring-2 ring-primary/25', drag.over === i && 'border-primary ring-2 ring-primary/30')}>
+                <li key={i} className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2">
+                  <div className="flex flex-col items-center" aria-hidden>
+                    <span className="h-2 w-px bg-border" />
+                    <span
+                      className={cn(
+                        'flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums',
+                        locked ? 'bg-slate-100 text-slate-700 ring-1 ring-slate-300' : 'bg-primary text-primary-foreground',
+                      )}
+                    >
+                      {i + 1}
+                    </span>
+                    <span className="w-px flex-1 bg-border" />
+                  </div>
+                  <div
+                    {...drag.target(i)}
+                    className={cn('mb-2 rounded-lg border bg-card', isSel && 'border-primary ring-2 ring-primary/25', drag.over === i && 'border-primary ring-2 ring-primary/30')}
+                  >
                   <div
                     role="button"
                     tabIndex={0}
@@ -196,7 +236,6 @@ export function FlowEditor(props: EditorProps) {
                     className="flex cursor-pointer items-start gap-2 rounded-lg p-2.5 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {drag.handle(i)}
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold tabular-nums text-primary">{i + 1}</span>
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted">
                       <w.icon className="size-5" />
                     </span>
@@ -205,7 +244,7 @@ export function FlowEditor(props: EditorProps) {
                         <span className="text-base font-medium">{asStr(s.label) || w.name}</span>
                         {asStr(s.label) ? <span className="text-sm text-muted-foreground">{w.name}</span> : null}
                         {locked ? (
-                          <Badge tone="muted">
+                          <Badge tone="muted" title="Keeps the visit record safe, so it can’t be removed">
                             <Lock /> Locked
                           </Badge>
                         ) : null}
@@ -213,7 +252,8 @@ export function FlowEditor(props: EditorProps) {
                         {s.next !== undefined ? <Badge tone="progress">Can skip ahead</Badge> : null}
                         {advanced ? <code className="text-xs text-muted-foreground">{asStr(s.id)}</code> : null}
                       </div>
-                      <p className="text-sm text-muted-foreground">{stepSummary(s, titleOf, familyTitle, declarationTitle) || w.description}</p>
+                      <p className="text-sm text-muted-foreground">{w.description}</p>
+                      {summary ? <p className="text-sm text-foreground">{summary}</p> : null}
                     </div>
                     {!readOnly ? (
                       <div className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
@@ -229,9 +269,20 @@ export function FlowEditor(props: EditorProps) {
                       <StepInspector index={i} step={s} flowForm={formKey} sections={sections} usage={usage} props={props} vocab={vocab} />
                     </div>
                   ) : null}
+                  </div>
                 </li>
               );
             })}
+            {steps.length > 0 ? (
+              <li className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2">
+                <div className="flex flex-col items-center" aria-hidden>
+                  <span className="flex size-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+                    <Flag className="size-3.5" />
+                  </span>
+                </div>
+                <p className="pt-0.5 text-sm text-muted-foreground">The visit reaches the office. If the phone is offline, it waits safely on the phone and is sent later.</p>
+              </li>
+            ) : null}
           </ol>
           {steps.length === 0 ? <Hint>No steps yet. Add the first step the agent goes through.</Hint> : null}
           {!readOnly ? (
@@ -283,6 +334,7 @@ function StepInspector({
   const ownSections = stepForm && stepForm !== flowForm ? formSections(refs.bundle.forms?.[stepForm]) : sections;
   const viewOptions = refs.families.view.map((v) => ({ value: v.key, label: v.title }));
   const formOptions = refs.families.form.map((f) => ({ value: f.key, label: f.title }));
+  const stepSubjects = useMemo(() => ruleSubjects(refs.bundle.forms?.[stepForm || flowForm], refs.bundle.jobSchema), [refs.bundle.forms, refs.bundle.jobSchema, stepForm, flowForm]);
 
   return (
     <div className="grid gap-5">
@@ -377,13 +429,7 @@ function StepInspector({
       ) : null}
 
       {spec?.removable || isRule(step.visible) ? (
-        <Row label="When it shows">
-          {isRule(step.visible) ? (
-            <RuleLine sentence={slotSentence('step_visible', step.visible, vocab)} rule={step.visible} onChange={(v) => set('visible', v)} onRemove={() => set('visible', undefined)} removeLabel="Always show" />
-          ) : (
-            <span className="text-sm">Always</span>
-          )}
-        </Row>
+        <VisibilityControl value={step.visible} onChange={(v) => set('visible', v)} subjects={stepSubjects} vocab={vocab} slot="step_visible" lead="Show this step when" />
       ) : null}
       {step.next !== undefined ? (
         <Row label="After this step">

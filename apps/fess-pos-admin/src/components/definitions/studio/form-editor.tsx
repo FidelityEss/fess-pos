@@ -3,8 +3,9 @@
 // Form editor: sections as cards, questions as rows (type icon, label, badges, rule sentences) with the question's
 // settings opening underneath the selected row. Groups nest their own question list. Also exports FieldList for the
 // job schema editor (attributes are questions too).
-import { ChevronDown, ChevronRight, Copy, FolderInput, MoreHorizontal, Plus, Settings2, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight, Copy, FolderInput, ListPlus, MoreHorizontal, Plus, Route, Settings2, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Details } from '@/components/details';
@@ -15,7 +16,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { COMPONENTS, type ComponentSpec } from '@/lib/engine';
 import { useIsAdvanced } from '@/lib/preferences';
 import { cn } from '@/lib/utils';
-import { componentWording } from './catalogue-ui';
+import { AdvicePanel } from './advice-panel';
+import type { RefOption } from './bundle';
+import { componentWording, stepWording } from './catalogue-ui';
 import { ComponentPicker } from './component-picker';
 import { DocumentHeader } from './document-header';
 import {
@@ -26,6 +29,7 @@ import {
   getIn,
   insertAt,
   isRule,
+  moveAcross,
   moveItem,
   type Obj,
   type Path,
@@ -39,11 +43,24 @@ import {
   updateIn,
 } from './doc';
 import { FieldInspector } from './field-inspector';
+import { localAdvice } from './local-advice';
 import { type RuleVocabulary, slotSentence } from './rule-english';
-import { AdvancedJsonButton, type EditorProps, Hint, IconAction, JsonPartEditor, ReorderButtons, RuleLine, SelectField, SwitchField, TextField, type Update, useDragReorder, useStudio } from './shared';
+import { VisibilityControl } from './rule-builder';
+import { ruleSubjects } from './rule-subjects';
+import { AdvancedJsonButton, type EditorProps, IconAction, ReorderButtons, SelectField, SwitchField, TextField, type Update, useDragReorder, useStudio } from './shared';
 import { buildVocab } from './vocab';
 
 type Mode = 'form' | 'job_schema';
+
+/** The question list of a top-level section ("sections/2/fields"); these lists exchange questions by drag and drop. */
+const SECTION_LIST = /^sections\/(\d+)\/fields$/;
+
+/** Where a section is asked: the published visit steps that show it. */
+export interface SectionStep {
+  flow: RefOption;
+  stepNo: number;
+  stepName: string;
+}
 
 interface ListCtx {
   mode: Mode;
@@ -95,6 +112,7 @@ function FieldRowCard({
   onSelect,
   ctx,
   drag,
+  onAddBelow,
 }: {
   arrayPath: Path;
   index: number;
@@ -106,12 +124,18 @@ function FieldRowCard({
   onSelect: (p: string | null) => void;
   ctx: ListCtx;
   drag: ReturnType<typeof useDragReorder>;
+  onAddBelow?: () => void;
 }) {
   const advanced = useIsAdvanced();
-  const { readOnly, fresh } = useStudio();
+  const { readOnly, fresh, refs } = useStudio();
   const path = [...arrayPath, index];
   const pk = pathKey(path);
   const isSelected = selected === pk;
+  const rowRef = useRef<HTMLLIElement>(null);
+  // "Show me" (and any other selection from outside) brings the question into view.
+  useEffect(() => {
+    if (isSelected) rowRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [isSelected]);
   const type = asStr(field.type);
   const spec = COMPONENTS[type];
   const w = componentWording(type);
@@ -120,6 +144,10 @@ function FieldRowCard({
   const topLevelFormField = ctx.mode === 'form' && arrayPath.length === 3 && arrayPath[0] === 'sections';
   const currentSection = topLevelFormField ? (arrayPath[1] as number) : -1;
   const root = ctx.mode === 'job_schema' ? 'attributes' : 'sections';
+  // What its conditions can check, worked out only while its settings are open.
+  const conditionsOpen = isSelected && ctx.mode === 'form';
+  const subjects = useMemo(() => (conditionsOpen ? ruleSubjects(doc, refs.bundle.jobSchema, { currentKey: key }) : []), [conditionsOpen, doc, refs.bundle.jobSchema, key]);
+  const ownSubjects = useMemo(() => (conditionsOpen ? ruleSubjects(doc, refs.bundle.jobSchema) : []), [conditionsOpen, doc, refs.bundle.jobSchema]);
 
   function duplicate() {
     update((d) => {
@@ -155,6 +183,7 @@ function FieldRowCard({
 
   return (
     <li
+      ref={rowRef}
       {...drag.target(index)}
       className={cn(
         'rounded-lg border bg-card transition-colors',
@@ -223,6 +252,11 @@ function FieldRowCard({
                     <DropdownMenuSeparator />
                   </>
                 ) : null}
+                {onAddBelow ? (
+                  <DropdownMenuItem onSelect={onAddBelow}>
+                    <ListPlus /> Add a question below
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem destructive onSelect={remove}>
                   <Trash2 /> Remove
                 </DropdownMenuItem>
@@ -242,6 +276,8 @@ function FieldRowCard({
             takenKeys={ctx.takenKeys}
             fieldChoices={ctx.fieldChoices.filter((c) => c.value !== key)}
             previousKey={previousKey}
+            subjects={subjects}
+            ownSubjects={ownSubjects}
           />
         </div>
       ) : null}
@@ -274,26 +310,74 @@ export function FieldList({
 }) {
   const { readOnly, refs, fresh } = useStudio();
   const [picker, setPicker] = useState(false);
+  const [insertIndex, setInsertIndex] = useState<number | null>(null);
   const fields = asArr(getIn(doc, arrayPath)).map(asObj);
-  const drag = useDragReorder(pathKey(arrayPath), (from, to) => {
-    update((d) => moveItem(d, arrayPath, from, to) as Obj);
-    onSelect(remapSelection(selected, arrayPath, from, to));
-  });
+  // A section's own question list also takes questions dragged from another section.
+  const ownSection = SECTION_LIST.exec(pathKey(arrayPath));
+  const drag = useDragReorder(
+    pathKey(arrayPath),
+    (from, to) => {
+      update((d) => moveItem(d, arrayPath, from, to) as Obj);
+      onSelect(remapSelection(selected, arrayPath, from, to));
+    },
+    ownSection
+      ? (fromList, from, to) => {
+          const m = SECTION_LIST.exec(fromList);
+          if (!m) return;
+          update((d) => moveAcross(d, ['sections', Number(m[1]), 'fields'], from, arrayPath, to) as Obj);
+          onSelect(pathKey([...arrayPath, to]));
+        }
+      : undefined,
+  );
   return (
     <div className="grid gap-2">
       {fields.length === 0 ? (
-        <Hint className="rounded-md border border-dashed p-3 text-center">
-          {readOnly ? 'Nothing here yet.' : ctx.mode === 'job_schema' ? 'No details yet. Add the first one.' : 'No questions here yet. Add the first one.'}
-        </Hint>
+        <p
+          {...drag.target(0)}
+          className={cn('rounded-md border border-dashed p-3 text-center text-sm text-muted-foreground', drag.over === 0 && 'border-primary bg-primary/5')}
+        >
+          {readOnly ? 'Nothing here yet.' : ctx.mode === 'job_schema' ? 'No details yet. Add the first one.' : 'No questions here yet. Add the first one, or drag one here.'}
+        </p>
       ) : null}
       <ul className="grid gap-2">
         {fields.map((f, i) => (
-          <FieldRowCard key={i} arrayPath={arrayPath} index={i} count={fields.length} field={f} doc={doc} update={update} selected={selected} onSelect={onSelect} ctx={ctx} drag={drag} />
+          <FieldRowCard
+            key={i}
+            arrayPath={arrayPath}
+            index={i}
+            count={fields.length}
+            field={f}
+            doc={doc}
+            update={update}
+            selected={selected}
+            onSelect={onSelect}
+            ctx={ctx}
+            drag={drag}
+            onAddBelow={
+              readOnly
+                ? undefined
+                : () => {
+                    setInsertIndex(i + 1);
+                    setPicker(true);
+                  }
+            }
+          />
         ))}
       </ul>
+      {fields.length > 0 && !readOnly ? (
+        <div {...drag.target(fields.length)} className={cn('-mt-1 h-2 rounded', drag.over === fields.length && 'bg-primary/40')} aria-hidden />
+      ) : null}
       {!readOnly ? (
         <div>
-          <Button type="button" size="sm" variant="outline" onClick={() => setPicker(true)}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setInsertIndex(null);
+              setPicker(true);
+            }}
+          >
             <Plus /> {addLabel}
           </Button>
         </div>
@@ -306,10 +390,11 @@ export function FieldList({
         refs={refs}
         title={ctx.mode === 'job_schema' ? 'Add a detail' : 'Add a question'}
         onPick={(field, key) => {
-          const idx = fields.length;
+          const idx = insertIndex ?? fields.length;
           fresh.add(key);
-          update((d) => insertAt(d, arrayPath, asArr(getIn(d, arrayPath)).length, field) as Obj);
+          update((d) => insertAt(d, arrayPath, idx, field) as Obj);
           onSelect(pathKey([...arrayPath, idx]));
+          setInsertIndex(null);
         }}
       />
     </div>
@@ -344,10 +429,10 @@ export function useListCtx(doc: Obj, mode: Mode, allow?: (spec: ComponentSpec) =
   }, [doc, mode, allow, refs.bundle.jobSchema]);
 }
 
-function SectionSettings({ index, section, update, vocab }: { index: number; section: Obj; update: Update; vocab: RuleVocabulary }) {
+function SectionSettings({ index, section, update, vocab, doc }: { index: number; section: Obj; update: Update; vocab: RuleVocabulary; doc: Obj }) {
   const advanced = useIsAdvanced();
-  const { readOnly, fresh } = useStudio();
-  const [writing, setWriting] = useState(false);
+  const { fresh, refs } = useStudio();
+  const subjects = useMemo(() => ruleSubjects(doc, refs.bundle.jobSchema), [doc, refs.bundle.jobSchema]);
   const path = ['sections', index];
   const set = (k: string, v: unknown) => update((d) => setProp(d, path, k, v) as Obj);
   const key = asStr(section.key);
@@ -371,7 +456,13 @@ function SectionSettings({ index, section, update, vocab }: { index: number; sec
             })
           }
         />
-        <TextField label="Description" value={asStr(section.description)} onChange={(v) => set('description', v)} placeholder="Optional" />
+        <TextField
+          label="What this section is for"
+          value={asStr(section.description)}
+          onChange={(v) => set('description', v)}
+          placeholder="Say what the agent does here"
+          hint="One line under the section title, such as “Photos of the outside of the shop”."
+        />
       </div>
       {advanced ? (
         <TextField label="Technical name" value={key} onChange={(v) => set('key', v)} mono hint="Visit steps refer to the section by this name." />
@@ -382,33 +473,7 @@ function SectionSettings({ index, section, update, vocab }: { index: number; sec
           </p>
         </Details>
       )}
-      <div className="grid gap-1.5">
-        <span className="text-sm font-medium">When it shows</span>
-        {isRule(section.visible) ? (
-          <RuleLine sentence={slotSentence('visible', section.visible, vocab)} rule={section.visible} onChange={(v) => set('visible', v)} onRemove={() => set('visible', undefined)} removeLabel="Always show" />
-        ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm">{section.visible === false ? 'Never shown' : 'Always'}</span>
-            {advanced && !readOnly && !writing ? (
-              <Button type="button" size="sm" variant="outline" onClick={() => setWriting(true)}>
-                <Plus /> Show only when…
-              </Button>
-            ) : null}
-          </div>
-        )}
-        {writing ? (
-          <JsonPartEditor
-            value={{ '==': [{ var: 'job.attributes.risk_tier' }, 'high'] }}
-            label="Show this section when (JSON logic)"
-            rows={5}
-            onCancel={() => setWriting(false)}
-            onApply={(v) => {
-              set('visible', v);
-              setWriting(false);
-            }}
-          />
-        ) : null}
-      </div>
+      <VisibilityControl value={section.visible} onChange={(v) => set('visible', v)} subjects={subjects} vocab={vocab} lead="Show this section when" />
       <SwitchField label="Start this section on a new page (PDF report)" checked={section.page_break === true} onChange={(v) => set('page_break', v ? true : undefined)} />
       <AdvancedJsonButton
         value={Object.fromEntries(Object.entries(section).filter(([k]) => k !== 'fields'))}
@@ -428,6 +493,7 @@ function SectionCard({
   collapsed,
   onToggle,
   drag,
+  where,
 }: {
   index: number;
   count: number;
@@ -437,6 +503,8 @@ function SectionCard({
   collapsed: boolean;
   onToggle: () => void;
   drag: ReturnType<typeof useDragReorder>;
+  /** Which visit step asks this section (null when no published visit steps use these questions). */
+  where: ReactNode;
 }) {
   const { doc, update, selected, onSelect } = props;
   const { readOnly } = useStudio();
@@ -445,6 +513,11 @@ function SectionCard({
   const isSelected = selected === pk;
   const fields = asArr(section.fields);
   const title = asStr(section.title) || asStr(section.key) || `Section ${index + 1}`;
+  const purpose = asStr(section.description);
+  const cardRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isSelected) cardRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [isSelected]);
 
   function remove() {
     const removed = section;
@@ -454,7 +527,7 @@ function SectionCard({
   }
 
   return (
-    <Card {...drag.target(index)} className={cn('overflow-hidden', isSelected && 'border-primary ring-2 ring-primary/25', drag.over === index && 'border-primary ring-2 ring-primary/30')}>
+    <Card ref={cardRef} {...drag.target(index)} className={cn('overflow-hidden', isSelected && 'border-primary ring-2 ring-primary/25', drag.over === index && 'border-primary ring-2 ring-primary/30')}>
       <div className="flex items-center gap-2 border-b px-3 py-2.5">
         {drag.handle(index)}
         <IconAction label={collapsed ? 'Expand section' : 'Collapse section'} onClick={onToggle}>
@@ -468,6 +541,11 @@ function SectionCard({
             {isRule(section.visible) ? <Badge tone="progress">Shown sometimes</Badge> : null}
             {section.page_break === true ? <Badge tone="muted">New page</Badge> : null}
           </span>
+          {purpose ? (
+            <span className="block text-sm text-muted-foreground">{purpose}</span>
+          ) : !readOnly ? (
+            <span className="block text-sm italic text-muted-foreground">Say what this section is for: open its settings.</span>
+          ) : null}
           {isRule(section.visible) ? <span className="block text-sm text-violet-800">{slotSentence('visible', section.visible, ctx.vocab)}</span> : null}
         </button>
         <IconAction label="Section settings" onClick={() => onSelect(isSelected ? null : pk)}>
@@ -490,7 +568,8 @@ function SectionCard({
           </>
         ) : null}
       </div>
-      {isSelected ? <SectionSettings index={index} section={section} update={update} vocab={ctx.vocab} /> : null}
+      {where ? <div className="flex flex-wrap items-center gap-1.5 border-b bg-slate-50/60 px-3 py-1.5 text-sm">{where}</div> : null}
+      {isSelected ? <SectionSettings index={index} section={section} update={update} vocab={ctx.vocab} doc={doc} /> : null}
       {!collapsed ? (
         <div className="p-3">
           <FieldList arrayPath={['sections', index, 'fields']} doc={doc} update={update} selected={selected} onSelect={onSelect} ctx={ctx} addLabel="Add a question" />
@@ -522,6 +601,47 @@ export function FormEditor(props: EditorProps) {
   const selectedSection = selected?.startsWith('sections/') ? Number(selected.split('/')[1]) : -1;
   const questionCount = ctx.takenKeys.length;
 
+  // How the questions connect to the visit steps: which published steps ask each section.
+  const formKey = asStr(doc.family);
+  const { usingFlows, sectionSteps } = useMemo(() => {
+    const flows = refs.families.flow.filter((fl) => asStr(asObj(refs.bundle.flows?.[fl.key]).form_family) === formKey);
+    const map = new Map<string, SectionStep[]>();
+    for (const fl of flows) {
+      asArr(asObj(refs.bundle.flows?.[fl.key]).steps).forEach((raw, i) => {
+        const s = asObj(raw);
+        if (s.type !== 'form' || (typeof s.form === 'string' && s.form !== formKey)) return;
+        for (const k of asArr(s.sections)) map.set(String(k), [...(map.get(String(k)) ?? []), { flow: fl, stepNo: i + 1, stepName: asStr(s.label) || stepWording('form').name }]);
+      });
+    }
+    return { usingFlows: flows, sectionSteps: map };
+  }, [refs.families.flow, refs.bundle.flows, formKey]);
+  const advice = useMemo(
+    () => localAdvice(doc, { mode: 'form', flowsUsingForm: usingFlows.length, sectionsInSteps: new Set(sectionSteps.keys()) }),
+    [doc, usingFlows.length, sectionSteps],
+  );
+  const whereAsked = (s: Obj): ReactNode => {
+    if (usingFlows.length === 0) return null;
+    const steps = sectionSteps.get(asStr(s.key)) ?? [];
+    const first = steps[0];
+    if (!first) return <span className="text-amber-800">Not in any visit step yet, so agents don’t see it.</span>;
+    return (
+      <>
+        <Route className="size-4 text-muted-foreground" aria-hidden />
+        <span className="text-muted-foreground">
+          Asked in step {first.stepNo}, “{first.stepName}”, of{' '}
+          {first.flow.id ? (
+            <Link href={`/definitions/${first.flow.id}`} className="font-medium text-primary hover:underline">
+              {first.flow.title}
+            </Link>
+          ) : (
+            first.flow.title
+          )}
+          {steps.length > 1 ? ` and ${steps.length - 1} more` : ''}
+        </span>
+      </>
+    );
+  };
+
   function addSection() {
     const taken = sections.map((s) => asStr(s.key));
     const key = uniqueKey('new_section', taken);
@@ -543,9 +663,11 @@ export function FormEditor(props: EditorProps) {
           className="md:max-w-md"
         />
       </DocumentHeader>
+      <AdvicePanel items={advice} onLocate={onSelect} readOnly={readOnly} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          {sections.length} section{sections.length === 1 ? '' : 's'} · {questionCount} question{questionCount === 1 ? '' : 's'}. Click a question to change it.
+          {sections.length} section{sections.length === 1 ? '' : 's'} · {questionCount} question{questionCount === 1 ? '' : 's'}.{' '}
+          {readOnly ? '' : 'Click a question to change it where it sits. Drag the handle, or use the arrows, to reorder; drop a question on another section to move it.'}
         </p>
         <div className="flex gap-1">
           <Button type="button" size="sm" variant="ghost" onClick={() => setCollapsed(new Set())}>
@@ -575,6 +697,7 @@ export function FormEditor(props: EditorProps) {
               })
             }
             drag={drag}
+            where={whereAsked(s)}
           />
         ))}
       </div>

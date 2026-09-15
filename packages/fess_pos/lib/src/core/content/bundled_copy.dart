@@ -28,9 +28,15 @@ abstract final class BundledCopy {
     'preview.waiting': 'Waiting for something to preview…',
     'preview.unavailable':
         "This preview isn't available. Ask for a new preview link.",
+    'preview.offline':
+        "This preview couldn't be fetched. Check the connection and open the "
+        'link again.',
     'preview.flow_unavailable':
-        "Flows can't be previewed in the app yet; the studio's own preview "
-        'shows them.',
+        "This flow can't be walked through yet: choose the questions it "
+        'asks, then look again.',
+    'preview.flow_intro':
+        'Walk through this flow as an agent would. Nothing you enter is kept.',
+    'preview.flow_start': 'Walk through it',
     'form.submit': 'Send',
     'nav.menu': 'Menu',
     'list.group.none': 'Other',
@@ -67,6 +73,9 @@ abstract final class BundledCopy {
     'card.employee_number': 'Employee no. {{number}}',
     'card.role.pos_agent': 'POS agent',
     'card.status_active': 'Authorised Fidelity POS agent — active',
+    // The home card's chip: one line on a 360-point phone (about 128 points
+    // of room; "Authorised agent · Active" needs 157).
+    'card.status_active_short': 'Authorised agent',
     'card.status_expired': 'Card expired',
     'card.status_pending': 'Card not issued yet',
     'card.valid_until': 'Valid until {{time}}',

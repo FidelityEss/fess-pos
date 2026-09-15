@@ -15,6 +15,8 @@ import { asArr, asObj, asStr } from './doc';
 export interface RefOption {
   key: string;
   title: string;
+  /** The family's id, when the option is a piece of the set-up (to link to its page). */
+  id?: string;
 }
 
 export interface StudioRefs {
@@ -98,7 +100,7 @@ export function useStudioRefs(family: Pick<DefinitionFamily, 'bank_id' | 'scope'
     const globalStrings: Record<string, string> = {};
     const bankStrings: Record<string, string> = {};
     for (const f of [...inScope].sort((a, b) => a.key.localeCompare(b.key))) {
-      fams[f.kind].push({ key: f.key, title: f.title });
+      fams[f.kind].push({ key: f.key, title: f.title, id: f.id });
       const def = byFamily.get(f.id);
       if (!def) continue;
       if (f.kind === 'form') (bundle.forms as Record<string, unknown>)[f.key] = def;

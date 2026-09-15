@@ -16,10 +16,10 @@ import { AuthCard } from './auth-card';
 import { GateError } from './gate-error';
 import { NoAccess } from './no-access';
 
-/** A registration link whose address lost its /register path (Supabase Auth falls back to the site address). */
+/** A registration or sign-in link whose address lost its /register path (Supabase Auth falls back to the site address). */
 function strayRegistrationLink(): string | null {
   const { search, hash } = window.location;
-  if (/[?&]token_hash=/.test(search) || /(^#|&)(type=invite|error_code=)/.test(hash)) return `/register${search}${hash}`;
+  if (/[?&]token_hash=/.test(search) || /(^#|&)(type=invite|type=recovery|error_code=)/.test(hash)) return `/register${search}${hash}`;
   return null;
 }
 

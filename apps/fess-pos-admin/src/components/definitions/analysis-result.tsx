@@ -11,6 +11,7 @@ import { shortId } from '@/lib/format';
 import { useIsAdvanced } from '@/lib/preferences';
 import type { AnalyseResult, ValidationIssue } from '@/lib/types';
 import { cn, isPlainObject } from '@/lib/utils';
+import { type ChangeSummary, changeSummary } from './change-words';
 import { friendlyIssue } from './studio/friendly-issues';
 
 /** Best-effort AnalyseResult from a VALIDATION_FAILED details object (publish 422) or an analyse response. */
@@ -25,6 +26,8 @@ interface IssueContext {
   doc?: unknown;
   /** The form a flow uses (names its sections). */
   relatedForm?: unknown;
+  /** The version the draft is compared with (names what was removed). */
+  previousDoc?: unknown;
   /** Jump to the element an issue points at. */
   onLocate?: (target: string) => void;
 }
@@ -83,7 +86,31 @@ function Chips({ items, tone }: { items: unknown[]; tone: 'success' | 'danger' |
  * Renders an analysis (or a publish refusal): verdict, problems in plain language (with code and path in Advanced view),
  * what changed, test cases, and — in Advanced view — the hash and the component requirements.
  */
-export function AnalysisResultView({ result, className, doc, relatedForm, onLocate }: { result: Partial<AnalyseResult>; className?: string } & IssueContext) {
+const SHOWN_CHANGES = 8;
+
+/** "Added: “Till photo”, “Is the business trading?”" — one line per kind of change, the longest lists shortened. */
+function ChangeLines({ summary, previousVersion }: { summary: ChangeSummary; previousVersion?: number }) {
+  const line = (label: string, items: string[], tone: string) =>
+    items.length ? (
+      <li>
+        <span className={cn('font-medium', tone)}>{label}: </span>
+        {items.slice(0, SHOWN_CHANGES).join('; ')}
+        {items.length > SHOWN_CHANGES ? `; and ${items.length - SHOWN_CHANGES} more` : ''}
+      </li>
+    ) : null;
+  return (
+    <div className="space-y-1">
+      <p className="text-sm font-medium">{previousVersion ? `What changes compared with version ${previousVersion}` : 'What changes'}</p>
+      <ul className="space-y-1 text-sm">
+        {line('Added', summary.added, 'text-emerald-800')}
+        {line('Changed', summary.changed, 'text-amber-800')}
+        {line('Removed', summary.removed, 'text-red-800')}
+      </ul>
+    </div>
+  );
+}
+
+export function AnalysisResultView({ result, className, doc, relatedForm, onLocate, previousDoc }: { result: Partial<AnalyseResult>; className?: string } & IssueContext) {
   const advanced = useIsAdvanced();
   const errors = normaliseIssues(result.errors ?? []);
   const warnings = normaliseIssues(result.warnings ?? []);
@@ -165,9 +192,7 @@ export function AnalysisResultView({ result, className, doc, relatedForm, onLoca
           </div>
         </div>
       ) : counts.added + counts.removed + counts.changed > 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Changes: {counts.added} added, {counts.changed} changed, {counts.removed} removed.
-        </p>
+        <ChangeLines summary={changeSummary(changelog, doc, previousDoc)} previousVersion={result.previous_version?.version} />
       ) : result.previous_version ? (
         <p className="text-sm text-muted-foreground">No changes compared with the published version.</p>
       ) : null}

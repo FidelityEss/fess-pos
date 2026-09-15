@@ -252,6 +252,12 @@ otp_expiry = 86400
 subject = "Your FESS POS admin panel account"
 content_path = "./supabase/templates/invite.html"
 
+# The new-password email ("Forgot your password?" and "Send a new sign-in link", T2-37). Like the invitation, the link
+# opens the panel's own page and the token is spent only when the person saves a new password.
+[auth.email.template.recovery]
+subject = "Your FESS POS sign-in link"
+content_path = "./supabase/templates/recovery.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true

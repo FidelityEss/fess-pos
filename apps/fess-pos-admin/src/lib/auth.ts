@@ -7,10 +7,10 @@ import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 import { getSupabase } from './supabase';
 
-/** Only allow same-origin relative redirects, never back into the sign-in or registration pages. */
+/** Only allow same-origin relative redirects, never back into the sign-in, registration or forgotten-password pages. */
 export function safeNextPath(raw: string | null | undefined, fallback = '/'): string {
   if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) return fallback;
-  if (raw.startsWith('/sign-in') || raw.startsWith('/register') || raw.startsWith('/mfa')) return fallback;
+  if (['/sign-in', '/register', '/forgot-password', '/mfa'].some((p) => raw.startsWith(p))) return fallback;
   return raw;
 }
 

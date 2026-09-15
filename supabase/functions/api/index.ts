@@ -14,6 +14,7 @@ import { deviceRoutes } from './routes/device.ts';
 import { evidenceRoutes } from './routes/evidence.ts';
 import { healthRoutes } from './routes/health.ts';
 import { ingestRoutes } from './routes/ingest.ts';
+import { previewRoutes } from './routes/preview.ts';
 import { publicRoutes } from './routes/public.ts';
 import { syncRoutes } from './routes/sync.ts';
 
@@ -46,6 +47,7 @@ app.route('/v1', deviceRoutes);
 app.route('/v1', syncRoutes);
 app.route('/v1', ingestRoutes);
 app.route('/v1', evidenceRoutes);
+app.route('/v1', previewRoutes);     // "Preview on a phone" links, for the module (T3-12, D-101)
 app.route('/v1/admin', adminRoutes);
 app.route('/v1/bank', bankRoutes);   // bank systems, by API key (T6-06, D-100)
 

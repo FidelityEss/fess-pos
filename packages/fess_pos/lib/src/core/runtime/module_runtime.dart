@@ -24,6 +24,7 @@ import 'package:fess_pos/src/data/local/tile_cache.dart';
 import 'package:fess_pos/src/data/outbox/action_recorder.dart';
 import 'package:fess_pos/src/data/outbox/outbox_sender.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart';
+import 'package:fess_pos/src/data/remote/api_preview_drafts.dart';
 import 'package:fess_pos/src/data/remote/api_session_gateway.dart';
 import 'package:fess_pos/src/data/remote/api_transport.dart';
 import 'package:fess_pos/src/data/remote/evidence_uploader.dart';
@@ -388,10 +389,13 @@ final class ModuleRuntime {
     );
   }
 
-  /// Drafts for "Preview on phone" links (docs/04 §10). None until the
-  /// server serves them by token (T3-12): a preview link then says the
-  /// preview isn't available.
-  Future<PreviewDrafts?> previewDrafts() async => null;
+  /// Drafts for "Preview on a phone" links (docs/04 §10, T3-12), fetched
+  /// by token with the signed-in user's session; null in builds without the
+  /// POS API client.
+  Future<PreviewDrafts?> previewDrafts() async {
+    final client = dependencies.apiClient;
+    return client == null ? null : ApiPreviewDrafts(client);
+  }
 
   /// What the server doesn't hold yet: envelopes waiting to go and photos
   /// waiting to upload. The host warns with it before signing out (docs/08

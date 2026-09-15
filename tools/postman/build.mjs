@@ -878,6 +878,45 @@ const errorCases = folder('09 Error cases', 'Every API error has the same shape:
   }),
 ]);
 
+const previewLinks = folder('09b Preview on a phone', 'An admin makes a short-lived link to a draft; the agent\'s phone opens it with its own session and draws it in the module\'s preview sandbox, where nothing is kept (docs/04 §10, D-101). Only the token\'s SHA-256 is stored; unknown and expired links both answer 404.', [
+  adminPost('Make a preview link (admin)', '/preview-links', {
+    body: {
+      kind: 'form',
+      definition: { kind: 'form', family: 'postman_preview', title: 'Postman preview', sections: [{ key: 'about', fields: [{ key: 'q1', type: 'text', label: 'A question' }] }] },
+      bundle: {},
+      context: { today: '2026-09-15' },
+    },
+    test: function () {
+      pm.test('HTTP 201', () => pm.response.to.have.status(201));
+      const b = pm.response.json();
+      pm.test('the token is shown once, with a link per platform', () => {
+        pm.expect(b.token).to.match(/^[0-9A-Za-z_-]{43}$/);
+        pm.expect(b.path).to.eql('/pos/preview/' + b.token);
+        pm.expect(Object.keys(b.links).length).to.be.above(0);
+      });
+      pm.collectionVariables.set('previewToken', b.token);
+    },
+  }),
+  request('Open the link (agent)', {
+    method: 'GET', url: api('/v1/preview/{{previewToken}}'), headers: [APIKEY], auth: bearer('{{accessToken}}'),
+    test: function () {
+      pm.test('HTTP 200', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('the preview request', () => {
+        pm.expect(r.kind).to.eql('form');
+        pm.expect(r.definition.title).to.eql('Postman preview');
+        pm.expect(r.expires_at).to.be.a('string');
+      });
+    },
+  }),
+  request('Unknown link → 404', {
+    method: 'GET', url: api('/v1/preview/unknown-token-0000000000000000'), headers: [APIKEY], auth: bearer('{{accessToken}}'),
+    test: function () {
+      eval(pm.variables.get('posLib')).checkError(404, 'NOT_FOUND');
+    },
+  }),
+]);
+
 const signOut = folder('10 Sign out', 'Sign-out ends UI access but not custody: the session drops to `ingest_only`, so queued work still uploads (docs/03 §3).', [
   agentPost('Sign out (→ ingest_only)', '/v1/auth/signout', {
     body: {},
@@ -917,7 +956,7 @@ const signOut = folder('10 Sign out', 'Sign-out ends UI access but not custody: 
 
 const RUNTIME = ['deviceId', 'deviceSeq', 'monotonicMs', 'accessToken', 'refreshToken', 'sessionId', 'hostToken', 'hostTokenIssuedAt',
   'adminAal1Token', 'adminFactorId', 'adminToken', 'jobId', 'jobReference', 'ctx', 'insp', 'acceptEnvelope', 'lastEnvelopes',
-  'agentCardToken', 'jobCardToken', 'uploadUrl', 'uploadContent'];
+  'agentCardToken', 'jobCardToken', 'uploadUrl', 'uploadContent', 'previewToken'];
 
 const collection = {
   info: {
@@ -939,7 +978,7 @@ const collection = {
   },
   event: [{ listen: 'prerequest', script: { type: 'text/javascript', exec: lines(collectionPre) } }],
   variable: RUNTIME.map((key) => ({ key, value: '', type: 'string' })),
-  item: [health, setup, auth, sync, jobEvents, inspection, otherTypes, publicVerify, alternatives, errorCases, signOut],
+  item: [health, setup, auth, sync, jobEvents, inspection, otherTypes, publicVerify, alternatives, errorCases, previewLinks, signOut],
 };
 
 function environment(name, values) {

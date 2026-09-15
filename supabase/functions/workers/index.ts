@@ -5,6 +5,7 @@ import { requireWorker } from '../_shared/auth.ts';
 import { sha256Hex } from '../_shared/crypto.ts';
 import { asService, rpc, rpcRows } from '../_shared/db.ts';
 import { errorResponse, PosError } from '../_shared/errors.ts';
+import { drainExports } from '../_shared/exports/run.ts';
 import { requestId, rid } from '../_shared/http.ts';
 import { applyLanded, type Envelope, EnvelopeWrapper } from '../_shared/ingest.ts';
 import { log } from '../_shared/log.ts';
@@ -148,8 +149,36 @@ const app = new Hono<AppEnv>();
 app.use('*', requestId);
 app.onError((e, c) => errorResponse(e, rid(c)));
 
+// Exports have their own task ('export': pg_cron every 30 s, and a kick after each request), so a long export never holds
+// up evidence verification (T6-03, D-102). The work carries on after the reply where the runtime allows it
+// (EdgeRuntime.waitUntil), so pg_net's timeout doesn't cut an export short.
+const EXPORT_BUDGET_MS = 60_000;
+
+async function taskOf(req: Request): Promise<string> {
+  try {
+    const body = await req.json() as { task?: unknown };
+    return typeof body?.task === 'string' ? body.task : 'drain';
+  } catch {
+    return 'drain';
+  }
+}
+
 app.post('*', requireWorker, async (c) => {
   const id = rid(c);
+  const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime;
+  const exportsInBackground = () => {
+    runtime!.waitUntil!(drainExports(id, EXPORT_BUDGET_MS).catch((e) => log('error', 'export task failed', { request_id: id, error: String(e) })));
+  };
+  if ((await taskOf(c.req.raw)) === 'export') {
+    if (runtime?.waitUntil) {
+      exportsInBackground();
+      return c.json({ export: 'started' }, 202);
+    }
+    return c.json({ export: await drainExports(id, EXPORT_BUDGET_MS) });
+  }
+  // The 15-second drain also starts the export drain in the background, so exports never depend on one schedule alone
+  // (on QA the 30-second 'pos-workers-export' job was created but pg_cron never ran it; D-102).
+  if (runtime?.waitUntil) exportsInBackground();
   const deadline = Date.now() + BUDGET_MS;
   const pol = await policies(id);
   const notifyPolicy = pol.notify;

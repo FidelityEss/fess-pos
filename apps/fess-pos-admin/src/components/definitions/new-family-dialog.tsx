@@ -21,11 +21,20 @@ import { defKeys, KIND_DESCRIPTION, KIND_ORDER, KIND_SINGULAR } from './definiti
 import { toKey } from './studio/doc';
 
 /** "Add new" dialog (POST /definitions/families). Set-up shared by all banks needs an all-bank admin (D-44). */
-export function NewFamilyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function NewFamilyDialog({
+  open,
+  onOpenChange,
+  initialKind = 'form',
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** The piece to start with ("Set it up" on the set-up map). Remount with a new `key` to change it. */
+  initialKind?: DefinitionKind;
+}) {
   const staff = useStaff();
   const advanced = useIsAdvanced();
   const router = useRouter();
-  const [kind, setKind] = useState<DefinitionKind>('form');
+  const [kind, setKind] = useState<DefinitionKind>(initialKind);
   const [key, setKey] = useState('');
   // Until someone types a technical name, it follows the name (lower-case words joined by _).
   const [keyTouched, setKeyTouched] = useState(false);

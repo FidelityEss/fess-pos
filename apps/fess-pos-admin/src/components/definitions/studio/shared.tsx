@@ -311,8 +311,13 @@ export function ReorderButtons({ index, count, onMove, noun = 'item' }: { index:
 
 const DRAG_TYPE = 'application/x-fess-studio';
 
-/** Native drag-and-drop reordering within one list: a grip handle drags, rows are drop targets. */
-export function useDragReorder(listId: string, onMove: (from: number, to: number) => void) {
+/**
+ * Native drag-and-drop reordering: a grip handle drags, rows are drop targets. Within one list `onMove` reorders; a drop
+ * from another list calls `onForeign` when given (e.g. a question dragged into another section). `target(list.length)`
+ * on an element after the rows makes "drop at the end" (and dropping into an empty list) possible. The up / down
+ * buttons beside each row do the same from the keyboard.
+ */
+export function useDragReorder(listId: string, onMove: (from: number, to: number) => void, onForeign?: (fromListId: string, from: number, to: number) => void) {
   const { readOnly } = useStudio();
   const [over, setOver] = useState<number | null>(null);
   const handle = (index: number) =>
@@ -350,7 +355,9 @@ export function useDragReorder(listId: string, onMove: (from: number, to: number
             setOver(null);
             try {
               const d = JSON.parse(e.dataTransfer.getData(DRAG_TYPE)) as { listId: string; index: number };
-              if (d.listId === listId && d.index !== index) onMove(d.index, index);
+              if (d.listId === listId) {
+                if (d.index !== index) onMove(d.index, index);
+              } else if (onForeign) onForeign(d.listId, d.index, index);
             } catch {
               // not ours
             }
@@ -380,8 +387,9 @@ export function JsonPartEditor({ value, onApply, onCancel, label, rows = 8 }: { 
 }
 
 /**
- * A rule shown as a plain-English sentence. In Advanced view (and when editable) "Edit condition" opens the rule JSON;
- * the visual rule builder is T3-10. Existing rules are always kept intact.
+ * A rule shown as a plain-English sentence, for rules that work out a value (a calculated answer, a minimum that
+ * depends on an answer). In Advanced view "Edit condition" opens its JSON. Conditions (when it shows, required when,
+ * checks, risk flags) use ConditionEditor in rule-builder.tsx instead. Existing rules are always kept intact.
  */
 export function RuleLine({
   sentence,

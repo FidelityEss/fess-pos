@@ -183,8 +183,8 @@ final formSubmissionsProvider = FutureProvider<FormSubmissions?>(
   name: 'formSubmissions',
 );
 
-/// Drafts for "Preview on phone" links (T3-08); null until the server
-/// serves them (T3-12).
+/// Drafts for "Preview on a phone" links (T3-08, T3-12); null in builds
+/// without the POS API client.
 final previewDraftsProvider = FutureProvider<PreviewDrafts?>(
   (ref) => ref.watch(moduleRuntimeProvider).previewDrafts(),
   name: 'previewDrafts',
