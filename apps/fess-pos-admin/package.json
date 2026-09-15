@@ -7,9 +7,14 @@
   "engines": {
     "node": ">=20"
   },
+  "config": {
+    "flutter_version": "3.41.6"
+  },
   "scripts": {
     "dev": "next dev -p 3000",
+    "prebuild": "node scripts/build-module-preview.mjs --soft",
     "build": "next build",
+    "vercel-build": "node scripts/build-module-preview.mjs --soft && next build",
     "start": "next start -p 3000",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
