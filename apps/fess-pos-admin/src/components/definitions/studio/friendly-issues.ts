@@ -87,10 +87,33 @@ function sectionTitle(doc: unknown, bundleForm: unknown, key: string): string {
   return key;
 }
 
+/** The label of a question (or the title of a section) saved under `key`, so advice names it the way the editor shows it. */
+export function labelForKey(doc: unknown, key: string): string | undefined {
+  const walk = (fields: unknown): string | undefined => {
+    for (const raw of asArr(fields)) {
+      const f = asObj(raw);
+      if (f.key === key) return asStr(f.label) || asStr(f.text).slice(0, 60) || undefined;
+      const inner = walk(f.fields);
+      if (inner) return inner;
+    }
+    return undefined;
+  };
+  const d = asObj(doc);
+  for (const s of asArr(d.sections)) {
+    const so = asObj(s);
+    if (so.key === key) return asStr(so.title) || undefined;
+    const hit = walk(so.fields);
+    if (hit) return hit;
+  }
+  return walk(d.attributes);
+}
+
 /** Plain-language advice for one check result. `relatedForm` helps name sections in visit-step issues. */
 export function friendlyIssue(issue: ValidationIssue, doc: unknown, relatedForm?: unknown): FriendlyIssue {
-  const names = quoted(issue.message);
-  const [a, b] = names;
+  // The message quotes technical names; questions and sections are named by what the editor shows. Step types stay raw.
+  const raw = quoted(issue.message);
+  const [ra] = raw;
+  const [a, b] = raw.map((n) => labelForKey(doc, n) ?? n);
   const { where, target } = describeLocation(doc, issue.path ?? issue.field);
   let text: string;
   switch (issue.code) {
@@ -117,7 +140,7 @@ export function friendlyIssue(issue: ValidationIssue, doc: unknown, relatedForm?
       text = `A condition checks for ${q(a)}, but that isn’t one of the answers to ${q(b)}. Did the answers change?`;
       break;
     case 'REQUIRED_NEVER_VISIBLE':
-      text = `${q(a)} must be answered but is never shown, so the agent could never finish. Did you mean to hide it, or to make it optional?`;
+      text = `Question ${q(a)} must be answered but is never shown to anyone, so the agent could never finish. Did you mean to hide it, or to make it optional?`;
       break;
     case 'UNREACHABLE_SECTION':
       text = `Section ${q(a)} is never shown to anyone. Did you mean to hide it?`;
@@ -153,19 +176,19 @@ export function friendlyIssue(issue: ValidationIssue, doc: unknown, relatedForm?
       text = 'This step is never shown. Did you mean to hide it?';
       break;
     case 'INTEGRITY_STEP_MISSING':
-      text = a ? `The ${stepWording(a).name} step protects the visit record, so it has to stay.` : 'The steps need a Submit step at the end.';
+      text = a ? `The ${stepWording(ra ?? '').name} step protects the visit record, so it has to stay.` : 'The steps need a Submit step at the end.';
       break;
     case 'NO_SUBMIT_STEP':
       text = 'The steps need a Submit step at the end.';
       break;
     case 'INTEGRITY_STEP_DUPLICATE':
-      text = a ? `The ${stepWording(a).name} step appears more than once. Keep just one.` : 'There can only be one Submit step.';
+      text = a ? `The ${stepWording(ra ?? '').name} step appears more than once. Keep just one.` : 'There can only be one Submit step.';
       break;
     case 'INTEGRITY_STEP_ORDER':
-      text = a ? `Move the ${stepWording(a).name} step so it comes before Submit.` : 'Questions steps must come before Submit.';
+      text = a ? `Move the ${stepWording(ra ?? '').name} step so it comes before Submit.` : 'Questions steps must come before Submit.';
       break;
     case 'INTEGRITY_STEP_BYPASSABLE':
-      text = `The agent could reach Submit without going through the ${stepWording(a ?? '').name} step. Check the conditions on the steps in between.`;
+      text = `The agent could reach Submit without going through the ${stepWording(ra ?? '').name} step. Check the conditions on the steps in between.`;
       break;
     case 'DECLARATION_FIELD_MISSING':
       text = 'The questions used here need exactly one Declaration question.';

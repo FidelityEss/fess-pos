@@ -123,6 +123,7 @@ function RuleOrFlag({
   previousKey,
   offLabel,
   onLabel,
+  allowRule = true,
 }: {
   slot: 'required' | 'read_only';
   title: string;
@@ -132,6 +133,8 @@ function RuleOrFlag({
   previousKey?: string;
   offLabel: string;
   onLabel: string;
+  /** Offer "Only sometimes" (always shown when a condition is already set). */
+  allowRule?: boolean;
 }) {
   const advanced = useIsAdvanced();
   const [writing, setWriting] = useState(false);
@@ -155,9 +158,9 @@ function RuleOrFlag({
         value={writing ? 'rule' : mode}
         onChange={choose}
         options={[
-          { value: 'off', label: offLabel },
-          { value: 'on', label: onLabel },
-          { value: 'rule', label: 'Only sometimes' },
+          { value: 'off' as const, label: offLabel },
+          { value: 'on' as const, label: onLabel },
+          ...(allowRule || mode === 'rule' ? [{ value: 'rule' as const, label: 'Only sometimes' }] : []),
         ]}
       />
       {mode === 'rule' ? <RuleLine sentence={slotSentence(slot, value, vocab)} rule={value} onChange={onChange} /> : null}
@@ -398,38 +401,84 @@ export function FieldInspector({
     );
   }
 
+  const jobSchemaBasic = mode === 'job_schema' && !advanced;
+  const techName = advanced ? (
+    <TextField
+      label="Technical name"
+      value={key}
+      onChange={(v) => {
+        fresh.delete(key);
+        set('key', v);
+      }}
+      mono
+      invalid={keyProblem}
+      hint="Used in answers, conditions and exports. Changing it after publishing affects answers already collected."
+    />
+  ) : (
+    <>
+      {keyProblem ? <p className="text-sm text-destructive">{keyProblem} Switch to Advanced view to change the technical name.</p> : null}
+      {jobSchemaBasic ? (
+        <p className="text-sm text-muted-foreground">
+          Saved as <code className="rounded border px-1 py-0.5">{key}</code>, the name used in the spreadsheet import, conditions and exports.
+        </p>
+      ) : (
+        <Details summary="Technical name">
+          <p className="text-sm text-muted-foreground">
+            Saved as <code className="rounded border px-1 py-0.5">{key}</code>. It’s used in answers, conditions and exports, and doesn’t change when you
+            rename the question.
+          </p>
+        </Details>
+      )}
+    </>
+  );
+  const typeSettings =
+    shownProps.length > 0 ? (
+      <div className="grid gap-4">
+        <SubHeading>{wording.name} settings</SubHeading>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {shownProps.map((n) => (
+            <div key={n} className={cn((['text', 'differs_note', 'source'].includes(n) || isRule(isDisplay ? field[n] : props[n])) && 'sm:col-span-2')}>
+              <PropEditor
+                name={n}
+                spec={spec.props[n] as PropSpec}
+                value={isDisplay ? field[n] : props[n]}
+                onChange={(v) => setP(n, v)}
+                vocab={vocab}
+                fieldChoices={fieldChoices}
+                suggestions={suggestions}
+              />
+            </div>
+          ))}
+        </div>
+        {!advanced && hiddenCount > 0 ? <Hint>{hiddenCount} more setting{hiddenCount === 1 ? '' : 's'} in Advanced view.</Hint> : null}
+      </div>
+    ) : null;
+
   return (
     <div className="grid gap-5">
       {/* Basics */}
       <div className="grid gap-4">
         {isDisplay ? null : (
-          <TextField label={isGroup ? 'Group heading' : 'Question'} value={asStr(field.label)} onChange={onLabel} placeholder={wording.name} hint={isRule(field.label) ? 'This label is computed by a rule.' : undefined} />
-        )}
-        {!isDisplay ? <TextField label="Help text" value={asStr(field.help_text)} onChange={(v) => set('help_text', v)} placeholder="Optional guidance shown under the question" multiline rows={2} /> : null}
-        {advanced ? (
           <TextField
-            label="Technical name"
-            value={key}
-            onChange={(v) => {
-              fresh.delete(key);
-              set('key', v);
-            }}
-            mono
-            invalid={keyProblem}
-            hint="Used in answers, conditions and exports. Changing it after publishing affects answers already collected."
+            label={isGroup ? 'Group heading' : mode === 'job_schema' ? 'Label on the job form' : 'Question'}
+            value={asStr(field.label)}
+            onChange={onLabel}
+            placeholder={wording.name}
+            hint={isRule(field.label) ? 'This label is computed by a rule.' : undefined}
           />
-        ) : (
-          <>
-            {keyProblem ? <p className="text-sm text-destructive">{keyProblem} Switch to Advanced view to change the technical name.</p> : null}
-            <Details summary="Technical name">
-              <p className="text-sm text-muted-foreground">
-                Saved as <code className="rounded border px-1 py-0.5">{key}</code>. It’s used in answers, conditions and exports, and doesn’t change when you
-                rename the question.
-              </p>
-            </Details>
-          </>
         )}
-        {spec.displays.length > 0 ? (
+        {!isDisplay ? (
+          <TextField
+            label="Help text"
+            value={asStr(field.help_text)}
+            onChange={(v) => set('help_text', v)}
+            placeholder={mode === 'job_schema' ? 'Optional guidance shown under the field' : 'Optional guidance shown under the question'}
+            multiline
+            rows={2}
+          />
+        ) : null}
+        {jobSchemaBasic ? null : techName}
+        {spec.displays.length > 0 && mode === 'form' ? (
           <SelectField
             label="How it looks"
             value={asStr(field.display) || undefined}
@@ -445,7 +494,17 @@ export function FieldInspector({
         <div className="grid gap-4">
           <SubHeading>When it applies</SubHeading>
           {hasValue && type !== 'computed' && type !== 'prefilled' ? (
-            <RuleOrFlag slot="required" title="Answer" value={field.required} onChange={(v) => set('required', v)} vocab={vocab} previousKey={previousKey} offLabel="Optional" onLabel="Required" />
+            <RuleOrFlag
+              slot="required"
+              title={mode === 'job_schema' ? 'On the job form' : 'Answer'}
+              value={field.required}
+              onChange={(v) => set('required', v)}
+              vocab={vocab}
+              previousKey={previousKey}
+              offLabel="Optional"
+              onLabel={mode === 'job_schema' ? 'Must be filled in' : 'Required'}
+              allowRule={mode === 'form'}
+            />
           ) : null}
           {mode === 'form' ? <Visibility field={field} vocab={vocab} previousKey={previousKey} onChange={(v) => set('visible', v)} onRemove={() => removeWithUndo('visible', 'Condition')} /> : null}
           {advanced && hasValue ? (
@@ -461,31 +520,20 @@ export function FieldInspector({
         </div>
       ) : null}
 
-      {/* Type settings */}
-      {shownProps.length > 0 ? (
-        <div className="grid gap-4">
-          <SubHeading>{wording.name} settings</SubHeading>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {shownProps.map((n) => (
-              <div key={n} className={cn((['text', 'differs_note', 'source'].includes(n) || isRule(isDisplay ? field[n] : props[n])) && 'sm:col-span-2')}>
-                <PropEditor
-                  name={n}
-                  spec={spec.props[n] as PropSpec}
-                  value={isDisplay ? field[n] : props[n]}
-                  onChange={(v) => setP(n, v)}
-                  vocab={vocab}
-                  fieldChoices={fieldChoices}
-                  suggestions={suggestions}
-                />
-              </div>
-            ))}
-          </div>
-          {!advanced && hiddenCount > 0 ? <Hint>{hiddenCount} more setting{hiddenCount === 1 ? '' : 's'} in Advanced view.</Hint> : null}
-        </div>
-      ) : null}
-
       {/* Answers */}
       {choice ? <OptionsEditor path={path} field={field} update={update} /> : null}
+
+      {/* Type settings (for job information, behind a disclosure with the technical name) */}
+      {jobSchemaBasic ? (
+        <Details summary="Format and technical details">
+          <div className="grid gap-4">
+            {techName}
+            {typeSettings}
+          </div>
+        </Details>
+      ) : (
+        typeSettings
+      )}
       {isRule(field.options_filter) ? (
         <RuleLine sentence={slotSentence('options_filter', field.options_filter, vocab)} rule={field.options_filter} onChange={(v) => set('options_filter', v)} onRemove={() => removeWithUndo('options_filter', 'Filter')} />
       ) : null}

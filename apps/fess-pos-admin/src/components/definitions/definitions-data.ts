@@ -1,4 +1,5 @@
 // Reads, query keys and pure helpers for the definitions studio (docs/04 §2, §7, §9).
+import { ClipboardList, ListChecks, type LucideIcon, MessageSquareText, PanelTop, Route, Smartphone } from 'lucide-react';
 import { humanLabel } from '@/components/structured-view';
 import { fetchMaybeRow, fetchRows, pos } from '@/lib/supabase';
 import type {
@@ -182,6 +183,26 @@ export const KIND_DESCRIPTION: Record<DefinitionKind, string> = {
   app: 'What the agent sees outside a visit: the start page, the tabs and the job pages.',
   view: 'What one screen of the app shows, from top to bottom. The app screens use these.',
   content: 'The words the app uses, such as messages and button labels.',
+};
+
+/** Who fills each piece in, and when (docs/17 §4.6). */
+export const KIND_WHO: Record<DefinitionKind, string> = {
+  job_schema: 'Filled in by the office, when it creates a job',
+  form: 'Answered by the agent, on site during the visit',
+  flow: 'Nobody fills it in: it guides the agent through the visit',
+  app: 'Nobody fills it in: it’s what the agent sees outside a visit',
+  view: 'Nobody fills it in: each app screen uses one',
+  content: 'Nobody fills it in: the app reads it everywhere',
+};
+
+/** A picture for each piece, used in the set-up map and the piece guide. */
+export const KIND_ICON: Record<DefinitionKind, LucideIcon> = {
+  job_schema: ClipboardList,
+  form: ListChecks,
+  flow: Route,
+  app: Smartphone,
+  view: PanelTop,
+  content: MessageSquareText,
 };
 
 /** Link to one tab of a piece's page (the page keeps its tab in `?tab=`), e.g. "Where it's live" after publishing. */

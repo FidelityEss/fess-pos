@@ -63,12 +63,15 @@ export function ActivateDialog({
   family,
   versions,
   preset,
+  liveVersion,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   family: DefinitionFamily;
   versions: VersionLite[];
   preset?: ActivatePreset;
+  /** The version everyone gets now, if any (to say what changes). */
+  liveVersion?: number;
 }) {
   const advanced = useIsAdvanced();
   const bankLookup = useBankLookup();
@@ -143,6 +146,28 @@ export function ActivateDialog({
   }
 
   const audienceError = errors['audience.user_ids'] ?? errors['audience.percent'] ?? errors['audience.key'] ?? errors['audience.values'] ?? errors.audience;
+
+  // "What changes", in one sentence: who gets which version, from when, instead of what.
+  const chosen = versions.find((v) => v.id === versionId);
+  const who =
+    audType === 'all'
+      ? bankName
+        ? `all agents at ${bankName}`
+        : 'all agents'
+      : audType === 'agents'
+        ? `the ${agentIds.length === 1 ? 'agent' : `${agentIds.length} agents`} you choose`
+        : audType === 'percent'
+          ? `${percent || '?'}% of agents`
+          : `agents whose ${attrKey.trim() || 'detail'} is ${attrValues.trim() || '…'}`;
+  const startIso = fromDateTimeLocalValue(from);
+  const when = startIso ? `From ${formatDateTime(startIso)}` : 'Straight away';
+  const instead =
+    chosen && liveVersion && liveVersion !== chosen.version
+      ? ` instead of version ${liveVersion}${chosen.version < liveVersion ? ' (going back to an older version)' : ''}`
+      : chosen && liveVersion === chosen.version && audType === 'all'
+        ? ' (it’s already the live version)'
+        : '';
+  const summary = chosen ? `${when}, ${who} get version ${chosen.version}${instead}.` : null;
 
   return (
     <Dialog open={open} onOpenChange={(o) => (activate.isPending ? undefined : onOpenChange(o))}>
@@ -234,6 +259,13 @@ export function ActivateDialog({
               </Select>
             </FormField>
           </Details>
+          {summary ? (
+            <div className="rounded-md border border-primary/25 bg-primary/5 px-3 py-2 text-sm" aria-live="polite">
+              <p className="font-medium">What changes</p>
+              <p>{summary}</p>
+              <p className="text-muted-foreground">Phones pick it up the next time they sync. Visits already under way keep the version they started with.</p>
+            </div>
+          ) : null}
           <ApiErrorAlert error={activate.error} />
         </div>
         <DialogFooter>

@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import type { StudioRefs } from './bundle';
 import { CATEGORY_LABEL, CATEGORY_ORDER, componentWording } from './catalogue-ui';
 import { type Obj, toKey, uniqueKey } from './doc';
+import { FEATURED_TYPES, QuestionTypeArt } from './question-type-art';
 
 /** Components whose essential settings need Advanced view (a rule or an asset hash). */
 const ADVANCED_ONLY = new Set(['computed', 'matrix', 'image']);
@@ -118,19 +119,24 @@ export function ComponentPicker({
   const [chosen, setChosen] = useState<string | null>(null);
   const [label, setLabel] = useState('');
 
-  const groups = useMemo(() => {
+  // The most used types come first as pictures; everything else follows, grouped. Search looks through both.
+  const { featured, groups } = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return CATEGORY_ORDER.map((cat) => ({
-      cat,
-      items: Object.values(COMPONENTS).filter((s) => {
-        if (s.category !== cat) return false;
-        if (allow && !allow(s)) return false;
-        if (!advanced && ADVANCED_ONLY.has(s.type)) return false;
-        if (!q) return true;
-        const w = componentWording(s.type);
-        return [w.name, w.description, s.type].some((t) => t.toLowerCase().includes(q));
-      }),
-    })).filter((g) => g.items.length > 0);
+    const ok = (s: ComponentSpec) => {
+      if (allow && !allow(s)) return false;
+      if (!advanced && ADVANCED_ONLY.has(s.type)) return false;
+      if (!q) return true;
+      const w = componentWording(s.type);
+      return [w.name, w.description, s.type].some((t) => t.toLowerCase().includes(q));
+    };
+    const featuredSet = new Set<string>(FEATURED_TYPES);
+    return {
+      featured: FEATURED_TYPES.map((t) => COMPONENTS[t]).filter((s): s is ComponentSpec => !!s && ok(s)),
+      groups: CATEGORY_ORDER.map((cat) => ({
+        cat,
+        items: Object.values(COMPONENTS).filter((s) => s.category === cat && !featuredSet.has(s.type) && ok(s)),
+      })).filter((g) => g.items.length > 0),
+    };
   }, [search, allow, advanced]);
 
   const spec = chosen ? COMPONENTS[chosen] : undefined;
@@ -158,7 +164,7 @@ export function ComponentPicker({
         <DialogHeader>
           <DialogTitle>{chosen ? componentWording(chosen).name : title}</DialogTitle>
           <DialogDescription>
-            {chosen ? componentWording(chosen).description : 'Choose what kind of answer the agent gives. You can change the details afterwards.'}
+            {chosen ? componentWording(chosen).description : 'Choose what kind of answer is given. Each picture shows how it looks. You can change the details afterwards.'}
           </DialogDescription>
         </DialogHeader>
         {!chosen ? (
@@ -168,7 +174,34 @@ export function ComponentPicker({
               <Input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search: photo, date, yes/no…" className="pl-8" aria-label="Search question types" />
             </div>
             <div className="max-h-[58vh] space-y-4 overflow-y-auto pr-1">
-              {groups.length === 0 ? <p className="text-sm text-muted-foreground">Nothing matches “{search}”.</p> : null}
+              {groups.length === 0 && featured.length === 0 ? <p className="text-sm text-muted-foreground">Nothing matches “{search}”.</p> : null}
+              {featured.length > 0 ? (
+                <section>
+                  <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Most used</h3>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {featured.map((s) => {
+                      const w = componentWording(s.type);
+                      return (
+                        <button
+                          key={s.type}
+                          type="button"
+                          onClick={() => setChosen(s.type)}
+                          className="group flex flex-col overflow-hidden rounded-lg border bg-card text-left transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <span className="flex h-20 items-center justify-center border-b bg-slate-50 group-hover:bg-primary/5" aria-hidden>
+                            <QuestionTypeArt type={s.type} />
+                          </span>
+                          <span className="grid gap-0.5 p-2.5">
+                            <span className="text-base font-medium">{w.name}</span>
+                            <span className="text-sm text-muted-foreground">{w.description}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              ) : null}
+              {groups.length > 0 && featured.length > 0 ? <h3 className="border-t pt-3 text-sm font-semibold text-foreground">More kinds</h3> : null}
               {groups.map((g) => (
                 <section key={g.cat}>
                   <h3 className="mb-2 text-sm font-semibold text-muted-foreground">{CATEGORY_LABEL[g.cat]}</h3>

@@ -3,6 +3,7 @@
 // App editor (docs/04 §3.6–3.7): the start page, the navigation tabs, every page (screen, list, form, flow, result)
 // and the outcome sets that decide which result page a form or flow ends on — as a structured outline.
 import { Plus, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { humanLabel, StructuredView } from '@/components/structured-view';
@@ -291,6 +292,17 @@ export function AppEditor(props: EditorProps) {
 
   const outcomePages = (o: string) => pages.filter((p) => asObj(pagesObj[p.key]).type === 'outcome_page' && asObj(pagesObj[p.key]).outcome === o);
 
+  /** The piece a page shows (its screen layout, questions or visit steps), to open it from here. */
+  function linkedPiece(page: Obj): { id: string; label: string } | null {
+    const t = asStr(page.type);
+    const kind = t === 'view_page' ? 'view' : t === 'form_page' ? 'form' : t === 'flow' ? 'flow' : null;
+    if (!kind) return null;
+    const ref = refs.families[kind].find((f) => f.key === asStr(page[kind]));
+    if (!ref?.id) return null;
+    const noun = kind === 'view' ? 'screen layout' : kind === 'form' ? 'questions' : 'visit steps';
+    return { id: ref.id, label: `Open the ${noun} “${ref.title}”` };
+  }
+
   return (
     <div className="grid gap-4">
       <DocumentHeader doc={doc} update={update}>
@@ -406,6 +418,14 @@ export function AppEditor(props: EditorProps) {
                         {advanced ? <code className="text-xs text-muted-foreground">{id}</code> : null}
                       </div>
                       <p className="text-sm text-muted-foreground">{pageSummary(page, titleOf, famTitle) || w.description}</p>
+                      {(() => {
+                        const piece = linkedPiece(page);
+                        return piece ? (
+                          <Link href={`/definitions/${piece.id}`} onClick={(e) => e.stopPropagation()} className="text-sm font-medium text-primary hover:underline">
+                            {piece.label}
+                          </Link>
+                        ) : null;
+                      })()}
                     </div>
                     {!readOnly ? (
                       <div className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
