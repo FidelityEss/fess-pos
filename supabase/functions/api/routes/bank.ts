@@ -18,6 +18,7 @@ import { clientIp, rateLimit, rid } from '../../_shared/http.ts';
 import { log } from '../../_shared/log.ts';
 import { signedReadUrl } from '../../_shared/storage.ts';
 import type { AppEnv, BankAuth } from '../../_shared/types.ts';
+import { bankExportRoutes } from './bank-exports.ts';
 
 export const bankRoutes = new Hono<AppEnv>();
 
@@ -124,6 +125,9 @@ bankRoutes.get('/inspections', async (c) => {
     statuses: bank.statuses,
   });
 });
+
+// Requesting an export and checking on it (T6-03, D-100 (3)), behind the same key check and call record.
+bankRoutes.route('/', bankExportRoutes);
 
 bankRoutes.get('/inspections/:id', async (c) => {
   const bank = c.get('bank');

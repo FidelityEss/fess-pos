@@ -6,7 +6,7 @@ import { requirePermission } from '../../../_shared/auth.ts';
 import { readJson } from '../../../_shared/http.ts';
 import { signedReadUrl } from '../../../_shared/storage.ts';
 import type { AppEnv } from '../../../_shared/types.ts';
-import { adminRpc, jsonObject, reason, reasonCode, serviceRpc, uuid, uuidParam } from './_util.ts';
+import { adminRpc, reason, reasonCode, serviceRpc, uuid, uuidParam } from './_util.ts';
 
 export const opsRoutes = new Hono<AppEnv>();
 const admin = requirePermission(null);
@@ -80,16 +80,7 @@ opsRoutes.post('/devices/:id/restore', admin, async (c) => {
   return c.json(await adminRpc(c, 'admin_device_restore', [[uuidParam(c, 'id'), 'uuid'], [body.reason, 'text']]));
 });
 
-// ── Exports (row + queue message; rendered by the export worker) ─────────────────────────────
-const ExportBody = z.object({
-  type: z.enum(['pdf', 'csv', 'xlsx', 'evidence_zip', 'spec_pdf', 'billing_csv']),
-  scope: jsonObject.default({}),
-  recipient: z.string().max(320).optional(),
-});
-opsRoutes.post('/exports', admin, async (c) => {
-  const body = await readJson(c, ExportBody);
-  return c.json(await adminRpc(c, 'admin_export_request', [[body.type, 'text'], [body.scope, 'jsonb'], [body.recipient ?? null, 'text']]), 201);
-});
+// Exports moved to ./exports.ts with their worker (T6-03).
 
 // ── Operations ────────────────────────────────────────────────────────────────────────────────
 opsRoutes.get('/queues', admin, async (c) => {
