@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:fess_pos/src/core/di/providers.dart';
+import 'package:fess_pos/src/core/theme/pos_widgets.dart';
 import 'package:fess_pos/src/core/theme/tokens.g.dart';
 import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/features/shell/pos_header.dart';
@@ -101,11 +102,8 @@ class JobMapPage extends ConsumerWidget {
         onBack: () => Navigator.of(context).pop(),
       ),
       body: JobMap(location: location),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: DirectionsButton(location: location, label: label),
-        ),
+      bottomNavigationBar: PosActionBar(
+        child: DirectionsButton(location: location, label: label),
       ),
     );
   }
@@ -121,7 +119,8 @@ class DirectionsButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final copy = ref.watch(copyProvider);
-    return FilledButton.tonalIcon(
+    // A secondary action: white with the gold outline (D-97).
+    return OutlinedButton.icon(
       key: const ValueKey('map-directions'),
       icon: const Icon(Icons.directions),
       label: Text(copy('map.directions')),

@@ -1,4 +1,5 @@
 // Reads, query keys and pure helpers for the definitions studio (docs/04 §2, §7, §9).
+import { humanLabel } from '@/components/structured-view';
 import { fetchMaybeRow, fetchRows, pos } from '@/lib/supabase';
 import type {
   ActivationAudience,
@@ -152,24 +153,42 @@ export const fetchApprovalPayload = (id: string) =>
   fetchMaybeRow<{ payload: JsonObject }>(pos().from('approvals').select('payload').eq('id', id).maybeSingle());
 
 // ── Pure helpers ────────────────────────────────────────────────────────────────────────────────
+// The pieces of "Inspection set-up" in plain words (docs/17 §4.6). Internal kind values never change; only what people
+// read. `app` is the whole agent app (pages and tabs); `view` is one screen's layout, used by the app's pages.
 export const KIND_LABEL: Record<DefinitionKind, string> = {
-  form: 'Forms',
-  flow: 'Step-by-step flows',
-  job_schema: 'Job details (job schemas)',
-  view: 'Screens (views)',
-  content: 'Wording (content)',
-  app: 'App pages and navigation',
+  job_schema: 'Job information',
+  form: 'Questions',
+  flow: 'Visit steps',
+  app: 'App screens',
+  view: 'Screen layouts',
+  content: 'Wording',
 };
 
-/** One family of a kind, in plain words. */
+/** One piece of a kind, in plain words (used as a badge and in sentences). */
 export const KIND_SINGULAR: Record<DefinitionKind, string> = {
-  form: 'Form',
-  flow: 'Flow',
-  job_schema: 'Job details',
-  view: 'Screen',
+  job_schema: 'Job information',
+  form: 'Questions',
+  flow: 'Visit steps',
+  app: 'App screens',
+  view: 'Screen layout',
   content: 'Wording',
-  app: 'App',
 };
+
+/** One sentence per piece: what it is and who fills it in. */
+export const KIND_DESCRIPTION: Record<DefinitionKind, string> = {
+  job_schema: 'What the office fills in when it creates a job, such as the merchant’s details and the visit window.',
+  form: 'What the agent answers on site: the checklist, the photos and the signature.',
+  flow: 'The order the agent goes through during a visit, from arriving to sending it in.',
+  app: 'What the agent sees outside a visit: the start page, the tabs and the job pages.',
+  view: 'What one screen of the app shows, from top to bottom. The app screens use these.',
+  content: 'The words the app uses, such as messages and button labels.',
+};
+
+/** Link to one tab of a piece's page (the page keeps its tab in `?tab=`), e.g. "Where it's live" after publishing. */
+export const familyTabHref = (familyId: string, tab: 'draft' | 'versions' | 'activations' | 'tests') => `/definitions/${familyId}?tab=${tab}`;
+
+/** The order the pieces are listed in: the order an office user meets them. */
+export const KIND_ORDER: readonly DefinitionKind[] = ['job_schema', 'form', 'flow', 'app', 'view', 'content'];
 
 /** Whether an activation is in effect at `now`. */
 export function isInEffect(a: Pick<DefinitionActivation, 'effective_from' | 'effective_to'>, now: number): boolean {
@@ -199,27 +218,37 @@ export function currentAllActivation(activations: DefinitionActivation[], now: n
   return last?.audience.type === 'all' ? last : undefined;
 }
 
-/** "all agents" / "3 agents" / "10% of agents" / "region ∈ GP, WC". */
+/** Who gets a version: "All agents" / "3 chosen agents" / "10% of agents" / "Agents with Region: GP, WC". */
 export function audienceLabel(audience: ActivationAudience | null | undefined): string {
   if (!audience) return '—';
   switch (audience.type) {
     case 'all':
       return 'All agents';
     case 'agents':
-      return `${audience.user_ids.length} named agent${audience.user_ids.length === 1 ? '' : 's'}`;
+      return `${audience.user_ids.length} chosen agent${audience.user_ids.length === 1 ? '' : 's'}`;
     case 'percent':
       return `${audience.percent}% of agents`;
     case 'attribute':
-      return `${audience.key} ∈ ${audience.values.join(', ')}`;
+      return `Agents with ${humanLabel(audience.key)}: ${audience.values.join(', ')}`;
     default:
-      return 'Unknown audience';
+      return 'Some agents';
   }
 }
 
+/**
+ * "Live for Bank ABC" (a bank's own set-up, for all its agents), "Live for all banks" (shared set-up), or
+ * "Live for 10% of agents" (a gradual roll-out). `bankName` is the name of the bank the piece belongs to (null = all banks).
+ */
+export function liveForLabel(audience: ActivationAudience | null | undefined, bankName: string | null | undefined): string {
+  if (audience?.type === 'all') return `Live for ${bankName || 'all banks'}`;
+  return `Live for ${audienceLabel(audience).replace(/^A/, 'a')}`;
+}
+
+/** What happens on a phone whose app is too old for the version. */
 export const POLICY_LABEL: Record<string, string> = {
-  block: 'Block until compatible',
-  fallback_version: 'Fallback to newest renderable version',
-  field_fallback: 'Field fallback components',
+  block: 'Stop the agent until the app is updated',
+  fallback_version: 'Use the newest version that phone can show',
+  field_fallback: 'Show simpler questions where needed',
 };
 
 /** Changelog counts from a stored/returned changelog object. */

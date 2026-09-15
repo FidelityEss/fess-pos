@@ -177,13 +177,13 @@ function sanitize(kind: PreviewKind, input: Record<string, unknown>, issues: Pre
 }
 
 function issueFrom(i: DefinitionIssue): PreviewIssue {
-  return { where: i.path ? i.path.replace(/^\//, '').replace(/\//g, ' › ') : 'Definition', message: i.message, path: i.path };
+  return { where: i.path ? i.path.replace(/^\//, '').replace(/\//g, ' › ') : 'This draft', message: i.message, path: i.path };
 }
 
 /** Parse `input` as a `kind` definition, keeping every element that is valid on its own. Never throws. */
 export function lenientParse(kind: PreviewKind, input: unknown): LenientResult {
   if (!isPlainObject(input)) {
-    return { definition: null, strict: false, issues: [{ where: 'Definition', message: 'is empty or not an object yet' }] };
+    return { definition: null, strict: false, issues: [{ where: 'This draft', message: 'is empty so far' }] };
   }
   try {
     const strict = parseDefinitionOfKind(input, kind);
@@ -200,6 +200,6 @@ export function lenientParse(kind: PreviewKind, input: unknown): LenientResult {
     if (!again.ok && issues.length === 0) issues.push(...again.errors.slice(0, 6).map(issueFrom));
     return { definition: again.ok ? (again.definition as unknown as Record<string, unknown>) : doc, strict: false, issues };
   } catch (e) {
-    return { definition: null, strict: false, issues: [{ where: 'Definition', message: e instanceof Error ? e.message : 'could not be read' }] };
+    return { definition: null, strict: false, issues: [{ where: 'This draft', message: e instanceof Error ? e.message : 'couldn’t be read' }] };
   }
 }

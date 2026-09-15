@@ -15,7 +15,7 @@ export function PopoverContent({ className, align = 'start', sideOffset = 4, ...
       <PopoverPrimitive.Content
         align={align}
         sideOffset={sideOffset}
-        className={cn('z-50 w-72 rounded-md border bg-popover p-3 text-popover-foreground shadow-md outline-none animate-in-fade', className)}
+        className={cn('z-50 w-72 rounded-md border bg-popover p-3 text-popover-foreground outline-none animate-in-fade', className)}
         {...props}
       />
     </PopoverPrimitive.Portal>

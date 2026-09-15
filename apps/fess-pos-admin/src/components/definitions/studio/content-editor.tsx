@@ -23,11 +23,11 @@ const CONTENT_KEY = /^[a-z0-9_]+(\.[a-z0-9_]+)*$/;
 function AddString({ taken, onAdd }: { taken: Set<string>; onAdd: (key: string, text: string) => void }) {
   const [key, setKey] = useState('');
   const [text, setText] = useState('');
-  const problem = !key ? null : !CONTENT_KEY.test(key) ? 'Use lower-case words joined by dots, e.g. sync.pending' : taken.has(key) ? 'That key already exists' : null;
+  const problem = !key ? null : !CONTENT_KEY.test(key) ? 'Use lower-case words joined by dots, such as sync.pending' : taken.has(key) ? 'That name is already used' : null;
   return (
     <div className="grid gap-2 rounded-lg border border-dashed p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] md:items-start">
       <label className="grid gap-1">
-        <span className="text-sm font-medium">Key</span>
+        <span className="text-sm font-medium">Where it’s used (name)</span>
         <Input value={key} onChange={(e) => setKey(e.target.value.trim())} placeholder="area.name" className="font-mono" aria-invalid={!!problem} />
         {problem ? <span className="text-xs text-destructive">{problem}</span> : null}
       </label>
@@ -53,14 +53,14 @@ function AddString({ taken, onAdd }: { taken: Set<string>; onAdd: (key: string, 
 
 function KeyEditor({ value, taken, onRename }: { value: string; taken: Set<string>; onRename: (k: string) => void }) {
   const [draft, setDraft] = useState(value);
-  const problem = draft === value ? null : !CONTENT_KEY.test(draft) ? 'Invalid key' : taken.has(draft) ? 'Already used' : null;
+  const problem = draft === value ? null : !CONTENT_KEY.test(draft) ? 'Use lower-case words joined by dots' : taken.has(draft) ? 'Already used' : null;
   return (
     <div className="grid gap-1">
-      <Input value={draft} onChange={(e) => setDraft(e.target.value.trim())} className="font-mono text-sm" aria-invalid={!!problem} aria-label="Key" />
+      <Input value={draft} onChange={(e) => setDraft(e.target.value.trim())} className="font-mono text-sm" aria-invalid={!!problem} aria-label="Name" />
       {problem ? <span className="text-xs text-destructive">{problem}</span> : null}
       <div>
         <Button type="button" size="sm" variant="outline" disabled={draft === value || !!problem} onClick={() => onRename(draft)}>
-          Rename key
+          Rename
         </Button>
       </div>
     </div>
@@ -109,7 +109,7 @@ export function ContentEditor(props: EditorProps) {
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative w-full max-w-sm">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search keys and texts…" className="pl-8" aria-label="Search texts" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search the wording…" className="pl-8" aria-label="Search the wording" />
         </div>
         <span className="text-sm text-muted-foreground">
           {q ? `${shown.length} of ${entries.length}` : entries.length} text{entries.length === 1 ? '' : 's'}
@@ -124,10 +124,10 @@ export function ContentEditor(props: EditorProps) {
           }}
         />
       ) : null}
-      {groups.length === 0 ? <Hint>{q ? 'No texts match your search.' : 'No texts yet.'}</Hint> : null}
+      {groups.length === 0 ? <Hint>{q ? 'Nothing matches your search.' : readOnly ? 'No wording yet.' : 'No wording yet. Add the first text above.'}</Hint> : null}
       {groups.map(([group, rows]) => (
         <Card key={group} className="overflow-hidden">
-          <div className="border-b bg-slate-50 px-4 py-2 text-sm font-semibold">
+          <div className="border-b px-4 py-2 text-sm font-semibold">
             {humanLabel(group)} <span className="font-normal text-muted-foreground">({rows.length})</span>
           </div>
           <ul className="divide-y">
@@ -147,8 +147,10 @@ export function ContentEditor(props: EditorProps) {
                           onSelect(`strings/${nk}`);
                         }}
                       />
-                    ) : (
+                    ) : advanced ? (
                       <code className="break-all text-sm text-muted-foreground">{k}</code>
+                    ) : (
+                      <span className="break-words text-sm text-muted-foreground">{humanLabel(k.includes('.') ? k.split('.').slice(1).join(' ') : k)}</span>
                     )}
                   </div>
                   <div className="min-w-0">
@@ -159,7 +161,7 @@ export function ContentEditor(props: EditorProps) {
                         {v ? <Highlighted text={v} /> : <span className="italic text-muted-foreground">Empty</span>}
                       </button>
                     )}
-                    {bad ? <p className="mt-1 text-xs text-destructive">Unbalanced {'{{ }}'} or an invalid placeholder name.</p> : null}
+                    {bad ? <p className="mt-1 text-xs text-destructive">A {'{{ }}'} isn’t closed, or a placeholder name isn’t allowed.</p> : null}
                     {isSel && placeholders.length > 0 ? (
                       <p className="mt-1 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                         Filled in by the app:
@@ -178,7 +180,7 @@ export function ContentEditor(props: EditorProps) {
                       </Button>
                     ) : null}
                     {!readOnly ? (
-                      <IconAction label={`Remove ${k}`} destructive onClick={() => remove(k)}>
+                      <IconAction label="Remove this text" destructive onClick={() => remove(k)}>
                         <Trash2 />
                       </IconAction>
                     ) : null}

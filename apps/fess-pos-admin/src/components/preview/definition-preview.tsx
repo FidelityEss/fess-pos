@@ -7,6 +7,7 @@
 // against — keep them backwards compatible (add optional props only).
 import { RotateCcw, Search } from 'lucide-react';
 import { Component, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { Details } from '@/components/details';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -21,6 +22,7 @@ import { type FormMode, FormScreen, sectionTitle } from './form-screen';
 import { JobSchemaScreen } from './job-schema-preview';
 import { lenientParse, type PreviewIssue } from './lenient-parse';
 import { PhoneFrame, type PhoneTheme } from './phone-frame';
+import { PAGE_X } from './phone-style';
 import { PreviewNotice } from './phone-widgets';
 import { type PreviewEnv, PreviewEnvProvider, type RenderFrame, scrollToAnchor } from './preview-context';
 import { applySampleVariant, type PreviewContext, SAMPLE_JOB_VARIANTS, type SampleJobVariant, sampleJobList, samplePreviewContext, sampleReceipt } from './sample-context';
@@ -84,8 +86,10 @@ class PreviewErrorBoundary extends Component<{ resetKey: unknown; children: Reac
     if (!this.state.error) return this.props.children;
     return (
       <div role="alert" className="mx-auto max-w-sm rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-        <p className="font-medium">The preview couldn’t draw this definition.</p>
-        <p className="mt-1 text-xs">{this.state.error.message}</p>
+        <p className="font-medium">The preview couldn’t show this. Your draft is still saved.</p>
+        <Details className="mt-1 text-xs">
+          <p>{this.state.error.message}</p>
+        </Details>
         <Button size="sm" variant="outline" className="mt-2" onClick={() => this.setState({ error: null })}>
           Try again
         </Button>
@@ -240,7 +244,7 @@ function PreviewInner({ kind, definition, bundle, context, theme, focus = null, 
 
   let phone: ReactNode;
   if (!def) {
-    phone = renderFrame({ title: title ?? 'Preview', body: <div className="p-3"><PreviewNotice>Nothing to preview yet.</PreviewNotice></div> });
+    phone = renderFrame({ title: title ?? 'Preview', body: <div className={cn(PAGE_X, 'py-4')}><PreviewNotice>Nothing to preview yet.</PreviewNotice></div> });
   } else if (kind === 'form') {
     phone = <FormScreen key={resetToken} form={def as unknown as FormDefinition} renderFrame={renderFrame} mode={formMode} current={current} onCurrentChange={setCurrent} />;
   } else if (kind === 'flow') {
@@ -250,11 +254,11 @@ function PreviewInner({ kind, definition, bundle, context, theme, focus = null, 
   } else if (kind === 'view') {
     const items = Array.isArray(def.items) ? (def.items as ViewItemDef[]) : [];
     phone = renderFrame({
-      title: title ?? 'View',
-      body: <div className="px-3 py-3">{items.length ? <ViewItems items={items} data={env.data} /> : <PreviewNotice>This view has no items yet.</PreviewNotice>}</div>,
+      title: title ?? 'Screen',
+      body: <div className={cn(PAGE_X, 'py-4')}>{items.length ? <ViewItems items={items} data={env.data} /> : <PreviewNotice>This screen layout is empty so far.</PreviewNotice>}</div>,
     });
   } else if (kind === 'content') {
-    phone = renderFrame({ title: title ?? 'Content', body: <ContentSnippets strings={isPlainObject(def.strings) ? (def.strings as Record<string, string>) : {}} query={query} /> });
+    phone = renderFrame({ title: title ?? 'Wording', body: <ContentSnippets strings={isPlainObject(def.strings) ? (def.strings as Record<string, string>) : {}} query={query} /> });
   } else {
     phone = renderFrame({ title: 'Job details', showBack: true, body: <JobSchemaScreen attributes={Array.isArray(def.attributes) ? (def.attributes as FieldDef[]) : []} /> });
   }
@@ -264,7 +268,7 @@ function PreviewInner({ kind, definition, bundle, context, theme, focus = null, 
       {showToolbar ? (
         <div className="flex w-full max-w-md flex-wrap items-center justify-center gap-2" aria-label="Preview controls">
           {kind === 'form' ? (
-            <div className="inline-flex rounded-md border bg-background p-0.5 text-xs" role="group" aria-label="Layout">
+            <div className="inline-flex rounded-md border bg-card p-0.5 text-xs" role="group" aria-label="Layout">
               {(['screens', 'scroll'] as const).map((m) => (
                 <button
                   key={m}
@@ -290,7 +294,7 @@ function PreviewInner({ kind, definition, bundle, context, theme, focus = null, 
           {kind === 'content' ? (
             <div className="relative w-64">
               <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search strings" className="h-8 pl-7 text-xs" aria-label="Search strings" />
+              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search the wording" className="h-8 pl-7 text-xs" aria-label="Search the wording" />
             </div>
           ) : null}
           {usesJob ? (
@@ -306,14 +310,16 @@ function PreviewInner({ kind, definition, bundle, context, theme, focus = null, 
                 setCurrent(null);
               }}
             >
-              <RotateCcw /> Reset answers
+              <RotateCcw /> Clear answers
             </Button>
           ) : null}
         </div>
       ) : null}
       <IssuesNotice issues={parsed.issues} />
       {flowForm === null && kind === 'flow' && def ? (
-        <p className="max-w-md text-center text-xs text-muted-foreground">The flow’s form isn’t in the preview bundle, so form steps show a notice.</p>
+        <p className="max-w-md text-center text-xs text-muted-foreground">
+          The questions for these steps aren’t chosen or published yet, so Questions steps show a note instead.
+        </p>
       ) : null}
       <PreviewEnvProvider value={env}>{phone}</PreviewEnvProvider>
     </div>

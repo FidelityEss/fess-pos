@@ -61,11 +61,11 @@ const VIEWS: { key: ViewMode; label: string; icon: typeof List }[] = [
 const SORTS = {
   created_desc: { label: 'Newest first', column: 'created_at', ascending: false },
   created_asc: { label: 'Oldest first', column: 'created_at', ascending: true },
-  scheduled_asc: { label: 'Scheduled (soonest first)', column: 'scheduled_start', ascending: true },
-  scheduled_desc: { label: 'Scheduled (latest first)', column: 'scheduled_start', ascending: false },
+  scheduled_asc: { label: 'Visit time (soonest first)', column: 'scheduled_start', ascending: true },
+  scheduled_desc: { label: 'Visit time (latest first)', column: 'scheduled_start', ascending: false },
   changed_desc: { label: 'Recently changed status', column: 'status_changed_at', ascending: false },
-  reference_desc: { label: 'Reference (high → low)', column: 'reference', ascending: false },
-  merchant_asc: { label: 'Merchant (A → Z)', column: 'merchant_name', ascending: true },
+  reference_desc: { label: 'Reference (newest number first)', column: 'reference', ascending: false },
+  merchant_asc: { label: 'Merchant (A to Z)', column: 'merchant_name', ascending: true },
 } as const;
 type SortKey = keyof typeof SORTS;
 const isSortKey = (v: string | null): v is SortKey => v !== null && v in SORTS;
@@ -73,6 +73,8 @@ const isSortKey = (v: string | null): v is SortKey => v !== null && v in SORTS;
 const UNASSIGNED = 'unassigned';
 const ALL = '__all__';
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+/** Booked jobs whose visit hasn't started: "past their visit time" once the booked window has ended (`?overdue=1`, Home's to-do list). */
+export const OVERDUE_STATUSES: readonly JobStatus[] = ['scheduled', 'assigned', 'accepted'];
 
 interface JobFilters {
   dash: DashboardKey | null;
@@ -85,6 +87,8 @@ interface JobFilters {
   flags: string[];
   search: string;
   sort: SortKey;
+  /** Only jobs past their booked visit time (the visit hasn't started). */
+  overdue: boolean;
 }
 
 interface ParamSource {
@@ -111,6 +115,7 @@ function readState(sp: ParamSource): { filters: JobFilters; view: ViewMode } {
       flags: (sp.get('flags') ?? '').split(',').filter((f) => known.includes(f)),
       search: sp.get('q') ?? '',
       sort: isSortKey(sp.get('sort')) ? (sp.get('sort') as SortKey) : 'created_desc',
+      overdue: sp.get('overdue') === '1',
     },
     view: view === 'board' || view === 'map' ? view : 'list',
   };
@@ -127,14 +132,16 @@ function writeState(f: JobFilters, view: ViewMode): string {
   if (f.flags.length) p.set('flags', f.flags.join(','));
   if (f.search) p.set('q', f.search);
   if (f.sort !== 'created_desc') p.set('sort', f.sort);
+  if (f.overdue) p.set('overdue', '1');
   if (view !== 'list') p.set('view', view);
   return p.toString();
 }
 
 function effectiveStatuses(f: JobFilters): readonly JobStatus[] | null {
   const group = f.dash ? statusesForDashboardKey(f.dash) : null;
-  if (f.statuses.length) return group ? f.statuses.filter((s) => group.includes(s)) : f.statuses;
-  return group;
+  let out: readonly JobStatus[] | null = f.statuses.length ? (group ? f.statuses.filter((s) => group.includes(s)) : f.statuses) : group;
+  if (f.overdue) out = (out ?? OVERDUE_STATUSES).filter((s) => OVERDUE_STATUSES.includes(s));
+  return out;
 }
 
 /** PostgREST or() value: strip characters that would break the filter grammar. */
@@ -156,6 +163,7 @@ async function fetchJobs(f: JobFilters): Promise<JobListRow[]> {
   else if (isUuid(f.agent)) q = q.eq('assigned_to', f.agent);
   if (f.from) q = q.gte('scheduled_start', sastDayStartIso(f.from));
   if (f.to) q = q.lt('scheduled_start', sastDayStartIso(addDays(f.to, 1)));
+  if (f.overdue) q = q.lt('scheduled_end', new Date().toISOString());
   if (jobFlags.length) q = q.contains('flags', jobFlags);
   if (inspectionFlags.length) q = q.contains('insp.flags', inspectionFlags);
   const term = searchTerm(f.search);
@@ -231,7 +239,7 @@ function AgentFilter({ bankId, value, onChange }: { bankId: string | null; value
       </SelectTrigger>
       <SelectContent>
         <SelectItem value={ALL}>Any agent</SelectItem>
-        <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
+        <SelectItem value={UNASSIGNED}>No agent yet</SelectItem>
         <SelectSeparator />
         {(data ?? []).map((a) => (
           <SelectItem key={a.id} value={a.id}>
@@ -246,14 +254,14 @@ function AgentFilter({ bankId, value, onChange }: { bankId: string | null; value
 // ── Board & map ───────────────────────────────────────────────────────────────────────────────
 function JobCard({ row }: { row: JobListRow }) {
   return (
-    <Link href={`/jobs/${row.id}`} className="block rounded-md border bg-card p-3 text-sm shadow-xs transition hover:border-primary/40 hover:shadow-sm">
+    <Link href={`/jobs/${row.id}`} className="block rounded-md border bg-card p-3 text-sm transition hover:border-primary/40">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="whitespace-nowrap font-mono font-medium">{row.reference}</span>
         <StatusBadge status={row.status} />
       </div>
       <div className="mt-1 break-words text-base font-medium">{row.merchant_name}</div>
       <div className="mt-0.5 text-muted-foreground">
-        {row.bank?.code ?? '—'} · {row.agent ? fullName(row.agent) : 'Unassigned'}
+        {row.bank?.code ?? '—'} · {row.agent ? fullName(row.agent) : 'No agent yet'}
       </div>
       {row.scheduled_start ? <div className="mt-0.5 text-muted-foreground">{formatWindow(row.scheduled_start, row.scheduled_end)}</div> : null}
       <FlagBadges flags={row.flags} className="mt-1.5" max={2} />
@@ -269,7 +277,7 @@ function JobBoard({ rows }: { rows: JobListRow[] }) {
         {DASHBOARD_GROUPS.map((g) => {
           const items = rows.filter((r) => g.statuses.includes(r.status));
           return (
-            <div key={g.key} className="flex min-h-40 flex-col rounded-lg border bg-slate-50/70">
+            <div key={g.key} className="flex min-h-40 flex-col rounded-lg border bg-card">
               <div className="flex items-center justify-between gap-2 border-b px-3 py-2.5">
                 <span className="flex items-center gap-2 text-base font-medium">
                   <span className="size-2.5 rounded-full" style={{ backgroundColor: TONE_HEX[g.tone] }} />
@@ -287,7 +295,7 @@ function JobBoard({ rows }: { rows: JobListRow[] }) {
           );
         })}
       </div>
-      {archived ? <p className="text-sm text-muted-foreground">{archived} archived (closed) jobs are not shown on the board.</p> : null}
+      {archived ? <p className="text-sm text-muted-foreground">{archived} archived job{archived === 1 ? ' isn’t' : 's aren’t'} shown on the board.</p> : null}
     </div>
   );
 }
@@ -320,7 +328,7 @@ function JobMap({ rows }: { rows: JobListRow[] }) {
           <span className="size-2.5 rounded-full" style={{ backgroundColor: TONE_HEX.muted }} />
           Archived
         </span>
-        {missing > 0 ? <span className="ml-auto">{missing} jobs have no map pin and are not shown.</span> : null}
+        {missing > 0 ? <span className="ml-auto">{missing} job{missing === 1 ? ' has' : 's have'} no map pin, so {missing === 1 ? 'it isn’t' : 'they aren’t'} on the map.</span> : null}
       </div>
     </div>
   );
@@ -384,7 +392,8 @@ export function JobsListView() {
     (filters.agent ? 1 : 0) +
     (filters.from || filters.to ? 1 : 0) +
     (filters.flags.length ? 1 : 0) +
-    (filters.search ? 1 : 0);
+    (filters.search ? 1 : 0) +
+    (filters.overdue ? 1 : 0);
 
   const columns = useMemo<ColumnDef<JobListRow>[]>(
     () => [
@@ -406,7 +415,7 @@ export function JobsListView() {
             <div className="break-words font-medium">{row.original.merchant_name}</div>
             {row.original.trading_name || row.original.external_ref ? (
               <div className="break-words text-sm text-muted-foreground">
-                {[row.original.trading_name ? `t/a ${row.original.trading_name}` : null, row.original.external_ref ? `Ref ${row.original.external_ref}` : null]
+                {[row.original.trading_name ? `trading as ${row.original.trading_name}` : null, row.original.external_ref ? `bank’s ref ${row.original.external_ref}` : null]
                   .filter(Boolean)
                   .join(' · ')}
               </div>
@@ -443,22 +452,22 @@ export function JobsListView() {
           row.original.agent ? (
             <span className="whitespace-nowrap">{advanced ? employeeName(row.original.agent) : fullName(row.original.agent)}</span>
           ) : (
-            <span className="text-muted-foreground">Unassigned</span>
+            <span className="text-muted-foreground">No agent yet</span>
           ),
       },
       {
         id: 'scheduled',
         accessorFn: (r) => r.scheduled_start ?? '',
-        header: 'Scheduled',
+        header: 'Visit time',
         cell: ({ row }) => <span className="whitespace-nowrap">{formatWindow(row.original.scheduled_start, row.original.scheduled_end)}</span>,
       },
-      { accessorKey: 'location_type', header: 'Location type', meta: { advanced: true }, cell: ({ row }) => <span className="whitespace-nowrap">{humanize(row.original.location_type)}</span> },
+      { accessorKey: 'location_type', header: 'Type of place', meta: { advanced: true }, cell: ({ row }) => <span className="whitespace-nowrap">{humanize(row.original.location_type)}</span> },
       { accessorKey: 'created_at', header: 'Created', meta: { advanced: true }, cell: ({ row }) => <DateTime value={row.original.created_at} /> },
       {
         id: 'age',
         accessorFn: (r) => ageOf(r, now),
-        header: 'Age',
-        cell: ({ row }) => <span className="tabular-nums" title={row.original.closed_at ? 'Created → closed' : 'Since created'}>{formatDuration(ageOf(row.original, now))}</span>,
+        header: 'Open for',
+        cell: ({ row }) => <span className="tabular-nums" title={row.original.closed_at ? 'From when it was created to when it was archived' : 'Since it was created'}>{formatDuration(ageOf(row.original, now))}</span>,
       },
     ],
     [now, advanced],
@@ -469,9 +478,9 @@ export function JobsListView() {
       <PageHeader
         title="Jobs"
         description={
-          filters.dash
-            ? `Showing: ${DASHBOARD_GROUPS.find((g) => g.key === filters.dash)?.label ?? filters.dash}.`
-            : 'All inspection jobs — as a list, a board or on a map.'
+          filters.overdue
+            ? 'Jobs whose booked visit time has passed, but the visit hasn’t started. Check with the agent, or change the time.'
+            : undefined
         }
         actions={
           <>
@@ -482,7 +491,7 @@ export function JobsListView() {
               <>
                 <Button variant="outline" size="sm" asChild>
                   <Link href="/jobs/import">
-                    <FileUp /> Import
+                    <FileUp /> Import a spreadsheet
                   </Link>
                 </Button>
                 <Button size="sm" asChild>
@@ -503,7 +512,7 @@ export function JobsListView() {
             <Input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Reference, merchant or bank reference"
+              placeholder="Search by reference, merchant or the bank’s reference"
               className="pl-9"
               aria-label="Search jobs"
             />
@@ -522,11 +531,11 @@ export function JobsListView() {
               }));
             }}
           >
-            <SelectTrigger className="w-52" aria-label="Dashboard status">
+            <SelectTrigger className="w-52" aria-label="Report group" title="The six groups banks use to report on jobs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL}>All dashboard statuses</SelectItem>
+              <SelectItem value={ALL}>All report groups</SelectItem>
               <SelectSeparator />
               {DASHBOARD_GROUPS.map((g) => (
                 <SelectItem key={g.key} value={g.key}>
@@ -547,21 +556,25 @@ export function JobsListView() {
           <AgentFilter bankId={filters.bankId} value={filters.agent} onChange={(v) => setFilter('agent', v)} />
           <MultiCheckDropdown
             label={advanced ? 'Flags' : 'Warnings'}
-            heading="Has all selected"
+            heading="Has all of these"
             options={FILTER_FLAGS.map((f) => f.flag)}
             selected={filters.flags}
             onChange={(v) => setFilter('flags', v)}
-            renderLabel={(f) => `${advanced ? flagInfo(f).label : flagInfo(f).plain}${FILTER_FLAGS.find((x) => x.flag === f)?.on === 'inspection' ? ' (any attempt)' : ''}`}
+            renderLabel={(f) => `${advanced ? flagInfo(f).label : flagInfo(f).plain}${FILTER_FLAGS.find((x) => x.flag === f)?.on === 'inspection' ? ' (any visit)' : ''}`}
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             Visit from
-            <Input type="date" value={filters.from} onChange={(e) => setFilter('from', e.target.value)} className="w-44" aria-label="Scheduled from" />
+            <Input type="date" value={filters.from} onChange={(e) => setFilter('from', e.target.value)} className="w-44" aria-label="Visit from" />
           </label>
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             to
-            <Input type="date" value={filters.to} onChange={(e) => setFilter('to', e.target.value)} className="w-44" aria-label="Scheduled to" />
+            <Input type="date" value={filters.to} onChange={(e) => setFilter('to', e.target.value)} className="w-44" aria-label="Visit to" />
+          </label>
+          <label className={cn('flex h-10 items-center gap-2 rounded-md border px-3 text-sm', filters.overdue ? 'border-primary/50 bg-primary/5' : 'border-input')}>
+            <input type="checkbox" className="accent-primary" checked={filters.overdue} onChange={(e) => setFilter('overdue', e.target.checked)} />
+            Past their visit time
           </label>
           <Select value={filters.sort} onValueChange={(v) => setFilter('sort', isSortKey(v) ? v : 'created_desc')}>
             <SelectTrigger className="w-64" aria-label="Sort">
@@ -596,7 +609,7 @@ export function JobsListView() {
                 onClick={() => setState((s) => ({ ...s, view: key }))}
                 className={cn(
                   'inline-flex h-9 items-center gap-1.5 rounded px-3.5 text-sm text-muted-foreground transition hover:text-foreground',
-                  view === key && 'bg-slate-100 font-medium text-foreground',
+                  view === key && 'bg-accent font-medium text-primary-hover',
                 )}
               >
                 <Icon className="size-4" /> {label}
@@ -606,7 +619,7 @@ export function JobsListView() {
         </div>
         <p className="text-sm text-muted-foreground">
           {query.isPending ? 'Loading…' : `${rows.length} job${rows.length === 1 ? '' : 's'}`}
-          {hitLimit ? ` — showing the first ${JOB_LIST_LIMIT} by the chosen sort. Narrow the filters to see the rest.` : ` (at most ${JOB_LIST_LIMIT} are loaded).`}
+          {hitLimit ? `. Only the first ${JOB_LIST_LIMIT} are shown, in the order you chose. Narrow the filters to see the rest.` : ''}
         </p>
       </div>
 
@@ -620,15 +633,15 @@ export function JobsListView() {
           enableSearch={false}
           getRowId={(r) => r.id}
           onRowClick={(r) => router.push(`/jobs/${r.id}`)}
-          emptyTitle="No jobs match"
-          emptyDescription={activeFilterCount ? 'Try clearing some filters.' : staff.isAdmin ? 'Create a job or import a spreadsheet to get started.' : undefined}
+          emptyTitle={activeFilterCount ? 'No jobs match these filters' : 'No jobs yet'}
+          emptyDescription={activeFilterCount ? 'Try clearing some filters.' : staff.isAdmin ? 'Create a job with “New job”, or import a spreadsheet of jobs.' : 'Jobs show here once your administrators create them.'}
         />
       ) : query.error ? (
         <ApiErrorAlert error={query.error} onRetry={() => void query.refetch()} />
       ) : query.isPending ? (
         <Skeleton className="h-96 w-full" />
       ) : rows.length === 0 ? (
-        <EmptyState title="No jobs match" description={activeFilterCount ? 'Try clearing some filters.' : undefined} />
+        <EmptyState title={activeFilterCount ? 'No jobs match these filters' : 'No jobs yet'} description={activeFilterCount ? 'Try clearing some filters.' : undefined} />
       ) : view === 'board' ? (
         <JobBoard rows={rows} />
       ) : (

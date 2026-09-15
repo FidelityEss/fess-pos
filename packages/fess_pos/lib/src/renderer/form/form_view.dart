@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:fess_pos/src/core/content/bundled_copy.dart';
+import 'package:fess_pos/src/core/theme/pos_tones.dart';
+import 'package:fess_pos/src/core/theme/pos_widgets.dart';
 import 'package:fess_pos/src/core/theme/tokens.g.dart';
 import 'package:fess_pos/src/core/time/device_time.dart';
 import 'package:fess_pos/src/renderer/form/form_controller.dart';
@@ -27,7 +29,10 @@ class FormView extends StatelessWidget {
     this.sections,
     this.services,
     this.fieldFilter,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.symmetric(
+      horizontal: PosTokens.componentPagePaddingX,
+      vertical: 16,
+    ),
     super.key,
   });
 
@@ -57,7 +62,7 @@ class FormView extends StatelessWidget {
       if (resolved == null) {
         return Padding(
           padding: padding,
-          child: _Notice(text: copy('form.unavailable'), tone: _Tone.warning),
+          child: _Notice(text: copy('form.unavailable'), tone: PosTone.warning),
         );
       }
       final children = <Widget>[];
@@ -223,7 +228,7 @@ class FormView extends StatelessWidget {
         key: key,
         child: _Notice(
           text: copy('form.unsupported_field'),
-          tone: _Tone.warning,
+          tone: PosTone.warning,
         ),
       ),
     };
@@ -401,11 +406,7 @@ class _TextInputState extends State<_TextInput> {
             ? TextInputType.multiline
             : _keyboard(b.props['keyboard']),
         textCapitalization: _capitalise(b.props['capitalise']),
-        decoration: InputDecoration(
-          hintText: _string(b.props['placeholder']),
-          border: const OutlineInputBorder(),
-          isDense: true,
-        ),
+        decoration: InputDecoration(hintText: _string(b.props['placeholder'])),
         onChanged: (v) => b.controller.setValue(b.key, v, touch: false),
       ),
     );
@@ -508,15 +509,20 @@ class _SingleSelect extends StatelessWidget {
     final input = switch (b.display) {
       'dropdown' => InputDecorator(
         decoration: const InputDecoration(
-          border: OutlineInputBorder(),
-          isDense: true,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: PosTokens.componentInputPaddingX,
+            vertical: PosTokens.componentInputPaddingY - 2,
+          ),
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: choices.any((c) => c.value == current) ? current : null,
             isExpanded: true,
             isDense: true,
-            hint: Text(b.copy('form.select')),
+            hint: Text(
+              b.copy('form.select'),
+              style: Theme.of(context).inputDecorationTheme.hintStyle,
+            ),
             items: [
               for (final c in choices)
                 DropdownMenuItem(value: c.value, child: Text(c.label)),
@@ -677,11 +683,7 @@ class _OtherTextState extends State<_OtherText> {
       controller: _text,
       readOnly: widget.b.field.readOnly,
       textCapitalization: TextCapitalization.sentences,
-      decoration: InputDecoration(
-        hintText: widget.b.copy('form.other_text'),
-        border: const OutlineInputBorder(),
-        isDense: true,
-      ),
+      decoration: InputDecoration(hintText: widget.b.copy('form.other_text')),
       onChanged: (v) =>
           widget.b.controller.setOtherText(widget.b.key, v, touch: false),
     ),
@@ -695,7 +697,7 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 8, bottom: 8),
+    padding: const EdgeInsets.only(top: 16, bottom: 8),
     child: Text(
       title,
       style: Theme.of(
@@ -705,36 +707,31 @@ class _SectionTitle extends StatelessWidget {
   );
 }
 
-enum _Tone { info, warning, danger }
+PosTone _tone(Object? tone) => posTone(tone, fallback: PosTone.info);
 
-_Tone _tone(Object? tone) => switch (tone) {
-  'warning' => _Tone.warning,
-  'danger' || 'error' => _Tone.danger,
-  _ => _Tone.info,
-};
-
+/// A notice in a form: a light tint with dark text of its tone (docs/14 §3).
 class _Notice extends StatelessWidget {
   const _Notice({required this.text, required this.tone});
 
   final String text;
-  final _Tone tone;
+  final PosTone tone;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final (background, foreground) = switch (tone) {
-      _Tone.info => (scheme.secondaryContainer, scheme.onSecondaryContainer),
-      _Tone.warning => (scheme.tertiaryContainer, scheme.onTertiaryContainer),
-      _Tone.danger => (scheme.errorContainer, scheme.onErrorContainer),
-    };
+    final colors = posToneColors(tone);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(PosTokens.radiusControl),
+        color: colors.background,
+        borderRadius: BorderRadius.circular(PosTokens.componentCardInnerRadius),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Text(text, style: TextStyle(color: foreground)),
+        child: Text(
+          text,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: colors.foreground),
+        ),
       ),
     );
   }
@@ -847,6 +844,8 @@ class _PhotoInputState extends State<_PhotoInput> {
             ),
             FilledButton(
               key: ValueKey('photo-confirm-${b.key}'),
+              // Removing is the destructive choice: FESS's red.
+              style: retake ? null : posDangerButtonStyle(),
               onPressed: () => Navigator.of(dialog).pop(true),
               child: Text(b.copy(retake ? 'photo.retake' : 'photo.remove')),
             ),
@@ -1388,7 +1387,7 @@ class _DeclarationInput extends StatelessWidget {
         b,
         child: _Notice(
           text: b.copy('inspection.declaration_missing'),
-          tone: _Tone.warning,
+          tone: PosTone.warning,
         ),
       );
     }
@@ -1416,14 +1415,17 @@ class _DeclarationInput extends StatelessWidget {
                 key: ValueKey('declaration-newer-${b.key}'),
                 child: _Notice(
                   text: b.copy('inspection.declaration_newer'),
-                  tone: _Tone.warning,
+                  tone: PosTone.warning,
                 ),
               ),
             ),
           DecoratedBox(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(PosTokens.radiusControl),
+              color: PosTokens.colorBackgroundSubtle,
+              border: Border.all(color: PosTokens.colorLineBorder),
+              borderRadius: BorderRadius.circular(
+                PosTokens.componentCardInnerRadius,
+              ),
             ),
             child: Padding(
               padding: const EdgeInsets.all(12),

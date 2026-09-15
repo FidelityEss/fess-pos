@@ -3,7 +3,17 @@
 /* Design tokens — the FESS brand (fess-pos/schema/design/tokens.json, extracted from the FESS app): Fidelity green, gold
    accent, 5 / 8 / 12 px corners. The admin UI font is Inter (a screen-first web font); Montserrat, FESS's face, is used only
    inside the phone preview. Neutrals and hover shades are admin additions for a data-dense desktop tool.
+
+   The look is white and flat (D-97, docs/17 §2 rule 6, §4.8): white page backgrounds, no drop shadows, hairline borders and
+   dividers, and colour only for meaning (green actions, gold accents, red and amber problems).
    Used as bg-primary, text-muted-foreground, text-brand-gold, etc. */
+
+/* Sidebar colour scheme. The ONE line to change: 0 = the dark-green brand sidebar, 1 = a white sidebar.
+   Every sidebar colour below mixes its white-scheme value with its green-scheme value by this amount. */
+:root {
+  --sidebar-white: 0;
+}
+
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
@@ -13,7 +23,7 @@
   --radius-lg: 0.5rem; /* FESS inner boxes / inputs: 8 px */
   --radius-xl: 0.75rem; /* FESS cards: 12 px */
 
-  --color-background: #f6f6f7; /* FESS homeBg */
+  --color-background: #ffffff; /* white page ground (D-97; was FESS homeBg #f6f6f7) */
   --color-foreground: #1a1a1a;
   --color-card: #ffffff;
   --color-card-foreground: #1a1a1a;
@@ -24,22 +34,27 @@
   --color-primary-foreground: #ffffff;
   --color-secondary: #f1f2f3;
   --color-secondary-foreground: #1a1a1a;
-  --color-muted: #f1f2f3;
+  --color-muted: #f5f6f7; /* small fills only (chips, code, skeletons) — never a page or card ground */
   --color-muted-foreground: #4c4c4c; /* FESS body text */
   --color-accent: #eaf3f0; /* green-tinted hover */
   --color-accent-foreground: #1a1a1a;
   --color-destructive: #c4000b; /* FESS error, darkened for text contrast (tokens: errorText) */
   --color-destructive-hover: #9f0009;
   --color-destructive-foreground: #ffffff;
-  --color-border: #dfdfdf; /* FESS borderColour */
+  --color-border: #dfdfdf; /* FESS borderColour — boxes and fields */
+  --color-divider: #e0e3e7; /* FESS alternate — hairlines between rows and sections */
   --color-input: #a3a3a3; /* FESS textFieldIcon — visible field outlines */
   --color-ring: #029073; /* FESS inactivePrimary */
-  --color-sidebar: #005747;
-  --color-sidebar-foreground: #e3efeb;
-  --color-sidebar-muted: #9cc3b7;
-  --color-sidebar-accent: #006b55;
   --color-brand-gold: #b79e67; /* FESS secondary — accents, indicators (not small text on white) */
   --color-brand-gold-text: #8a7443; /* gold for text on white (tokens: goldText) */
+
+  /* Sidebar: green scheme (second value) or white scheme (first value), chosen by --sidebar-white above. */
+  --color-sidebar: color-mix(in srgb, #ffffff calc(var(--sidebar-white) * 100%), #005747);
+  --color-sidebar-foreground: color-mix(in srgb, #1a1a1a calc(var(--sidebar-white) * 100%), #e3efeb);
+  --color-sidebar-muted: color-mix(in srgb, #4c4c4c calc(var(--sidebar-white) * 100%), #9cc3b7);
+  --color-sidebar-accent: color-mix(in srgb, #eaf3f0 calc(var(--sidebar-white) * 100%), #006b55);
+  --color-sidebar-strong: color-mix(in srgb, #005747 calc(var(--sidebar-white) * 100%), #ffffff);
+  --color-sidebar-border: color-mix(in srgb, #e0e3e7 calc(var(--sidebar-white) * 100%), #1a6b5b);
 
   --animate-in-fade: in-fade 150ms ease-out;
   --animate-slide-in-right: slide-in-right 200ms ease-out;
@@ -81,6 +96,12 @@
      every size and spacing is in rem. */
   html {
     font-size: 16px;
+    /* Height of the environment banner (QA, local), so the sticky header and the sidebar sit below it and the sidebar's
+       footer stays on screen (T2-30). 0 on production, where there is no banner. */
+    --env-banner-h: 0rem;
+  }
+  html:has([data-env-banner]) {
+    --env-banner-h: 1.5rem;
   }
   html[data-text-size='large'] {
     font-size: 18px;
@@ -105,9 +126,11 @@
   }
 }
 
-/* MapLibre popups inherit the app font. */
+/* MapLibre popups inherit the app font and stay flat. */
 .maplibregl-popup-content {
   font-family: var(--font-sans);
   font-size: 0.8125rem;
   padding: 0.4rem 0.65rem;
+  box-shadow: none !important;
+  border: 1px solid var(--color-border);
 }

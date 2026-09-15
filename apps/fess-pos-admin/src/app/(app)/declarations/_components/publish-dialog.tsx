@@ -2,7 +2,9 @@
 
 import { Lock } from 'lucide-react';
 import { type FormEvent, useId, useState } from 'react';
+import { keyFromText } from '@/components/admin/form-helpers';
 import { ApiErrorAlert } from '@/components/api-error-alert';
+import { Details } from '@/components/details';
 import { apiFieldErrors, type FieldErrors, FormField, zodFieldErrors } from '@/components/form-field';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -40,14 +42,17 @@ export function PublishDeclarationDialog({
 function PublishForm({ base, onClose }: { base: DeclarationBase | null; onClose: () => void }) {
   const uid = useId();
   const [key, setKey] = useState(base?.key ?? '');
+  // A new declaration's key follows its title until someone types their own.
+  const [keyTouched, setKeyTouched] = useState(false);
   const [title, setTitle] = useState(base?.title ?? '');
   const [text, setText] = useState(base?.text ?? '');
   const [clientErrors, setClientErrors] = useState<FieldErrors>({});
+  const shownKey = base ? base.key : keyTouched ? key : keyFromText(title);
   const publish = useMutationWithToast({
     mutationFn: (body: DeclarationBody) => adminApi.declarations.publish(body),
     invalidate: [['declarations']],
     toastErrors: false,
-    successMessage: (d) => `Published ${d.key} version ${d.version}`,
+    successMessage: (d) => `Version ${d.version} of “${d.title}” published.`,
     onSuccess: () => onClose(),
   });
   const errors: FieldErrors = { ...apiFieldErrors(publish.error), ...clientErrors };
@@ -55,7 +60,7 @@ function PublishForm({ base, onClose }: { base: DeclarationBase | null; onClose:
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    const parsed = declarationSchema.safeParse({ key: key.trim(), title, text });
+    const parsed = declarationSchema.safeParse({ key: shownKey.trim(), title, text });
     if (!parsed.success) {
       setClientErrors(zodFieldErrors(parsed.error));
       return;
@@ -67,26 +72,49 @@ function PublishForm({ base, onClose }: { base: DeclarationBase | null; onClose:
   return (
     <form onSubmit={submit} className="grid gap-4" noValidate>
       <DialogHeader>
-        <DialogTitle>{base ? `Publish version ${base.version + 1} of ${base.key}` : 'New declaration'}</DialogTitle>
-        <DialogDescription>The text agents and merchants accept. Write it exactly as it should appear.</DialogDescription>
+        <DialogTitle>{base ? `Publish version ${base.version + 1} of ${base.title}` : 'Add a declaration'}</DialogTitle>
+        <DialogDescription>The statement people agree to in the app. Write it exactly as it should appear.</DialogDescription>
       </DialogHeader>
       <Alert variant="info">
         <Lock />
         <AlertDescription>
-          Published versions are immutable and hashed. Devices pin the exact version id that was accepted, so earlier acceptances
-          keep pointing at the text that was shown.
+          Once published, a version can’t be changed. Each agreement records the exact version that was shown, so earlier
+          agreements keep pointing at the wording people actually saw.
         </AlertDescription>
       </Alert>
-      <FormField label="Key" htmlFor={`${uid}-key`} required error={errors.key} hint={base ? 'Publishing under the same key creates the next version.' : 'snake_case, e.g. agent_declaration. Forms refer to the declaration by this key.'}>
-        <Input id={`${uid}-key`} value={key} onChange={(e) => setKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} readOnly={base !== null} maxLength={64} className="font-mono" aria-invalid={!!errors.key || undefined} />
-      </FormField>
       <FormField label="Title" htmlFor={`${uid}-title`} required error={errors.title}>
         <Input id={`${uid}-title`} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={300} aria-invalid={!!errors.title || undefined} />
       </FormField>
-      <FormField label="Text" htmlFor={`${uid}-text`} required error={errors.text} hint={`${text.length.toLocaleString('en-ZA')} characters`}>
+      <FormField label="Wording" htmlFor={`${uid}-text`} required error={errors.text} hint={`${text.length.toLocaleString('en-ZA')} characters`}>
         <Textarea id={`${uid}-text`} value={text} onChange={(e) => setText(e.target.value)} rows={14} maxLength={50_000} className="font-serif leading-relaxed" aria-invalid={!!errors.text || undefined} />
       </FormField>
-      {unchanged ? <p className="text-sm text-amber-700">This is the same as the current version — publishing would only add an identical copy.</p> : null}
+      <Details defaultOpen={!!errors.key}>
+        <FormField
+          label="Key"
+          htmlFor={`${uid}-key`}
+          required
+          error={errors.key}
+          hint={
+            base
+              ? 'Publishing under the same key creates the next version.'
+              : 'The name the set-up uses to find this declaration. It’s filled in from the title and can’t be changed later.'
+          }
+        >
+          <Input
+            id={`${uid}-key`}
+            value={shownKey}
+            onChange={(e) => {
+              setKeyTouched(true);
+              setKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+            }}
+            readOnly={base !== null}
+            maxLength={64}
+            className="font-mono"
+            aria-invalid={!!errors.key || undefined}
+          />
+        </FormField>
+      </Details>
+      {unchanged ? <p className="text-sm text-amber-700">This is the same as the current version. Change the title or wording before publishing.</p> : null}
       <ApiErrorAlert error={publish.error} />
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>

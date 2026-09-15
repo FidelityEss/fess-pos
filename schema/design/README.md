@@ -16,3 +16,12 @@ Rules:
   module follow automatically.
 - Remote config `theme.primary_color` / `theme.font_family` default to `null`, which means "use these tokens"
   (docs/13 §5, D-45).
+- Keys are only ever added, never renamed or removed: the module and the admin read the same file.
+
+**White and flat (D-97, 2026-09-15).** The module's look follows the FESS screens: white pages, no shadows, hairlines
+and light borders. The keys added for it (`component.page`, `header.title.align`, `header.back.style` /
+`borderWidth`, `button.outline` / `danger` / `disabled` / `iconSize`, `card.elevation` / `border` / `borderWidth`,
+`listRow.icon*` / `paddingY` / `chevronSize` / title and description colours, `input.background` / `borderWidth` /
+`hint` / `icon*` / `padding*`, `chip`, `stat`, `avatar`, `bottomNav.inactiveItem` / `border` / `label`, and the
+derived `goldTextStrong`, `successText`, `warningText`, `infoText`) say how. `shadow.card` stays for any consumer that
+still draws shadows; the module doesn't.

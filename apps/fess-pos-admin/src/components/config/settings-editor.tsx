@@ -3,6 +3,7 @@
 // The typed App settings editor: friendly sections of settings, one control per key type, nested location-type cards and
 // feature toggles with add/remove, and — for every key — where its value comes from and whether this layer overrides it.
 // Keys not shown (technical ones in Basic view, unknown keys) are never touched: edits change only their own path.
+// Wording reads as who a setting applies to (docs/17 §4.4): "Setting for Bank ABC", "Same as for everyone", "Default".
 import { ChevronDown, Pencil, Plus, ShieldAlert, Trash2, Undo2, Wrench } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { humanLabel } from '@/components/structured-view';
@@ -31,6 +32,8 @@ import { ChoiceControl, ColorControl, NullableControl, NumberControl, OnOffContr
 
 export interface EditorState {
   layer: ConfigLayer;
+  /** Who this layer applies to, in words: "everyone", the bank's name, the agent's name, "this phone". */
+  subjectName: string;
   /** The layer document being edited (sparse). */
   doc: JsonObject;
   /** The published current version of this layer. */
@@ -71,7 +74,7 @@ for (const s of SECTIONS) {
   const tech = keys.filter((k) => k.technical);
   if (everyday.length) EVERYDAY.push({ id: s.id, section: s.id, title: s.title, description: s.description, icon: s.icon, keys: everyday });
   if (tech.length) {
-    TECHNICAL.push({ id: `${s.id}-technical`, section: s.id, title: `${s.title}: more settings`, description: 'Rarely changed. Mostly for engineers.', icon: s.icon, keys: tech });
+    TECHNICAL.push({ id: `${s.id}-technical`, section: s.id, title: `${s.title}: more settings`, description: 'Rarely changed. Mostly for the technical team.', icon: s.icon, keys: tech });
   }
 }
 TECHNICAL.push(...TECHNICAL_TAIL);
@@ -80,26 +83,33 @@ const TECHNICAL_KEY_COUNT = TECHNICAL.reduce((n, c) => n + c.keys.length, 0);
 // ── Small parts ─────────────────────────────────────────────────────────────────────────────────
 export function SensitiveBadge() {
   return (
-    <SimpleTooltip content="Security-sensitive. Needs a second admin's approval when four-eyes is on.">
+    <SimpleTooltip content="This setting affects security. Where a second approval is needed, a second person must approve changes to it.">
       <span
         tabIndex={0}
         className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <ShieldAlert className="size-3.5" /> Sensitive
+        <ShieldAlert className="size-3.5" /> Affects security
       </span>
     </SimpleTooltip>
   );
 }
 
 function EditedBadge() {
-  return <Badge tone="warning">Edited</Badge>;
+  return <Badge tone="warning">Changed</Badge>;
 }
 
-function SourceBadge({ set, source }: { set: boolean; source: string }) {
-  if (set) return <Badge tone="accent" className="px-2 text-sm">Set on this layer</Badge>;
+/** "the default", "the setting for everyone", "the setting for Bank ABC". */
+function sourcePhrase(source: string): string {
+  if (source === 'Default') return 'the default';
+  if (source === 'Not set') return 'no setting';
+  return `the setting for ${source}`;
+}
+
+function SourceBadge({ set, source, subjectName }: { set: boolean; source: string; subjectName: string }) {
+  if (set) return <Badge tone="accent" className="px-2 text-sm">Setting for {subjectName}</Badge>;
   return (
     <Badge tone="neutral" className="px-2 text-sm font-normal">
-      {source === 'Default' ? 'Default value' : `From ${source}`}
+      {source === 'Default' ? 'Default' : source === 'Not set' ? 'Not set' : `Same as for ${source}`}
     </Badge>
   );
 }
@@ -115,10 +125,6 @@ function Errors({ list }: { list: FieldIssue[] }) {
       ))}
     </ul>
   );
-}
-
-function inheritWord(layer: ConfigLayer): string {
-  return layer === 'global' ? 'default' : 'inherited';
 }
 
 function objectAt(v: unknown, path: string): Record<string, unknown> {
@@ -226,24 +232,26 @@ function InheritedValue({ k, value }: { k: SettingKey; value: unknown }) {
 
 function OverrideActions({
   set,
-  layer,
+  subjectName,
+  source,
   inheritedText,
   onOverride,
   onInherit,
 }: {
   set: boolean;
-  layer: ConfigLayer;
+  subjectName: string;
+  source: string;
   inheritedText: string;
   onOverride: () => void;
   onInherit: () => void;
 }) {
   return set ? (
     <Button type="button" variant="ghost" className="h-auto min-h-9 w-fit whitespace-normal text-left text-muted-foreground" onClick={onInherit}>
-      <Undo2 /> Use {inheritWord(layer)} value ({inheritedText})
+      <Undo2 /> Use {sourcePhrase(source)} ({inheritedText})
     </Button>
   ) : (
     <Button type="button" variant="outline" className="w-fit" onClick={onOverride}>
-      <Pencil /> Change for this layer
+      <Pencil /> Change for {subjectName}
     </Button>
   );
 }
@@ -256,14 +264,16 @@ function SettingRow({ k, ctx }: { k: SettingKey; ctx: EditorState }) {
   const edited = !jsonEqual(own, getPath(ctx.baseline, k.path));
   const errs = issuesAt(ctx.issues, k.path);
   const change = (v: unknown) => ctx.update(setIn(ctx.doc, k.path, v));
+  const source = ctx.sourceOf(k.path);
   return (
     <div className="grid gap-3 border-t py-4 first:border-t-0" data-config-path={k.path}>
-      <KeyHeader k={k} ctx={ctx} htmlFor={set ? id : undefined} edited={edited} badge={<SourceBadge set={set} source={ctx.sourceOf(k.path)} />} />
+      <KeyHeader k={k} ctx={ctx} htmlFor={set ? id : undefined} edited={edited} badge={<SourceBadge set={set} source={source} subjectName={ctx.subjectName} />} />
       {set ? <SettingControl k={k} id={id} value={own} onChange={change} invalid={errs.length > 0} ctx={ctx} /> : <InheritedValue k={k} value={inh} />}
       <Errors list={errs} />
       <OverrideActions
         set={set}
-        layer={ctx.layer}
+        subjectName={ctx.subjectName}
+        source={source}
         inheritedText={formatSettingValue(k, inh)}
         onOverride={() => change(inh === undefined ? k.spec.default : inh)}
         onInherit={() => ctx.update(deleteIn(ctx.doc, k.path))}
@@ -292,18 +302,18 @@ function ProfileCard({ name, k, ctx, isDefault }: { name: string; k: SettingKey;
       aria-label={profileLabel(name)}
       onFocusCapture={() => ctx.onSelectProfile(name)}
       onPointerDown={() => ctx.onSelectProfile(name)}
-      className={cn('rounded-lg border bg-card p-4 transition-shadow', selected && 'border-primary/60 ring-2 ring-primary/20')}
+      className={cn('rounded-lg border bg-card p-4', selected && 'border-primary/60 ring-2 ring-primary/20')}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="text-base font-semibold">{profileLabel(name)}</h4>
-            {isDefault ? <Badge tone="info">Used for jobs without a type</Badge> : null}
+            {isDefault ? <Badge tone="info">Used for jobs without a location type</Badge> : null}
             {edited ? <EditedBadge /> : null}
           </div>
           {ctx.advanced ? <p className="font-mono text-xs text-muted-foreground">{path}</p> : null}
         </div>
-        <SourceBadge set={set} source={ctx.sourceOf(path)} />
+        <SourceBadge set={set} source={ctx.sourceOf(path)} subjectName={ctx.subjectName} />
       </div>
 
       {set ? (
@@ -358,7 +368,7 @@ function ProfileCard({ name, k, ctx, isDefault }: { name: string; k: SettingKey;
               </dd>
             </div>
           ))}
-          <dt className="text-muted-foreground">Check-in prompt</dt>
+          <dt className="text-muted-foreground">{PROFILE_CHECKIN.label}</dt>
           <dd className="text-base font-medium">{v[PROFILE_CHECKIN.name] === true ? 'On' : 'Off'}</dd>
         </dl>
       )}
@@ -367,14 +377,14 @@ function ProfileCard({ name, k, ctx, isDefault }: { name: string; k: SettingKey;
       <div className="mt-3 flex flex-wrap gap-2">
         {!set ? (
           <Button type="button" variant="outline" onClick={() => ctx.update(setIn(ctx.doc, path, inherited))}>
-            <Pencil /> Change for this layer
+            <Pencil /> Change for {ctx.subjectName}
           </Button>
         ) : inherited !== undefined ? (
           <Button type="button" variant="ghost" className="text-muted-foreground" onClick={() => ctx.update(deleteIn(ctx.doc, path))}>
-            <Undo2 /> Use {inheritWord(ctx.layer)} value
+            <Undo2 /> Use {sourcePhrase(ctx.sourceOf(path))}
           </Button>
         ) : isDefault ? (
-          <SimpleTooltip content="Jobs without a type use this one. Choose another type for them first.">
+          <SimpleTooltip content="Jobs without a location type use this one. Choose another type for them first.">
             <span tabIndex={0} className="inline-flex">
               <Button type="button" variant="ghost" disabled className="text-destructive">
                 <Trash2 /> Remove location type
@@ -400,24 +410,24 @@ function AddProfile({ existing, advanced, onAdd }: { existing: string[]; advance
   if (!open) {
     return (
       <Button type="button" variant="outline" className="w-fit" onClick={() => setOpen(true)}>
-        <Plus /> Add location type
+        <Plus /> Add a location type
       </Button>
     );
   }
   return (
-    <div className="grid gap-3 rounded-lg border border-dashed bg-muted/30 p-4">
+    <div className="grid gap-3 rounded-lg border border-dashed bg-card p-4">
       <p className="text-base font-medium">New location type</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="grid gap-1.5">
           <label htmlFor="cfg-new-profile" className="text-sm font-medium">
             Name
           </label>
-          <Input id="cfg-new-profile" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Petrol station" className="h-10 text-base" autoFocus />
+          <Input id="cfg-new-profile" value={name} onChange={(e) => setName(e.target.value)} placeholder="Petrol station" className="h-10 text-base" autoFocus />
           {error ? <p className="text-sm text-destructive">{error}</p> : key && advanced ? <p className="text-xs text-muted-foreground">Saved as {key}</p> : null}
         </div>
         <div className="grid gap-1.5">
           <label htmlFor="cfg-new-profile-from" className="text-sm font-medium">
-            Start with the values of
+            Copy the settings of
           </label>
           <Select value={from} onValueChange={setFrom}>
             <SelectTrigger id="cfg-new-profile-from" className="h-10 text-base">
@@ -443,7 +453,7 @@ function AddProfile({ existing, advanced, onAdd }: { existing: string[]; advance
             setName('');
           }}
         >
-          <Plus /> Add
+          <Plus /> Add location type
         </Button>
         <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
           Cancel
@@ -490,17 +500,17 @@ function AddFlag({ existing, advanced, onAdd }: { existing: string[]; advanced: 
   if (!open) {
     return (
       <Button type="button" variant="outline" className="w-fit" onClick={() => setOpen(true)}>
-        <Plus /> Add feature
+        <Plus /> Add a feature
       </Button>
     );
   }
   return (
-    <div className="grid gap-2 rounded-lg border border-dashed bg-muted/30 p-4">
+    <div className="grid gap-2 rounded-lg border border-dashed bg-card p-4">
       <label htmlFor="cfg-new-flag" className="text-sm font-medium">
         Feature name
       </label>
       <div className="flex flex-wrap gap-2">
-        <Input id="cfg-new-flag" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Offline maps" className="h-10 max-w-xs text-base" autoFocus />
+        <Input id="cfg-new-flag" value={name} onChange={(e) => setName(e.target.value)} placeholder="Offline maps" className="h-10 max-w-xs text-base" autoFocus />
         <Button
           type="button"
           disabled={!key || !!error}
@@ -510,14 +520,14 @@ function AddFlag({ existing, advanced, onAdd }: { existing: string[]; advanced: 
             setName('');
           }}
         >
-          <Plus /> Add (switched on)
+          <Plus /> Add it, switched on
         </Button>
         <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
           Cancel
         </Button>
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : key && advanced ? <p className="text-xs text-muted-foreground">Saved as features.{key}</p> : null}
-      <p className="text-xs text-muted-foreground">A new feature only does something once the phone app knows about it.</p>
+      <p className="text-xs text-muted-foreground">A new feature only does something once the phone app has been built to use it.</p>
     </div>
   );
 }
@@ -533,7 +543,7 @@ function FlagsEditor({ k, ctx }: { k: SettingKey; ctx: EditorState }) {
     <div className="grid gap-3 border-t py-4 first:border-t-0" data-config-path={k.path}>
       <KeyHeader k={k} ctx={ctx} edited={edited} />
       {names.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No optional features yet.</p>
+        <p className="text-sm text-muted-foreground">No optional features yet. Add the first one below.</p>
       ) : (
         <ul className="divide-y rounded-lg border">
           {names.map((n) => {
@@ -554,7 +564,7 @@ function FlagsEditor({ k, ctx }: { k: SettingKey; ctx: EditorState }) {
                     {ctx.advanced ? <p className="font-mono text-xs text-muted-foreground">{path}</p> : null}
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <SourceBadge set={set} source={ctx.sourceOf(path)} />
+                    <SourceBadge set={set} source={ctx.sourceOf(path)} subjectName={ctx.subjectName} />
                     <OnOffControl id={`cfg-flag-${n}`} checked={value === true} disabled={!set} onChange={(b) => ctx.update(setIn(ctx.doc, path, b))} />
                   </div>
                 </div>
@@ -562,11 +572,11 @@ function FlagsEditor({ k, ctx }: { k: SettingKey; ctx: EditorState }) {
                 <div className="flex flex-wrap gap-2">
                   {!set ? (
                     <Button type="button" variant="outline" className="w-fit" onClick={() => ctx.update(setIn(ctx.doc, path, inh[n]))}>
-                      <Pencil /> Change for this layer
+                      <Pencil /> Change for {ctx.subjectName}
                     </Button>
                   ) : inh[n] !== undefined ? (
                     <Button type="button" variant="ghost" className="w-fit text-muted-foreground" onClick={() => ctx.update(deleteIn(ctx.doc, path))}>
-                      <Undo2 /> Use {inheritWord(ctx.layer)} value ({inh[n] === true ? 'On' : 'Off'})
+                      <Undo2 /> Use {sourcePhrase(ctx.sourceOf(path))} ({inh[n] === true ? 'On' : 'Off'})
                     </Button>
                   ) : (
                     <Button type="button" variant="ghost" className="w-fit text-destructive hover:text-destructive" onClick={() => ctx.update(deleteIn(ctx.doc, path))}>
@@ -601,7 +611,7 @@ function SectionCard({ card, ctx, open, onToggle, active, onActivate }: { card: 
       id={`cfg-section-${card.id}`}
       onFocusCapture={onActivate}
       onPointerDown={onActivate}
-      className={cn('scroll-mt-40 rounded-lg border bg-card shadow-xs transition-shadow', active && 'border-primary/50 ring-2 ring-primary/15')}
+      className={cn('scroll-mt-40 rounded-lg border bg-card', active && 'border-primary/50 ring-2 ring-primary/15')}
     >
       <h3>
         <button
@@ -619,7 +629,7 @@ function SectionCard({ card, ctx, open, onToggle, active, onActivate }: { card: 
           </span>
           <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 pt-0.5">
             {errCount > 0 ? <Badge tone="danger">{errCount === 1 ? '1 problem' : `${errCount} problems`}</Badge> : null}
-            {editedCount > 0 ? <Badge tone="warning">{editedCount} edited</Badge> : null}
+            {editedCount > 0 ? <Badge tone="warning">{editedCount} changed</Badge> : null}
             {setCount > 0 && ctx.layer !== 'global' ? <Badge tone="accent">{setCount} set here</Badge> : null}
             <ChevronDown className={cn('size-5 text-muted-foreground transition-transform', open && 'rotate-180')} />
           </span>
@@ -670,7 +680,7 @@ export function SettingsEditor({ ctx, activeSection, onActiveSection }: { ctx: E
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">Open a section to change it. The phone preview follows the section you are working on.</p>
+        <p className="text-sm text-muted-foreground">Open a section to change it. The phone preview follows the section you’re working on.</p>
         <div className="flex gap-1">
           <Button type="button" variant="ghost" onClick={() => setOpen(new Set(cards.map((c) => c.id)))}>
             Open all
@@ -687,15 +697,15 @@ export function SettingsEditor({ ctx, activeSection, onActiveSection }: { ctx: E
             <h3 className="flex items-center gap-2 text-base font-semibold">
               <Wrench className="size-5 text-muted-foreground" /> Technical settings
             </h3>
-            <p className="text-sm text-muted-foreground">For engineers. These rarely change, and a wrong value can stop phones from working properly.</p>
+            <p className="text-sm text-muted-foreground">For the technical team. These rarely change, and a wrong value can stop phones from working properly.</p>
           </div>
           {TECHNICAL.map(renderCard)}
         </>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed bg-card px-4 py-3 text-sm text-muted-foreground">
           <p className="min-w-0 flex-1">
-            {TECHNICAL_KEY_COUNT} technical settings (sign-in, maps, monitoring, locale and a few more) are hidden in Basic view.
-            {hiddenSet > 0 ? ` ${hiddenSet} of them are set on this layer; they are kept exactly as they are.` : ''}
+            {TECHNICAL_KEY_COUNT} technical settings (sign-in, maps, error reports, time zone and a few more) are hidden in Basic view.
+            {hiddenSet > 0 ? ` ${hiddenSet} of them are set here, and stay exactly as they are.` : ''}
             {hiddenErrors > 0 ? <span className="font-medium text-destructive">{` ${hiddenErrors} of them have a problem.`}</span> : null}
           </p>
           <Button type="button" variant="outline" onClick={() => setViewMode('advanced')}>

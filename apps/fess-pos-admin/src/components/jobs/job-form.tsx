@@ -1,11 +1,12 @@
 'use client';
 
-// Create / edit a job (one form). Attributes render generically from the bank's job schema (create) or the job's
-// pinned job-schema version (edit). Core fields lock outside pending/scheduled; location type locks at in_progress.
+// Create / edit a job. Creating goes in five short steps with a progress bar (T3-36); editing shows every section.
+// Job information renders generically from the bank's job schema (create) or the job's pinned job-schema version (edit).
+// Core fields lock outside pending/scheduled; the type of place locks at in_progress. `?bank=<id>` preselects the bank.
 import { useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Lock, MapPin, X } from 'lucide-react';
+import { AlertTriangle, Check, Lock, MapPin, X } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { type ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ApiErrorAlert, ErrorState } from '@/components/api-error-alert';
@@ -27,12 +28,13 @@ import { adminApi, api } from '@/lib/api';
 import { humanize } from '@/lib/format';
 import { formatLatLng, haversineM } from '@/lib/geo';
 import { isUuid, useMccCodes } from '@/lib/hooks';
+import { useIsAdvanced } from '@/lib/preferences';
 import { useMutationWithToast } from '@/lib/mutations';
 import type { JobCreateBody } from '@/lib/schemas';
 import { useStaff } from '@/lib/staff';
 import { JOB_STATUS_LABEL } from '@/lib/status';
 import type { JobAddress, JobContact, JobRecord, JsonObject, LatLng, LocationSource } from '@/lib/types';
-import { isPlainObject } from '@/lib/utils';
+import { cn, isPlainObject } from '@/lib/utils';
 import { AttributeInput, attributeHint, coerceAttributeValue, MccPicker, RISK_TIER_TONE } from './job-bits';
 import {
   attributeDefs,
@@ -63,6 +65,20 @@ type AddressKey = (typeof ADDRESS_FIELDS)[number][0];
 
 /** Distance above which the pin and the bank's coordinates are flagged `location_mismatch` (B1.2). */
 const MISMATCH_M = 250;
+
+/** The steps of a new job, and which fields (error keys) each one holds. */
+const STEPS: { title: string; owns: (key: string) => boolean }[] = [
+  { title: 'Bank and merchant', owns: (k) => ['bank_id', 'merchant_name', 'trading_name', 'external_ref', 'mcc_code'].includes(k) },
+  { title: 'Address', owns: (k) => k.startsWith('address.') && k !== 'address.bank_coordinates' },
+  { title: 'Map pin and site area', owns: (k) => ['address.bank_coordinates', 'location', 'location_type', 'geofence_radius_m', 'gps_accuracy_max_m'].includes(k) },
+  { title: 'Contact and notes', owns: (k) => k.startsWith('contact.') || k === 'contact' || k === 'notes' },
+  { title: 'Job information', owns: (k) => k.startsWith('attributes.') || k === 'attributes' },
+];
+
+/** The first step holding one of these error keys (-1 when none does). */
+function firstStepWith(errs: FieldErrors): number {
+  return STEPS.findIndex((st) => Object.keys(errs).some(st.owns));
+}
 
 interface FormState {
   bankId: string | null;
@@ -108,13 +124,13 @@ function str(v: unknown): string {
   return typeof v === 'string' ? v : v === null || v === undefined ? '' : String(v);
 }
 
-function initialState(job: JobDetailRow | null): FormState {
+function initialState(job: JobDetailRow | null, presetBankId: string | null = null): FormState {
   const addr = isPlainObject(job?.address) ? (job?.address as unknown as Record<string, unknown>) : {};
   const bank = bankCoordinates(job?.address);
   const attributes: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(job?.attributes ?? {})) attributes[k] = typeof v === 'number' ? String(v) : v;
   return {
-    bankId: job?.bank_id ?? null,
+    bankId: job?.bank_id ?? presetBankId,
     merchant_name: job?.merchant_name ?? '',
     trading_name: job?.trading_name ?? '',
     external_ref: job?.external_ref ?? '',
@@ -150,7 +166,7 @@ function parseCoords(latS: string, lngS: string): { value: LatLng | null; error:
   const lat = toNumber(latS);
   const lng = toNumber(lngS);
   if (lat === null || lng === null) return { value: null, error: 'Enter both latitude and longitude as numbers' };
-  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return { value: null, error: 'Latitude must be −90…90 and longitude −180…180' };
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return { value: null, error: 'Latitude must be between −90 and 90, and longitude between −180 and 180' };
   return { value: { lat, lng }, error: null };
 }
 
@@ -165,11 +181,19 @@ export type JobFormProps = { mode: 'create' } | { mode: 'edit'; job: JobDetailRo
 
 export function JobForm(props: JobFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const staff = useStaff();
+  const advanced = useIsAdvanced();
   const job = props.mode === 'edit' ? props.job : null;
-  const [s, setS] = useState<FormState>(() => initialState(job));
+  const presetBank = searchParams.get('bank');
+  const [s, setS] = useState<FormState>(() => initialState(job, isUuid(presetBank) ? presetBank : null));
   const [errors, setErrors] = useState<FieldErrors>({});
+  // New jobs go step by step; editing shows every section at once.
+  const wizard = !job;
+  const [step, setStep] = useState(0);
+  const lastStep = STEPS.length - 1;
+  const show = (i: number) => !wizard || step === i;
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setS((prev) => ({ ...prev, [k]: v }));
   const setAddress = (k: AddressKey, v: string) => setS((prev) => ({ ...prev, address: { ...prev.address, [k]: v } }));
 
@@ -228,18 +252,18 @@ export function JobForm(props: JobFormProps) {
   /** Validate locally; returns field errors and the attribute object. */
   function validate(): { errs: FieldErrors; attributes: JsonObject; radius: number | null; accuracy: number | null } {
     const errs: FieldErrors = {};
-    if (!job && !s.bankId) errs.bank_id = 'Choose a bank';
+    if (!job && !s.bankId) errs.bank_id = 'Choose the bank this job is for';
     if (coreEditable) {
-      if (!s.merchant_name.trim()) errs.merchant_name = 'Merchant name is required';
-      if (!s.address.line1.trim()) errs['address.line1'] = 'Address line 1 is required';
-      if (s.contactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.contactEmail.trim())) errs['contact.email'] = 'Must be a valid email address';
+      if (!s.merchant_name.trim()) errs.merchant_name = 'Enter the merchant’s name';
+      if (!s.address.line1.trim()) errs['address.line1'] = 'Enter the first line of the address';
+      if (s.contactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.contactEmail.trim())) errs['contact.email'] = 'Enter a valid email address';
       if (bankCoords.error) errs['address.bank_coordinates'] = bankCoords.error;
     }
-    const radius = parseIntRange(s.radius, 25, 500, 'Fence radius');
-    const accuracy = parseIntRange(s.accuracy, 5, 200, 'GPS accuracy');
+    const radius = parseIntRange(s.radius, 25, 500, 'The site area size');
+    const accuracy = parseIntRange(s.accuracy, 5, 200, 'The GPS accuracy');
     if (coreEditable && radius.error) errs.geofence_radius_m = radius.error;
     if (coreEditable && accuracy.error) errs.gps_accuracy_max_m = accuracy.error;
-    if (locationTypeEditable && !locationType) errs.location_type = 'Choose a location type';
+    if (locationTypeEditable && !locationType) errs.location_type = 'Choose the type of place';
 
     // Keep attribute keys the schema doesn't list (never drop captured data); schema keys are coerced and checked.
     const attributes: JsonObject = {};
@@ -260,22 +284,38 @@ export function JobForm(props: JobFormProps) {
         : // PATCH via the generic client: JobPatchBody allows null to clear optional fields.
           api<JobRecord>('PATCH', `/v1/admin/jobs/${encodeURIComponent(job?.id ?? '')}`, v.body),
     toastErrors: false,
-    successMessage: (r, v) => (v.kind === 'create' ? `Job ${r.reference} created` : `Job ${r.reference} updated`),
+    successMessage: (r, v) => (v.kind === 'create' ? `Job ${r.reference} created. Next: agree a visit time with the merchant.` : `Job ${r.reference} saved`),
     onSuccess: async (r) => {
       await invalidateJob(queryClient, r.id);
       router.push(`/jobs/${r.id}`);
     },
     onError: (e) => {
-      setErrors(apiFieldErrors(e));
+      const fieldErrors = apiFieldErrors(e);
+      setErrors(fieldErrors);
+      if (wizard && firstStepWith(fieldErrors) >= 0) setStep(firstStepWith(fieldErrors));
       if (job && isConflictError(e)) void invalidateJob(queryClient, job.id);
     },
   });
+
+  /** Check this step's fields, then move on (new jobs only). */
+  function nextStep() {
+    const own = STEPS[step]?.owns ?? (() => false);
+    const mine = Object.fromEntries(Object.entries(validate().errs).filter(([k]) => own(k)));
+    setErrors(mine);
+    if (Object.keys(mine).length) {
+      toast.error('Some details need fixing. They’re highlighted.');
+      return;
+    }
+    setStep((n) => Math.min(lastStep, n + 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   function submit() {
     const { errs, attributes, radius, accuracy } = validate();
     setErrors(errs);
     if (Object.keys(errs).length) {
-      toast.error('Please fix the highlighted fields');
+      if (wizard && firstStepWith(errs) >= 0) setStep(firstStepWith(errs));
+      toast.error('Some details need fixing. They’re highlighted.');
       return;
     }
     const address = buildAddress();
@@ -319,7 +359,7 @@ export function JobForm(props: JobFormProps) {
     }
     if (locationTypeEditable && locationType && locationType !== job.location_type) patch.location_type = locationType;
     if (Object.keys(patch).length === 0) {
-      toast.info('Nothing has changed');
+      toast.info('Nothing has changed, so there’s nothing to save.');
       return;
     }
     mutation.mutate({ kind: 'edit', body: patch });
@@ -331,8 +371,12 @@ export function JobForm(props: JobFormProps) {
   return (
     <>
       <PageHeader
-        title={job ? `Edit ${job.reference}` : 'New job'}
-        description={job ? `${job.merchant_name} · ${job.bank?.name ?? ''}` : 'Create an inspection job for a bank. It starts as Pending until the scheduler confirms an appointment.'}
+        title={job ? `Edit ${job.merchant_name}` : 'New job'}
+        description={
+          job
+            ? `${job.reference} · ${job.bank?.name ?? ''}`
+            : 'Create a job for one merchant visit, in five short steps. Afterwards you’ll agree a visit time with the merchant and assign an agent.'
+        }
         back={job ? { href: `/jobs/${job.id}`, label: job.reference } : { href: '/jobs', label: 'Jobs' }}
         actions={job ? <StatusBadge status={job.status} /> : null}
       />
@@ -341,11 +385,13 @@ export function JobForm(props: JobFormProps) {
         <Alert variant={nothingEditable ? 'destructive' : 'warning'} className="mb-4">
           <Lock />
           <AlertTitle>
-            {nothingEditable ? `This job is ${JOB_STATUS_LABEL[job.status].toLowerCase()} — it can no longer be edited` : `This job is ${JOB_STATUS_LABEL[job.status].toLowerCase()} — only the location type can change`}
+            {nothingEditable
+              ? `This job can’t be changed any more: it’s “${JOB_STATUS_LABEL[job.status]}”`
+              : `This job is “${JOB_STATUS_LABEL[job.status]}”, so only the type of place can still change`}
           </AlertTitle>
           <AlertDescription>
-            Merchant, address, map pin, MCC, contact, notes, attributes and geofence overrides can only change while a job is pending or scheduled (the
-            agent works from the details that were current at allocation). The location type can change until the inspection starts.
+            The merchant, address, map pin, business type, contact, notes, job information and site area can only change before the job goes to an
+            agent, because the agent works from the details they were given. The type of place can change until the visit starts.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -356,12 +402,51 @@ export function JobForm(props: JobFormProps) {
         noValidate
         onSubmit={(ev) => {
           ev.preventDefault();
-          if (!nothingEditable) submit();
+          if (nothingEditable) return;
+          if (wizard && step < lastStep) nextStep();
+          else submit();
         }}
         className="space-y-5"
       >
+        {wizard ? (
+          <div className="space-y-2">
+            <ol className="flex flex-wrap gap-2" aria-label="Steps">
+              {STEPS.map((st, i) => (
+                <li key={st.title}>
+                  <button
+                    type="button"
+                    onClick={() => (i < step ? setStep(i) : undefined)}
+                    disabled={i > step}
+                    aria-current={i === step ? 'step' : undefined}
+                    className={cn(
+                      'flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors disabled:cursor-default',
+                      i === step ? 'border-primary bg-accent font-semibold text-primary-hover' : i < step ? 'border-primary/40 hover:bg-accent/50' : 'text-muted-foreground',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'flex size-5 items-center justify-center rounded-full text-xs',
+                        i <= step ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {i < step ? <Check className="size-3" /> : i + 1}
+                    </span>
+                    {st.title}
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <div className="h-1 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={1} aria-valuemax={STEPS.length} aria-valuenow={step + 1} aria-label={`Step ${step + 1} of ${STEPS.length}`}>
+              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Step {step + 1} of {STEPS.length}
+            </p>
+          </div>
+        ) : null}
         <Card>
           <CardContent className="space-y-6 pt-4">
+            {show(0) ? (
             <FormSection title="Bank and merchant">
               <FormGrid cols={3}>
                 <FormField label="Bank" htmlFor="bank" required error={e('bank_id')}>
@@ -382,11 +467,11 @@ export function JobForm(props: JobFormProps) {
                 <FormField label="Trading name" htmlFor="trading_name" error={e('trading_name')}>
                   <Input id="trading_name" value={s.trading_name} onChange={(ev) => set('trading_name', ev.target.value)} disabled={coreDisabled} maxLength={300} />
                 </FormField>
-                <FormField label="External reference" htmlFor="external_ref" error={e('external_ref')} hint="The bank's own reference for this request.">
+                <FormField label="Bank’s reference" htmlFor="external_ref" error={e('external_ref')} hint="The bank’s own number for this request.">
                   <Input id="external_ref" value={s.external_ref} onChange={(ev) => set('external_ref', ev.target.value)} disabled={coreDisabled} maxLength={120} />
                 </FormField>
                 <FormField
-                  label="MCC"
+                  label="Business type"
                   htmlFor="mcc_code"
                   error={e('mcc_code')}
                   hint={
@@ -395,7 +480,7 @@ export function JobForm(props: JobFormProps) {
                         {selectedMcc.description} <Badge tone={RISK_TIER_TONE[selectedMcc.risk_tier]}>{selectedMcc.risk_tier} risk</Badge>
                       </span>
                     ) : (
-                      'Merchant category code'
+                      'The kind of business, as a card-industry (MCC) code.'
                     )
                   }
                 >
@@ -403,7 +488,9 @@ export function JobForm(props: JobFormProps) {
                 </FormField>
               </FormGrid>
             </FormSection>
+            ) : null}
 
+            {show(1) ? (
             <FormSection title="Address">
               <FormGrid cols={3}>
                 {ADDRESS_FIELDS.map(([k, label]) => (
@@ -419,10 +506,12 @@ export function JobForm(props: JobFormProps) {
                 ))}
               </FormGrid>
             </FormSection>
+            ) : null}
 
+            {show(2) ? (
             <FormSection
-              title="Location and geofence"
-              description={coreEditable ? 'Click the map to place or move the merchant pin. The fence circle shows the radius the agent must be inside.' : undefined}
+              title="Map pin and site area"
+              description={coreEditable ? 'Click the map to place or move the merchant’s pin. The circle is the site area the agent must be inside to start the visit.' : undefined}
             >
               <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
                 <div className="space-y-2">
@@ -433,50 +522,54 @@ export function JobForm(props: JobFormProps) {
                     height={340}
                   />
                   <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="size-4 text-blue-700" />
-                    {s.pin ? <span>Pin: {formatLatLng(s.pin)}{s.pinTouched ? ' (moved — will be saved as pinned)' : job?.location_source ? ` (${humanize(job.location_source)})` : ''}</span> : <span>No pin yet</span>}
+                    <MapPin className="size-4 text-primary" />
+                    {s.pin ? <span>Pin: {formatLatLng(s.pin)}{s.pinTouched ? ' (moved; saved when you save)' : job?.location_source ? ` (${humanize(job.location_source)})` : ''}</span> : <span>No pin yet</span>}
                     {s.pin && coreEditable ? (
                       <Button type="button" variant="ghost" size="sm" onClick={() => setS((prev) => ({ ...prev, pin: null, pinTouched: true }))}>
-                        <X /> Clear pin
+                        <X /> Remove the pin
                       </Button>
                     ) : null}
                     {bankCoords.value && coreEditable ? (
                       <Button type="button" variant="ghost" size="sm" onClick={() => setS((prev) => ({ ...prev, pin: bankCoords.value, pinTouched: true }))}>
-                        Use bank coordinates as pin
+                        Use the bank’s location as the pin
                       </Button>
                     ) : null}
                   </div>
                   {mismatchM !== null && mismatchM > MISMATCH_M ? (
                     <Alert variant="warning">
                       <AlertTriangle />
-                      <AlertTitle>The pin is {Math.round(mismatchM)} m from the bank-supplied coordinates</AlertTitle>
+                      <AlertTitle>The pin is {Math.round(mismatchM)} m from the location the bank gave</AlertTitle>
                       <AlertDescription>
-                        More than {MISMATCH_M} m apart, so the job will be flagged <strong>location mismatch</strong>. Check which location is right before
-                        saving — the agent&apos;s geofence uses the pin.
+                        That’s more than {MISMATCH_M} m, so the job will be marked <strong>map pin far from the bank’s address</strong>. Check which is
+                        right before saving: the agent’s site area uses the pin.
                       </AlertDescription>
                     </Alert>
                   ) : null}
                 </div>
                 <div className="space-y-4">
-                  <FormField label="Bank-supplied coordinates" error={e('address.bank_coordinates')} hint="Optional — as received from the bank (stored with the address).">
+                  <FormField label="Location the bank gave" error={e('address.bank_coordinates')} hint="Optional: the latitude and longitude as the bank sent them.">
                     <div className="grid grid-cols-2 gap-2">
                       <Input aria-label="Bank latitude" placeholder="Latitude" inputMode="decimal" value={s.bankLat} onChange={(ev) => set('bankLat', ev.target.value)} disabled={coreDisabled} />
                       <Input aria-label="Bank longitude" placeholder="Longitude" inputMode="decimal" value={s.bankLng} onChange={(ev) => set('bankLng', ev.target.value)} disabled={coreDisabled} />
                     </div>
                   </FormField>
                   <FormField
-                    label="Location type"
+                    label="Type of place"
                     htmlFor="location_type"
                     required
                     error={e('location_type')}
-                    hint={profileRadius ? `Profile: ${profileRadius} m fence, GPS accurate to ≤ ${profileAccuracy ?? '—'} m${profile?.prompt_checkin_on_arrival ? ', check-in on arrival' : ''}.` : undefined}
+                    hint={
+                      profileRadius
+                        ? `Site area ${profileRadius} m; the phone’s GPS must be accurate to ${profileAccuracy ?? '—'} m${profile?.prompt_checkin_on_arrival ? '; the agent checks in on arrival' : ''}.`
+                        : 'Decides the default site area size.'
+                    }
                   >
                     {ctx.isPending && s.bankId ? (
                       <Skeleton className="h-10 w-full" />
                     ) : (
                       <Select value={locationType} onValueChange={(v) => set('location_type', v)} disabled={!locationTypeEditable || mutation.isPending || !s.bankId}>
                         <SelectTrigger id="location_type" aria-invalid={!!e('location_type') || undefined}>
-                          <SelectValue placeholder={s.bankId ? 'Choose a location type' : 'Choose a bank first'} />
+                          <SelectValue placeholder={s.bankId ? 'Choose the type of place' : 'Choose a bank first'} />
                         </SelectTrigger>
                         <SelectContent>
                           {locationTypes.map((t) => {
@@ -494,18 +587,20 @@ export function JobForm(props: JobFormProps) {
                     )}
                   </FormField>
                   <FormGrid cols={2}>
-                    <FormField label="Fence radius (m)" htmlFor="radius" error={e('geofence_radius_m')} hint={`Override, 25–500. Default ${profileRadius ?? '—'} m.`}>
+                    <FormField label="Site area size (metres)" htmlFor="radius" error={e('geofence_radius_m')} hint={`Leave empty for the default (${profileRadius ?? '—'} m). 25 to 500.`}>
                       <Input id="radius" type="number" min={25} max={500} step={1} value={s.radius} onChange={(ev) => set('radius', ev.target.value)} disabled={coreDisabled} placeholder={profileRadius ? String(profileRadius) : ''} />
                     </FormField>
-                    <FormField label="GPS accuracy (m)" htmlFor="accuracy" error={e('gps_accuracy_max_m')} hint={`Override, 5–200. Default ${profileAccuracy ?? '—'} m.`}>
+                    <FormField label="GPS accuracy needed (metres)" htmlFor="accuracy" error={e('gps_accuracy_max_m')} hint={`Leave empty for the default (${profileAccuracy ?? '—'} m). 5 to 200.`}>
                       <Input id="accuracy" type="number" min={5} max={200} step={1} value={s.accuracy} onChange={(ev) => set('accuracy', ev.target.value)} disabled={coreDisabled} placeholder={profileAccuracy ? String(profileAccuracy) : ''} />
                     </FormField>
                   </FormGrid>
                 </div>
               </div>
             </FormSection>
+            ) : null}
 
-            <FormSection title="Merchant contact and notes" description="Who the scheduler calls to arrange the visit.">
+            {show(3) ? (
+            <FormSection title="Contact and notes" description="Who to call to agree a visit time with the merchant.">
               <FormGrid cols={3}>
                 <FormField label="Contact name" htmlFor="contact-name">
                   <Input id="contact-name" value={s.contactName} onChange={(ev) => set('contactName', ev.target.value)} disabled={coreDisabled} />
@@ -517,21 +612,23 @@ export function JobForm(props: JobFormProps) {
                   <Input id="contact-email" type="email" value={s.contactEmail} onChange={(ev) => set('contactEmail', ev.target.value)} disabled={coreDisabled} aria-invalid={!!e('contact.email') || undefined} />
                 </FormField>
               </FormGrid>
-              <FormField label="Notes" htmlFor="notes" error={e('notes')} hint="Shown to the agent on the job briefing.">
+              <FormField label="Notes for the agent" htmlFor="notes" error={e('notes')} hint="The agent sees these with the job.">
                 <Textarea id="notes" rows={3} value={s.notes} onChange={(ev) => set('notes', ev.target.value)} disabled={coreDisabled} maxLength={5000} />
               </FormField>
             </FormSection>
+            ) : null}
 
+            {show(4) ? (
             <AttributesSection
               loading={job ? pinned.isPending && !!job.job_schema_version_id : ctx.isPending && !!s.bankId}
               hasBank={!!s.bankId}
-              title={job ? 'Bank attributes (pinned job schema)' : 'Bank attributes'}
-              empty={job && !job.job_schema_version_id ? 'No job schema was pinned on this job, so it has no bank attributes.' : 'This bank has no active job schema, so there are no extra attributes.'}
+              title="Job information"
+              empty={job && !job.job_schema_version_id ? 'This job has no extra details from the bank.' : 'This bank doesn’t ask for any extra details. You can create the job.'}
             >
               {attrs.length ? (
                 <FormGrid cols={3}>
                   {attrs.map((def) => (
-                    <FormField key={def.key} label={def.label} htmlFor={`attr-${def.key}`} required={def.required} error={e(`attributes.${def.key}`)} hint={attributeHint(def)}>
+                    <FormField key={def.key} label={def.label} htmlFor={`attr-${def.key}`} required={def.required} error={e(`attributes.${def.key}`)} hint={attributeHint(def, advanced)}>
                       <AttributeInput
                         id={`attr-${def.key}`}
                         def={def}
@@ -545,18 +642,24 @@ export function JobForm(props: JobFormProps) {
                 </FormGrid>
               ) : null}
             </AttributesSection>
+            ) : null}
           </CardContent>
         </Card>
 
-        <ApiErrorAlert error={mutation.error} title={isConflictError(mutation.error) ? 'The job changed while you were editing' : undefined} />
+        <ApiErrorAlert error={mutation.error} title={isConflictError(mutation.error) ? 'Someone changed this job while you were editing it' : undefined} />
 
         <FormActions>
           <Button type="button" variant="outline" asChild>
             <Link href={job ? `/jobs/${job.id}` : '/jobs'}>Cancel</Link>
           </Button>
+          {wizard && step > 0 ? (
+            <Button type="button" variant="outline" onClick={() => setStep((n) => Math.max(0, n - 1))} disabled={mutation.isPending}>
+              Back
+            </Button>
+          ) : null}
           {!nothingEditable && staff.isAdmin ? (
             <Button type="submit" loading={mutation.isPending}>
-              {job ? 'Save changes' : 'Create job'}
+              {job ? 'Save changes' : step < lastStep ? `Next: ${STEPS[step + 1]?.title ?? ''}` : 'Create job'}
             </Button>
           ) : null}
         </FormActions>
@@ -567,9 +670,9 @@ export function JobForm(props: JobFormProps) {
 
 function AttributesSection({ loading, hasBank, title, empty, children }: { loading: boolean; hasBank: boolean; title: string; empty: string; children: ReactNode }) {
   return (
-    <FormSection title={title} description="Defined by the bank's job schema (configuration, not code).">
+    <FormSection title={title} description="The extra details this bank asks for. They’re set up under Inspection set-up.">
       {!hasBank ? (
-        <p className="text-sm text-muted-foreground">Choose a bank to see its attributes.</p>
+        <p className="text-sm text-muted-foreground">Choose a bank first. Its extra details show here.</p>
       ) : loading ? (
         <Skeleton className="h-16 w-full" />
       ) : children ? (
@@ -584,10 +687,10 @@ function AttributesSection({ loading, hasBank, title, empty, children }: { loadi
 /** /jobs/[id]/edit — loads the job, then renders the shared form. */
 export function JobEditView({ id }: { id: string }) {
   const job = useJob(id);
-  if (!isUuid(id)) return <ErrorState error={new Error('That is not a valid job id.')} />;
-  if (job.isPending) return <PageSpinner label="Loading job…" />;
+  if (!isUuid(id)) return <ErrorState error={new Error('This link doesn’t point to a job. Open the job from the Jobs list instead.')} />;
+  if (job.isPending) return <PageSpinner label="Loading the job…" />;
   if (job.error) return <ErrorState error={job.error} onRetry={() => void job.refetch()} />;
-  if (!job.data) return <ErrorState error={new Error('Job not found, or it belongs to a bank outside your scope.')} title="Not found" />;
+  if (!job.data) return <ErrorState error={new Error('It may have been removed, or it belongs to a bank you can’t see.')} title="We couldn’t find that job" />;
   // Re-mount when the row version changes so the form starts from fresh values.
   return <JobForm key={job.data.updated_at} mode="edit" job={job.data} />;
 }

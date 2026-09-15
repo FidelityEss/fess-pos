@@ -27,7 +27,7 @@ A Postman collection for every endpoint the `fess_pos` module calls, with QA and
    POS_PUBLISHABLE_KEY=<QA publishable key> deno run -A --node-modules-dir=none --config tools/scenarios/deno.json tools/postman/provision-qa.ts
    ```
 
-   It writes `~/.fess-pos/postman/fess-pos-qa.local.postman_environment.json` (mode 600). The file holds the test admin's password and TOTP secret, so it stays outside the repo.
+   It writes `~/.fess-pos/postman/fess-pos-qa.local.postman_environment.json` (mode 600). The file holds the test admin's password (and a TOTP secret only if one was ever set up), so it stays outside the repo. The test admin joins by a registration link that the script completes itself (D-96).
 3. In Postman, import the collection and that environment file, and select **FESS POS — QA (test users)**.
 
 For production, import `fess-pos-production.postman_environment.json` and paste the production publishable key into `publishableKey`.
@@ -36,7 +36,7 @@ For production, import `fess-pos-production.postman_environment.json` and paste 
 
 Run the folders top to bottom, or run the whole collection. Each request stores what the next one needs in collection variables:
 
-1. **QA setup** — test admin signs in (password, then TOTP computed in the script), creates a job for `API-AG01`, confirms the appointment, allocates it, and mints the host token FESS would hold.
+1. **QA setup** — test admin signs in with a password (the TOTP step is skipped unless the admin has one set up, D-96), creates a job for `API-AG01`, confirms the appointment, allocates it, and mints the host token FESS would hold.
 2. **Auth and device** — exchange, refresh, and the device update (push token, versions).
 3. **Sync** — the full pull, then an incremental one.
 4. **Job events** — accept, an idempotent re-send (`duplicate`), and a same-id/different-payload `conflict`.

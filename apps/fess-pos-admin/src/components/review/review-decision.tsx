@@ -22,19 +22,22 @@ import { useIsAdvanced } from '@/lib/preferences';
 import { useMutationWithToast } from '@/lib/mutations';
 import type { ReviewBody } from '@/lib/schemas';
 import { useStaff } from '@/lib/staff';
-import { INSPECTION_STATUS_LABEL, type StatusTone } from '@/lib/status';
-import type { ReasonCode, ReviewDecision, ReviewResult } from '@/lib/types';
+import { INSPECTION_STATUS_LABEL, JOB_STATUS_LABEL, type StatusTone } from '@/lib/status';
+import type { JobStatus, ReasonCode, ReviewDecision, ReviewResult } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 export const REVIEW_DECISION_TONE: Record<ReviewDecision, StatusTone> = { approved: 'success', returned: 'warning', rejected: 'danger' };
-const DECISION_LABEL: Record<ReviewDecision, string> = { approved: 'Approve', returned: 'Return for rework', rejected: 'Reject' };
+const DECISION_LABEL: Record<ReviewDecision, string> = { approved: 'Approve', returned: 'Send back to the agent', rejected: 'Reject' };
+const DECISION_BUTTON: Record<ReviewDecision, string> = { approved: 'Approve this visit', returned: 'Send it back to the agent', rejected: 'Reject this visit' };
+const DECISION_QUESTION: Record<ReviewDecision, string> = { approved: 'Approve this visit?', returned: 'Send this visit back to the agent?', rejected: 'Reject this visit?' };
+const DECISION_DONE: Record<ReviewDecision, string> = { approved: 'Visit approved', returned: 'Visit sent back to the agent', rejected: 'Visit rejected' };
 
 function ExistingReview({ review }: { review: ReviewRow }) {
   const advanced = useIsAdvanced();
   return (
     <KeyValues
       items={[
-        ['Decision', <ToneBadge key="d" value={review.decision} tones={REVIEW_DECISION_TONE} labels={{ returned: 'Returned for rework' }} />],
+        ['Decision', <ToneBadge key="d" value={review.decision} tones={REVIEW_DECISION_TONE} labels={{ approved: 'Approved', returned: 'Sent back to the agent', rejected: 'Rejected' }} />],
         ['Reviewer', review.reviewer ? fullName(review.reviewer) : advanced ? review.reviewer_id : '—'],
         ['Decided', formatDateTime(review.decided_at)],
         [
@@ -59,10 +62,10 @@ export function ReviewPanel({ jobId, bankId, insp }: { jobId: string; bankId: st
   const review = insp.reviews[0];
   if (review) return <ExistingReview review={review} />;
   if (!(REVIEWABLE_INSPECTION_STATUSES as readonly string[]).includes(insp.status)) {
-    return <p className="text-sm text-muted-foreground">Nothing to review — this attempt is {(INSPECTION_STATUS_LABEL[insp.status] ?? insp.status).toLowerCase()}.</p>;
+    return <p className="text-sm text-muted-foreground">Nothing to review: this visit is {(INSPECTION_STATUS_LABEL[insp.status] ?? insp.status).toLowerCase()}.</p>;
   }
   if (!staff.hasPermission('review_inspections')) {
-    return <p className="text-sm text-muted-foreground">Awaiting review. Deciding needs the Review inspections permission.</p>;
+    return <p className="text-sm text-muted-foreground">Waiting for review. Deciding needs permission to review visits.</p>;
   }
   return <ReviewDecisionForm jobId={jobId} bankId={bankId} insp={insp} />;
 }
@@ -80,7 +83,7 @@ function ReviewDecisionForm({ jobId, bankId, insp }: { jobId: string; bankId: st
   const outstanding = insp.status !== 'integrity_failed' && insp.evidence_verified < insp.evidence_expected;
   const noteRequired = decision === 'returned' || (decision === 'rejected' && (reason?.requires_note ?? false));
   const approveBlocker = outstanding
-    ? `Still waiting for photos: ${insp.evidence_verified} of ${insp.evidence_expected} checked. Approval unlocks when every item is checked.`
+    ? `Still waiting for photos: ${insp.evidence_verified} of ${insp.evidence_expected} checked. You can approve once they’re all checked.`
     : hasOverride && !ack
       ? 'First tick that you checked why the agent started outside the site area.'
       : null;
@@ -89,7 +92,7 @@ function ReviewDecisionForm({ jobId, bankId, insp }: { jobId: string; bankId: st
   const mutation = useMutationWithToast<ReviewResult, ReviewBody>({
     mutationFn: (body) => adminApi.inspections.review(insp.id, body),
     toastErrors: false,
-    successMessage: (r) => `Review recorded: ${r.review.decision} — job is now ${r.job_status.replace(/_/g, ' ')}`,
+    successMessage: (r) => `${DECISION_DONE[r.review.decision] ?? 'Review saved'}. The job is now “${JOB_STATUS_LABEL[r.job_status as JobStatus] ?? humanize(r.job_status)}”.`,
     onSuccess: () => invalidateJob(queryClient, jobId),
     onError: (e) => {
       if (isConflictError(e)) void invalidateJob(queryClient, jobId);
@@ -105,7 +108,7 @@ function ReviewDecisionForm({ jobId, bankId, insp }: { jobId: string; bankId: st
 
   return (
     <div className="space-y-4">
-      <div className="inline-flex flex-wrap gap-1 rounded-md border bg-slate-50 p-1" role="radiogroup" aria-label="Decision">
+      <div className="inline-flex flex-wrap gap-1 rounded-md border bg-card p-1" role="radiogroup" aria-label="Decision">
         {(['approved', 'returned', 'rejected'] as ReviewDecision[]).map((d) => {
           const Icon = d === 'approved' ? Check : d === 'returned' ? CornerUpLeft : X;
           return (
@@ -137,7 +140,7 @@ function ReviewDecisionForm({ jobId, bankId, insp }: { jobId: string; bankId: st
           <AlertTriangle />
           <AlertTitle>The agent started outside the site area</AlertTitle>
           <AlertDescription className="space-y-2">
-            <p>They used the override form. Check the reason, note, photo and location trail before deciding.</p>
+            <p>They used the “I’m not at the site” form. Check their reason, note and photo, and the location trail, before deciding.</p>
             <label className="flex items-center gap-2 text-sm font-medium">
               <Checkbox checked={ack} onCheckedChange={(v) => setAck(v === true)} />I have checked why they started outside the site area
             </label>
@@ -149,7 +152,7 @@ function ReviewDecisionForm({ jobId, bankId, insp }: { jobId: string; bankId: st
         <Alert variant="warning">
           <AlertTriangle />
           <AlertDescription>
-            {insp.evidence_verified} of {insp.evidence_expected} photos and files checked so far. You can read the answers now; you can approve once everything is checked.
+            {insp.evidence_verified} of {insp.evidence_expected} photos and files checked so far. You can read the answers now, and approve once everything is checked.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -172,7 +175,7 @@ function ReviewDecisionForm({ jobId, bankId, insp }: { jobId: string; bankId: st
             label={decision === 'returned' ? 'Note to the agent' : 'Note'}
             htmlFor={`review-note-${insp.id}`}
             required={noteRequired}
-            hint={decision === 'returned' ? 'Shown to the agent with the returned job — say exactly what to fix.' : undefined}
+            hint={decision === 'returned' ? 'The agent sees this with the job. Say exactly what to fix.' : undefined}
           >
             <Textarea id={`review-note-${insp.id}`} rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
           </FormField>
@@ -192,7 +195,7 @@ function ReviewDecisionForm({ jobId, bankId, insp }: { jobId: string; bankId: st
           onClick={() => setConfirming(true)}
           title={decision === 'approved' ? (approveBlocker ?? undefined) : undefined}
         >
-          {DECISION_LABEL[decision]} attempt {insp.attempt}
+          {DECISION_BUTTON[decision]}
         </Button>
         {decision === 'approved' && approveBlocker ? <span className="text-sm text-muted-foreground">{approveBlocker}</span> : null}
       </div>
@@ -200,11 +203,11 @@ function ReviewDecisionForm({ jobId, bankId, insp }: { jobId: string; bankId: st
       <ConfirmDialog
         open={confirming}
         onOpenChange={setConfirming}
-        title={`${DECISION_LABEL[decision]} attempt ${insp.attempt}?`}
+        title={DECISION_QUESTION[decision]}
         description={
           decision === 'returned'
-            ? 'The job goes back to the agent for a new attempt, with your note. Review decisions are permanent.'
-            : 'Review decisions are permanent and recorded in the audit log.'
+            ? 'The job goes back to the agent with your note, so they can do the visit again. You can’t undo a review decision.'
+            : 'You can’t undo a review decision. It’s saved in the activity history.'
         }
         confirmLabel={DECISION_LABEL[decision]}
         destructive={decision === 'rejected'}

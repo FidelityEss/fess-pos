@@ -46,7 +46,7 @@ function DeactivateForm({ user, onClose }: { user: PosUser; onClose: () => void 
     mutationFn: (body: UserDeactivateBody) => adminApi.users.deactivate(user.id, body),
     invalidate: [['users'], ['agents'], ['devices'], ['pos_sessions'], ['auth_events'], ['alerts'], ['device_sync_status']],
     toastErrors: false,
-    successMessage: (_r, v) => (v.mode === 'hard_revoke' ? 'Access hard-revoked' : 'User deactivated'),
+    successMessage: (_r, v) => (v.mode === 'hard_revoke' ? 'Access hard-revoked' : 'Deactivated'),
     onSuccess: (r) => setResult(r),
   });
 
@@ -66,7 +66,7 @@ function DeactivateForm({ user, onClose }: { user: PosUser; onClose: () => void 
     return (
       <div className="grid gap-4">
         <DialogHeader>
-          <DialogTitle>{hard ? 'Access hard-revoked' : 'User deactivated'}</DialogTitle>
+          <DialogTitle>{hard ? 'Access hard-revoked' : 'Deactivated'}</DialogTitle>
           <DialogDescription>{fullName(result.user)}</DialogDescription>
         </DialogHeader>
         <Alert variant={hard ? 'warning' : 'success'}>
@@ -149,7 +149,7 @@ function DeactivateForm({ user, onClose }: { user: PosUser; onClose: () => void 
           </AlertDescription>
         </Alert>
       ) : null}
-      <FormField label="Reason" htmlFor={`${uid}-reason`} required error={reasonError} hint="Recorded in the audit log.">
+      <FormField label="Reason" htmlFor={`${uid}-reason`} required error={reasonError} hint="Saved in the activity history.">
         <Textarea id={`${uid}-reason`} value={reason} onChange={(e) => setReason(e.target.value)} rows={3} aria-invalid={!!reasonError || undefined} />
       </FormField>
       <ApiErrorAlert error={mutation.error} />

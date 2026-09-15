@@ -21,13 +21,15 @@ import {
   User,
 } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
+import { FESS } from '@/lib/brand';
 import type { AppDefinition, FlowDefinition, FormDefinition, PageDef } from '@/lib/engine';
 import { cn } from '@/lib/utils';
 import { FlowScreen } from './flow-renderer';
 import { FormScreen } from './form-screen';
 import { lenientParse } from './lenient-parse';
 import { PhoneFrame, type PhoneTheme } from './phone-frame';
-import { PhoneActionButton, PreviewNotice, UnknownElement } from './phone-widgets';
+import { PAGE_X, PP_TINT_BG, toneColors, typeStyle } from './phone-style';
+import { PhoneActionButton, PreviewNotice, StickyFooter, UnknownElement } from './phone-widgets';
 import { contentText, type PreviewTarget, PreviewEnvProvider, type RenderFrame, ruleBool, templateText, usePreviewEnv } from './preview-context';
 import { humanise, readPathValue } from './preview-format';
 import { JobListCard, statusChip, ViewByKey } from './view-renderer';
@@ -57,11 +59,13 @@ export function appPageList(app: AppDefinition): { id: string; label: string }[]
   return Object.entries(app.pages).map(([id, p]) => ({ id, label: `${p.title ? p.title : humanise(id)} · ${humanise(p.type)}` }));
 }
 
+/** The outcome's icon in a white circle on the green hero, in its tone: success green, saved gold, failure red. */
 function OutcomeIcon({ outcome }: { outcome: PageDef['outcome'] }) {
-  const [Icon, cls] = outcome === 'success' ? [CircleCheck, 'bg-emerald-50 text-emerald-600'] : outcome === 'saved' ? [CloudUpload, 'bg-sky-50 text-sky-600'] : [CircleAlert, 'bg-red-50 text-red-600'];
+  const Icon = outcome === 'success' ? CircleCheck : outcome === 'saved' ? CloudUpload : CircleAlert;
+  const tone = outcome === 'success' ? 'success' : outcome === 'failure' ? 'danger' : 'accent';
   return (
-    <span className={cn('flex size-20 items-center justify-center rounded-full', cls)}>
-      <Icon className="size-10" />
+    <span className="flex items-center justify-center rounded-full p-4" style={{ backgroundColor: FESS.page.background, color: toneColors(tone).foreground }}>
+      <Icon className="size-10" strokeWidth={2.25} />
     </span>
   );
 }
@@ -113,10 +117,15 @@ export function AppScreen({ app, frame, current, onCurrentChange }: { app: AppDe
       : undefined;
   const drawer =
     app.navigation?.style === 'drawer' && !fullScreen ? (
-      <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-2 py-1.5">
-        <Menu className="mr-1 size-4 shrink-0 text-slate-500" />
+      <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-[color:var(--ph-divider)] bg-[color:var(--ph-page)] px-2 py-1.5">
+        <Menu className="mr-1 size-4 shrink-0 text-[color:var(--ph-body)]" />
         {nav.map((i) => (
-          <button key={i.page} type="button" onClick={() => show(i.page, false)} className={cn('shrink-0 rounded-full px-2.5 py-1 text-[13px]', i.page === pageId ? 'bg-[color-mix(in_srgb,var(--pp)_12%,white)] font-semibold text-[var(--pp)]' : 'text-slate-600')}>
+          <button
+            key={i.page}
+            type="button"
+            onClick={() => show(i.page, false)}
+            className={cn('shrink-0 rounded-[var(--ph-pill)] px-2.5 py-1 text-[13px]', i.page === pageId ? cn(PP_TINT_BG, 'font-semibold text-[var(--pp)]') : 'font-medium text-[color:var(--ph-body)]')}
+          >
             {i.label}
           </button>
         ))}
@@ -144,24 +153,28 @@ export function AppScreen({ app, frame, current, onCurrentChange }: { app: AppDe
   );
 
   let screen: ReactNode;
+  const padded = cn(PAGE_X, 'py-4');
   if (!page) {
-    screen = renderFrame({ body: <div className="p-3"><PreviewNotice>This app has no pages yet.</PreviewNotice></div> });
+    screen = renderFrame({ body: <div className={padded}><PreviewNotice>This app has no pages yet.</PreviewNotice></div> });
   } else if (page.type === 'view_page') {
+    // The page's actions sit at its foot, on white under a hairline, as the module's job page.
     screen = renderFrame({
       body: (
-        <div className="space-y-3 px-3 py-3">
+        <div className={padded}>
           <ViewByKey viewKey={page.view} />
-          {page.actions?.length ? (
-            <div className="grid gap-2 pt-1">
-              {page.actions.map((a, i) => (
-                <PhoneActionButton key={a.label} variant={i === 0 ? 'primary' : 'outline'} onClick={() => navigate(a.target)}>
-                  {templateText(a.label, env.data)}
-                </PhoneActionButton>
-              ))}
-            </div>
-          ) : null}
         </div>
       ),
+      footer: page.actions?.length ? (
+        <StickyFooter>
+          <div className="grid w-full gap-3">
+            {page.actions.map((a, i) => (
+              <PhoneActionButton key={a.label} variant={i === 0 ? 'primary' : 'outline'} onClick={() => navigate(a.target)}>
+                {templateText(a.label, env.data)}
+              </PhoneActionButton>
+            ))}
+          </div>
+        </StickyFooter>
+      ) : undefined,
     });
   } else if (page.type === 'list_page') {
     screen = renderFrame({ body: <ListPage page={page} /> });
@@ -180,7 +193,7 @@ export function AppScreen({ app, frame, current, onCurrentChange }: { app: AppDe
         onExit={back}
       />
     ) : (
-      renderFrame({ body: <div className="p-3"><PreviewNotice>Flow “{page.flow ?? '—'}” is not loaded in this preview.</PreviewNotice></div> })
+      renderFrame({ body: <div className={padded}><PreviewNotice>The visit steps “{page.flow ?? '—'}” can’t be shown in this preview.</PreviewNotice></div> })
     );
   } else if (page.type === 'form_page') {
     const doc = page.form ? env.bundle.forms?.[page.form] : undefined;
@@ -200,23 +213,33 @@ export function AppScreen({ app, frame, current, onCurrentChange }: { app: AppDe
         onBack={back}
       />
     ) : (
-      renderFrame({ body: <div className="p-3"><PreviewNotice>Form “{page.form ?? '—'}” is not loaded in this preview.</PreviewNotice></div> })
+      renderFrame({ body: <div className={padded}><PreviewNotice>The questions “{page.form ?? '—'}” can’t be shown in this preview.</PreviewNotice></div> })
     );
   } else if (page.type === 'outcome_page') {
     const receiptPage = Object.entries(app.pages).find(([, p]) => p.type === 'view_page' && p.view === 'receipt')?.[0];
+    // As FESS's confirmation screens: the green runs on from the top into the icon (in a white circle), the title and the
+    // message; the choices sit on white below. Home is the filled button, the others outlined (as the module).
     screen = renderFrame({
       title: '',
       showBack: false,
       body: (
-        <div className="flex min-h-full flex-col items-center justify-center gap-3 px-6 py-8 text-center">
-          <OutcomeIcon outcome={page.outcome} />
-          <div className="text-[20px] font-semibold leading-tight">{templateText(page.title ?? humanise(page.outcome ?? ''), env.data)}</div>
-          {page.message ? <p className="text-[15px] leading-snug text-slate-600">{templateText(page.message, env.data)}</p> : null}
-          <div className="mt-2 grid w-full gap-2">
-            {(page.buttons ?? []).map((b, i) => (
+        <div className="flex min-h-full flex-col">
+          <div className={cn('flex flex-col items-center pb-10 pt-8 text-center', PAGE_X)} style={{ backgroundColor: 'var(--pp)', color: FESS.textOnPrimary }}>
+            <OutcomeIcon outcome={page.outcome} />
+            <div className="mt-5 leading-tight" style={{ fontSize: FESS.type.headline.size, fontWeight: FESS.type.title.weight }}>
+              {templateText(page.title ?? humanise(page.outcome ?? ''), env.data)}
+            </div>
+            {page.message ? (
+              <p className="mt-2 leading-snug" style={typeStyle('bodyRegular')}>
+                {templateText(page.message, env.data)}
+              </p>
+            ) : null}
+          </div>
+          <div className={cn('grid gap-3 py-6', PAGE_X)}>
+            {(page.buttons ?? []).map((b) => (
               <PhoneActionButton
                 key={b.label}
-                variant={i === 0 ? 'primary' : 'outline'}
+                variant={b.action === 'home' ? 'primary' : 'outline'}
                 onClick={() => {
                   if (b.action === 'home') home();
                   else if (b.action === 'retry' || b.action === 'back') back();
@@ -228,13 +251,17 @@ export function AppScreen({ app, frame, current, onCurrentChange }: { app: AppDe
                 {templateText(b.label, env.data)}
               </PhoneActionButton>
             ))}
+            {page.auto_return_s ? (
+              <p className="text-center text-[color:var(--ph-body)]" style={typeStyle('caption')}>
+                Returns home after {page.auto_return_s} s
+              </p>
+            ) : null}
           </div>
-          {page.auto_return_s ? <p className="text-[13px] text-slate-500">Returns home after {page.auto_return_s} s</p> : null}
         </div>
       ),
     });
   } else {
-    screen = renderFrame({ body: <div className="p-3"><UnknownElement type={page.type} /></div> });
+    screen = renderFrame({ body: <div className={padded}><UnknownElement type={page.type} /></div> });
   }
   return <PreviewEnvProvider value={scoped}>{screen}</PreviewEnvProvider>;
 }
@@ -253,13 +280,17 @@ function ListPage({ page }: { page: PageDef }) {
   }
   if (page.source && page.source !== 'jobs') {
     return (
-      <div className="p-3">
-        <PreviewNotice>Lists of {humanise(page.source)} show the agent’s local records; the preview has sample jobs only.</PreviewNotice>
+      <div className={cn(PAGE_X, 'py-4')}>
+        <PreviewNotice>This list shows the {humanise(page.source).toLowerCase()} saved on the agent’s phone. The preview only has sample jobs.</PreviewNotice>
       </div>
     );
   }
   if (jobs.length === 0) {
-    return <div className="m-3 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-[14px] text-slate-500">{contentText(env.strings, page.empty_content) || 'Nothing here yet.'}</div>;
+    return (
+      <div className={cn(PAGE_X, 'py-8 text-center text-[color:var(--ph-body)]')} style={typeStyle('body')}>
+        {contentText(env.strings, page.empty_content) || 'Nothing here yet.'}
+      </div>
+    );
   }
   const groups = new Map<string, typeof jobs>();
   for (const job of jobs) {
@@ -267,16 +298,23 @@ function ListPage({ page }: { page: PageDef }) {
     const label = page.group_by?.endsWith('status') ? statusChip(g).label : typeof g === 'string' ? humanise(g) : String(g ?? '');
     groups.set(label, [...(groups.get(label) ?? []), job]);
   }
+  // Flat rows edge to edge, each group under its heading and a hairline (the module's job list).
   return (
-    <div className="space-y-3 px-3 py-3">
-      {[...groups.entries()].map(([label, list]) => (
-        <div key={label} className="grid grid-cols-[minmax(0,1fr)] gap-2">
-          {label ? <div className="text-[13px] font-semibold uppercase tracking-wide text-slate-500">{label}</div> : null}
-          {list.map((job) => (
-            <button key={job.id} type="button" className="block w-full text-left" onClick={() => page.on_tap && env.navigate?.(page.on_tap)}>
-              <JobListCard viewKey={page.item_view} data={{ ...env.data, job }} />
-            </button>
-          ))}
+    <div className="pb-4 pt-4">
+      {[...groups.entries()].map(([label, list], g) => (
+        <div key={label} className={cn('grid grid-cols-[minmax(0,1fr)]', g > 0 && 'mt-4')}>
+          {label ? (
+            <div className={cn(PAGE_X, 'pb-2 text-[color:var(--ph-body)]')} style={typeStyle('body')}>
+              {label}
+            </div>
+          ) : null}
+          <div className="border-t border-[color:var(--ph-divider)]">
+            {list.map((job) => (
+              <button key={job.id} type="button" className="block w-full cursor-pointer text-left" onClick={() => page.on_tap && env.navigate?.(page.on_tap)}>
+                <JobListCard viewKey={page.item_view} data={{ ...env.data, job }} />
+              </button>
+            ))}
+          </div>
         </div>
       ))}
     </div>

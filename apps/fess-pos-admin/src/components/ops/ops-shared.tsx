@@ -115,12 +115,18 @@ export function describeError(error: unknown): string | null {
   return compactJson(error, 200);
 }
 
+/** Just the readable message of a `{code, message}`-ish error (no code); falls back to describeError(). */
+export function errorMessage(error: unknown): string | null {
+  if (isPlainObject(error) && typeof error.message === 'string' && error.message.trim()) return error.message;
+  return describeError(error);
+}
+
 /** Age with warning/alert colouring (thresholds in ms). */
 export function AgeBadge({ ms, warnMs, alertMs, suffix = '' }: { ms: number | null; warnMs: number; alertMs: number; suffix?: string }) {
   if (ms === null) return <span className="text-muted-foreground">—</span>;
   const tone = ms > alertMs ? 'danger' : ms > warnMs ? 'warning' : 'neutral';
   return (
-    <Badge tone={tone} title={ms > alertMs ? 'Above the alert threshold' : ms > warnMs ? 'Above the warning threshold' : undefined}>
+    <Badge tone={tone} title={ms > alertMs ? 'Waiting much longer than it should' : ms > warnMs ? 'Waiting longer than usual' : undefined}>
       {formatDuration(ms)}
       {suffix}
     </Badge>

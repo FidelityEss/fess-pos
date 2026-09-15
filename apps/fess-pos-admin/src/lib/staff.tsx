@@ -43,7 +43,7 @@ export function StaffProvider({ me, children }: { me: Me; children: ReactNode })
   return <StaffContext.Provider value={value}>{children}</StaffContext.Provider>;
 }
 
-/** The staff context. Throws outside <AuthGate> (i.e. on /sign-in or /mfa). */
+/** The staff context. Throws outside <AuthGate> (i.e. on /sign-in or /register). */
 export function useStaff(): StaffContextValue {
   const ctx = useContext(StaffContext);
   if (!ctx) throw new Error('useStaff() must be used inside <AuthGate>/<StaffProvider>.');

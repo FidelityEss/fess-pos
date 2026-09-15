@@ -6,6 +6,7 @@
 import { Plus } from 'lucide-react';
 import { type ReactNode, useId, useState } from 'react';
 import { toast } from 'sonner';
+import { Details } from '@/components/details';
 import { StructuredView } from '@/components/structured-view';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,7 +91,7 @@ type Mode = 'form' | 'job_schema';
 function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
   const { readOnly } = useStudio();
   return (
-    <div className="inline-flex flex-wrap rounded-md border bg-muted p-0.5" role="radiogroup" aria-label={label}>
+    <div className="inline-flex flex-wrap rounded-md border bg-card p-0.5" role="radiogroup" aria-label={label}>
       {options.map((o) => (
         <button
           key={o.value}
@@ -99,7 +100,7 @@ function Segmented<T extends string>({ value, options, onChange, label }: { valu
           aria-checked={value === o.value}
           disabled={readOnly}
           onClick={() => onChange(o.value)}
-          className={cn('rounded px-3 py-1 text-sm disabled:opacity-60', value === o.value ? 'bg-card font-medium text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+          className={cn('rounded px-3 py-1 text-sm disabled:opacity-60', value === o.value ? 'bg-card font-medium text-foreground ring-1 ring-border' : 'text-muted-foreground hover:text-foreground')}
         >
           {o.label}
         </button>
@@ -143,7 +144,7 @@ function RuleOrFlag({
     setWriting(false);
     if (mode === 'rule') {
       const old = value;
-      toast(`${title}: rule replaced`, { action: { label: 'Undo', onClick: () => onChange(old) } });
+      toast(`${title}: condition removed`, { action: { label: 'Undo', onClick: () => onChange(old) } });
     }
     onChange(next === 'on' ? true : undefined);
   }
@@ -173,7 +174,7 @@ function RuleOrFlag({
             }}
           />
         ) : (
-          <Hint>Conditions are set with the rule builder (coming soon). For now, switch to Advanced view to write one.</Hint>
+          <Hint>Setting conditions here is coming soon. For now, switch to Advanced view to add one.</Hint>
         )
       ) : null}
     </Row>
@@ -250,7 +251,7 @@ function PropEditor({
         return (
           <SelectField
             label={label}
-            hint={missing ?? 'The versioned text the person accepts. Published on the Declarations page.'}
+            hint={missing ?? 'The statement the person agrees to. Set up on the Declarations page.'}
             value={asStr(value) || undefined}
             onChange={onChange}
             options={refs.declarations.map((d) => ({ value: d.key, label: d.title }))}
@@ -365,9 +366,9 @@ export function FieldInspector({
   }
 
   const keyProblem = !KEY_PATTERN.test(key)
-    ? 'Use lower-case letters, digits and _ ; start with a letter.'
+    ? 'Use lower-case letters, numbers and _, starting with a letter.'
     : takenKeys.filter((k) => k === key).length > 1
-      ? 'Another question already uses this key.'
+      ? 'Another question already uses this technical name.'
       : null;
 
   const propNames = spec ? Object.keys(spec.props) : [];
@@ -384,7 +385,13 @@ export function FieldInspector({
     return (
       <div className="grid gap-3">
         <Hint>
-          This question uses the component <code>{type || '(none)'}</code>, which isn&apos;t in the catalogue. It is kept as it is.
+          The admin panel doesn’t know this kind of question yet, so it’s kept as it is.
+          {advanced ? (
+            <>
+              {' '}
+              Type: <code>{type || '(none)'}</code>.
+            </>
+          ) : null}
         </Hint>
         <AdvancedJsonButton value={field} onApply={(v) => update((d) => updateIn(d, path, () => asObj(v)) as Obj)} label="Edit this question as JSON" />
       </div>
@@ -401,7 +408,7 @@ export function FieldInspector({
         {!isDisplay ? <TextField label="Help text" value={asStr(field.help_text)} onChange={(v) => set('help_text', v)} placeholder="Optional guidance shown under the question" multiline rows={2} /> : null}
         {advanced ? (
           <TextField
-            label="Key"
+            label="Technical name"
             value={key}
             onChange={(v) => {
               fresh.delete(key);
@@ -409,13 +416,18 @@ export function FieldInspector({
             }}
             mono
             invalid={keyProblem}
-            hint="Used in answers, rules and exports. Changing it on a published form is a breaking change."
+            hint="Used in answers, conditions and exports. Changing it after publishing affects answers already collected."
           />
         ) : (
-          <p className="text-sm text-muted-foreground">
-            Saved as <code className="rounded bg-muted px-1 py-0.5">{key}</code>
-            {keyProblem ? <span className="ml-2 text-destructive">{keyProblem}</span> : null}
-          </p>
+          <>
+            {keyProblem ? <p className="text-sm text-destructive">{keyProblem} Switch to Advanced view to change the technical name.</p> : null}
+            <Details summary="Technical name">
+              <p className="text-sm text-muted-foreground">
+                Saved as <code className="rounded border px-1 py-0.5">{key}</code>. It’s used in answers, conditions and exports, and doesn’t change when you
+                rename the question.
+              </p>
+            </Details>
+          </>
         )}
         {spec.displays.length > 0 ? (
           <SelectField
@@ -439,7 +451,7 @@ export function FieldInspector({
           {advanced && hasValue ? (
             <RuleOrFlag slot="read_only" title="Can the agent change it?" value={field.read_only} onChange={(v) => set('read_only', v)} vocab={vocab} previousKey={previousKey} offLabel="Editable" onLabel="Read-only" />
           ) : field.read_only === true ? (
-            <p className="text-sm text-muted-foreground">Read-only — the agent cannot change it.</p>
+            <p className="text-sm text-muted-foreground">The agent can’t change this answer.</p>
           ) : null}
         </div>
       ) : mode === 'form' ? (
@@ -598,12 +610,12 @@ function Visibility({ field, vocab, previousKey, onChange, onRemove }: { field: 
   const [writing, setWriting] = useState(false);
   const v = field.visible;
   return (
-    <Row label="Shown">
+    <Row label="When it shows">
       {isRule(v) ? (
         <RuleLine sentence={slotSentence('visible', v, vocab)} rule={v} onChange={onChange} onRemove={onRemove} removeLabel="Always show" />
       ) : (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm">{v === false ? 'Never shown (hidden)' : 'Always'}</span>
+          <span className="text-sm">{v === false ? 'Never (hidden)' : 'Always'}</span>
           {advanced && !readOnly && !writing ? (
             <Button type="button" size="sm" variant="outline" onClick={() => setWriting(true)}>
               <Plus /> Show only when…

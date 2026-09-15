@@ -27,7 +27,7 @@ try {
 } catch {
   // reported just below
 }
-if (!creds?.totp_secret) throw new Error(`No seed admin in ${statePath}: run the scenario seeder against ${target} first.`);
+if (!creds?.password) throw new Error(`No seed admin in ${statePath}: run the scenario seeder against ${target} first.`);
 
 type HostToken = { issuer: string; token: string; issued_at: string; employee_number: string };
 

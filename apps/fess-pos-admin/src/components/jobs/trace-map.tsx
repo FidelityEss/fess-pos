@@ -17,6 +17,16 @@ import type { LatLng, TraceEvent } from '@/lib/types';
 import { KeyValues, SectionCard } from './job-bits';
 import { type InspectionRow, type JobDetailRow, jobPoint, objOf, toNumber, useInspectionTraces } from './job-data';
 
+/** What each point on the trail means, in words. */
+const EVENT_LABEL: Record<TraceEvent, string> = {
+  fix: 'Location point',
+  checkin: 'Checked in',
+  enter: 'Entered the site area',
+  exit: 'Left the site area',
+  pause: 'Paused the visit',
+  resume: 'Carried on',
+};
+
 const EVENT_COLOR: Record<TraceEvent, string> = {
   fix: '#2799ff', // FESS info blue (location)
   checkin: '#7c3aed',
@@ -51,13 +61,13 @@ function Histogram({ distances, radiusM }: { distances: number[]; radiusM: numbe
             key={b.from}
             className={radiusM !== null && b.from >= radiusM ? 'flex-1 rounded-t bg-orange-400' : 'flex-1 rounded-t bg-sky-500'}
             style={{ height: `${Math.max(2, (b.n / peak) * 100)}%` }}
-            title={`${b.from}–${b.from + bin} m: ${b.n} fix${b.n === 1 ? '' : 'es'}`}
+            title={`${b.from}–${b.from + bin} m: ${b.n} point${b.n === 1 ? '' : 's'}`}
           />
         ))}
       </div>
       <div className="mt-1 flex justify-between text-sm text-muted-foreground">
         <span>0 m</span>
-        {radiusM !== null ? <span>fence {radiusM} m (orange = outside)</span> : null}
+        {radiusM !== null ? <span>site area {radiusM} m (orange = outside it)</span> : null}
         <span>{bins.length * bin} m</span>
       </div>
     </div>
@@ -94,15 +104,15 @@ export function TraceMapPanel({ job, inspections, fallbackRadius }: { job: JobDe
         lat: p.lat,
         lng: p.lng,
         color: EVENT_COLOR[t.event],
-        label: `${humanize(t.event)} · ${formatDateTime(t.ts_device, { seconds: true })}${d !== null ? ` · ${Math.round(d)} m` : ''}${acc !== null ? ` ± ${Math.round(acc)} m` : ''}`,
+        label: `${EVENT_LABEL[t.event] ?? humanize(t.event)} · ${formatDateTime(t.ts_device, { seconds: true })}${d !== null ? ` · ${Math.round(d)} m` : ''}${acc !== null ? ` ± ${Math.round(acc)} m` : ''}`,
       });
     }
     const first = points[0];
     const last = points[points.length - 1];
-    if (first && first.t.event === 'fix') out.push({ id: 'first', lat: first.p.lat, lng: first.p.lng, color: '#0f172a', label: `First fix · ${formatDateTime(first.t.ts_device)}` });
-    if (last && last !== first && last.t.event === 'fix') out.push({ id: 'last', lat: last.p.lat, lng: last.p.lng, color: '#64748b', label: `Last fix · ${formatDateTime(last.t.ts_device)}` });
+    if (first && first.t.event === 'fix') out.push({ id: 'first', lat: first.p.lat, lng: first.p.lng, color: '#0f172a', label: `First point · ${formatDateTime(first.t.ts_device)}` });
+    if (last && last !== first && last.t.event === 'fix') out.push({ id: 'last', lat: last.p.lat, lng: last.p.lng, color: '#64748b', label: `Last point · ${formatDateTime(last.t.ts_device)}` });
     const startFix = parsePoint(objOf(gr, 'fix'));
-    if (startFix) out.push({ id: 'start-fix', lat: startFix.lat, lng: startFix.lng, color: '#7c3aed', label: 'Location check fix (inspection start)' });
+    if (startFix) out.push({ id: 'start-fix', lat: startFix.lat, lng: startFix.lng, color: '#7c3aed', label: 'Location check at the start of the visit' });
     return out;
   }, [points, merchant, gr]);
 
@@ -128,7 +138,7 @@ export function TraceMapPanel({ job, inspections, fallbackRadius }: { job: JobDe
     };
   }, [points]);
 
-  if (!insp) return <EmptyState title="No inspection yet" description="The breadcrumb trail appears once an attempt has started and its location traces sync." />;
+  if (!insp) return <EmptyState title="No visit yet" description="The agent’s location trail shows here once a visit has started and the phone has sent it." />;
   const events = points.filter((x) => x.t.event !== 'fix');
 
   return (
@@ -136,13 +146,13 @@ export function TraceMapPanel({ job, inspections, fallbackRadius }: { job: JobDe
       {inspections.length > 1 ? (
         <div className="w-56">
           <Select value={insp.id} onValueChange={setSelected}>
-            <SelectTrigger aria-label="Attempt">
+            <SelectTrigger aria-label="Visit">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {[...inspections].sort((a, b) => b.attempt - a.attempt).map((i) => (
                 <SelectItem key={i.id} value={i.id}>
-                  Attempt {i.attempt}
+                  Visit {i.attempt}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -157,37 +167,37 @@ export function TraceMapPanel({ job, inspections, fallbackRadius }: { job: JobDe
           <div className="space-y-2">
             <MapView markers={markers} circles={circles} lines={lines} height={480} />
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-red-600" />Merchant pin &amp; fence</span>
+              <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-red-600" />Merchant pin and site area</span>
               {(Object.keys(EVENT_COLOR) as TraceEvent[]).filter((e) => e !== 'fix').map((e) => (
                 <span key={e} className="flex items-center gap-1.5">
                   <span className="size-2.5 rounded-full" style={{ backgroundColor: EVENT_COLOR[e] }} />
-                  {humanize(e)}
+                  {EVENT_LABEL[e]}
                 </span>
               ))}
-              <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 bg-[#2799ff]" />Breadcrumbs</span>
+              <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 bg-[#2799ff]" />Trail</span>
             </div>
           </div>
           <div className="space-y-4">
             <SectionCard title="Distance to merchant">
               {points.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No location traces received for this attempt.</p>
+                <p className="text-sm text-muted-foreground">No location points have arrived for this visit.</p>
               ) : (
                 <div className="space-y-3">
                   <KeyValues
                     className="sm:grid-cols-2 lg:grid-cols-2"
                     items={[
-                      ['Fixes', String(points.length)],
-                      ['Inside fence', `${stats.inside} (${Math.round((stats.inside / points.length) * 100)}%)`],
+                      ['Location points', String(points.length)],
+                      ['Inside the site area', `${stats.inside} (${Math.round((stats.inside / points.length) * 100)}%)`],
                       ['Closest', stats.min !== null ? `${Math.round(stats.min)} m` : null],
-                      ['Median', stats.median !== null ? `${Math.round(stats.median)} m` : null],
+                      ['Typical', stats.median !== null ? `${Math.round(stats.median)} m` : null],
                       ['Furthest', stats.max !== null ? `${Math.round(stats.max)} m` : null],
-                      ['Worst accuracy', stats.worstAcc !== null ? `± ${Math.round(stats.worstAcc)} m` : null],
-                      ['Time span', stats.span !== null ? formatDuration(stats.span) : null],
-                      ['Mocked fixes', stats.mocked ? <Badge key="m" tone="danger">{stats.mocked}</Badge> : '0'],
+                      ['Least accurate', stats.worstAcc !== null ? `± ${Math.round(stats.worstAcc)} m` : null],
+                      ['Time covered', stats.span !== null ? formatDuration(stats.span) : null],
+                      ['Fake locations', stats.mocked ? <Badge key="m" tone="danger">{stats.mocked}</Badge> : '0'],
                     ]}
                   />
                   <Histogram distances={stats.ds} radiusM={radiusM} />
-                  {!merchant ? <p className="text-sm text-amber-700">The job has no merchant pin, so distances can&apos;t be computed.</p> : null}
+                  {!merchant ? <p className="text-sm text-amber-700">The job has no map pin, so we can’t work out distances.</p> : null}
                 </div>
               )}
             </SectionCard>
@@ -195,17 +205,17 @@ export function TraceMapPanel({ job, inspections, fallbackRadius }: { job: JobDe
         </div>
       )}
       {events.length ? (
-        <SectionCard title="Location events">
+        <SectionCard title="What happened where">
           <div className="overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Device time</TableHead>
-                  <TableHead>Event</TableHead>
+                  <TableHead>Time (phone)</TableHead>
+                  <TableHead>What happened</TableHead>
                   <TableHead>Distance</TableHead>
                   <TableHead>Accuracy</TableHead>
-                  <TableHead>Inside fence</TableHead>
-                  <TableHead>Mocked</TableHead>
+                  <TableHead>Inside the site area</TableHead>
+                  <TableHead>Fake location</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -217,13 +227,13 @@ export function TraceMapPanel({ job, inspections, fallbackRadius }: { job: JobDe
                     <TableCell>
                       <span className="inline-flex items-center gap-1.5">
                         <span className="size-2.5 rounded-full" style={{ backgroundColor: EVENT_COLOR[t.event] }} />
-                        {humanize(t.event)}
+                        {EVENT_LABEL[t.event] ?? humanize(t.event)}
                       </span>
                     </TableCell>
                     <TableCell className="tabular-nums">{d !== null ? `${Math.round(d)} m` : '—'}</TableCell>
                     <TableCell className="tabular-nums">{acc !== null ? `± ${Math.round(acc)} m` : '—'}</TableCell>
                     <TableCell>{t.inside_fence === null ? '—' : t.inside_fence ? 'Yes' : 'No'}</TableCell>
-                    <TableCell>{t.is_mocked ? <Badge tone="danger">Mocked</Badge> : 'No'}</TableCell>
+                    <TableCell>{t.is_mocked ? <Badge tone="danger">Fake</Badge> : 'No'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

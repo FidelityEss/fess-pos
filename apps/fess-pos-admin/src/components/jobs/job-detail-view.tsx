@@ -1,31 +1,25 @@
 'use client';
 
-// /jobs/[id] — header with status, flags and actions; tabs for overview, scheduling, allocation, timeline,
-// inspections (review + amend), evidence, trace map and custody. `?tab=` and `?inspection=` are kept in the URL.
+// /jobs/[id] — a calm job page (docs/17 §4.7, T3-36): the title and actions, a summary (status in words, the next step,
+// agent, when, where, bank), then clearly named tabs: Job details, Booking, Agent, Visits (review and amend), Photos,
+// Location trail, Delivery record and History. `?tab=` and `?inspection=` are kept in the URL (the tab keys don't change).
 import { RefreshCw } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { ErrorState } from '@/components/api-error-alert';
-import { DateTime } from '@/components/date-time';
 import { PageHeader } from '@/components/page-header';
-import { DashboardStatusBadge, StatusBadge } from '@/components/status-badge';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PageSpinner } from '@/components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { employeeName, fullName, humanize } from '@/lib/format';
 import { isUuid } from '@/lib/hooks';
-import { useIsAdvanced } from '@/lib/preferences';
 import { useStaff } from '@/lib/staff';
 import { useQueryClient } from '@tanstack/react-query';
 import { EvidenceGallery } from './evidence-gallery';
 import { CustodyTimeline } from './custody-timeline';
 import { type AgentConflict, ConflictsBanner, JobActionBar, JobDialogs, type JobDialogKind, jobActions } from './job-actions';
-import { FlagBadges } from './job-bits';
 import {
   attributeDefs,
   effectiveRadius,
-  formatWindow,
   formSections,
   invalidateJob,
   LOCATION_TYPE_EDITABLE,
@@ -41,34 +35,32 @@ import {
   useJobInspections,
 } from './job-data';
 import { InspectionsTab } from './job-inspections';
+import { jobNextStep, JobSummary } from './job-summary';
 import { AllocationTab, OverviewTab, SchedulingTab, TimelineTab } from './job-tabs';
 import { TraceMapPanel } from './trace-map';
 
-const TABS = ['overview', 'scheduling', 'allocation', 'timeline', 'inspections', 'evidence', 'trace', 'custody'] as const;
+/** Tabs in the order a job moves through them. The keys are the URL values and never change. */
+const TABS = ['overview', 'scheduling', 'allocation', 'inspections', 'evidence', 'trace', 'custody', 'timeline'] as const;
 type TabKey = (typeof TABS)[number];
 const TAB_LABEL: Record<TabKey, string> = {
-  overview: 'Overview',
-  scheduling: 'Scheduling',
-  allocation: 'Allocation',
-  timeline: 'Timeline',
-  inspections: 'Inspections',
-  evidence: 'Evidence',
-  trace: 'Trace map',
-  custody: 'Custody',
+  overview: 'Job details',
+  scheduling: 'Booking',
+  allocation: 'Agent',
+  inspections: 'Visits',
+  evidence: 'Photos',
+  trace: 'Location trail',
+  custody: 'Delivery record',
+  timeline: 'History',
 };
-/** Plain names for the technical tabs in Basic view. */
-const BASIC_TAB_LABEL: Partial<Record<TabKey, string>> = { trace: 'Location trail', custody: 'Chain of custody' };
 const isTab = (v: string | null): v is TabKey => v !== null && (TABS as readonly string[]).includes(v);
 
 export function JobDetailView({ id }: { id: string }) {
   const staff = useStaff();
-  const advanced = useIsAdvanced();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const tabParam = searchParams.get('tab');
-  const tab: TabKey = isTab(tabParam) ? tabParam : 'overview';
   const inspectionParam = searchParams.get('inspection');
 
   const job = useJob(id);
@@ -99,11 +91,13 @@ export function JobDetailView({ id }: { id: string }) {
     router.replace(`${pathname}?${p.toString()}`, { scroll: false });
   };
 
-  if (!isUuid(id)) return <ErrorState error={new Error('That is not a valid job id.')} title="Not found" />;
-  if (job.isPending) return <PageSpinner label="Loading job…" />;
+  if (!isUuid(id)) return <ErrorState error={new Error('This link doesn’t point to a job. Open the job from the Jobs list instead.')} title="We couldn’t find that job" />;
+  if (job.isPending) return <PageSpinner label="Loading the job…" />;
   if (job.error) return <ErrorState error={job.error} onRetry={() => void job.refetch()} />;
   const j = job.data;
-  if (!j) return <ErrorState error={new Error('This job does not exist, or it belongs to a bank outside your scope.')} title="Job not found" />;
+  if (!j) {
+    return <ErrorState error={new Error('It may have been removed, or it belongs to a bank you can’t see.')} title="We couldn’t find that job" />;
+  }
 
   const attemptRows = attempts.data ?? [];
   const inspectionRows = inspections.data ?? [];
@@ -114,6 +108,18 @@ export function JobDetailView({ id }: { id: string }) {
   const awaitingReview = inspectionRows.filter((i) => (REVIEWABLE_INSPECTION_STATUSES as readonly string[]).includes(i.status) && i.reviews.length === 0).length;
   const canEdit = staff.isAdmin && LOCATION_TYPE_EDITABLE.includes(j.status);
   const refreshing = job.isFetching || inspections.isFetching || events.isFetching;
+  const next = jobNextStep(j, {
+    actions,
+    attemptsCount: attemptRows.length,
+    awaitingReview,
+    canSchedule: staff.hasPermission('schedule_jobs'),
+    canReview: staff.hasPermission('review_inspections'),
+    hasVisits: inspectionRows.length > 0,
+  });
+  // The summary shows the next step's action; the tabs and the "More actions" menu offer the rest (never the same button twice).
+  const otherActions = actions.filter((a) => a !== next.action);
+  // Without a ?tab=, open on the visits once there are any (that's where the work is), else on the job details.
+  const tab: TabKey = isTab(tabParam) ? tabParam : inspectionRows.length > 0 ? 'inspections' : 'overview';
 
   const badge: Partial<Record<TabKey, number>> = {
     scheduling: attemptRows.length,
@@ -125,45 +131,26 @@ export function JobDetailView({ id }: { id: string }) {
   return (
     <>
       <PageHeader
-        title={
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="font-mono">{j.reference}</span>
-            <span className="font-normal text-muted-foreground">{j.merchant_name}</span>
+        title={j.merchant_name}
+        description={
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-base">
+            <span className="font-mono text-sm text-foreground">{j.reference}</span>
+            {j.trading_name ? <span>· trading as {j.trading_name}</span> : null}
+            {j.external_ref ? <span>· bank’s reference {j.external_ref}</span> : null}
           </span>
         }
-        description={[j.bank ? `${j.bank.code} — ${j.bank.name}` : null, j.trading_name ? `t/a ${j.trading_name}` : null, j.external_ref ? `Bank ref ${j.external_ref}` : null]
-          .filter(Boolean)
-          .join(' · ')}
         back={{ href: '/jobs', label: 'Jobs' }}
         actions={
           <>
             <Button variant="ghost" size="icon-sm" onClick={() => void invalidateJob(queryClient, id)} title="Refresh" aria-label="Refresh" disabled={refreshing}>
               <RefreshCw className={refreshing ? 'animate-spin' : undefined} />
             </Button>
-            <JobActionBar actions={actions} onOpen={setDialog} editHref={canEdit ? `/jobs/${id}/edit` : null} />
+            <JobActionBar actions={otherActions} onOpen={setDialog} editHref={canEdit ? `/jobs/${id}/edit` : null} />
           </>
         }
-      >
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <StatusBadge status={j.status} />
-          {advanced ? <DashboardStatusBadge status={j.status} /> : null}
-          <FlagBadges flags={j.flags} />
-          {awaitingReview ? <Badge tone="warning">Awaiting review</Badge> : null}
-          <span className="text-muted-foreground">·</span>
-          <span className="text-muted-foreground">{humanize(j.location_type)}</span>
-          <span className="text-muted-foreground">·</span>
-          <span className="text-muted-foreground">{j.agent ? (advanced ? employeeName(j.agent) : fullName(j.agent)) : 'Unassigned'}</span>
-          {j.scheduled_start ? (
-            <>
-              <span className="text-muted-foreground">·</span>
-              <span className="text-muted-foreground">{formatWindow(j.scheduled_start, j.scheduled_end)}</span>
-            </>
-          ) : null}
-          <span className="ml-auto text-sm text-muted-foreground">
-            Updated <DateTime value={j.updated_at} mode="relative" />
-          </span>
-        </div>
-      </PageHeader>
+      />
+
+      <JobSummary job={j} next={next} awaitingReview={awaitingReview} onAction={setDialog} onTab={setTab} />
 
       <ConflictsBanner conflicts={conflicts} onDismiss={() => setConflicts([])} />
 
@@ -172,32 +159,29 @@ export function JobDetailView({ id }: { id: string }) {
           <TabsList className="min-w-max">
             {TABS.map((t) => (
               <TabsTrigger key={t} value={t}>
-                {(!advanced && BASIC_TAB_LABEL[t]) || TAB_LABEL[t]}
-                {badge[t] ? <span className="rounded bg-slate-100 px-1.5 text-sm tabular-nums text-muted-foreground">{badge[t]}</span> : null}
-                {t === 'inspections' && awaitingReview ? <span className="size-2 rounded-full bg-amber-500" aria-label="awaiting review" /> : null}
+                {TAB_LABEL[t]}
+                {badge[t] ? <span className="rounded bg-muted px-1.5 text-sm tabular-nums text-muted-foreground">{badge[t]}</span> : null}
+                {t === 'inspections' && awaitingReview ? <span className="size-2 rounded-full bg-amber-500" aria-label="waiting for review" /> : null}
               </TabsTrigger>
             ))}
           </TabsList>
         </div>
         <TabsContent value="overview">
-          <OverviewTab job={j} ctx={ctx.data} attrDefs={attrDefs} />
+          <OverviewTab job={j} ctx={ctx.data} attrDefs={attrDefs} schemaFamilyId={schemaDef?.family_id ?? null} />
         </TabsContent>
         <TabsContent value="scheduling">
           <SchedulingTab
             job={j}
             attempts={attemptRows}
             loading={attempts.isPending}
-            actions={actions}
+            actions={otherActions}
             onOpen={setDialog}
             canSchedule={staff.hasPermission('schedule_jobs')}
             isAdmin={staff.isAdmin}
           />
         </TabsContent>
         <TabsContent value="allocation">
-          <AllocationTab job={j} assignments={assignments.data ?? []} loading={assignments.isPending} actions={actions} onOpen={setDialog} />
-        </TabsContent>
-        <TabsContent value="timeline">
-          <TimelineTab events={events.data ?? []} loading={events.isPending} />
+          <AllocationTab job={j} assignments={assignments.data ?? []} loading={assignments.isPending} actions={otherActions} onOpen={setDialog} />
         </TabsContent>
         <TabsContent value="inspections">
           <InspectionsTab
@@ -219,6 +203,9 @@ export function JobDetailView({ id }: { id: string }) {
         </TabsContent>
         <TabsContent value="custody">
           <CustodyTimeline job={j} inspections={inspectionRows} evidence={evidence.data ?? []} fieldLabels={fieldLabels} />
+        </TabsContent>
+        <TabsContent value="timeline">
+          <TimelineTab events={events.data ?? []} loading={events.isPending} />
         </TabsContent>
       </Tabs>
 

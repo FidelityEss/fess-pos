@@ -10,9 +10,8 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { humanize } from '@/lib/format';
 import { useBanks } from '@/lib/hooks';
-import { useIsAdvanced } from '@/lib/preferences';
+import { REASON_CATEGORY_LABEL } from '@/lib/labels';
 import { useStaff } from '@/lib/staff';
 import { REASON_CATEGORIES, type ReasonCategory, type ReasonCode } from '@/lib/types';
 import { CATEGORY_HINT, ReasonCodeSheet, type ReasonSheetState } from './_components/reason-code-sheet';
@@ -22,7 +21,6 @@ const GLOBAL = '__global__';
 
 export default function ReasonCodesPage() {
   const staff = useStaff();
-  const advanced = useIsAdvanced();
   const codes = useAllReasonCodes();
   const banks = useBanks({ includeInactive: true });
   const [category, setCategory] = useState<ReasonCategory>('assignment_reject');
@@ -53,7 +51,7 @@ export default function ReasonCodesPage() {
       { accessorKey: 'code', header: 'Code', meta: { advanced: true }, cell: ({ row }) => <span className="whitespace-nowrap font-mono text-sm font-medium">{row.original.code}</span> },
       {
         accessorKey: 'label',
-        header: advanced ? 'Label' : 'Reason',
+        header: 'Reason',
         cell: ({ row }) => (
           <div className="grid min-w-56 max-w-lg">
             <span className="font-medium">{row.original.label}</span>
@@ -61,24 +59,23 @@ export default function ReasonCodesPage() {
           </div>
         ),
       },
-      { accessorKey: 'requires_note', header: 'Needs a note', cell: ({ row }) => <YesNo value={row.original.requires_note} title="Requires a note" /> },
-      { accessorKey: 'requires_photo', header: 'Needs a photo', cell: ({ row }) => <YesNo value={row.original.requires_photo} title="Requires a photo" /> },
-      { accessorKey: 'billable', header: 'Billable', cell: ({ row }) => <YesNo value={row.original.billable} title="Billable by default" /> },
-      { id: 'scope', header: 'Scope', accessorFn: (r) => r.bank_id ?? '', cell: ({ row }) => <BankScopeBadge bankId={row.original.bank_id} /> },
+      { accessorKey: 'requires_note', header: 'Needs a note', cell: ({ row }) => <YesNo value={row.original.requires_note} title="Needs a note" /> },
+      { accessorKey: 'requires_photo', header: 'Needs a photo', cell: ({ row }) => <YesNo value={row.original.requires_photo} title="Needs a photo" /> },
+      { accessorKey: 'billable', header: 'Billable', cell: ({ row }) => <YesNo value={row.original.billable} title="Billable as standard" /> },
+      { id: 'scope', header: 'Which banks', accessorFn: (r) => r.bank_id ?? '', cell: ({ row }) => <BankScopeBadge bankId={row.original.bank_id} /> },
       { accessorKey: 'active', header: 'Status', cell: ({ row }) => <ActiveBadge active={row.original.active} /> },
     ],
-    [advanced],
+    [],
   );
 
   return (
     <>
       <PageHeader
-        title="Reason codes"
-        description="Reason catalogues per category — global, or specific to one bank. Codes are never deleted; deactivate them instead."
+        title="Reasons"
         actions={
           staff.isAdmin ? (
             <Button onClick={() => setSheet({ mode: 'create', category })}>
-              <Plus /> New reason code
+              <Plus /> Add a reason
             </Button>
           ) : null
         }
@@ -88,7 +85,7 @@ export default function ReasonCodesPage() {
           <TabsList className="w-max min-w-full">
             {REASON_CATEGORIES.map((c) => (
               <TabsTrigger key={c} value={c}>
-                {humanize(c)}
+                {REASON_CATEGORY_LABEL[c]}
                 <span className="text-sm tabular-nums text-muted-foreground">{counts[c] ?? 0}</span>
               </TabsTrigger>
             ))}
@@ -105,19 +102,33 @@ export default function ReasonCodesPage() {
         onRetry={() => void codes.refetch()}
         getRowId={(r) => r.id}
         onRowClick={(r) => setSheet({ mode: 'edit', code: r })}
-        searchPlaceholder="Search codes…"
-        emptyTitle="No reason codes in this category"
+        searchPlaceholder="Search reasons…"
+        emptyTitle="No reasons here"
+        emptyDescription={
+          staff.isAdmin ? (
+            <>
+              Add one, or change the filters.
+              <span className="mt-3 block">
+                <Button onClick={() => setSheet({ mode: 'create', category })}>
+                  <Plus /> Add a reason
+                </Button>
+              </span>
+            </>
+          ) : (
+            'Try changing the filters.'
+          )
+        }
         initialSorting={[{ id: 'sort_order', desc: false }]}
         rowClassName={(r) => (r.active ? undefined : 'opacity-60')}
         toolbar={
           <>
             <Select value={scope} onValueChange={setScope}>
-              <SelectTrigger className="w-52" aria-label="Filter by scope">
+              <SelectTrigger className="w-56" aria-label="Filter by bank">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL}>Global and bank codes</SelectItem>
-                <SelectItem value={GLOBAL}>Global only</SelectItem>
+                <SelectItem value={ALL}>All reasons</SelectItem>
+                <SelectItem value={GLOBAL}>Only those for all banks</SelectItem>
                 {(banks.data ?? []).length > 0 ? <SelectSeparator /> : null}
                 {(banks.data ?? []).map((b) => (
                   <SelectItem key={b.id} value={b.id}>

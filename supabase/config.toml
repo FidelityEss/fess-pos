@@ -216,8 +216,8 @@ web3 = 30
 # secret = ""
 
 [auth.email]
-# Must stay true: it switches the whole email provider, sign-IN included (admins sign in with email + password + TOTP).
-# Self-signup is still refused by [auth] enable_signup = false; admin accounts are provisioned by an admin.
+# Must stay true: it switches the whole email provider, sign-IN included (admins sign in with email + password, D-96).
+# Self-signup is still refused by [auth] enable_signup = false; admins join only by a registration link an admin sends.
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
@@ -230,23 +230,27 @@ secure_password_change = false
 max_frequency = "1s"
 # Number of characters used in the email OTP.
 otp_length = 6
-# Number of seconds before the email OTP expires (defaults to 1 hour).
-otp_expiry = 3600
+# Number of seconds before an emailed token expires (defaults to 1 hour). 24 hours, the maximum, because it is also how
+# long an admin registration link works (D-96); keep pos.settings admin.invite_ttl_hours equal to this / 3600.
+# Password-reset links get the same lifetime.
+otp_expiry = 86400
 
-# Use a production-ready SMTP server
+# Each project needs its own sender before real staff are invited (D-96 (4)): Supabase's built-in mailer only reaches
+# members of the Supabase team, a few emails an hour. Until then the admin panel's Copy link works for everyone.
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
+# host = "smtp.example.com"
 # port = 587
 # user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# pass = "env(SUPABASE_AUTH_SMTP_PASS)"
+# admin_email = "no-reply@example.com"
+# sender_name = "FESS POS"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# The registration-link email (D-96). The link opens the admin panel's /register page with the token, and the token is
+# used only when the person submits their new password, so a mail scanner opening the link can't spend it.
+[auth.email.template.invite]
+subject = "Your FESS POS admin panel account"
+content_path = "./supabase/templates/invite.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

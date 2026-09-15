@@ -59,10 +59,20 @@ class _ReadOnlyBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(PosTokens.radiusControl),
+      color: PosTokens.colorBackgroundSubtle,
+      border: Border.all(
+        color: PosTokens.componentInputBorder,
+        width: PosTokens.componentInputBorderWidth,
+      ),
+      borderRadius: BorderRadius.circular(PosTokens.componentInputRadius),
     ),
-    child: Padding(padding: const EdgeInsets.all(12), child: Text(text)),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: PosTokens.componentInputPaddingX,
+        vertical: 14,
+      ),
+      child: Text(text),
+    ),
   );
 }
 
@@ -143,8 +153,6 @@ class _NumberInputState extends State<_NumberInput> {
       decoration: InputDecoration(
         hintText: b.template(b.props['placeholder']),
         suffixText: percent ? '%' : _string(b.props['unit']),
-        border: const OutlineInputBorder(),
-        isDense: true,
       ),
       onChanged: (v) =>
           b.controller.setValue(b.key, _parseNumber(v), touch: false),
@@ -265,10 +273,13 @@ class _PhoneInputState extends State<_PhoneInput> {
         inputFormatters: [
           FilteringTextInputFormatter.allow(RegExp('[0-9+() .-]')),
         ],
+        // A grey leading icon, as FESS's fields.
         decoration: InputDecoration(
           hintText: b.copy('form.phone.hint'),
-          border: const OutlineInputBorder(),
-          isDense: true,
+          prefixIcon: const Icon(
+            Icons.phone_outlined,
+            size: PosTokens.componentInputIconSize,
+          ),
         ),
         onChanged: (v) => b.controller.setValue(
           b.key,
@@ -584,10 +595,6 @@ class _DurationInputState extends State<_DurationInput> {
               readOnly: readOnly,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
               onChanged: (_) => _set(),
             ),
           ),

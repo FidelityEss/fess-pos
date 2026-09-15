@@ -27,11 +27,11 @@ export function ScopeSelect({
   return (
     <Select value={value ?? GLOBAL} onValueChange={(v) => onChange(v === GLOBAL ? null : v)} disabled={disabled || isLoading}>
       <SelectTrigger id={id} aria-invalid={invalid || undefined}>
-        <SelectValue placeholder={isLoading ? 'Loading banks…' : 'Choose a scope'} />
+        <SelectValue placeholder={isLoading ? 'Loading banks…' : 'Choose which banks'} />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value={GLOBAL} disabled={!staff.isGlobalAdmin}>
-          Global — every bank{staff.isGlobalAdmin ? '' : ' (all-bank administrators only)'}
+          All banks{staff.isGlobalAdmin ? '' : ' (only administrators who cover all banks)'}
         </SelectItem>
         {banks.length > 0 ? <SelectSeparator /> : null}
         {banks.map((b) => (

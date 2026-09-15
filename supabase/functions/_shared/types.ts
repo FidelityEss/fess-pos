@@ -28,10 +28,26 @@ export interface StaffAuth {
   accessToken: string;
 }
 
+/** A bank's system, by API key (T6-06, D-100): read-only, its own bank, the statuses the bank may read. */
+export interface BankAuth {
+  kind: 'bank';
+  keyId: string;
+  bankId: string;
+  bankCode: string;
+  statuses: string[];
+  limit: number;
+  remaining: number;
+}
+
 export interface AppEnv {
   Variables: {
     requestId: string;
     agent: AgentAuth;
     staff: StaffAuth;
+    bank: BankAuth;
+    /** How many records a bank call returned, for its call record. */
+    bankItems: number;
+    /** The inspection a bank call was about, for its call record. */
+    bankSubject: string;
   };
 }

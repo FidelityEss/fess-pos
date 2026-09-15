@@ -2,6 +2,7 @@
 
 import { AlertTriangle, CheckCircle2, CircleX, FlaskConical, LocateFixed } from 'lucide-react';
 import { CopyButton } from '@/components/copy-button';
+import { Details } from '@/components/details';
 import { JsonView } from '@/components/json-view';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -55,7 +56,7 @@ function IssueList({ issues, tone, ctx }: { issues: ValidationIssue[]; tone: 'er
             </span>
             {f.target && ctx.onLocate ? (
               <Button type="button" size="sm" variant="ghost" className="h-7" onClick={() => ctx.onLocate?.(f.target as string)}>
-                <LocateFixed /> Show
+                <LocateFixed /> Show me
               </Button>
             ) : null}
           </li>
@@ -66,7 +67,7 @@ function IssueList({ issues, tone, ctx }: { issues: ValidationIssue[]; tone: 'er
 }
 
 function Chips({ items, tone }: { items: unknown[]; tone: 'success' | 'danger' | 'warning' }) {
-  if (items.length === 0) return <span className="text-sm text-muted-foreground">none</span>;
+  if (items.length === 0) return <span className="text-sm text-muted-foreground">None</span>;
   return (
     <div className="flex flex-wrap gap-1">
       {items.map((it, i) => (
@@ -113,20 +114,20 @@ export function AnalysisResultView({ result, className, doc, relatedForm, onLoca
           <Badge tone="muted">Not breaking</Badge>
         ) : null}
         {result.previous_version ? (
-          <span className="text-sm text-muted-foreground">Compared with v{result.previous_version.version}</span>
+          <span className="text-sm text-muted-foreground">Compared with version {result.previous_version.version}</span>
         ) : result.previous_version === null ? (
           <span className="text-sm text-muted-foreground">First version</span>
         ) : null}
         {advanced && result.definition_hash ? (
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            Hash <code title={result.definition_hash}>{shortId(result.definition_hash, 10, 6)}</code>
-            <CopyButton value={result.definition_hash} title="Copy definition hash" />
+            Fingerprint <code title={result.definition_hash}>{shortId(result.definition_hash, 10, 6)}</code>
+            <CopyButton value={result.definition_hash} title="Copy the fingerprint (hash)" />
           </span>
         ) : null}
       </div>
       {!advanced && result.breaking ? (
         <p className="text-sm text-amber-900">
-          Some questions were removed or changed in a way that affects answers already collected or exports. Publishing still works; reviewers and exports
+          Some questions were removed or changed in a way that affects answers already collected, or exports. You can still publish: reviewers and exports
           keep the old answers.
         </p>
       ) : null}
@@ -134,7 +135,7 @@ export function AnalysisResultView({ result, className, doc, relatedForm, onLoca
       {errors.length > 0 ? (
         <div className="space-y-1">
           <p className="text-sm font-medium text-red-800">
-            {errors.length} problem{errors.length === 1 ? '' : 's'} to fix
+            {errors.length === 1 ? '1 thing to fix before you can publish' : `${errors.length} things to fix before you can publish`}
           </p>
           <IssueList issues={errors} tone="error" ctx={ctx} />
         </div>
@@ -142,7 +143,7 @@ export function AnalysisResultView({ result, className, doc, relatedForm, onLoca
       {warnings.length > 0 ? (
         <div className="space-y-1">
           <p className="text-sm font-medium text-amber-800">
-            {warnings.length} thing{warnings.length === 1 ? '' : 's'} to check
+            {warnings.length === 1 ? '1 thing worth checking' : `${warnings.length} things worth checking`}
           </p>
           <IssueList issues={warnings} tone="warning" ctx={ctx} />
         </div>
@@ -174,15 +175,21 @@ export function AnalysisResultView({ result, className, doc, relatedForm, onLoca
       {tests ? (
         <div className="space-y-1">
           <p className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
-            <FlaskConical className="size-4" /> Test cases:{' '}
-            {tests.results.length === 0 ? 'none recorded' : `${tests.results.length - failedTests.length} of ${tests.results.length} passed`}
+            <FlaskConical className="size-4" /> Example answers:{' '}
+            {tests.results.length === 0
+              ? 'none saved'
+              : `${tests.results.length - failedTests.length} of ${tests.results.length} still give the expected result`}
           </p>
           {failedTests.length > 0 ? (
             <ul className="space-y-1">
               {failedTests.map((t, i) => (
                 <li key={i} className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
-                  <span className="font-medium">{t.name}</span>
-                  {t.failures.length > 0 ? <JsonView value={t.failures} defaultExpandDepth={1} maxHeight={160} className="mt-1 bg-white" /> : null}
+                  <span className="font-medium">“{t.name}”</span> no longer gives the expected result. Did a change to the questions or conditions cause this?
+                  {t.failures.length > 0 ? (
+                    <Details className="mt-1">
+                      <JsonView value={t.failures} defaultExpandDepth={1} maxHeight={160} className="bg-white" />
+                    </Details>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -191,10 +198,9 @@ export function AnalysisResultView({ result, className, doc, relatedForm, onLoca
       ) : null}
 
       {advanced && result.requires && Object.keys(result.requires).length > 0 ? (
-        <details className="text-sm">
-          <summary className="cursor-pointer text-muted-foreground">Requires (spec, components)</summary>
-          <JsonView value={result.requires} defaultExpandDepth={2} maxHeight={200} className="mt-1" />
-        </details>
+        <Details summary="What the phone app needs to show it">
+          <JsonView value={result.requires} defaultExpandDepth={2} maxHeight={200} />
+        </Details>
       ) : null}
     </div>
   );

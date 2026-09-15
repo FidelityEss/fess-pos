@@ -16,9 +16,9 @@ export function Brand({ className, inverted = false, variant = 'mark' }: { class
   }
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
-      <Image src="/brand/fess-app-icon.png" alt="" width={32} height={32} className="size-8 rounded-full ring-1 ring-white/25" />
-      <span className={cn('text-[0.9375rem] font-semibold tracking-tight', inverted ? 'text-white' : 'text-foreground')}>
-        FESS POS <span className={inverted ? 'font-medium text-sidebar-foreground/80' : 'text-muted-foreground'}>Admin</span>
+      <Image src="/brand/fess-app-icon.png" alt="" width={32} height={32} className={cn('size-8 rounded-full ring-1', inverted ? 'ring-sidebar-border' : 'ring-border')} />
+      <span className={cn('text-[0.9375rem] font-semibold tracking-tight', inverted ? 'text-sidebar-strong' : 'text-foreground')}>
+        FESS POS <span className={inverted ? 'font-medium text-sidebar-muted' : 'text-muted-foreground'}>Admin</span>
       </span>
     </span>
   );

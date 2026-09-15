@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { employeeName } from '@/lib/format';
+import { useIsAdvanced } from '@/lib/preferences';
 import { useStaff } from '@/lib/staff';
 import { fetchRows, pos } from '@/lib/supabase';
 import type { Declaration } from '@/lib/types';
@@ -27,13 +28,12 @@ function publisherName(d: DeclRow): string {
 }
 
 function DeclarationText({ text, className }: { text: string; className?: string }) {
-  return (
-    <div className={`max-h-64 overflow-auto whitespace-pre-wrap rounded-md border bg-slate-50 p-3 font-serif text-sm leading-relaxed ${className ?? ''}`}>{text}</div>
-  );
+  return <div className={`max-h-64 overflow-auto whitespace-pre-wrap rounded-md border p-3 font-serif text-sm leading-relaxed ${className ?? ''}`}>{text}</div>;
 }
 
 export default function DeclarationsPage() {
   const staff = useStaff();
+  const advanced = useIsAdvanced();
   const canWrite = staff.isGlobalAdmin;
   const [publish, setPublish] = useState<{ base: DeclarationBase | null } | null>(null);
   const [viewing, setViewing] = useState<DeclRow | null>(null);
@@ -61,22 +61,16 @@ export default function DeclarationsPage() {
       .sort((a, b) => a.key.localeCompare(b.key));
   }, [declarations.data]);
 
+  const addButton = canWrite ? (
+    <Button onClick={() => setPublish({ base: null })}>
+      <Plus /> Add a declaration
+    </Button>
+  ) : null;
+
   return (
     <>
-      <PageHeader
-        title="Declarations"
-        description="Versioned declaration texts that agents and merchants accept. Every published version is immutable and hashed."
-        actions={
-          canWrite ? (
-            <Button onClick={() => setPublish({ base: null })}>
-              <Plus /> New declaration
-            </Button>
-          ) : null
-        }
-      />
-      {!canWrite ? (
-        <ReadOnlyNotice className="mb-4">Declarations are global reference data, published by all-bank administrators (D-44).</ReadOnlyNotice>
-      ) : null}
+      <PageHeader title="Declarations" actions={addButton} />
+      {!canWrite ? <ReadOnlyNotice className="mb-4">Declarations can only be published by an administrator who covers all banks.</ReadOnlyNotice> : null}
       {declarations.error ? (
         <ErrorState error={declarations.error} onRetry={() => void declarations.refetch()} />
       ) : declarations.isPending ? (
@@ -85,7 +79,7 @@ export default function DeclarationsPage() {
           <Skeleton className="h-48 w-full" />
         </div>
       ) : groups.length === 0 ? (
-        <EmptyState title="No declarations yet" description={canWrite ? 'Publish the first declaration.' : undefined} />
+        <EmptyState title="No declarations yet" description={canWrite ? 'Add the first one.' : undefined} action={addButton} />
       ) : (
         <div className="space-y-4">
           {groups.map((g) => (
@@ -118,10 +112,16 @@ export default function DeclarationsPage() {
             <>
               <DialogHeader>
                 <DialogTitle>
-                  {viewing.title} <span className="text-sm font-normal text-muted-foreground">— {viewing.key} v{viewing.version}</span>
+                  {viewing.title} <span className="text-sm font-normal text-muted-foreground">— version {viewing.version}</span>
                 </DialogTitle>
                 <DialogDescription>
-                  Published <DateTime value={viewing.published_at} /> by {publisherName(viewing)} · hash <MonoId value={viewing.hash} head={12} tail={6} />
+                  Published <DateTime value={viewing.published_at} /> by {publisherName(viewing)}
+                  {advanced ? (
+                    <>
+                      {' '}
+                      · <span className="font-mono">{viewing.key}</span> · hash <MonoId value={viewing.hash} head={12} tail={6} />
+                    </>
+                  ) : null}
                 </DialogDescription>
               </DialogHeader>
               <DeclarationText text={viewing.text} className="max-h-[60vh]" />
@@ -144,6 +144,7 @@ function DeclarationCard({
   onPublish: (base: DeclarationBase) => void;
   onView: (d: DeclRow) => void;
 }) {
+  const advanced = useIsAdvanced();
   const [showHistory, setShowHistory] = useState(false);
   const latest = versions[0];
   if (!latest) return null;
@@ -152,24 +153,30 @@ function DeclarationCard({
       <CardHeader className="flex-row flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-xs text-muted-foreground">{latest.key}</span>
-            <Badge tone="accent">v{latest.version}</Badge>
+            <h2 className="text-base font-semibold">{latest.title}</h2>
+            <Badge tone="accent">Version {latest.version}</Badge>
           </div>
-          <h2 className="text-base font-semibold">{latest.title}</h2>
+          {advanced ? <p className="font-mono text-xs text-muted-foreground">{latest.key}</p> : null}
           <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground">
-            Published <DateTime value={latest.published_at} /> by {publisherName(latest)} · hash <MonoId value={latest.hash} head={12} tail={6} />
+            Published <DateTime value={latest.published_at} /> by {publisherName(latest)}
+            {advanced ? (
+              <>
+                {' '}
+                · hash <MonoId value={latest.hash} head={12} tail={6} />
+              </>
+            ) : null}
           </p>
         </div>
         {canWrite ? (
           <Button size="sm" variant="outline" onClick={() => onPublish({ key: latest.key, title: latest.title, text: latest.text, version: latest.version })}>
-            <Upload /> Publish new version
+            <Upload /> Publish a new version
           </Button>
         ) : null}
       </CardHeader>
       <CardContent className="space-y-3">
         <DeclarationText text={latest.text} />
         <Button type="button" size="sm" variant="ghost" onClick={() => setShowHistory((s) => !s)} aria-expanded={showHistory}>
-          {showHistory ? <ChevronDown /> : <ChevronRight />} Version history ({versions.length})
+          {showHistory ? <ChevronDown /> : <ChevronRight />} Earlier versions ({versions.length})
         </Button>
         {showHistory ? (
           <div className="overflow-hidden rounded-md border">
@@ -180,25 +187,27 @@ function DeclarationCard({
                   <TableHead>Title</TableHead>
                   <TableHead>Published</TableHead>
                   <TableHead>By</TableHead>
-                  <TableHead>Hash</TableHead>
+                  {advanced ? <TableHead>Hash</TableHead> : null}
                   <TableHead className="w-px" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {versions.map((v) => (
                   <TableRow key={v.id}>
-                    <TableCell className="font-medium tabular-nums">v{v.version}</TableCell>
+                    <TableCell className="whitespace-nowrap font-medium tabular-nums">Version {v.version}</TableCell>
                     <TableCell>{v.title}</TableCell>
                     <TableCell>
                       <DateTime value={v.published_at} />
                     </TableCell>
                     <TableCell>{publisherName(v)}</TableCell>
-                    <TableCell>
-                      <MonoId value={v.hash} head={10} tail={6} />
-                    </TableCell>
+                    {advanced ? (
+                      <TableCell>
+                        <MonoId value={v.hash} head={10} tail={6} />
+                      </TableCell>
+                    ) : null}
                     <TableCell>
                       <Button size="sm" variant="ghost" onClick={() => onView(v)}>
-                        <Eye /> View
+                        <Eye /> Read
                       </Button>
                     </TableCell>
                   </TableRow>

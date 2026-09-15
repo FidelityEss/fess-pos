@@ -9,10 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useReasonCodes } from '@/lib/hooks';
+import { labelFrom, REASON_CATEGORY_LABEL } from '@/lib/labels';
 import { useIsAdvanced } from '@/lib/preferences';
 import { REASON_CATEGORIES, type ReasonCategory } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { humanLabel } from '@/components/structured-view';
 import { asArr, asObj, asStr, type Obj, type Path, toKey, uniqueKey, updateIn } from './doc';
 import { Hint, IconAction, ReorderButtons, Row, SelectField, SubHeading, type Update, useDragReorder, useStudio } from './shared';
 
@@ -21,8 +21,8 @@ type Source = 'static' | 'reason_codes' | 'lookup_list';
 function ReasonCodePreview({ category }: { category: string }) {
   const { bankId } = useStudio();
   const codes = useReasonCodes(category as ReasonCategory, bankId);
-  if (codes.isPending) return <Hint>Loading the reason codes…</Hint>;
-  if (!codes.data?.length) return <Hint>No active reason codes in this category yet — add them on the Reason codes page.</Hint>;
+  if (codes.isPending) return <Hint>Loading the reasons…</Hint>;
+  if (!codes.data?.length) return <Hint>No reasons in this group yet. Add them on the Reasons page.</Hint>;
   return (
     <div className="flex flex-wrap gap-1.5">
       {codes.data.map((c) => (
@@ -115,8 +115,8 @@ export function OptionsEditor({ path, field, update }: { path: Path; field: Obj;
 
   const sourceButtons: { value: Source; label: string }[] = [
     { value: 'static', label: 'A list typed here' },
-    { value: 'reason_codes', label: 'Reason codes' },
-    { value: 'lookup_list', label: 'A lookup list' },
+    { value: 'reason_codes', label: 'Reasons' },
+    { value: 'lookup_list', label: 'A drop-down list' },
   ];
 
   return (
@@ -144,10 +144,10 @@ export function OptionsEditor({ path, field, update }: { path: Path; field: Obj;
       {source === 'reason_codes' ? (
         <div className="grid gap-2">
           <SelectField
-            label="Reason-code category"
+            label="Group of reasons"
             value={asStr(src.category)}
             onChange={(v) => edit((f) => ({ ...f, options_source: { ...src, type: 'reason_codes', category: v ?? REASON_CATEGORIES[0] } }))}
-            options={REASON_CATEGORIES.map((c) => ({ value: c, label: humanLabel(c) }))}
+            options={REASON_CATEGORIES.map((c) => ({ value: c, label: labelFrom(REASON_CATEGORY_LABEL, c) }))}
           />
           <Row label="The agent sees">
             <ReasonCodePreview category={asStr(src.category)} />
@@ -155,11 +155,11 @@ export function OptionsEditor({ path, field, update }: { path: Path; field: Obj;
         </div>
       ) : source === 'lookup_list' ? (
         <SelectField
-          label="Lookup list"
+          label="Drop-down list"
           value={asStr(src.key)}
           onChange={(v) => edit((f) => ({ ...f, options_source: { ...src, type: 'lookup_list', key: v ?? '' } }))}
-          options={refs.lookupLists.map((l) => ({ value: l.key, label: `${l.title} (${l.key})` }))}
-          hint="Managed on the Lookup lists page; the phone keeps a copy for offline use."
+          options={refs.lookupLists.map((l) => ({ value: l.key, label: advanced ? `${l.title} (${l.key})` : l.title }))}
+          hint="Set up on the Drop-down lists page. The phone keeps a copy, so it works without signal."
         />
       ) : (
         <div className="grid gap-2">
@@ -185,11 +185,7 @@ export function OptionsEditor({ path, field, update }: { path: Path; field: Obj;
                       className="w-40 font-mono"
                       title="Stored value"
                     />
-                  ) : (
-                    <code className="hidden max-w-32 truncate text-sm text-muted-foreground sm:block" title="Stored value">
-                      {asStr(o.value)}
-                    </code>
-                  )}
+                  ) : null}
                   {Object.keys(meta).length ? (
                     <Badge tone={meta.risk ? 'warning' : 'neutral'} title={JSON.stringify(meta)}>
                       {meta.risk ? `Risk: ${String(meta.risk)}` : 'Has extra data'}
@@ -212,10 +208,9 @@ export function OptionsEditor({ path, field, update }: { path: Path; field: Obj;
               </Button>
             </div>
           ) : null}
-          {!advanced ? <Hint>The grey code next to each answer is what is stored. It is set when the answer is created and doesn&apos;t change.</Hint> : null}
         </div>
       )}
-      {stash.options !== undefined && source !== 'static' ? <p className="text-xs text-muted-foreground">Your typed list is kept until you leave this page — switch back to restore it.</p> : null}
+      {stash.options !== undefined && source !== 'static' ? <p className="text-xs text-muted-foreground">Your typed list is kept until you leave this page. Switch back to get it back.</p> : null}
     </div>
   );
 }

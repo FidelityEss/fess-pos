@@ -113,7 +113,7 @@ void main() {
     await tester.pumpWidget(_sandbox(_preview('app', _app)));
     await tester.pumpAndSettle();
     expect(find.text('Hi Gugu'), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(BottomNavigationBar), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (w) => w is Banner && w.message == BundledCopy.text('preview.label'),

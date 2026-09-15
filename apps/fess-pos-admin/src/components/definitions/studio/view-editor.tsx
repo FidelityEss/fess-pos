@@ -108,7 +108,7 @@ function ItemProps({ path, item, update }: { path: Path; item: Obj; update: Upda
   const spec = VIEW_COMPONENTS[type];
   const set = (k: string, v: unknown) => update((d) => setProp(d, path, k, v) as Obj);
   const flows = refs.families.flow.map((f) => ({ key: f.key, title: f.title }));
-  if (!spec) return <Hint>This component isn&apos;t in the catalogue; it is kept as it is.</Hint>;
+  if (!spec) return <Hint>The admin panel doesn’t know this kind of item yet, so it’s kept as it is.</Hint>;
   const entries = Object.entries(spec.props).filter(([n]) => n !== 'tiles');
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -168,7 +168,7 @@ function ViewProp({ name, spec, value, onChange, flows, advanced }: { name: stri
             list="studio-view-paths"
             value={asStr(value)}
             onChange={(e) => onChange(e.target.value || undefined)}
-            className="flex h-9 w-full rounded-md border border-input bg-card px-3 py-1 font-mono text-sm shadow-xs focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+            className="flex h-9 w-full rounded-md border border-input bg-card px-3 py-1 font-mono text-sm focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
             aria-label={niceLabel}
           />
         </Row>
@@ -207,7 +207,7 @@ const VIEW_PROP_LABEL: Record<string, string> = {
   caption: 'Caption',
   source: 'Counts',
   collection: 'Which records',
-  stat: 'Server total',
+  stat: 'Total from the server',
   on_tap: 'When tapped',
   title: 'Heading',
   sort: 'Sort by',
@@ -278,7 +278,7 @@ function ItemList({ arrayPath, props, allowed, addLabel }: { arrayPath: Path; pr
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-base font-medium">{w.name}</span>
-                    {isRule(it.visible) ? <Badge tone="progress">Conditional</Badge> : null}
+                    {isRule(it.visible) ? <Badge tone="progress">Shown sometimes</Badge> : null}
                     {advanced && typeof it.id === 'string' ? <code className="text-xs text-muted-foreground">{it.id}</code> : null}
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -308,7 +308,7 @@ function ItemList({ arrayPath, props, allowed, addLabel }: { arrayPath: Path; pr
                 ) : null}
               </div>
               {isSel ? (
-                <div className="grid gap-4 border-t bg-slate-50/70 p-4">
+                <div className="grid gap-4 border-t p-4">
                   <ItemProps path={path} item={it} update={update} />
                   {isRule(it.visible) ? (
                     <RuleLine sentence={slotSentence('visible', it.visible)} rule={it.visible} onChange={(v) => update((d) => setProp(d, path, 'visible', v) as Obj)} onRemove={() => update((d) => setProp(d, path, 'visible', undefined) as Obj)} removeLabel="Always show" />
@@ -326,7 +326,7 @@ function ItemList({ arrayPath, props, allowed, addLabel }: { arrayPath: Path; pr
           );
         })}
       </ol>
-      {items.length === 0 ? <Hint>Nothing on this screen yet.</Hint> : null}
+      {items.length === 0 ? <Hint>{readOnly ? 'Nothing on this screen yet.' : 'Nothing on this screen yet. Add the first item.'}</Hint> : null}
       {!readOnly ? (
         <div>
           <Button

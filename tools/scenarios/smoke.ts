@@ -1,18 +1,20 @@
 // End-to-end smoke test of the POS API against QA (fess-pos-qa) — never production. It uses the real APIs only, as the
-// scenario seeder does: setup through the admin API as the seed admin (password + TOTP), a simulated phone through the
-// POS API with the stand-in issuer, and checks through PostgREST reads under RLS. pg_cron kicks the workers every 15 s,
-// so the verify/replicate checks poll rather than calling the workers. Covers sign-in, pull, a full inspection with
-// evidence, verification + replication, receipts, public verify and sessions.
+// scenario seeder does: setup through the admin API as the seed admin (password; a second step only if the API asks), a
+// simulated phone through the POS API with the stand-in issuer, and checks through PostgREST reads under RLS. pg_cron
+// kicks the workers every 15 s, so the verify/replicate checks poll rather than calling the workers. Covers admin
+// registration links (sent, copied, resent, cancelled), sign-in, pull, a full inspection with evidence, verification +
+// replication, receipts, public verify and sessions.
 //
 //   POS_PUBLISHABLE_KEY=<QA publishable key> deno run -A --node-modules-dir=none --config tools/scenarios/deno.json tools/scenarios/smoke.ts
 //
 // Needs the seed admin's sign-in details from ~/.fess-pos/seed-state-qa.json, so run the scenario seeder once first.
-// Test data left on QA: bank SMOKE and agent SMOKE01 (created once), plus one job with its inspection per run.
+// Test data left on QA: bank SMOKE, agent SMOKE01 and bank viewer SMOKE-INV01 (created once), plus one job with its
+// inspection and one cancelled registration link per run (its Auth account is removed by the cancel).
 import { ApiError, call } from './lib/api.ts';
 import { Device } from './lib/device.ts';
 import { env, refuseProduction, target } from './lib/env.ts';
 import { runInspection } from './lib/inspection.ts';
-import { Staff, type StaffCreds } from './lib/staff.ts';
+import { registerWithLink, Staff, type StaffCreds, strongPassword } from './lib/staff.ts';
 import { Check, sleep } from './lib/util.ts';
 
 refuseProduction('The smoke test');
@@ -37,7 +39,7 @@ try {
 } catch {
   // reported just below
 }
-if (!creds?.totp_secret) throw new Error(`No seed admin in ${statePath}: run the scenario seeder against ${target} first.`);
+if (!creds?.password) throw new Error(`No seed admin in ${statePath}: run the scenario seeder against ${target} first.`);
 const admin = new Staff('seed admin', creds);
 await admin.login();
 
@@ -61,6 +63,33 @@ await admin.api('POST', `/jobs/${job.id}/schedule`, {
 });
 await admin.api('POST', `/jobs/${job.id}/allocate`, { agent_id: agent.id });
 console.log(`  job ${job.reference}`);
+
+console.log('── admin registration link (D-96)');
+/** True when Supabase Auth refuses the link (used up, replaced or cancelled). Nothing is spent when it refuses. */
+async function linkRefused(link: string): Promise<boolean> {
+  try {
+    await registerWithLink(link, strongPassword());
+    return false;
+  } catch {
+    return true;
+  }
+}
+let [invitee] = await admin.select<{ id: string }>('pos_users', 'employee_number=eq.SMOKE-INV01&select=id');
+invitee ??= await admin.api('POST', '/users', {
+  employee_number: 'SMOKE-INV01', first_name: 'Vuyo', last_name: 'Smoke', role: 'pos_bank_reader', permissions: [], bank_ids: [bank.id],
+});
+type Sent = { invitation: { id: string; status: string }; link: string; email_sent: boolean; email_error: string | null };
+const sent = await admin.fromPanel<Sent>('/invitations', { email: `pos-smoke-invite+${stamp.toLowerCase()}@example.com`, user_id: invitee.id });
+check.ok(/\/register\?token_hash=[^&]+&type=invite$/.test(sent.link), 'a registration link to the panel’s /register page is made');
+check.ok(sent.email_sent || !!sent.email_error, `emailed, or why not is recorded (${sent.email_sent ? 'emailed' : sent.email_error})`);
+const copied = await admin.fromPanel<{ link: string }>(`/invitations/${sent.invitation.id}/link`);
+check.eq(copied.link, sent.link, 'Copy link gives the same link as the email, without making a new one');
+const resent = await admin.fromPanel<Sent>(`/invitations/${sent.invitation.id}/resend`);
+check.ok(resent.link !== sent.link, 'Resend makes a new link');
+check.ok(await linkRefused(sent.link), 'the earlier link stops working after Resend');
+const cancelled = await admin.fromPanel<{ status: string }>(`/invitations/${sent.invitation.id}/cancel`, { reason: 'smoke test' });
+check.eq(cancelled.status, 'cancelled', 'the link is cancelled');
+check.ok(await linkRefused(resent.link), 'a cancelled link no longer works');
 
 console.log('── sign-in (stand-in issuer → POS session)');
 const phone = new Device('smoke-phone');

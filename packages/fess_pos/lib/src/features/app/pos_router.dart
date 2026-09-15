@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fess_pos/src/core/content/bundled_app.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
+import 'package:fess_pos/src/core/theme/tokens.g.dart';
 import 'package:fess_pos/src/domain/app/app_spec.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
@@ -248,17 +249,34 @@ class _TopLevel extends ConsumerWidget {
         final index = items.indexWhere((i) => i.page == page);
         return Scaffold(
           body: host(),
-          bottomNavigationBar: NavigationBar(
-            key: const ValueKey('pos-tabs'),
-            selectedIndex: index < 0 ? 0 : index,
-            onDestinationSelected: (i) => router.open({'page': items[i].page}),
-            destinations: [
-              for (final item in items)
-                NavigationDestination(
-                  icon: icon(item),
-                  label: fillTemplate(item.label, data),
-                ),
-            ],
+          // FESS's bottom bar (D-97): white under a hairline, the active
+          // item in the brand colour, no highlight pill.
+          bottomNavigationBar: DecoratedBox(
+            // Over the bar, which paints its own white.
+            position: DecorationPosition.foreground,
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: PosTokens.componentBottomNavBorder),
+              ),
+            ),
+            child: BottomNavigationBar(
+              key: const ValueKey('pos-tabs'),
+              type: BottomNavigationBarType.fixed,
+              // The same size for every label: nothing grows when chosen.
+              selectedFontSize: PosTokens.componentBottomNavLabelSize,
+              // From the tokens, even where it equals Flutter's default.
+              // ignore: avoid_redundant_argument_values
+              unselectedFontSize: PosTokens.componentBottomNavLabelSize,
+              currentIndex: index < 0 ? 0 : index,
+              onTap: (i) => router.open({'page': items[i].page}),
+              items: [
+                for (final item in items)
+                  BottomNavigationBarItem(
+                    icon: icon(item),
+                    label: fillTemplate(item.label, data),
+                  ),
+              ],
+            ),
           ),
         );
       case NavigationStyle.drawer:

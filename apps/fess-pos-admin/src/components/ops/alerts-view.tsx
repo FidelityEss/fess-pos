@@ -4,52 +4,56 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { CheckCheck, ExternalLink, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
-import { type ReactNode, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { BankSelect } from '@/components/bank-select';
 import { CopyButton } from '@/components/copy-button';
 import { DataTable } from '@/components/data-table';
 import { DateTime } from '@/components/date-time';
+import { Details } from '@/components/details';
 import { JsonView } from '@/components/json-view';
 import { PageHeader } from '@/components/page-header';
+import { navItem } from '@/components/shell/nav';
 import { ToneBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { adminApi } from '@/lib/api';
-import { humanize, shortId } from '@/lib/format';
+import { shortId } from '@/lib/format';
 import { isUuid, queryKeys, useBankLookup } from '@/lib/hooks';
+import { labelFrom } from '@/lib/labels';
 import { toastError } from '@/lib/mutations';
-import { Advanced, useIsAdvanced } from '@/lib/preferences';
+import { useIsAdvanced } from '@/lib/preferences';
 import { useStaff } from '@/lib/staff';
-import { ALERT_SEVERITY_TONE } from '@/lib/status';
+import { ALERT_SEVERITY_LABEL, ALERT_SEVERITY_TONE } from '@/lib/status';
 import { fetchRows, pos } from '@/lib/supabase';
 import { ALERT_SEVERITIES, type Alert as AlertRow } from '@/lib/types';
-import { DetailList, FilterSelect, SectionTitle, UserName } from './ops-shared';
+import { ALERT_KIND_LABEL, ALERT_SUBJECT_LABEL } from './ops-labels';
+import { DetailList, FilterSelect, UserName } from './ops-shared';
 
 type Mode = 'open' | 'acknowledged';
 
-/** Link to the subject of an alert where the panel has a screen for it (else null). */
-function subjectHref(a: AlertRow): string | null {
+/** Link to the subject of an alert where the panel has a screen for it, with the button text (else null). */
+function subjectLink(a: AlertRow): { href: string; label: string } | null {
   const id = a.subject_id;
   const detailJob = typeof a.detail?.job_id === 'string' && isUuid(a.detail.job_id) ? a.detail.job_id : null;
   switch (a.subject_type) {
     case 'job':
-      return id ? `/jobs/${id}` : null;
+      return id ? { href: `/jobs/${id}`, label: 'Open the job' } : null;
     case 'envelope':
-      return id ? `/envelopes?id=${id}` : null;
+      return id ? { href: `/envelopes?id=${id}`, label: 'Open the incoming data' } : null;
     case 'approval':
-      return '/definitions';
+      return { href: '/definitions', label: `Open ${navItem('/definitions')?.label ?? 'Inspection set-up'}` };
     case 'device':
-      return '/devices';
+      return { href: '/devices', label: `Open ${navItem('/devices')?.label ?? 'Phones and sign-ins'}` };
     case 'user':
-      return id ? `/users/${id}` : null;
+      return id ? { href: `/users/${id}`, label: 'Open the person' } : null;
     default:
-      return detailJob ? `/jobs/${detailJob}` : null;
+      return detailJob ? { href: `/jobs/${detailJob}`, label: 'Open the job' } : null;
   }
 }
 
-/** /alerts — operational alerts: open / acknowledged, filters, multi-select acknowledge, detail with subject links. */
+/** /alerts — operational alerts: open / dealt with, filters, mark several as dealt with, detail with links. */
 export function AlertsView() {
   const staff = useStaff();
   const advanced = useIsAdvanced();
@@ -84,15 +88,15 @@ export function AlertsView() {
     setAcking(true);
     try {
       const res = await adminApi.alerts.ack({ ids });
-      toast.success(`${res.acknowledged} alert${res.acknowledged === 1 ? '' : 's'} acknowledged`, {
-        description: res.acknowledged < ids.length ? 'Some were already acknowledged or are outside your banks.' : undefined,
+      toast.success(`${res.acknowledged} alert${res.acknowledged === 1 ? '' : 's'} marked as dealt with.`, {
+        description: res.acknowledged < ids.length ? 'Some were already marked, or belong to banks you can’t see.' : undefined,
       });
       setSelected([]);
       setTableKey((k) => k + 1);
       setDetail(null);
       await Promise.all([queryClient.invalidateQueries({ queryKey: ['alerts'] }), queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })]);
     } catch (e) {
-      toastError(e, 'Could not acknowledge');
+      toastError(e, 'Couldn’t mark the alerts as dealt with. Try again.');
     } finally {
       setAcking(false);
     }
@@ -102,11 +106,19 @@ export function AlertsView() {
     () => [
       {
         accessorKey: 'severity',
-        header: 'Severity',
-        cell: ({ row }) => <ToneBadge value={row.original.severity} tones={ALERT_SEVERITY_TONE} />,
+        header: 'How urgent',
+        cell: ({ row }) => <ToneBadge value={row.original.severity} tones={ALERT_SEVERITY_TONE} labels={ALERT_SEVERITY_LABEL} />,
       },
-      { accessorKey: 'kind', header: 'Kind', meta: { advanced: true }, cell: ({ row }) => <code className="whitespace-nowrap text-xs">{row.original.kind}</code> },
-      { accessorKey: 'message', header: 'Message', cell: ({ row }) => <div className="min-w-72 max-w-xl break-words">{row.original.message}</div> },
+      {
+        accessorKey: 'kind',
+        header: 'Type',
+        cell: ({ row }) => (
+          <span className="whitespace-nowrap" title={advanced ? row.original.kind : undefined}>
+            {labelFrom(ALERT_KIND_LABEL, row.original.kind)}
+          </span>
+        ),
+      },
+      { accessorKey: 'message', header: 'What happened', cell: ({ row }) => <div className="min-w-72 max-w-xl break-words">{row.original.message}</div> },
       {
         id: 'subject',
         accessorFn: (a) => `${a.subject_type ?? ''} ${a.subject_id ?? ''}`,
@@ -114,7 +126,7 @@ export function AlertsView() {
         cell: ({ row }) =>
           row.original.subject_type ? (
             <span className="whitespace-nowrap">
-              {humanize(row.original.subject_type)}
+              {labelFrom(ALERT_SUBJECT_LABEL, row.original.subject_type)}
               {advanced ? <code className="ml-1 text-xs text-muted-foreground">{shortId(row.original.subject_id)}</code> : null}
             </span>
           ) : (
@@ -128,24 +140,20 @@ export function AlertsView() {
       },
       {
         accessorKey: 'created_at',
-        header: mode === 'open' ? 'Raised' : 'Acknowledged',
+        header: mode === 'open' ? 'Noticed' : 'Dealt with',
         cell: ({ row }) => <DateTime value={mode === 'open' ? row.original.created_at : row.original.acknowledged_at} showRelative />,
       },
     ],
     [bankLookup, mode, advanced],
   );
 
-  const href = detail ? subjectHref(detail) : null;
+  const link = detail ? subjectLink(detail) : null;
 
   return (
     <>
       <PageHeader
         title="Alerts"
-        description={
-          advanced
-            ? 'Operational alerts — dead letters, quarantines, SLO breaches, conflicts and approval requests. Acknowledging records who handled it; it does not fix the cause.'
-            : 'Things that need someone to look at them. Acknowledging records who handled an alert; it does not fix the cause.'
-        }
+        description="Problems the system noticed, such as a phone that stopped sending. Once you’ve sorted one out, mark it as dealt with: that records who handled it, but doesn’t fix anything by itself."
         actions={
           <Button variant="outline" size="sm" onClick={() => void query.refetch()} loading={query.isFetching}>
             {query.isFetching ? null : <RefreshCw />} Refresh
@@ -162,8 +170,8 @@ export function AlertsView() {
         className="mb-3"
       >
         <TabsList>
-          <TabsTrigger value="open">Open</TabsTrigger>
-          <TabsTrigger value="acknowledged">Acknowledged</TabsTrigger>
+          <TabsTrigger value="open">Still open</TabsTrigger>
+          <TabsTrigger value="acknowledged">Dealt with</TabsTrigger>
         </TabsList>
       </Tabs>
       <DataTable
@@ -178,25 +186,39 @@ export function AlertsView() {
         selectable={mode === 'open' && staff.isAdmin}
         onSelectionChange={setSelected}
         searchPlaceholder="Search alerts…"
-        emptyTitle={mode === 'open' ? 'No open alerts' : 'No acknowledged alerts'}
-        emptyDescription={mode === 'open' ? 'Everything raised so far has been handled.' : undefined}
+        emptyTitle={mode === 'open' ? 'No open alerts' : 'Nothing dealt with yet'}
+        emptyDescription={mode === 'open' ? 'Nothing needs your attention right now.' : 'Alerts you mark as dealt with appear here.'}
         toolbar={
           <>
             <FilterSelect
               value={severity}
               onChange={setSeverity}
-              options={ALERT_SEVERITIES.map((s) => ({ value: s, label: humanize(s) }))}
-              allLabel="All severities"
-              aria-label="Severity"
+              options={ALERT_SEVERITIES.map((s) => ({ value: s, label: ALERT_SEVERITY_LABEL[s] }))}
+              allLabel="Any urgency"
+              aria-label="How urgent"
               className="w-40"
             />
-            {advanced ? <FilterSelect value={kind} onChange={setKind} options={kinds.map((k) => ({ value: k, label: k }))} allLabel="All kinds" aria-label="Kind" className="w-52" /> : null}
+            <FilterSelect
+              value={kind}
+              onChange={setKind}
+              options={kinds.map((k) => ({ value: k, label: labelFrom(ALERT_KIND_LABEL, k) }))}
+              allLabel="Any type"
+              aria-label="Type"
+              className="w-60"
+            />
             <div className="w-52">
               <BankSelect value={bankId} onChange={setBankId} allowAll includeInactive />
             </div>
             {mode === 'open' && staff.isAdmin ? (
-              <Button type="button" size="sm" disabled={selected.length === 0} loading={acking} onClick={() => void acknowledge(selected.map((a) => a.id))}>
-                {acking ? null : <CheckCheck />} Acknowledge{selected.length ? ` ${selected.length}` : ''}
+              <Button
+                type="button"
+                size="sm"
+                disabled={selected.length === 0}
+                loading={acking}
+                onClick={() => void acknowledge(selected.map((a) => a.id))}
+                title="Records that you’ve dealt with the ticked alerts. It doesn’t fix the problem itself."
+              >
+                {acking ? null : <CheckCheck />} Mark as dealt with{selected.length ? ` (${selected.length})` : ''}
               </Button>
             ) : null}
           </>
@@ -209,35 +231,19 @@ export function AlertsView() {
             <>
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
-                  <ToneBadge value={detail.severity} tones={ALERT_SEVERITY_TONE} />{' '}
-                  {advanced ? <code className="text-sm font-normal">{detail.kind}</code> : <span>{humanize(detail.kind)}</span>}
+                  <ToneBadge value={detail.severity} tones={ALERT_SEVERITY_TONE} labels={ALERT_SEVERITY_LABEL} />{' '}
+                  <span>{labelFrom(ALERT_KIND_LABEL, detail.kind)}</span>
                 </SheetTitle>
                 <SheetDescription>{detail.message}</SheetDescription>
               </SheetHeader>
               <SheetBody className="space-y-4">
                 <DetailList
                   items={[
-                    ['Raised', <DateTime key="c" value={detail.created_at} seconds showRelative />],
+                    ['Noticed', <DateTime key="c" value={detail.created_at} seconds showRelative />],
+                    ['About', detail.subject_type ? labelFrom(ALERT_SUBJECT_LABEL, detail.subject_type) : '—'],
+                    ['Bank', detail.bank_id ? (bankLookup(detail.bank_id)?.name ?? (advanced ? detail.bank_id : '—')) : 'Not tied to one bank'],
                     [
-                      'Subject',
-                      detail.subject_type ? (
-                        <span key="s" className="inline-flex flex-wrap items-center gap-1">
-                          {humanize(detail.subject_type)}
-                          {advanced && detail.subject_id ? (
-                            <>
-                              <code className="text-xs">{detail.subject_id}</code>
-                              <CopyButton value={detail.subject_id} title="Copy subject id" />
-                            </>
-                          ) : null}
-                        </span>
-                      ) : (
-                        '—'
-                      ),
-                    ],
-                    ['Bank', detail.bank_id ? (bankLookup(detail.bank_id)?.name ?? detail.bank_id) : 'None (all banks)'],
-                    ...(advanced ? ([['Dedupe key', detail.dedupe_key ? <code key="d" className="break-all text-xs">{detail.dedupe_key}</code> : '—']] as [ReactNode, ReactNode][]) : []),
-                    [
-                      'Acknowledged',
+                      'Dealt with',
                       detail.acknowledged_at ? (
                         <span key="a">
                           <UserName id={detail.acknowledged_by} /> · <DateTime value={detail.acknowledged_at} />
@@ -248,24 +254,40 @@ export function AlertsView() {
                     ],
                   ]}
                 />
-                {href ? (
+                {link ? (
                   <Button asChild variant="outline" size="sm">
-                    <Link href={href}>
-                      <ExternalLink /> Open {humanize(detail.subject_type ?? 'job')}
+                    <Link href={link.href}>
+                      <ExternalLink /> {link.label}
                     </Link>
                   </Button>
                 ) : null}
-                <div>
-                  <SectionTitle>Details</SectionTitle>
+                <Details summary="Technical details">
+                  <DetailList
+                    items={[
+                      ['Type code', <code key="k" className="text-xs">{detail.kind}</code>],
+                      [
+                        'About (ID)',
+                        detail.subject_id ? (
+                          <span key="s" className="inline-flex flex-wrap items-center gap-1">
+                            <code className="break-all text-xs">{detail.subject_id}</code>
+                            <CopyButton value={detail.subject_id} title="Copy ID" />
+                          </span>
+                        ) : (
+                          '—'
+                        ),
+                      ],
+                      ['Repeat key', detail.dedupe_key ? <code key="d" className="break-all text-xs">{detail.dedupe_key}</code> : '—'],
+                    ]}
+                  />
                   <JsonView value={detail.detail} defaultExpandDepth={2} />
-                  <Advanced>
-                    <span className="sr-only">Raw JSON is available above.</span>
-                  </Advanced>
-                </div>
+                </Details>
                 {!detail.acknowledged_at && staff.isAdmin ? (
-                  <Button type="button" onClick={() => void acknowledge([detail.id])} loading={acking}>
-                    {acking ? null : <CheckCheck />} Acknowledge
-                  </Button>
+                  <div className="space-y-1.5">
+                    <Button type="button" onClick={() => void acknowledge([detail.id])} loading={acking}>
+                      {acking ? null : <CheckCheck />} Mark as dealt with
+                    </Button>
+                    <p className="text-sm text-muted-foreground">This records that you handled it. It doesn’t fix the problem itself.</p>
+                  </div>
                 ) : null}
               </SheetBody>
             </>

@@ -1,4 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
+import 'package:fess_pos/src/core/theme/pos_tones.dart';
+import 'package:fess_pos/src/core/theme/pos_widgets.dart';
 import 'package:fess_pos/src/core/theme/tokens.g.dart';
 import 'package:fess_pos/src/renderer/cards.dart';
 import 'package:fess_pos/src/renderer/icons.dart';
@@ -13,14 +17,26 @@ export 'package:fess_pos/src/contract/capabilities.dart'
 
 const PosLogger _log = PosLogger('renderer');
 
+/// Items that run edge to edge (docs/14 §2, D-97): a list, the stat strip
+/// and a divider span the page, and line their content up with the page's
+/// side padding themselves.
+const Set<String> _edgeToEdge = {'job_list', 'stat_row', 'divider'};
+
+/// Chips next to each other share a line.
+const Set<String> _chipTypes = {'status_chip', 'badge'};
+
 /// Draws a `view` definition's items (docs/04 §3.4): each item in order,
 /// shown only while its `visible` rule holds. Rules are evaluated by the
-/// engine; a rule that fails to evaluate hides its item.
+/// engine; a rule that fails to evaluate hides its item. [padding]'s sides
+/// are the page's side padding.
 class ViewRenderer extends StatelessWidget {
   const ViewRenderer({
     required this.items,
     required this.context,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.symmetric(
+      horizontal: PosTokens.componentPagePaddingX,
+      vertical: 16,
+    ),
     super.key,
   });
 
@@ -30,9 +46,45 @@ class ViewRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext buildContext) {
-    final children = renderItems(items, context);
+    final insets = padding.resolve(Directionality.of(buildContext));
+    final ctx = context.withGutter(insets.left);
+    final factory = _ItemFactory(ctx);
+    Widget inset(Widget w) => insets.left == 0 && insets.right == 0
+        ? w
+        : Padding(
+            padding: EdgeInsets.only(left: insets.left, right: insets.right),
+            child: w,
+          );
+    final children = <Widget>[];
+    var chips = <Widget>[];
+    void flushChips() {
+      if (chips.isEmpty) return;
+      children.add(
+        inset(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Wrap(spacing: 8, runSpacing: 8, children: chips),
+          ),
+        ),
+      );
+      chips = <Widget>[];
+    }
+
+    for (final item in items.whereType<Map<String, Object?>>()) {
+      if (!isVisible(item['visible'], ctx)) continue;
+      final type = item['type'];
+      if (_chipTypes.contains(type)) {
+        if (factory.chip(item) case final Widget chip) chips.add(chip);
+        continue;
+      }
+      flushChips();
+      if (factory.build(item) case final Widget w) {
+        children.add(_edgeToEdge.contains(type) ? w : inset(w));
+      }
+    }
+    flushChips();
     return Padding(
-      padding: padding,
+      padding: EdgeInsets.only(top: insets.top, bottom: insets.bottom),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -90,10 +142,12 @@ class _ItemFactory {
       'field_value' => _fieldValue(item),
       'address_block' => _address(item),
       'schedule_window' => _schedule(item),
-      'status_chip' => _statusChip(item),
-      'badge' => _badge(item),
+      'status_chip' || 'badge' => _alone(chip(item)),
       'markdown' => _markdown(text(item)),
-      'divider' => const Divider(height: 24),
+      'divider' =>
+        ctx.inRow
+            ? const SizedBox(height: 8)
+            : const Divider(height: 32, thickness: 1),
       'contact' => _contact(item),
       'greeting' => _heading(text(item), large: true),
       'section_title' => _heading(text(item)),
@@ -117,6 +171,34 @@ class _ItemFactory {
     return null;
   }
 
+  /// A `status_chip` or a `badge`, readable in its tone (docs/14 §3).
+  Widget? chip(Map<String, Object?> item) {
+    switch (item['type']) {
+      case 'status_chip':
+        final status = bound(item);
+        if (status is! String) return null;
+        return PosChip(
+          text: ctx.copy('job.status.$status'),
+          tone: _statusTone(status),
+        );
+      case 'badge':
+        final value = text(item);
+        if (value == null || value.isEmpty) return null;
+        return PosChip(text: value, tone: posTone(item['tone']));
+    }
+    return null;
+  }
+
+  Widget? _alone(Widget? chip) => chip == null
+      ? null
+      : Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: chip,
+          ),
+        );
+
   Widget? _title(Map<String, Object?> item) {
     final value = text(item) ?? displayValue(bound(item));
     if (value == null) return null;
@@ -125,24 +207,31 @@ class _ItemFactory {
       child: Builder(
         builder: (context) => Text(
           value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: ctx.inRow
+              ? posRowTitleStyle(context)
+              : Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
     );
   }
 
+  /// A labelled value: label over value on a page, one grey line in a row.
+  Widget _line(String? label, String value) => ctx.inRow
+      ? _RowLine(label: label, value: value)
+      : _Labelled(label: label, child: Text(value));
+
   Widget? _fieldValue(Map<String, Object?> item) {
     final value = displayValue(bound(item));
     if (value == null) return null;
-    return _Labelled(label: label(item), child: Text(value));
+    return _line(label(item), value);
   }
 
   Widget? _address(Map<String, Object?> item) {
     final lines = addressLines(bound(item));
     if (lines.isEmpty) return null;
-    return _Labelled(label: label(item), child: Text(lines.join('\n')));
+    return _line(label(item), lines.join(ctx.inRow ? ', ' : '\n'));
   }
 
   Widget? _schedule(Map<String, Object?> item) {
@@ -157,31 +246,7 @@ class _ItemFactory {
           month: (m) => ctx.copy('date.month.$m'),
         ) ??
         ctx.copy('schedule.unscheduled');
-    return _Labelled(label: label(item), child: Text(shown));
-  }
-
-  Widget? _statusChip(Map<String, Object?> item) {
-    final status = bound(item);
-    if (status is! String) return null;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: _Chip(
-          text: ctx.copy('job.status.$status'),
-          tone: _statusTone(status),
-        ),
-      ),
-    );
-  }
-
-  Widget? _badge(Map<String, Object?> item) {
-    final value = text(item);
-    if (value == null || value.isEmpty) return null;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: _Chip(text: value, tone: _tone(item['tone'])),
-    );
+    return _line(label(item), shown);
   }
 
   Widget? _markdown(String? value) {
@@ -255,15 +320,15 @@ class _ItemFactory {
           OutlinedButton.icon(
             key: ValueKey('contact-$channel'),
             onPressed: () => open(channel, address),
-            icon: Icon(icon, size: 18),
+            icon: Icon(icon),
             label: Text(ctx.copy('contact.$channel')),
           ),
     ];
     if (buttons.isEmpty) return const [];
     return [
       Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Wrap(spacing: 8, runSpacing: 4, children: buttons),
+        padding: const EdgeInsets.only(top: 8),
+        child: Wrap(spacing: 8, runSpacing: 8, children: buttons),
       ),
     ];
   }
@@ -315,7 +380,7 @@ class _ItemFactory {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: _Banner(
-        tone: _tone(item['tone'] ?? 'info'),
+        tone: posTone(item['tone'] ?? 'info'),
         title: title is String ? fillTemplate(title, ctx.data) : null,
         text: body,
       ),
@@ -335,15 +400,15 @@ class _ItemFactory {
     final total = count('total');
     if (total == 0) return null;
     final (key, tone) = count('held') > 0
-        ? ('evidence.status.held', _Tone.danger)
+        ? ('evidence.status.held', PosTone.danger)
         : count('sent') >= total
-        ? ('evidence.status.sent', _Tone.success)
-        : ('evidence.status.waiting', _Tone.warning);
+        ? ('evidence.status.sent', PosTone.success)
+        : ('evidence.status.waiting', PosTone.warning);
     return _Labelled(
       label: label(item),
       child: Align(
         alignment: AlignmentDirectional.centerStart,
-        child: _Chip(
+        child: PosChip(
           key: const ValueKey('evidence-status'),
           text: fillTemplate(ctx.copy(key), counts),
           tone: tone,
@@ -355,12 +420,13 @@ class _ItemFactory {
   Widget? _statRow(Map<String, Object?> item) {
     final tiles = item['tiles'];
     if (tiles is! List<Object?>) return null;
-    final children = renderItems(tiles, ctx);
-    if (children.isEmpty) return null;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Wrap(spacing: 8, runSpacing: 8, children: children),
-    );
+    final cells = [
+      for (final t in tiles.whereType<Map<String, Object?>>())
+        if (t['type'] == 'stat_tile' && isVisible(t['visible'], ctx))
+          _StatTile(item: t, ctx: ctx),
+    ];
+    if (cells.isEmpty) return null;
+    return _StatStrip(cells: cells, gutter: ctx.gutter);
   }
 
   /// Synced, what waits to go up (envelopes and photos), photos going up
@@ -389,95 +455,92 @@ class _ItemFactory {
     } else {
       shown = ctx.copy('sync.synced');
     }
-    final text = Text(
-      shown,
-      key: const ValueKey('sync-status'),
-      textAlign: TextAlign.center,
-    );
     final open = ctx.onNavigate;
     final syncNow = ctx.onSyncNow;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // What needs attention opens its list (T4-13).
-          if (attention > 0 && open != null)
-            InkWell(
-              onTap: () => open(const {'page': 'needs_attention'}, const {}),
-              child: text,
-            )
-          else
-            text,
-          if (waiting > 0 && !syncing && syncNow != null)
-            TextButton(
-              key: const ValueKey('sync-now'),
-              onPressed: syncNow,
-              child: Text(ctx.copy('sync.now')),
-            ),
-        ],
+      child: Builder(
+        builder: (context) {
+          final text = Text(
+            shown,
+            key: const ValueKey('sync-status'),
+            textAlign: TextAlign.center,
+            style: attention > 0
+                ? Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: PosTokens.colorStatusErrorText,
+                  )
+                : Theme.of(context).textTheme.bodySmall,
+          );
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // What needs attention opens its list (T4-13).
+              if (attention > 0 && open != null)
+                InkWell(
+                  onTap: () =>
+                      open(const {'page': 'needs_attention'}, const {}),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: text,
+                  ),
+                )
+              else
+                text,
+              if (waiting > 0 && !syncing && syncNow != null)
+                TextButton(
+                  key: const ValueKey('sync-now'),
+                  onPressed: syncNow,
+                  child: Text(ctx.copy('sync.now')),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-enum _Tone { neutral, info, success, warning, danger }
-
-_Tone _tone(Object? tone) => switch (tone) {
-  'info' => _Tone.info,
-  'success' => _Tone.success,
-  'warning' => _Tone.warning,
-  'danger' || 'error' => _Tone.danger,
-  _ => _Tone.neutral,
+/// A job's status as a tone: done in green, work in hand in the brand's
+/// gold, a hold-up in amber, an end in red.
+PosTone _statusTone(String status) => switch (status) {
+  'approved' || 'closed' || 'submitted' => PosTone.success,
+  'returned' || 'paused' || 'appointment_not_secured' => PosTone.warning,
+  'rejected' || 'cancelled' || 'unable_to_complete' => PosTone.danger,
+  'assigned' || 'accepted' || 'in_progress' || 'under_review' => PosTone.accent,
+  _ => PosTone.neutral,
 };
 
-_Tone _statusTone(String status) => switch (status) {
-  'approved' || 'closed' || 'submitted' => _Tone.success,
-  'returned' || 'paused' || 'appointment_not_secured' => _Tone.warning,
-  'rejected' || 'cancelled' || 'unable_to_complete' => _Tone.danger,
-  'assigned' || 'accepted' || 'in_progress' || 'under_review' => _Tone.info,
-  _ => _Tone.neutral,
-};
-
-(Color, Color) _toneColors(ColorScheme scheme, _Tone tone) => switch (tone) {
-  _Tone.success => (scheme.primaryContainer, scheme.onPrimaryContainer),
-  _Tone.info => (scheme.secondaryContainer, scheme.onSecondaryContainer),
-  _Tone.warning => (scheme.tertiaryContainer, scheme.onTertiaryContainer),
-  _Tone.danger => (scheme.errorContainer, scheme.onErrorContainer),
-  _Tone.neutral => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
-};
-
-IconData _toneIcon(_Tone tone) => switch (tone) {
-  _Tone.success => Icons.check_circle_outline,
-  _Tone.info => Icons.info_outline,
-  _Tone.warning => Icons.warning_amber_outlined,
-  _Tone.danger => Icons.error_outline,
-  _Tone.neutral => Icons.campaign_outlined,
+IconData _toneIcon(PosTone tone) => switch (tone) {
+  PosTone.success => Icons.check_circle_outline,
+  PosTone.info => Icons.info_outline,
+  PosTone.warning => Icons.warning_amber_outlined,
+  PosTone.danger => Icons.error_outline,
+  PosTone.accent || PosTone.neutral => Icons.campaign_outlined,
 };
 
 class _Banner extends StatelessWidget {
   const _Banner({required this.tone, required this.text, this.title});
 
-  final _Tone tone;
+  final PosTone tone;
   final String? title;
   final String text;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final (background, foreground) = _toneColors(theme.colorScheme, tone);
+    final colors = posToneColors(tone);
     final heading = title;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(PosTokens.radiusCard),
+        color: colors.background,
+        borderRadius: BorderRadius.circular(PosTokens.componentCardInnerRadius),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(_toneIcon(tone), color: foreground, size: 20),
+            Icon(_toneIcon(tone), color: colors.foreground, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -489,15 +552,15 @@ class _Banner extends StatelessWidget {
                       child: Text(
                         heading,
                         style: theme.textTheme.titleSmall?.copyWith(
-                          color: foreground,
-                          fontWeight: FontWeight.w600,
+                          color: colors.foreground,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
                   PosMarkdown(
                     text,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: foreground,
+                      color: colors.foreground,
                     ),
                   ),
                 ],
@@ -510,34 +573,7 @@ class _Banner extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({required this.text, required this.tone, super.key});
-
-  final String text;
-  final _Tone tone;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final (background, foreground) = _toneColors(scheme, tone);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(PosTokens.radiusControl),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        child: Text(
-          text,
-          style: Theme.of(
-            context,
-          ).textTheme.labelMedium?.copyWith(color: foreground),
-        ),
-      ),
-    );
-  }
-}
-
+/// A value under its label, on a page.
 class _Labelled extends StatelessWidget {
   const _Labelled({required this.label, required this.child});
 
@@ -548,22 +584,99 @@ class _Labelled extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = label;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: l == null
           ? child
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  l,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
+                Text(l, style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 2),
                 child,
               ],
             ),
+    );
+  }
+}
+
+/// A labelled value in a list row: one grey line, the value in semibold.
+class _RowLine extends StatelessWidget {
+  const _RowLine({required this.label, required this.value});
+
+  final String? label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = posRowDescriptionStyle(context);
+    final l = label;
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: l == null
+          ? Text(value, style: style)
+          : Wrap(
+              spacing: 6,
+              children: [
+                Text(l, style: style),
+                Text(value, style: style.copyWith(fontWeight: FontWeight.w600)),
+              ],
+            ),
+    );
+  }
+}
+
+/// The home stats as one flat strip (D-97): cells side by side between
+/// hairlines, no cards and no shadows. Up to four in a line, else three.
+class _StatStrip extends StatelessWidget {
+  const _StatStrip({required this.cells, required this.gutter});
+
+  final List<Widget> cells;
+  final double gutter;
+
+  @override
+  Widget build(BuildContext context) {
+    final perRow = cells.length <= 4 ? cells.length : 3;
+    final rows = [
+      for (var i = 0; i < cells.length; i += perRow)
+        cells.sublist(i, math.min(i + perRow, cells.length)),
+    ];
+    const line = BorderSide(color: PosTokens.colorLineDivider);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          border: Border(top: line, bottom: line),
+        ),
+        child: Padding(
+          // A cell's own padding brings its text in line with the page.
+          padding: EdgeInsets.symmetric(
+            horizontal: math.max(0, gutter - _StatTile.padding),
+          ),
+          child: Column(
+            children: [
+              for (var r = 0; r < rows.length; r++) ...[
+                if (r > 0) const Divider(height: 1, thickness: 1),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var c = 0; c < perRow; c++) ...[
+                        if (c > 0)
+                          const VerticalDivider(width: 1, thickness: 1),
+                        Expanded(
+                          child: c < rows[r].length
+                              ? rows[r][c]
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -573,6 +686,8 @@ class _StatTile extends StatelessWidget {
 
   final Map<String, Object?> item;
   final RenderContext ctx;
+
+  static const double padding = 12;
 
   Object? get _value {
     if (item['source'] == 'server') {
@@ -594,36 +709,51 @@ class _StatTile extends StatelessWidget {
     final label = item['label'];
     final onTap = item['on_tap'];
     final navigate = ctx.onNavigate;
-    final tile = Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(PosTokens.radiusCard),
-        onTap: onTap is Map<String, Object?> && navigate != null
-            ? () => navigate(onTap, ctx.data)
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                displayValue(_value) ?? '–',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+    final open = onTap is Map<String, Object?> && navigate != null
+        ? () => navigate(onTap, ctx.data)
+        : null;
+    final body = Theme.of(context).textTheme.bodyMedium!;
+    return InkWell(
+      onTap: open,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: padding, vertical: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              displayValue(_value) ?? '–',
+              style: body.copyWith(
+                fontSize: PosTokens.componentStatNumberSize,
+                fontWeight: PosTokens.componentStatNumberWeight,
+                // Green where it opens something: colour for actions.
+                color: open == null
+                    ? PosTokens.componentStatNumberColor
+                    : Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            if (label is String)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  fillTemplate(label, ctx.data),
+                  style: body.copyWith(
+                    fontSize: PosTokens.componentStatLabelSize,
+                    fontWeight: PosTokens.componentStatLabelWeight,
+                    color: PosTokens.componentStatLabelColor,
+                  ),
                 ),
               ),
-              if (label is String) Text(fillTemplate(label, ctx.data)),
-            ],
-          ),
+          ],
         ),
       ),
     );
-    return SizedBox(width: 150, child: tile);
   }
 }
 
 /// An embedded, filtered list of the agent's jobs (`job_list`, `11` §7.2),
-/// each drawn with its item view (e.g. `job_card`).
+/// each drawn with its item view (e.g. `job_card`) as one flat row: a
+/// store icon, the item view, a chevron and a hairline (D-97).
 class JobList extends StatelessWidget {
   const JobList({required this.item, required this.ctx, super.key});
 
@@ -660,50 +790,60 @@ class JobList extends StatelessWidget {
     final onTap = item['on_tap'];
     final navigate = ctx.onNavigate;
     final groupBy = item['group_by'];
-    Widget card(Map<String, Object?> job) => Card(
-      key: ValueKey('job-${job['id']}'),
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(PosTokens.radiusCard),
+    final gutter = ctx.gutter;
+    final theme = Theme.of(context);
+    Widget row(Map<String, Object?> job) {
+      final data = {...ctx.data, 'job': job};
+      return PosListRow(
+        key: ValueKey('job-${job['id']}'),
+        // Every row is a merchant visit; the icon is the list's look.
+        icon: Icons.storefront_outlined,
+        gutter: gutter,
         onTap: onTap is Map<String, Object?> && navigate != null
-            ? () => navigate(onTap, {...ctx.data, 'job': job})
+            ? () => navigate(onTap, data)
             : null,
         child: ViewRenderer(
           items: itemView,
-          context: ctx.withData({...ctx.data, 'job': job}),
-          padding: const EdgeInsets.all(12),
+          context: ctx.withData(data).asRow(),
+          padding: EdgeInsets.zero,
         ),
-      ),
+      );
+    }
+
+    Widget heading(String text, TextStyle? style) => Padding(
+      padding: EdgeInsets.fromLTRB(gutter, 16, gutter, 8),
+      child: Text(text, style: style),
     );
+    const hairline = Divider(height: 1, thickness: 1);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (title is String)
-          Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 4),
-            child: Text(
-              fillTemplate(title, ctx.data),
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+          heading(
+            fillTemplate(title, ctx.data),
+            theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         if (jobs.isEmpty && empty is String)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
+            padding: EdgeInsets.symmetric(horizontal: gutter, vertical: 24),
             child: Text(ctx.copy(empty), textAlign: TextAlign.center),
           ),
         if (groupBy is String)
           for (final (value, members) in _groups(jobs, groupBy)) ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 2),
-              child: Text(
-                _groupLabel(groupBy, value),
-                style: Theme.of(context).textTheme.labelLarge,
+            heading(
+              _groupLabel(groupBy, value),
+              theme.textTheme.titleSmall?.copyWith(
+                color: PosTokens.colorTextBody,
               ),
             ),
-            for (final job in members) card(job),
+            hairline,
+            for (final job in members) row(job),
           ]
-        else
-          for (final job in jobs) card(job),
+        else ...[
+          // FESS's lists open with a hairline above the first row.
+          if (jobs.isNotEmpty) hairline,
+          for (final job in jobs) row(job),
+        ],
       ],
     );
   }

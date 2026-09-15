@@ -116,7 +116,7 @@ export function PhotoCard({ user, canManage }: { user: PosUser; canManage: boole
         <CardDescription>Shown to merchants who scan this person’s card. JPEG, PNG or WebP up to 5 MB.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex aspect-square w-full max-w-60 items-center justify-center overflow-hidden rounded-md border bg-slate-50">
+        <div className="flex aspect-square w-full max-w-60 items-center justify-center overflow-hidden rounded-md border bg-white">
           {user.photo_path && photo.isPending && !previewUrl ? (
             <Skeleton className="size-full" />
           ) : shownUrl ? (

@@ -1,12 +1,15 @@
 'use client';
 
 import { Plus, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 import { type FormEvent, useId, useState } from 'react';
 import { ReadOnlyNotice } from '@/components/admin/admin-ui';
 import { newRowId } from '@/components/admin/form-helpers';
 import { ObjectEditor, type ObjectEditorState, objectEditorStateFrom, objectEditorStateToObject } from '@/components/admin/object-editor';
 import { ApiErrorAlert } from '@/components/api-error-alert';
+import { Details } from '@/components/details';
 import { apiFieldErrors, type FieldErrors, FormField, FormGrid, FormSection, zodFieldErrors } from '@/components/form-field';
+import { useNextStepToast } from '@/components/next-step';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,6 +50,7 @@ function contactRowsFrom(bank: Bank | null): ContactRow[] {
 function BankForm({ bank, onDone }: { bank: Bank | null; onDone: () => void }) {
   const staff = useStaff();
   const uid = useId();
+  const nextStep = useNextStepToast();
   const isNew = bank === null;
   const canFourEyes = staff.isGlobalAdmin && staff.hasPermission('approve_definitions');
   const canEdit = isNew ? staff.isGlobalAdmin : staff.isAdmin && staff.canAccessBank(bank.id);
@@ -61,20 +65,27 @@ function BankForm({ bank, onDone }: { bank: Bank | null; onDone: () => void }) {
   const [clientErrors, setClientErrors] = useState<FieldErrors>({});
   // Contact row ids in the order they were sent, to map "contacts.<i>.<field>" errors back to rows.
   const [sentContactIds, setSentContactIds] = useState<string[]>([]);
+  const exportCount = Object.keys(bank?.export_settings ?? {}).length;
 
   const mutation = useMutationWithToast({
     mutationFn: (save: BankSave) => (save.kind === 'create' ? adminApi.banks.create(save.body) : adminApi.banks.update(save.id, save.body)),
     invalidate: [['banks']],
     toastErrors: false,
-    successMessage: (b, save) => (save.kind === 'create' ? `Bank ${b.code} created` : `Bank ${b.code} saved`),
-    onSuccess: () => onDone(),
+    // A new bank gets the next-step toast below instead (docs/17 §4.5).
+    successMessage: (b, save) => (save.kind === 'create' ? null : `Changes to ${b.name} saved.`),
+    onSuccess: (b, save) => {
+      if (save.kind === 'create') {
+        nextStep('Bank added.', b.active ? { label: 'Add its first job', href: `/jobs/new?bank=${encodeURIComponent(b.id)}` } : null);
+      }
+      onDone();
+    },
   });
 
   // A duplicate code comes back as ALREADY_EXISTS without a field path; show it on the Code field, which is at the top
   // of the sheet — the error alert sits below the fold.
   const duplicateCode = isNew && isApiError(mutation.error) && mutation.error.code === 'ALREADY_EXISTS';
   const errors: FieldErrors = {
-    ...(duplicateCode ? { code: 'A bank with this code already exists. Choose another code.' } : {}),
+    ...(duplicateCode ? { code: 'Another bank already uses this code. Choose a different one.' } : {}),
     ...apiFieldErrors(mutation.error),
     ...clientErrors,
   };
@@ -119,16 +130,38 @@ function BankForm({ bank, onDone }: { bank: Bank | null; onDone: () => void }) {
   return (
     <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col" noValidate>
       <SheetHeader>
-        <SheetTitle>{isNew ? 'New bank' : `${bank.code} — ${bank.name}`}</SheetTitle>
+        <SheetTitle>{isNew ? 'Add a bank' : `${bank.code} — ${bank.name}`}</SheetTitle>
         <SheetDescription>
-          {isNew ? 'Banks are global reference data: only an all-bank administrator can create one (D-44).' : 'Contacts, billing, export settings and four-eyes approval for this bank.'}
+          {isNew
+            ? 'A bank you do visits for. Only an administrator who covers all banks can add one.'
+            : 'This bank’s contacts, what it’s billed for, and whether changes need a second approval.'}
         </SheetDescription>
+        {!isNew ? (
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/jobs?bank=${encodeURIComponent(bank.id)}`}>See this bank’s jobs</Link>
+            </Button>
+            {canEdit && bank.active ? (
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/jobs/new?bank=${encodeURIComponent(bank.id)}`}>
+                  <Plus /> Add a job for this bank
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </SheetHeader>
       <SheetBody className="space-y-6">
-        {!canEdit ? <ReadOnlyNotice>You can view this bank but not change it.</ReadOnlyNotice> : null}
+        {!canEdit ? <ReadOnlyNotice>You can see this bank but not change it.</ReadOnlyNotice> : null}
         <FormSection title="Bank">
           <FormGrid>
-            <FormField label="Code" htmlFor={`${uid}-code`} required={isNew} error={errors.code} hint={isNew ? '2–16 characters: A–Z, 0–9 and _. Can’t be changed later.' : 'The code can’t be changed.'}>
+            <FormField
+              label="Code"
+              htmlFor={`${uid}-code`}
+              required={isNew}
+              error={errors.code}
+              hint={isNew ? 'A short code people know the bank by, such as ABC. 2 to 16 letters, numbers or _. It can’t be changed later.' : 'The code can’t be changed.'}
+            >
               <Input
                 id={`${uid}-code`}
                 value={code}
@@ -147,14 +180,14 @@ function BankForm({ bank, onDone }: { bank: Bank | null; onDone: () => void }) {
           <div className="flex items-center gap-2">
             <Switch id={`${uid}-active`} checked={active} onCheckedChange={setActive} disabled={!canEdit} />
             <Label htmlFor={`${uid}-active`}>Active</Label>
-            <span className="text-sm text-muted-foreground">Inactive banks stay on record but can’t receive new jobs.</span>
+            <span className="text-sm text-muted-foreground">Turn a bank off to stop new jobs for it. Its jobs and history are kept.</span>
           </div>
         </FormSection>
 
         <Separator />
-        <FormSection title="Contacts" description="People at the bank the operations team can reach.">
+        <FormSection title="Contacts" description="People at the bank you can get in touch with.">
           {errors.contacts ? <p className="text-sm text-destructive">{errors.contacts}</p> : null}
-          {contacts.length === 0 ? <p className="text-sm text-muted-foreground">No contacts yet.</p> : null}
+          {contacts.length === 0 ? <p className="text-sm text-muted-foreground">No contacts yet. Add one below.</p> : null}
           <div className="grid gap-3">
             {contacts.map((c, i) => (
               <div key={c.id} className="rounded-md border p-3">
@@ -169,7 +202,7 @@ function BankForm({ bank, onDone }: { bank: Bank | null; onDone: () => void }) {
                     <Input id={`${uid}-${c.id}-name`} value={c.name} onChange={(e) => setContact(c.id, { name: e.target.value })} disabled={!canEdit} aria-invalid={!!contactError(c.id, 'name') || undefined} />
                   </FormField>
                   <FormField label="Role" htmlFor={`${uid}-${c.id}-role`}>
-                    <Input id={`${uid}-${c.id}-role`} value={c.role} onChange={(e) => setContact(c.id, { role: e.target.value })} placeholder="e.g. Merchant onboarding" disabled={!canEdit} />
+                    <Input id={`${uid}-${c.id}-role`} value={c.role} onChange={(e) => setContact(c.id, { role: e.target.value })} placeholder="For example, merchant onboarding" disabled={!canEdit} />
                   </FormField>
                   <FormField label="Email" htmlFor={`${uid}-${c.id}-email`} error={contactError(c.id, 'email')}>
                     <Input id={`${uid}-${c.id}-email`} type="email" value={c.email} onChange={(e) => setContact(c.id, { email: e.target.value })} disabled={!canEdit} aria-invalid={!!contactError(c.id, 'email') || undefined} />
@@ -183,47 +216,49 @@ function BankForm({ bank, onDone }: { bank: Bank | null; onDone: () => void }) {
           </div>
           <div>
             <Button type="button" size="sm" variant="outline" disabled={!canEdit} onClick={() => setContacts((rows) => [...rows, { id: newRowId('contact'), name: '', role: '', email: '', phone: '' }])}>
-              <Plus /> Add contact
+              <Plus /> Add a contact
             </Button>
           </div>
         </FormSection>
 
         <Separator />
-        <FormSection title="Billing" description="Which outcomes are chargeable under this bank’s contract (D-43). POS records billable outcomes; it doesn’t invoice.">
+        <FormSection title="Billing" description="Which outcomes this bank is charged for under its contract. The panel records them; it doesn’t send invoices.">
           <BillingSettingsEditor value={billing} onChange={setBilling} bankId={bank?.id ?? null} disabled={!canEdit} />
           {errors.billing_settings ? <p className="text-sm text-destructive">{errors.billing_settings}</p> : null}
         </FormSection>
 
         <Separator />
-        <FormSection title="Four-eyes approval">
+        <FormSection title="Second approval">
           <div className="flex items-start gap-2">
             <Switch id={`${uid}-four-eyes`} checked={fourEyes} onCheckedChange={setFourEyes} disabled={!canEdit || !canFourEyes} />
             <div className="grid gap-0.5">
-              <Label htmlFor={`${uid}-four-eyes`}>Require a second administrator’s approval</Label>
+              <Label htmlFor={`${uid}-four-eyes`}>A second administrator must approve changes</Label>
               <p className="text-sm text-muted-foreground">
-                When on, definition publishes and activations and integrity-relevant remote config changes for this bank wait for a
-                second administrator with the approve-changes permission.
+                When this is on, changes to this bank’s inspection set-up and its important app settings only take effect after a
+                second administrator who can approve changes says yes.
               </p>
               {!canFourEyes ? (
-                <p className="text-sm text-amber-700">Only an all-bank administrator with the approve-changes permission can switch this (D-44).</p>
+                <p className="text-sm text-amber-700">Only an administrator who covers all banks and can approve changes can switch this.</p>
               ) : null}
             </div>
           </div>
         </FormSection>
 
         <Separator />
-        <FormSection title="Export settings" description="Per-bank options for this bank’s exports, as named settings (text, number or yes / no).">
-          <ObjectEditor
-            state={exportState}
-            onChange={setExportState}
-            label="Export settings"
-            disabled={!canEdit}
-            error={errors.export_settings}
-            keyLabel="Setting"
-            keyPlaceholder="e.g. file_prefix"
-            addLabel="Add setting"
-            emptyText="No export settings — exports use the defaults."
-          />
+        <FormSection title="Export settings" description="Most banks don’t need these. Leave them empty to use the standard exports.">
+          <Details summary={exportCount ? `Show export settings (${exportCount})` : 'Show export settings'} defaultOpen={!!errors.export_settings}>
+            <ObjectEditor
+              state={exportState}
+              onChange={setExportState}
+              label="Export settings"
+              disabled={!canEdit}
+              error={errors.export_settings}
+              keyLabel="Setting"
+              keyPlaceholder="For example, file_prefix"
+              addLabel="Add a setting"
+              emptyText="No export settings. Exports use the standard options."
+            />
+          </Details>
         </FormSection>
 
         <ApiErrorAlert error={mutation.error} />
@@ -233,7 +268,7 @@ function BankForm({ bank, onDone }: { bank: Bank | null; onDone: () => void }) {
           Cancel
         </Button>
         <Button type="submit" loading={mutation.isPending} disabled={!canEdit}>
-          {isNew ? 'Create bank' : 'Save changes'}
+          {isNew ? 'Add bank' : 'Save changes'}
         </Button>
       </SheetFooter>
     </form>

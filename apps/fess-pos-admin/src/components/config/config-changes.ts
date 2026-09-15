@@ -1,5 +1,6 @@
-// Plain-language summary of what a layer edit changes, against the layer's published version: "Shopping centre radius:
-// 250 m → 200 m", "Photo quality: set to 85% (was inherited 80%)", "Removed override: Sync interval".
+// Plain-language summary of what a layer edit changes, against the layer's published version: "Shopping centre site area
+// size: changed from 250 metres to 200 metres", "Photo quality: set to 85% (until now the default, 80%)",
+// "Sync interval: back to the general setting (60 seconds)".
 import type { ConfigLayer, JsonObject } from '@/lib/types';
 import { isPlainObject } from '@/lib/utils';
 import { getPath, jsonEqual, leafPaths } from './config-doc';
@@ -16,15 +17,15 @@ export interface ChangeLine {
 }
 
 const PROFILE_FIELD_WORDS: Record<string, string> = {
-  radius_m: 'radius',
+  radius_m: 'site area size',
   max_accuracy_m: 'GPS accuracy',
-  exit_consecutive_fixes: 'exit readings',
-  prompt_checkin_on_arrival: 'check-in prompt',
+  exit_consecutive_fixes: 'readings before “left the site”',
+  prompt_checkin_on_arrival: 'check in outside first',
 };
 
 function profileField(field: string, v: unknown): string {
   if (typeof v === 'boolean') return v ? 'On' : 'Off';
-  if (typeof v === 'number') return field.endsWith('_m') ? `${v} m` : String(v);
+  if (typeof v === 'number') return field.endsWith('_m') ? `${v} metres` : String(v);
   return v === undefined ? 'not set' : String(v);
 }
 
@@ -33,8 +34,10 @@ function obj(v: unknown): Record<string, unknown> {
 }
 
 export function describeChanges(baseline: JsonObject, doc: JsonObject, inherited: JsonObject, layer: ConfigLayer): ChangeLine[] {
-  const was = layer === 'global' ? 'was the default' : 'was inherited';
-  const now = layer === 'global' ? 'now the default' : 'now inherited';
+  // What a value falls back to when it isn't set here: the built-in default for everyone, otherwise the wider setting.
+  const general = layer === 'global' ? 'the default' : 'the general setting';
+  const was = `until now ${general}`;
+  const back = `back to ${general}`;
   const out: ChangeLine[] = [];
 
   for (const k of SETTING_KEYS) {
@@ -55,12 +58,12 @@ export function describeChanges(baseline: JsonObject, doc: JsonObject, inherited
         if (jsonEqual(bp, ap)) continue;
         const path = `${k.path}.${n}`;
         if (k.spec.type === 'flags') {
-          const label = `Feature "${humanLabel(n)}"`;
+          const label = `Feature “${humanLabel(n)}”`;
           const onOff = (v: unknown) => (v === true ? 'On' : 'Off');
-          if (bp !== undefined && ap !== undefined) out.push({ ...base, id: path, path, kind: 'changed', text: `${label}: ${onOff(bp)} → ${onOff(ap)}` });
+          if (bp !== undefined && ap !== undefined) out.push({ ...base, id: path, path, kind: 'changed', text: `${label}: changed from ${onOff(bp)} to ${onOff(ap)}` });
           else if (ap !== undefined)
-            out.push({ ...base, id: path, path, kind: ip === undefined ? 'added' : 'set', text: ip === undefined ? `Added ${label}: ${onOff(ap)}` : `${label}: set to ${onOff(ap)} (${was} ${onOff(ip)})` });
-          else out.push({ ...base, id: path, path, kind: 'removed', text: ip === undefined ? `Removed ${label}` : `Removed override: ${label} (${now} ${onOff(ip)})` });
+            out.push({ ...base, id: path, path, kind: ip === undefined ? 'added' : 'set', text: ip === undefined ? `Added ${label}: ${onOff(ap)}` : `${label}: set to ${onOff(ap)} (${was}, ${onOff(ip)})` });
+          else out.push({ ...base, id: path, path, kind: 'removed', text: ip === undefined ? `Removed ${label}` : `${label}: ${back} (${onOff(ip)})` });
           continue;
         }
         const label = profileLabel(n);
@@ -70,16 +73,28 @@ export function describeChanges(baseline: JsonObject, doc: JsonObject, inherited
             const bv = obj(bp)[f];
             const av = obj(ap)[f];
             if (jsonEqual(bv, av)) continue;
-            out.push({ ...base, id: `${path}.${f}`, path, kind: 'changed', text: `${label} ${PROFILE_FIELD_WORDS[f] ?? humanLabel(f).toLowerCase()}: ${profileField(f, bv)} → ${profileField(f, av)}` });
+            out.push({
+              ...base,
+              id: `${path}.${f}`,
+              path,
+              kind: 'changed',
+              text: `${label} ${PROFILE_FIELD_WORDS[f] ?? humanLabel(f).toLowerCase()}: changed from ${profileField(f, bv)} to ${profileField(f, av)}`,
+            });
           }
         } else if (ap !== undefined) {
           if (ip === undefined) {
             out.push({ ...base, id: path, path, kind: 'added', text: `Added location type: ${label} (${formatProfile(ap)})` });
           } else {
             const diffs = Object.keys(obj(ap)).filter((f) => !jsonEqual(obj(ap)[f], obj(ip)[f]));
-            if (diffs.length === 0) out.push({ ...base, id: path, path, kind: 'set', text: `${label}: now set on this layer (same values as ${layer === 'global' ? 'the default' : 'inherited'})` });
+            if (diffs.length === 0) out.push({ ...base, id: path, path, kind: 'set', text: `${label}: now set here, with the same values as ${general}` });
             for (const f of diffs) {
-              out.push({ ...base, id: `${path}.${f}`, path, kind: 'set', text: `${label} ${PROFILE_FIELD_WORDS[f] ?? f}: set to ${profileField(f, obj(ap)[f])} (${was} ${profileField(f, obj(ip)[f])})` });
+              out.push({
+                ...base,
+                id: `${path}.${f}`,
+                path,
+                kind: 'set',
+                text: `${label} ${PROFILE_FIELD_WORDS[f] ?? humanLabel(f).toLowerCase()}: set to ${profileField(f, obj(ap)[f])} (${was}, ${profileField(f, obj(ip)[f])})`,
+              });
             }
           }
         } else {
@@ -88,7 +103,7 @@ export function describeChanges(baseline: JsonObject, doc: JsonObject, inherited
             id: path,
             path,
             kind: 'removed',
-            text: ip === undefined ? `Removed location type: ${label}` : `Removed override: ${label} (${now}: ${formatProfile(ip)})`,
+            text: ip === undefined ? `Removed location type: ${label}` : `${label}: ${back} (${formatProfile(ip)})`,
           });
         }
       }
@@ -96,19 +111,22 @@ export function describeChanges(baseline: JsonObject, doc: JsonObject, inherited
     }
 
     const inh = getPath(inherited, k.path);
-    if (b !== undefined && a !== undefined) out.push({ ...base, id: k.path, path: k.path, kind: 'changed', text: `${k.label}: ${formatSettingValue(k, b)} → ${formatSettingValue(k, a)}` });
-    else if (a !== undefined) out.push({ ...base, id: k.path, path: k.path, kind: 'set', text: `${k.label}: set to ${formatSettingValue(k, a)} (${was} ${formatSettingValue(k, inh)})` });
-    else out.push({ ...base, id: k.path, path: k.path, kind: 'removed', text: `Removed override: ${k.label} (${now} ${formatSettingValue(k, inh)})` });
+    if (b !== undefined && a !== undefined)
+      out.push({ ...base, id: k.path, path: k.path, kind: 'changed', text: `${k.label}: changed from ${formatSettingValue(k, b)} to ${formatSettingValue(k, a)}` });
+    else if (a !== undefined)
+      out.push({ ...base, id: k.path, path: k.path, kind: 'set', text: `${k.label}: set to ${formatSettingValue(k, a)} (${was}, ${formatSettingValue(k, inh)})` });
+    else out.push({ ...base, id: k.path, path: k.path, kind: 'removed', text: `${k.label}: ${back} (${formatSettingValue(k, inh)})` });
   }
 
-  // Keys outside the contract (kept untouched by the editor; only the JSON tab can change them).
+  // Keys outside the contract (kept untouched by the editor; only the JSON tab can change them). The path itself is shown
+  // in Advanced view only (ChangeList).
   const unknown = [...new Set([...leafPaths(baseline), ...leafPaths(doc)])].filter(isUnknownPath);
   for (const p of unknown.sort()) {
     const b = getPath(baseline, p);
     const a = getPath(doc, p);
     if (jsonEqual(b, a)) continue;
     const kind = b === undefined ? 'added' : a === undefined ? 'removed' : 'changed';
-    out.push({ id: `unknown:${p}`, path: p, kind, integrity: false, section: 'other', text: `Unrecognised setting "${p}": ${kind}` });
+    out.push({ id: `unknown:${p}`, path: p, kind, integrity: false, section: 'other', text: `A setting the app doesn’t recognise was ${kind}` });
   }
   return out;
 }

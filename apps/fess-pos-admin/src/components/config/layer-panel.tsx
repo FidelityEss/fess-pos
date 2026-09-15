@@ -1,11 +1,12 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, CheckCircle2, FileDiff, Pencil, Plus, RotateCcw, Send, ShieldAlert, ShieldCheck, Smartphone, Undo2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, FileDiff, Pencil, Plus, RotateCcw, Save, ShieldAlert, ShieldCheck, Smartphone, Undo2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ApiErrorAlert } from '@/components/api-error-alert';
 import { DateTime } from '@/components/date-time';
+import { Details } from '@/components/details';
 import { EmptyState } from '@/components/empty-state';
 import { FormField } from '@/components/form-field';
 import { JsonEditor, parseJsonText, stringifyJson } from '@/components/json-editor';
@@ -25,37 +26,54 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { adminApi, isApiError, isApprovalRequired } from '@/lib/api';
-import { fromDateTimeLocalValue } from '@/lib/format';
+import { formatDateTime, fromDateTimeLocalValue } from '@/lib/format';
 import { useIsAdvanced } from '@/lib/preferences';
 import { configPublishSchema } from '@/lib/schemas';
 import type { ConfigLayer, ConfigValidateResult, JsonObject } from '@/lib/types';
 import { cn, isPlainObject } from '@/lib/utils';
 import { type ChangeLine, describeChanges } from './config-changes';
 import { configKeys, fetchLayerVersions, useContentStrings, useLayerInheritance } from './config-data';
-import { cloneJson, deepMerge, jsonEqual, leafPaths } from './config-doc';
+import { cloneJson, deepMerge, getPath, jsonEqual, leafPaths } from './config-doc';
 import { changedIntegrityKeys } from './config-keys';
-import { isUnknownPath, keyForPath, PROFILE_FIELDS, profileLabel, type SectionId } from './config-meta';
+import { formatNumber, formatSettingValue, isUnknownPath, keyForPath, PROFILE_FIELDS, profileLabel, type SectionId } from './config-meta';
 import { ConfigPhonePreview } from './config-phone-preview';
 import { type FieldIssue, serverIssues, validateLayer } from './config-validation';
 import { type EditorState, SensitiveBadge, SettingsEditor } from './settings-editor';
 
 export { configKeys };
 
-const LAYER_NAME: Record<ConfigLayer, string> = { global: 'everyone (global)', bank: 'this bank', agent: 'this agent', device: 'this device' };
-
-/** Where an issue sits, in words ("Location type "Shopping centre" · Fence radius"). */
+/** Where an issue sits, in words ("Location type “Shopping centre” · Size of the site area"). */
 function issueLabel(path: string): string {
   const m = /^geofence\.profiles\.([^.]+)(?:\.(\w+))?$/.exec(path);
   if (m) {
     const f = PROFILE_FIELDS.find((x) => x.name === m[2]);
-    const field = f ? ` · ${f.label}` : m[2] === 'prompt_checkin_on_arrival' ? ' · Check-in prompt' : '';
-    return `Location type "${profileLabel(m[1] ?? '')}"${field}`;
+    const field = f ? ` · ${f.label}` : m[2] === 'prompt_checkin_on_arrival' ? ' · Check in outside first' : '';
+    return `Location type “${profileLabel(m[1] ?? '')}”${field}`;
   }
   const fm = /^features\.([^.]+)$/.exec(path);
-  if (fm) return `Feature "${humanLabel(fm[1] ?? '')}"`;
+  if (fm) return `Feature “${humanLabel(fm[1] ?? '')}”`;
   const k = keyForPath(path);
-  return k ? k.label : `Unrecognised setting "${path}"`;
+  return k ? k.label : 'A setting the app doesn’t recognise';
+}
+
+/** Every value set in a saved version, in words ("Photo quality: 85%"). */
+function valueLines(values: JsonObject): { path: string; label: string; value: string }[] {
+  return leafPaths(values).map((path) => {
+    const v = getPath(values, path);
+    const pf = /^geofence\.profiles\.[^.]+\.(\w+)$/.exec(path);
+    const field = pf ? PROFILE_FIELDS.find((f) => f.name === pf[1]) : undefined;
+    const value = field && typeof v === 'number' ? formatNumber(v, field.unit) : formatSettingValue(keyForPath(path), v);
+    return { path, label: issueLabel(path), value };
+  });
+}
+
+/** One sentence on who must approve security changes here. */
+function fourEyesSentence(layer: ConfigLayer): string {
+  if (layer === 'bank') return 'This bank needs a second person to approve changes that affect security.';
+  if (layer === 'global') return 'Changes for everyone that affect security need a second person to approve them.';
+  return 'A second person must approve changes here that affect security.';
 }
 
 function ChangeIcon({ kind }: { kind: ChangeLine['kind'] }) {
@@ -88,6 +106,7 @@ function PublishConfigDialog({
   onOpenChange,
   layer,
   subjectId,
+  subjectName,
   values,
   changes,
   integrityCount,
@@ -100,6 +119,7 @@ function PublishConfigDialog({
   onOpenChange: (open: boolean) => void;
   layer: ConfigLayer;
   subjectId: string | null;
+  subjectName: string;
   values: JsonObject;
   changes: ChangeLine[];
   integrityCount: number;
@@ -113,6 +133,7 @@ function PublishConfigDialog({
   const [from, setFrom] = useState('');
   const [error, setError] = useState<unknown>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const needsApproval = fourEyes === true && integrityCount > 0;
 
   const publish = useMutation({
     mutationFn: () => {
@@ -130,10 +151,16 @@ function PublishConfigDialog({
       await Promise.all([queryClient.invalidateQueries({ queryKey: ['config'] }), queryClient.invalidateQueries({ queryKey: ['approvals'] })]);
       if (isApprovalRequired(res.data)) {
         const keys = res.data.changed_integrity_keys ?? [];
-        toast.success("Sent for a second admin's approval", { description: `${keys.length || 'Some'} sensitive setting${keys.length === 1 ? '' : 's'} changed. It applies once another admin approves.` });
+        toast.success('Sent for approval.', { description: 'A second person must approve it before it takes effect.' });
         onApprovalRequired({ approvalId: res.data.approval_id, keys });
       } else {
-        toast.success(`Published version ${res.data.version.version}`, { description: 'Phones receive the new settings at their next sync.' });
+        const startsAt = res.data.version.effective_from;
+        const starts = Date.parse(startsAt);
+        if (Number.isFinite(starts) && starts > Date.now()) {
+          toast.success('Changes saved.', { description: `They start on ${formatDateTime(startsAt)}. Phones get them the first time they sync after that.` });
+        } else {
+          toast.success('Changes saved. They’re live now.', { description: 'Phones get the new settings the next time they sync.' });
+        }
       }
       setReason('');
       setFrom('');
@@ -160,8 +187,8 @@ function PublishConfigDialog({
     >
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Publish settings for {LAYER_NAME[layer]}</DialogTitle>
-          <DialogDescription>This saves a new version of this layer. Every change needs a reason and is recorded in the audit log.</DialogDescription>
+          <DialogTitle>Save these changes for {subjectName}?</DialogTitle>
+          <DialogDescription>Phones get the new settings the next time they sync. Say why you’re making the change; it’s kept in the activity history.</DialogDescription>
         </DialogHeader>
         <div className="max-h-64 overflow-y-auto rounded-md border p-2">
           {changes.length ? <ChangeList changes={changes} advanced={advanced} /> : <p className="p-2 text-sm text-muted-foreground">No changes.</p>}
@@ -169,22 +196,22 @@ function PublishConfigDialog({
         {integrityCount > 0 ? (
           <Alert variant="warning">
             <ShieldAlert />
-            <AlertTitle>
-              {integrityCount} security-sensitive change{integrityCount === 1 ? '' : 's'}
-            </AlertTitle>
+            <AlertTitle>{integrityCount === 1 ? 'This change affects security' : `${integrityCount} of these changes affect security`}</AlertTitle>
             <AlertDescription>
               {fourEyes === true
-                ? "Four-eyes is on for this layer: the change waits for a second admin's approval before it applies."
+                ? layer === 'bank'
+                  ? 'This bank needs a second person to approve this change. It takes effect once they approve it.'
+                  : 'A second person must approve this change before it takes effect.'
                 : fourEyes === false
-                  ? 'Four-eyes is off for this layer: the change applies without a second approval.'
-                  : "If four-eyes is on for this layer, the change waits for a second admin's approval."}
+                  ? 'No second approval is needed here, so it takes effect straight away.'
+                  : 'If a second approval is needed here, the change waits until a second person approves it.'}
             </AlertDescription>
           </Alert>
         ) : null}
         <FormField label="Reason" htmlFor="cfg-reason" required error={fieldError}>
           <Textarea id="cfg-reason" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why is this changing?" className="text-base" />
         </FormField>
-        <FormField label="Starts from (SAST)" htmlFor="cfg-from" hint="Leave empty to apply straight away.">
+        <FormField label="Start time (South African time)" htmlFor="cfg-from" hint="Leave it empty to start straight away.">
           <Input id="cfg-from" type="datetime-local" value={from} onChange={(e) => setFrom(e.target.value)} className="h-10 text-base" />
         </FormField>
         <ApiErrorAlert error={error} />
@@ -196,12 +223,12 @@ function PublishConfigDialog({
             type="button"
             loading={publish.isPending}
             onClick={() => {
-              if (!reason.trim()) return setFieldError('A reason is required');
+              if (!reason.trim()) return setFieldError('Say why you’re making this change.');
               setFieldError(null);
               publish.mutate();
             }}
           >
-            <Send /> Publish
+            <Save /> {needsApproval ? 'Send for approval' : 'Save changes'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -210,7 +237,21 @@ function PublishConfigDialog({
 }
 
 /** One layer/subject: typed settings editor with inheritance, live phone preview, plain-language changes, publish, history. */
-export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { layer: ConfigLayer; subjectId: string | null; canPublish: boolean; subjectLabel: string }) {
+export function LayerPanel({
+  layer,
+  subjectId,
+  canPublish,
+  subjectLabel,
+  subjectName,
+}: {
+  layer: ConfigLayer;
+  subjectId: string | null;
+  canPublish: boolean;
+  /** Heading: "Settings for everyone", "Settings for Bank ABC". */
+  subjectLabel: string;
+  /** Who the settings are for, in words: "everyone", "Bank ABC", the agent's name, "this phone". */
+  subjectName: string;
+}) {
   const advanced = useIsAdvanced();
   const versions = useQuery({ queryKey: configKeys.versions(layer, subjectId), queryFn: () => fetchLayerVersions(layer, subjectId) });
   const current = versions.data?.[0];
@@ -277,6 +318,7 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
 
   const ctx: EditorState = {
     layer,
+    subjectName,
     doc,
     baseline,
     inherited: inheritance.inherited,
@@ -300,6 +342,7 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
   const serverResult = validation?.forDoc === docKey ? validation.result : null;
   const selectedVersion = versions.data.find((v) => v.id === selected);
   const scheduled = current && Date.parse(current.effective_from) > Date.now();
+  const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
   const preview = (
     <ConfigPhonePreview
@@ -318,23 +361,28 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
     <div className="@container">
     <div className="grid gap-6 @4xl:grid-cols-[minmax(0,1fr)_344px]">
       <div className="min-w-0 space-y-5">
-        {/* Where this layer stands */}
+        {/* Where these settings stand */}
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-base font-semibold">{subjectLabel}</span>
             {current ? (
               <Badge tone={scheduled ? 'info' : 'success'} className="px-2 text-sm">
-                {scheduled ? `Version ${current.version} starts later` : `Version ${current.version} is live`}
+                {scheduled ? 'Latest changes start later' : 'Live'}
+                {advanced ? ` · version ${current.version}` : ''}
               </Badge>
             ) : (
               <Badge tone="muted" className="px-2 text-sm">
-                No settings of its own yet: everything is inherited
+                {layer === 'global' ? 'Nothing changed yet, so the default settings apply' : `Nothing set for ${subjectName} yet, so the general settings apply`}
               </Badge>
             )}
             {inheritance.fourEyes !== null ? (
-              <Badge tone={inheritance.fourEyes ? 'warning' : 'neutral'} className="px-2 text-sm font-normal">
-                <ShieldCheck /> Four-eyes {inheritance.fourEyes ? 'on' : 'off'}
-              </Badge>
+              <SimpleTooltip content={inheritance.fourEyes ? fourEyesSentence(layer) : 'Changes here take effect without a second approval.'}>
+                <span tabIndex={0} className="inline-flex rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <Badge tone={inheritance.fourEyes ? 'warning' : 'neutral'} className="px-2 text-sm font-normal">
+                    <ShieldCheck /> {inheritance.fourEyes ? 'Second approval needed' : 'No second approval needed'}
+                  </Badge>
+                </span>
+              </SimpleTooltip>
             ) : null}
           </div>
           {current ? (
@@ -350,13 +398,14 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
           ) : null}
           {layer !== 'global' ? (
             <p className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
-              Inherits from:
-              <Badge tone="outline">Defaults</Badge>
+              Anything not set here comes from:
+              <Badge tone="outline">Default settings</Badge>
               {inheritance.above.map((l) => (
                 <span key={l.layer} className="inline-flex items-center gap-1.5">
                   <ArrowRight className="size-3.5" />
                   <Badge tone="outline">
-                    {l.label} (v{l.version})
+                    Settings for {l.label}
+                    {advanced ? ` (version ${l.version})` : ''}
                   </Badge>
                 </span>
               ))}
@@ -364,9 +413,9 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
           ) : null}
           {inheritance.bankChoice ? (
             <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-muted-foreground">This agent works for several banks. Show values inherited from</span>
+              <span className="text-muted-foreground">This agent works for more than one bank. Show the settings of</span>
               <Select value={inheritance.bankChoice.value ?? undefined} onValueChange={inheritance.bankChoice.onChange}>
-                <SelectTrigger className="h-9 w-56" aria-label="Bank to inherit from">
+                <SelectTrigger className="h-9 w-56" aria-label="Bank whose settings are shown">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -382,20 +431,20 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
         </div>
 
         {inheritance.error ? (
-          <ApiErrorAlert error={inheritance.error} title="Couldn't load the inherited values; defaults are shown instead" onRetry={inheritance.refetch} />
+          <ApiErrorAlert error={inheritance.error} title="Couldn’t load the other settings that apply here, so the defaults are shown instead." onRetry={inheritance.refetch} />
         ) : null}
 
         {pendingNotice ? (
           <Alert variant="info">
             <ShieldCheck />
-            <AlertTitle>Waiting for a second admin</AlertTitle>
+            <AlertTitle>Sent for approval</AlertTitle>
             <AlertDescription>
-              The change{pendingNotice.keys.length ? ` to ${pendingNotice.keys.map(issueLabel).join(', ')}` : ''} applies once another admin approves it (see
-              &ldquo;Waiting for approval&rdquo; below).
+              A second person must approve {pendingNotice.keys.length ? `the change to ${pendingNotice.keys.map(issueLabel).join(', ')}` : 'this change'} before it takes
+              effect. You can follow it under &ldquo;Waiting for approval&rdquo; below.
               {advanced ? (
                 <>
                   {' '}
-                  Request <code>{pendingNotice.approvalId}</code>.
+                  Approval request ID: <code>{pendingNotice.approvalId}</code>.
                 </>
               ) : null}
             </AlertDescription>
@@ -403,19 +452,19 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
         ) : null}
 
         {/* Action bar */}
-        <Card className="sticky top-16 z-20 shadow-sm">
+        <Card className="sticky top-16 z-20">
           <CardContent className="flex flex-wrap items-center justify-between gap-3 py-3">
             <div className="flex flex-wrap items-center gap-2 text-sm">
               {dirty ? (
                 <Badge tone="warning" className="px-2 text-sm">
-                  {changes.length} unpublished change{changes.length === 1 ? '' : 's'}
+                  {changes.length} unsaved {plural(changes.length, 'change', 'changes')}
                 </Badge>
               ) : (
-                <span className="text-muted-foreground">No unpublished changes</span>
+                <span className="text-muted-foreground">No unsaved changes</span>
               )}
               {issues.length > 0 ? (
                 <Badge tone="danger" className="px-2 text-sm">
-                  {issues.length} problem{issues.length === 1 ? '' : 's'} to fix
+                  {issues.length} {plural(issues.length, 'problem', 'problems')} to fix
                 </Badge>
               ) : null}
             </div>
@@ -436,11 +485,11 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
                 <RotateCcw /> Discard changes
               </Button>
               <Button type="button" variant="outline" disabled={jsonBroken} loading={validate.isPending} onClick={() => validate.mutate(doc)}>
-                {validate.isPending ? null : <CheckCircle2 />} Check with server
+                {validate.isPending ? null : <CheckCircle2 />} Check my changes
               </Button>
               {canPublish ? (
                 <Button type="button" disabled={!dirty || issues.length > 0 || jsonBroken} onClick={() => setPublishOpen(true)}>
-                  <Send /> Publish…
+                  <Save /> Save changes…
                 </Button>
               ) : null}
             </div>
@@ -448,32 +497,32 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
         </Card>
         {!canPublish ? (
           <p className="text-sm text-muted-foreground">
-            {layer === 'global' ? 'Only admins for all banks can change the settings for everyone.' : 'This is outside your scope.'} You can try changes and check them,
-            but not publish.
+            {layer === 'global' ? 'Only admins who look after all banks can change the settings for everyone.' : 'You don’t have permission to change these settings.'} You can
+            try out changes and check them, but you can’t save them.
           </p>
         ) : null}
 
-        {validate.error ? <ApiErrorAlert error={validate.error} title="The check could not be run" /> : null}
+        {validate.error ? <ApiErrorAlert error={validate.error} title="Couldn’t check your changes. Try again." /> : null}
         {serverResult ? (
           serverResult.ok ? (
             <Alert variant="success">
               <CheckCircle2 />
-              <AlertTitle>The server accepts these settings</AlertTitle>
+              <AlertTitle>Your changes look good</AlertTitle>
               {serverResult.integrity_relevant_keys.length > 0 ? (
                 <AlertDescription>
-                  Security-sensitive settings on this layer: {[...new Set(serverResult.integrity_relevant_keys.map((p) => issueLabel(p.replace(/^\//, '').replace(/\//g, '.'))))].join(', ')}.
+                  Settings here that affect security: {[...new Set(serverResult.integrity_relevant_keys.map((p) => issueLabel(p.replace(/^\//, '').replace(/\//g, '.'))))].join(', ')}.
                 </AlertDescription>
               ) : null}
             </Alert>
           ) : null
         ) : validation ? (
-          <p className="text-sm text-muted-foreground">Changed since the last server check.</p>
+          <p className="text-sm text-muted-foreground">You’ve made more changes since the last check.</p>
         ) : null}
         {issues.length > 0 ? (
           <Alert variant="destructive">
             <ShieldAlert />
             <AlertTitle>
-              {issues.length} problem{issues.length === 1 ? '' : 's'} to fix before publishing
+              Fix {issues.length} {plural(issues.length, 'problem', 'problems')} before saving
             </AlertTitle>
             <AlertDescription>
               <ul className="mt-1 space-y-0.5 text-sm">
@@ -502,7 +551,8 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
           <Card>
             <CardContent className="space-y-2 pt-4">
               <p className="text-sm text-muted-foreground">
-                Only the keys set on this layer. Stays in step with the Settings tab: a valid edit here updates the settings, and changes there rewrite this text.
+                Only the settings for {subjectName}, as JSON. This stays in step with the Settings tab: a valid edit here updates the settings, and changes there
+                rewrite this text.
               </p>
               <JsonEditor value={jsonText} onChange={(text) => {
                 setJsonDraft(text);
@@ -516,11 +566,11 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
             {jsonBroken ? (
               <Alert variant="warning">
                 <ShieldAlert />
-                <AlertTitle>The JSON text has an error</AlertTitle>
+                <AlertTitle>The JSON text has a mistake</AlertTitle>
                 <AlertDescription>
-                  The settings below show the last valid version.{' '}
+                  The settings below show the last version that worked.{' '}
                   <Button type="button" variant="link" className="h-auto p-0" onClick={() => setJsonDraft(null)}>
-                    Discard the JSON edits
+                    Throw away the JSON edits
                   </Button>
                 </AlertDescription>
               </Alert>
@@ -529,15 +579,16 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
               <Alert variant="warning">
                 <ShieldAlert />
                 <AlertTitle>
-                  This layer has {unknownPaths.length} setting{unknownPaths.length === 1 ? '' : 's'} the app doesn&apos;t recognise
+                  {unknownPaths.length === 1 ? 'There’s 1 setting here the app doesn’t recognise' : `There are ${unknownPaths.length} settings here the app doesn’t recognise`}
                 </AlertTitle>
                 <AlertDescription>
                   {advanced ? (
                     <>
-                      They are kept as they are, but the server will refuse them: <code>{unknownPaths.join(', ')}</code>. Remove them in &ldquo;Edit as JSON&rdquo;.
+                      They’re kept as they are, but saving will fail until they’re removed: <code>{unknownPaths.join(', ')}</code>. Remove them in &ldquo;Edit as
+                      JSON&rdquo;.
                     </>
                   ) : (
-                    'They are kept as they are, but the server will refuse them. Switch to Advanced view to remove them.'
+                    'They’re kept as they are, but saving will fail until they’re removed. Switch to Advanced view to remove them.'
                   )}
                 </AlertDescription>
               </Alert>
@@ -552,27 +603,28 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
             action={
               integrityChanges.length > 0 ? (
                 <Badge tone="warning">
-                  <ShieldAlert /> {integrityChanges.length} security-sensitive
+                  <ShieldAlert /> {integrityChanges.length} {plural(integrityChanges.length, 'affects', 'affect')} security
                 </Badge>
               ) : null
             }
           >
-            Changes to publish {current ? `(compared with version ${current.version})` : '(this layer has no version yet)'}
+            Changes to save
+            {advanced ? (current ? ` (compared with version ${current.version})` : ' (nothing saved here yet)') : ''}
           </SectionTitle>
           <Card>
             <CardContent className="space-y-3 pt-4">
               {changes.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No changes yet. What you change above is listed here in plain words before you publish.</p>
+                <p className="text-sm text-muted-foreground">No changes yet. Anything you change above is listed here before you save it.</p>
               ) : (
                 <ChangeList changes={changes} advanced={advanced} />
               )}
               {advanced ? (
                 <div className="space-y-2 border-t pt-3">
                   <Button type="button" variant="ghost" onClick={() => setShowLineDiff((v) => !v)}>
-                    <FileDiff /> {showLineDiff ? 'Hide line diff' : 'Show line diff'}
+                    <FileDiff /> {showLineDiff ? 'Hide the line-by-line comparison' : 'Show a line-by-line comparison'}
                   </Button>
                   {showLineDiff ? (
-                    <LineDiffView before={baseline} after={doc} beforeLabel={current ? `v${current.version} (current)` : 'Empty layer'} afterLabel="Editor" />
+                    <LineDiffView before={baseline} after={doc} beforeLabel={current ? `Version ${current.version} (live)` : 'Nothing saved yet'} afterLabel="Your changes" />
                   ) : null}
                 </div>
               ) : null}
@@ -582,15 +634,16 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
 
         {/* History */}
         <section className="space-y-2">
-          <SectionTitle>History</SectionTitle>
+          <SectionTitle>Earlier changes</SectionTitle>
+          {versions.data.length > 0 ? <p className="-mt-1 text-sm text-muted-foreground">Click a row to see what was set, or to start again from it.</p> : null}
           <Card className="overflow-hidden">
             {versions.data.length === 0 ? (
-              <EmptyState title="No versions yet" description="Publishing creates version 1 of this layer." />
+              <EmptyState title="Nothing saved yet" description="Each time someone saves changes here, they’re listed with who made them and why." />
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Version</TableHead>
+                    {advanced ? <TableHead>Version</TableHead> : null}
                     <TableHead>Starts</TableHead>
                     <TableHead>Changed by</TableHead>
                     <TableHead>Approved by</TableHead>
@@ -599,12 +652,8 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
                 </TableHeader>
                 <TableBody>
                   {versions.data.map((v) => (
-                    <TableRow
-                      key={v.id}
-                      onClick={() => setSelected(selected === v.id ? null : v.id)}
-                      className={cn('cursor-pointer hover:bg-slate-50', selected === v.id && 'bg-sky-50/60')}
-                    >
-                      <TableCell className="font-medium tabular-nums">v{v.version}</TableCell>
+                    <TableRow key={v.id} onClick={() => setSelected(selected === v.id ? null : v.id)} className={cn('cursor-pointer', selected === v.id && 'bg-primary/5')}>
+                      {advanced ? <TableCell className="font-medium tabular-nums">v{v.version}</TableCell> : null}
                       <TableCell className="text-sm">
                         <DateTime value={v.effective_from} />
                       </TableCell>
@@ -624,7 +673,10 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
           {selectedVersion ? (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-                <CardTitle className="text-base">Version {selectedVersion.version}: settings on this layer</CardTitle>
+                <CardTitle className="text-base">
+                  What was set from <DateTime value={selectedVersion.effective_from} />
+                  {advanced ? ` (version ${selectedVersion.version})` : ''}
+                </CardTitle>
                 <Button
                   type="button"
                   variant="outline"
@@ -632,14 +684,28 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
                     update(cloneJson(selectedVersion.values));
                     setValidation(null);
                     setPublishIssues(null);
-                    toast.success(`Version ${selectedVersion.version} loaded into the editor`, { description: 'Publish to make it live again.' });
+                    toast.success('Loaded into the editor.', { description: 'Check the settings, then save to use them again.' });
                   }}
                 >
-                  Load into editor
+                  Start from this version
                 </Button>
               </CardHeader>
-              <CardContent>
-                <JsonView value={selectedVersion.values} defaultExpandDepth={1} maxHeight={360} />
+              <CardContent className="space-y-3">
+                {Object.keys(selectedVersion.values).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nothing was set in this version.</p>
+                ) : (
+                  <ul className="divide-y divide-divider text-sm">
+                    {valueLines(selectedVersion.values).map((l) => (
+                      <li key={l.path} className="flex flex-wrap justify-between gap-x-4 gap-y-0.5 py-1.5">
+                        <span className="text-muted-foreground">{l.label}</span>
+                        <span className="font-medium">{l.value}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Details>
+                  <JsonView value={selectedVersion.values} defaultExpandDepth={1} maxHeight={360} />
+                </Details>
               </CardContent>
             </Card>
           ) : null}
@@ -650,6 +716,7 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
           onOpenChange={setPublishOpen}
           layer={layer}
           subjectId={subjectId}
+          subjectName={subjectName}
           values={doc}
           changes={changes}
           integrityCount={integrityChanges.length}
@@ -657,7 +724,7 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
           advanced={advanced}
           onValidationErrors={(list) => {
             setPublishIssues({ forDoc: docKey, issues: list });
-            toast.error('The server refused the settings', { description: 'The problems are shown next to the settings.' });
+            toast.error('Couldn’t save the settings.', { description: 'Some values aren’t allowed. Fix the problems shown next to each setting and try again.' });
           }}
           onApprovalRequired={setPendingNotice}
         />
@@ -671,7 +738,7 @@ export function LayerPanel({ layer, subjectId, canPublish, subjectLabel }: { lay
         <SheetContent size="sm" className="sm:max-w-md">
           <SheetHeader>
             <SheetTitle>Phone preview</SheetTitle>
-            <SheetDescription>How the settings being edited look on an agent&apos;s phone.</SheetDescription>
+            <SheetDescription>How your changes look on an agent&apos;s phone.</SheetDescription>
           </SheetHeader>
           <SheetBody>{preview}</SheetBody>
         </SheetContent>

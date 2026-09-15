@@ -1,4 +1,5 @@
 import 'package:fess_pos/src/core/content/bundled_copy.dart';
+import 'package:fess_pos/src/core/theme/tokens.g.dart';
 import 'package:flutter/widgets.dart';
 
 /// Everything a view needs to render (docs/04 §3.4, `11` §7.2). The renderer
@@ -15,6 +16,8 @@ class RenderContext {
     this.mapPreview,
     this.openContact,
     this.onSyncNow,
+    this.gutter = PosTokens.componentPagePaddingX,
+    this.inRow = false,
   });
 
   /// What items bind to and rules read: `job`, `agent`, `stats`, `sync`.
@@ -52,9 +55,29 @@ class RenderContext {
   /// supplies it.
   final VoidCallback? onSyncNow;
 
+  /// The page's side padding. Items that run edge to edge (a list, the
+  /// stat strip) line their content up with it.
+  final double gutter;
+
+  /// Drawn as one row of a list (`job_list`'s item view): compact, a line
+  /// per item, as FESS's list rows.
+  final bool inRow;
+
   /// The same context with other data, e.g. one job of a list.
-  RenderContext withData(Map<String, Object?> data) => RenderContext(
-    data: data,
+  RenderContext withData(Map<String, Object?> data) => _copy(data: data);
+
+  /// The same context on a page with side padding [gutter].
+  RenderContext withGutter(double gutter) => _copy(gutter: gutter);
+
+  /// The same context drawing one row of a list.
+  RenderContext asRow() => _copy(inRow: true);
+
+  RenderContext _copy({
+    Map<String, Object?>? data,
+    double? gutter,
+    bool? inRow,
+  }) => RenderContext(
+    data: data ?? this.data,
     jobs: jobs,
     itemViews: itemViews,
     copy: copy,
@@ -63,5 +86,7 @@ class RenderContext {
     mapPreview: mapPreview,
     openContact: openContact,
     onSyncNow: onSyncNow,
+    gutter: gutter ?? this.gutter,
+    inRow: inRow ?? this.inRow,
   );
 }

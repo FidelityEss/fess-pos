@@ -94,7 +94,7 @@ export function NumberControl({
         {showSlider && min !== undefined && max !== undefined ? (
           <input
             type="range"
-            aria-label="Adjust"
+            aria-label="Slide to change the value"
             min={min}
             max={max}
             step={step}
@@ -106,7 +106,7 @@ export function NumberControl({
       </div>
       <p className="text-xs text-muted-foreground">
         {typedBad ? <span className="text-destructive">Enter a number. </span> : null}
-        {min !== undefined && max !== undefined ? `Allowed ${formatNumber(min, unit)} to ${formatNumber(max, unit)}` : null}
+        {min !== undefined && max !== undefined ? `You can choose from ${formatNumber(min, unit)} to ${formatNumber(max, unit)}` : null}
         {hint ? ` · ${formatNumber(value as number, unit)} is ${hint}` : null}
       </p>
     </div>
@@ -138,7 +138,7 @@ export function ChoiceControl({
             onClick={() => onChange(o.value)}
             className={cn(
               'rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              on ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+              on ? 'bg-card text-foreground ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
             )}
           >
             {o.label}
@@ -227,7 +227,7 @@ export function PairControl({
       />
       {min !== undefined && max !== undefined ? (
         <span className="text-xs text-muted-foreground">
-          Allowed {min} to {max}
+          You can choose from {min} to {max}
         </span>
       ) : null}
     </div>
@@ -290,7 +290,7 @@ export function NullableControl({
     <div className="flex flex-wrap items-start gap-3">
       <div className="min-w-0">{children}</div>
       <Button type="button" variant="ghost" onClick={() => onChange(null)}>
-        <Eraser /> Clear (not set)
+        <Eraser /> Clear it
       </Button>
     </div>
   );

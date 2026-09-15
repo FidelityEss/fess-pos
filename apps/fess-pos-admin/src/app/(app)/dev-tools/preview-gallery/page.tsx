@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ReadOnlyNotice } from '@/components/admin/admin-ui';
 import { ApiErrorAlert } from '@/components/api-error-alert';
+import { KIND_LABEL } from '@/components/definitions/definitions-data';
 import { PageHeader } from '@/components/page-header';
 import { DefinitionPreview } from '@/components/preview/definition-preview';
 import { usePreviewBundle } from '@/components/preview/preview-data';
@@ -21,7 +22,7 @@ import type { DefinitionKind } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const KIND_ORDER: DefinitionKind[] = ['app', 'flow', 'form', 'view', 'content', 'job_schema'];
-const KIND_TITLE: Record<DefinitionKind, string> = { app: 'App', flow: 'Flows', form: 'Forms', view: 'Views', content: 'Content', job_schema: 'Job schemas' };
+const KIND_TITLE: Record<DefinitionKind, string> = KIND_LABEL;
 
 export default function PreviewGalleryPage() {
   const { bundle, rows, isPending, error } = usePreviewBundle();
@@ -36,7 +37,7 @@ export default function PreviewGalleryPage() {
     return (
       <>
         <PageHeader title="Phone preview gallery" />
-        <ReadOnlyNotice title="Not available in production">Dev tools exist only in local and staging environments.</ReadOnlyNotice>
+        <ReadOnlyNotice title="Not available here">Developer tools aren’t available on the live system.</ReadOnlyNotice>
       </>
     );
   }
@@ -45,24 +46,24 @@ export default function PreviewGalleryPage() {
     <>
       <PageHeader
         title="Phone preview gallery"
-        description="Every active global definition drawn by the phone preview, with the others as its bundle. Tap and type in the phones — rules and checks run through the shared engine."
+        description="Every piece of the inspection set-up shared by all banks, drawn on a phone. You can tap and type in the phones: conditions and checks work as they do in the app."
       />
       <div className="mb-6 flex flex-wrap items-end gap-4">
         <Button asChild variant="outline" size="sm">
           <Link href="/dev-tools">
-            <ArrowLeft /> Dev tools
+            <ArrowLeft /> Developer tools
           </Link>
         </Button>
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Kind">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Which pieces">
           {(['all', ...KIND_ORDER] as const).map((k) => (
             <Button key={k} size="sm" variant={kind === k ? 'default' : 'outline'} onClick={() => setKind(k)}>
-              {k === 'all' ? 'All kinds' : KIND_TITLE[k]}
+              {k === 'all' ? 'Everything' : KIND_TITLE[k]}
             </Button>
           ))}
         </div>
         <div className="grid gap-1">
-          <Label htmlFor="gallery-focus">Focus element</Label>
-          <Input id="gallery-focus" className="h-8 w-56" placeholder="section, field, step or page key" value={focus} onChange={(e) => setFocus(e.target.value.trim())} />
+          <Label htmlFor="gallery-focus">Highlight</Label>
+          <Input id="gallery-focus" className="h-8 w-56" placeholder="Technical name of a section, question, step or page" value={focus} onChange={(e) => setFocus(e.target.value.trim())} />
         </div>
       </div>
 
@@ -74,7 +75,7 @@ export default function PreviewGalleryPage() {
           ))}
         </div>
       ) : error ? null : groups.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No global definitions found in this database.</p>
+        <p className="text-sm text-muted-foreground">Nothing is set up for all banks yet.</p>
       ) : (
         <div className="space-y-10">
           {groups
@@ -90,10 +91,10 @@ export default function PreviewGalleryPage() {
                       <CardHeader>
                         <CardTitle className="flex flex-wrap items-center gap-2">
                           {r.title}
-                          <Badge tone={r.active ? 'success' : 'warning'}>{r.active ? 'Active' : 'Not active — newest version'}</Badge>
+                          <Badge tone={r.active ? 'success' : 'warning'}>{r.active ? 'Live' : 'Not live (newest version shown)'}</Badge>
                         </CardTitle>
                         <CardDescription>
-                          <span className="font-mono">{r.key}</span> · version {r.version}
+                          {KIND_TITLE[r.kind]} · version {r.version} · <span className="font-mono">{r.key}</span>
                         </CardDescription>
                       </CardHeader>
                       <CardContent className={cn('pb-6')}>

@@ -4,9 +4,11 @@
 // component of the catalogue (docs/11 §3–5) from the engine-resolved form, and writes answers back to the preview state.
 import { Camera, ImageIcon, LocateFixed, MapPin, Minus, PenLine, Plus, Search, Star, Trash2, X } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
+import { FESS } from '@/lib/brand';
 import type { EngineJsonValue, FieldDef, ResolvedField } from '@/lib/engine';
 import { cn, isPlainObject } from '@/lib/utils';
 import type { AnswerMeta, FormPreviewState } from './form-state';
+import { PAGE_X, typeStyle } from './phone-style';
 import {
   Callout,
   CheckList,
@@ -65,7 +67,7 @@ function choiceOptions(def: FieldDef, rf: ResolvedField): { options: ChoiceOptio
   const src = def.options_source;
   if (options.length === 0 && (src || def.type === 'lookup')) {
     sampleFrom =
-      src?.type === 'reason_codes' ? `reason codes “${src.category}”` : src?.type === 'lookup_list' ? `lookup list “${src.key}”` : `lookup list “${String(rf.props.list ?? '')}”`;
+      src?.type === 'reason_codes' ? `the reasons “${src.category}”` : src?.type === 'lookup_list' ? `the drop-down list “${src.key}”` : `the drop-down list “${String(rf.props.list ?? '')}”`;
     options = [1, 2, 3].map((i) => ({ value: `sample_${i}`, label: `Sample option ${i}` }));
   }
   if (rf.props.allow_other === true) {
@@ -106,19 +108,19 @@ function SingleSelect({ def, rf, value, onChange, meta, onMeta, disabled }: Cont
     const q = query.trim().toLowerCase();
     const shown = options.filter((o) => !q || o.label.toLowerCase().includes(q)).slice(0, 8);
     control = (
-      <div className="rounded-lg border border-slate-200 bg-white p-2">
+      <div className="rounded-[var(--ph-inner-r)] border border-[color:var(--ph-border)] bg-[color:var(--ph-page)] p-2">
         <div className="relative mb-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-          <PhoneInput className="pl-9" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} disabled={disabled} />
+          <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[color:var(--ph-input-icon)]" />
+          <PhoneInput className="pl-10" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} disabled={disabled} />
         </div>
         <RadioList options={shown} value={v} onChange={set} disabled={disabled} />
-        {shown.length === 0 ? <p className="px-1 py-2 text-[13px] text-slate-500">No matches</p> : null}
+        {shown.length === 0 ? <p className="px-1 py-2 text-[12px] text-[color:var(--ph-body)]">No matches</p> : null}
       </div>
     );
   } else control = <RadioList options={options} value={v} onChange={set} disabled={disabled} />;
   return (
     <>
-      {sampleFrom ? <PreviewNotice className="mb-2">Options come from {sampleFrom} — sample options shown.</PreviewNotice> : null}
+      {sampleFrom ? <PreviewNotice className="mb-2">The answers come from {sampleFrom}. Sample answers are shown here.</PreviewNotice> : null}
       {control}
       <OtherText rf={rf} chosen={v === ov} meta={meta} onMeta={onMeta} disabled={disabled} />
     </>
@@ -138,7 +140,7 @@ function MultiSelect({ def, rf, value, onChange, meta, onMeta, disabled }: Contr
   };
   return (
     <>
-      {sampleFrom ? <PreviewNotice className="mb-2">Options come from {sampleFrom} — sample options shown.</PreviewNotice> : null}
+      {sampleFrom ? <PreviewNotice className="mb-2">The answers come from {sampleFrom}. Sample answers are shown here.</PreviewNotice> : null}
       {def.display === 'chips' ? (
         <ChipGroup options={options} selected={selected} onToggle={toggle} disabled={disabled} />
       ) : (
@@ -203,11 +205,11 @@ function NumberInput({ value, onChange, disabled, suffix, prefix, placeholder, s
   const shown = value === null ? (text === '' || Number.isNaN(Number(text)) ? text : '') : Number(text) === value ? text : String(value);
   return (
     <div className="relative">
-      {prefix ? <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[15px] text-slate-500">{prefix}</span> : null}
+      {prefix ? <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-[color:var(--ph-body)]">{prefix}</span> : null}
       <PhoneInput
         inputMode="decimal"
         placeholder={placeholder}
-        className={cn(prefix && 'pl-8', suffix && 'pr-12')}
+        className={cn(prefix && 'pl-9', suffix && 'pr-12')}
         value={shown}
         step={step}
         disabled={disabled}
@@ -218,7 +220,7 @@ function NumberInput({ value, onChange, disabled, suffix, prefix, placeholder, s
           onChange(t.trim() === '' || Number.isNaN(n) ? undefined : n);
         }}
       />
-      {suffix ? <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[15px] text-slate-500">{suffix}</span> : null}
+      {suffix ? <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-[color:var(--ph-body)]">{suffix}</span> : null}
     </div>
   );
 }
@@ -235,14 +237,14 @@ function NumberControl({ def, rf, value, onChange, disabled }: ControlProps) {
     const clamp = (n: number) => Math.min(max ?? Infinity, Math.max(min ?? -Infinity, n));
     return (
       <div className="flex items-center gap-3">
-        <PhoneActionButton variant="outline" className="w-11" disabled={disabled} onClick={() => onChange(clamp((v ?? min ?? 0) - step))}>
+        <PhoneActionButton variant="outline" className="w-11 px-0" disabled={disabled} onClick={() => onChange(clamp((v ?? min ?? 0) - step))}>
           <Minus className="size-4" />
         </PhoneActionButton>
-        <span className="min-w-12 text-center text-[18px] font-semibold">{v ?? '—'}</span>
-        <PhoneActionButton variant="outline" className="w-11" disabled={disabled} onClick={() => onChange(clamp((v ?? min ?? 0) + step))}>
+        <span className="min-w-12 text-center text-[18px] font-semibold text-[color:var(--ph-text)]">{v ?? '—'}</span>
+        <PhoneActionButton variant="outline" className="w-11 px-0" disabled={disabled} onClick={() => onChange(clamp((v ?? min ?? 0) + step))}>
           <Plus className="size-4" />
         </PhoneActionButton>
-        {strProp(rf.props.unit) ? <span className="text-[15px] text-slate-500">{strProp(rf.props.unit)}</span> : null}
+        {strProp(rf.props.unit) ? <span className="text-[14px] font-medium text-[color:var(--ph-body)]">{strProp(rf.props.unit)}</span> : null}
       </div>
     );
   }
@@ -265,10 +267,10 @@ function RangeControl({ value, min, max, step, onChange, disabled, suffix, minLa
           className="h-11 flex-1 accent-[var(--pp)]"
           aria-label="Value"
         />
-        <span className="w-14 text-right text-[15px] font-semibold">{value === null ? '—' : `${value}${suffix ?? ''}`}</span>
+        <span className="w-14 text-right text-[14px] font-semibold text-[color:var(--ph-text)]">{value === null ? '—' : `${value}${suffix ?? ''}`}</span>
       </div>
       {minLabel || maxLabel ? (
-        <div className="flex justify-between text-[12px] text-slate-500">
+        <div className="flex justify-between text-[12px] text-[color:var(--ph-body)]">
           <span>{minLabel}</span>
           <span>{maxLabel}</span>
         </div>
@@ -284,7 +286,11 @@ function PhoneControl({ rf, value, onChange, disabled }: ControlProps) {
   const local = prefix && v.startsWith(prefix) ? v.slice(prefix.length) : v;
   return (
     <div className="flex gap-2">
-      {prefix ? <span className="flex h-11 shrink-0 items-center rounded-lg border border-slate-300 bg-slate-50 px-3 text-[15px] text-slate-700">🇿🇦 {prefix}</span> : null}
+      {prefix ? (
+        <span className="flex h-12 shrink-0 items-center rounded-[var(--ph-input-r)] border-[length:var(--ph-input-bw)] border-[color:var(--ph-input-border)] bg-[color:var(--ph-subtle)] px-3 text-[14px] font-medium text-[color:var(--ph-body)]">
+          🇿🇦 {prefix}
+        </span>
+      ) : null}
       <PhoneInput
         inputMode="tel"
         placeholder={prefix ? '82 123 4567' : '+27821234567'}
@@ -316,7 +322,7 @@ function RatingControl({ def, rf, value, onChange, disabled }: ControlProps) {
     <div className="flex gap-1">
       {Array.from({ length: scale }, (_, i) => (
         <button key={i} type="button" disabled={disabled} aria-label={`${i + 1} of ${scale}`} onClick={() => onChange(i + 1)} className="p-1">
-          <Star className={cn('size-7', v !== null && i < v ? 'fill-amber-400 text-amber-500' : 'text-slate-300')} />
+          <Star className={cn('size-7', v !== null && i < v ? 'fill-[color:var(--ph-warning)] text-[color:var(--ph-warning)]' : 'text-[color:var(--ph-muted)]')} />
         </button>
       ))}
     </div>
@@ -409,8 +415,8 @@ function BusinessHoursControl({ rf, value, onChange, disabled }: ControlProps) {
   const full = (): Record<string, EngineJsonValue> => Object.fromEntries(groups.map((g) => [g, cur?.[g] ?? HOUR_DEFAULTS[g] ?? 'closed']));
   const set = (g: string, h: EngineJsonValue) => onChange({ ...full(), [g]: h });
   return (
-    <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
-      {!cur ? <p className="px-3 pt-2 text-[13px] text-slate-500">Tap a day to set the hours.</p> : null}
+    <div className="divide-y divide-[color:var(--ph-divider)] rounded-[var(--ph-inner-r)] border border-[color:var(--ph-border)] bg-[color:var(--ph-page)]">
+      {!cur ? <p className="px-3 pt-2 text-[12px] text-[color:var(--ph-body)]">Tap a day to set the hours.</p> : null}
       {groups.map((g) => {
         const h = cur?.[g];
         const open = cur ? h !== 'closed' : false;
@@ -423,7 +429,7 @@ function BusinessHoursControl({ rf, value, onChange, disabled }: ControlProps) {
               label={
                 <span className="flex items-baseline justify-between gap-2">
                   <span className="font-medium">{HOUR_GROUP_LABEL[g] ?? humanise(g)}</span>
-                  <span className="text-[13px] text-slate-500">{!cur ? 'Not set' : h === 'closed' ? 'Closed' : h === '24h' ? 'Open 24 hours' : 'Open'}</span>
+                  <span className="text-[12px] text-[color:var(--ph-body)]">{!cur ? 'Not set' : h === 'closed' ? 'Closed' : h === '24h' ? 'Open 24 hours' : 'Open'}</span>
                 </span>
               }
               onChange={(c) => set(g, c ? (isPlainObject(HOUR_DEFAULTS[g]) ? HOUR_DEFAULTS[g] : { open: '08:00', close: '17:00' }) : 'closed')}
@@ -431,7 +437,7 @@ function BusinessHoursControl({ rf, value, onChange, disabled }: ControlProps) {
             {times ? (
               <div className="flex items-center gap-2 pb-1">
                 <PhoneInput type="time" value={asString(times.open as Value)} disabled={disabled} onChange={(e) => set(g, { open: e.target.value, close: asString(times.close as Value) })} />
-                <span className="text-slate-500">to</span>
+                <span className="text-[color:var(--ph-body)]">to</span>
                 <PhoneInput type="time" value={asString(times.close as Value)} disabled={disabled} onChange={(e) => set(g, { open: asString(times.open as Value), close: e.target.value })} />
               </div>
             ) : null}
@@ -508,7 +514,7 @@ function LocationControl({ def, rf, value, onChange, disabled }: ControlProps) {
         >
           <LocateFixed className="size-4" /> {set ? 'Location recorded · ±8 m' : 'Get my location'}
         </PhoneActionButton>
-        {maxAcc !== null ? <p className="text-[13px] text-slate-500">Needs accuracy of {maxAcc} m or better.</p> : null}
+        {maxAcc !== null ? <p className="text-[12px] text-[color:var(--ph-body)]">Needs accuracy of {maxAcc} m or better.</p> : null}
       </div>
     );
   }
@@ -537,15 +543,19 @@ function PhotoControl({ def, rf, value, onChange, disabled }: ControlProps) {
   const canAdd = max === null || ids.length < max;
   return (
     <div>
-      <p className="mb-2 text-[13px] text-slate-600">
+      <p className="mb-2 text-[12px] text-[color:var(--ph-body)]">
         Take {range} photo{max === 1 ? '' : 's'} with the camera
         {rf.props.require_gps === true ? ' · location recorded' : ''}
         {min > 0 ? <span className="font-medium"> · {Math.min(ids.length, min)}/{min} done</span> : null}
       </p>
-      {guidance ? <Callout tone="info" className="mb-2">{guidance}</Callout> : null}
+      {guidance ? (
+        <Callout tone="info" icon={false} className="mb-2">
+          {guidance}
+        </Callout>
+      ) : null}
       <div className={cn('grid gap-2', def.display === 'guided_sequence' ? 'grid-cols-2' : 'grid-cols-3')}>
         {ids.map((id, i) => (
-          <div key={id} className="relative aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-emerald-100 via-slate-200 to-sky-200">
+          <div key={id} className="relative aspect-square overflow-hidden rounded-[var(--ph-inner-r)] bg-gradient-to-br from-emerald-100 via-slate-200 to-sky-200">
             <ImageIcon className="absolute left-1/2 top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 text-slate-500" />
             <span className="absolute bottom-1 left-1 rounded bg-black/55 px-1 text-[11px] text-white">{i + 1}</span>
             {!disabled ? (
@@ -560,7 +570,7 @@ function PhotoControl({ def, rf, value, onChange, disabled }: ControlProps) {
             type="button"
             disabled={disabled}
             onClick={() => onChange([...ids, previewUuid()])}
-            className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-[color-mix(in_srgb,var(--pp)_45%,white)] bg-white text-[13px] font-medium text-[var(--pp)]"
+            className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-[var(--ph-inner-r)] border-2 border-dashed border-[color-mix(in_srgb,var(--pp)_45%,var(--ph-page))] bg-[color:var(--ph-page)] text-[13px] font-semibold text-[var(--pp)]"
           >
             <Camera className="size-6" />
             Take photo
@@ -583,20 +593,20 @@ function SignatureControl({ rf, value, onChange, disabled, state }: ControlProps
         type="button"
         disabled={disabled}
         onClick={() => onChange(signed ? undefined : previewUuid())}
-        className="relative flex h-32 w-full items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white text-[14px] text-slate-500"
+        className="relative flex h-32 w-full items-center justify-center rounded-[var(--ph-inner-r)] border-2 border-dashed border-[color:var(--ph-border)] bg-[color:var(--ph-page)] text-[14px] font-medium text-[color:var(--ph-body)]"
       >
         {signed ? (
           <svg viewBox="0 0 200 60" className="h-20 w-4/5" aria-label="Signature">
-            <path d="M5 42 C 20 10, 30 55, 45 30 S 70 5, 80 35 S 100 55, 115 25 S 140 10, 150 38 S 175 45, 195 20" fill="none" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M5 42 C 20 10, 30 55, 45 30 S 70 5, 80 35 S 100 55, 115 25 S 140 10, 150 38 S 175 45, 195 20" fill="none" stroke={FESS.text} strokeWidth="2.5" strokeLinecap="round" />
           </svg>
         ) : (
           <span className="flex items-center gap-1.5">
             <PenLine className="size-4" /> Tap to sign
           </span>
         )}
-        <span className="absolute bottom-2 left-3 right-3 border-t border-slate-300" />
+        <span className="absolute bottom-2 left-3 right-3 border-t border-[color:var(--ph-border)]" />
       </button>
-      <div className="mt-1 flex items-center justify-between text-[13px] text-slate-600">
+      <div className="mt-1 flex items-center justify-between text-[12px] text-[color:var(--ph-body)]">
         <span>{name || role ? [name, role].filter(Boolean).join(' · ') : 'Signer name appears here'}</span>
         {signed && !disabled ? (
           <button type="button" onClick={() => onChange(undefined)} className="font-medium text-[var(--pp)]">
@@ -614,12 +624,14 @@ export function DeclarationText({ declarationKey }: { declarationKey: string | u
   const env = usePreviewEnv();
   const decl = declarationKey ? env.declarations[declarationKey] : undefined;
   if (!decl) {
-    return <PreviewNotice>The text of declaration “{declarationKey ?? '—'}” comes from the declarations register and is not loaded in this preview.</PreviewNotice>;
+    return <PreviewNotice>The declaration “{declarationKey ?? '—'}” comes from the Declarations page and can’t be shown in this preview.</PreviewNotice>;
   }
   return (
-    <div className="max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-white px-3 py-2.5">
-      <div className="mb-1 text-[15px] font-semibold">{decl.title}</div>
-      <p className="whitespace-pre-line text-[14px] leading-relaxed text-slate-700">{decl.text}</p>
+    <div className="max-h-56 overflow-y-auto rounded-[var(--ph-inner-r)] border border-[color:var(--ph-border)] bg-[color:var(--ph-page)] px-3 py-2.5">
+      <div className="mb-1 text-[14px] font-semibold text-[color:var(--ph-text)]">{decl.title}</div>
+      <p className="whitespace-pre-line leading-relaxed text-[color:var(--ph-body)]" style={typeStyle('bodyRegular')}>
+        {decl.text}
+      </p>
     </div>
   );
 }
@@ -648,7 +660,7 @@ function ConsentControl({ rf, value, onChange, disabled, state }: ControlProps) 
   return (
     <div className="grid gap-2">
       <DeclarationText declarationKey={strProp(rf.props.declaration_key)} />
-      <p className="text-[13px] text-slate-600">Given by: {byName || <span className="italic">name entered above</span>}</p>
+      <p className="text-[12px] text-[color:var(--ph-body)]">Given by: {byName || <span className="italic">name entered above</span>}</p>
       <Segmented
         options={[
           { value: 'yes', label: 'Agrees' },
@@ -668,13 +680,17 @@ function PrefilledControl({ rf, meta, onMeta, disabled }: ControlProps) {
   const lines = isPlainObject(rf.value) && ('line1' in rf.value || 'city' in rf.value) ? addressLines(rf.value) : null;
   return (
     <div className="grid gap-1.5">
-      <div className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-2.5 text-[15px] text-slate-800">
-        {rf.value === null ? <span className="text-slate-500">No value on this job ({strProp(rf.props.source)})</span> : lines ? lines.map((l) => <div key={l}>{l}</div>) : formatValue(rf.value)}
+      <div className="rounded-[var(--ph-input-r)] border-[length:var(--ph-input-bw)] border-[color:var(--ph-input-border)] bg-[color:var(--ph-subtle)] px-4 py-3 text-[14px] font-medium text-[color:var(--ph-body)]">
+        {rf.value === null ? <span className="font-normal italic">No value on this job ({strProp(rf.props.source)})</span> : lines ? lines.map((l) => <div key={l}>{l}</div>) : formatValue(rf.value)}
       </div>
       {rf.props.allow_flag_differs === true ? (
         <>
           <Toggle checked={meta.flagged_differs === true} onChange={(c) => onMeta({ flagged_differs: c || undefined })} label="This is different at the premises" disabled={disabled} />
-          {meta.flagged_differs && strProp(rf.props.differs_note) ? <Callout tone="warning">{strProp(rf.props.differs_note)}</Callout> : null}
+          {meta.flagged_differs && strProp(rf.props.differs_note) ? (
+            <Callout tone="warning" icon={false}>
+              {strProp(rf.props.differs_note)}
+            </Callout>
+          ) : null}
         </>
       ) : null}
     </div>
@@ -685,7 +701,11 @@ function ComputedControl({ rf }: ControlProps) {
   const fmt = strProp(rf.props.format);
   const v = rf.value;
   const text = typeof v === 'number' && rf.props.decimals !== undefined ? v.toFixed(num(rf.props.decimals) ?? 0) : formatValue(v, fmt === 'text' ? null : fmt);
-  return <div className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-2.5 text-[15px] font-medium text-slate-800">{text}</div>;
+  return (
+    <div className="rounded-[var(--ph-input-r)] border-[length:var(--ph-input-bw)] border-[color:var(--ph-input-border)] bg-[color:var(--ph-subtle)] px-4 py-3 text-[14px] font-semibold text-[color:var(--ph-body)]">
+      {text}
+    </div>
+  );
 }
 
 function MatrixControl({ rf, value, onChange, disabled }: ControlProps) {
@@ -703,8 +723,8 @@ function MatrixControl({ rf, value, onChange, disabled }: ControlProps) {
   return (
     <div className="grid gap-2">
       {rows.map((r) => (
-        <div key={r.key} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-          <div className="mb-1 text-[14px] font-medium">{r.label}</div>
+        <div key={r.key} className="rounded-[var(--ph-inner-r)] border border-[color:var(--ph-border)] bg-[color:var(--ph-page)] px-3 py-2">
+          <div className="mb-1 text-[14px] font-semibold text-[color:var(--ph-text)]">{r.label}</div>
           {cell === 'text' ? (
             <PhoneInput value={asString(cur[r.key] as Value)} disabled={disabled} onChange={(e) => set(r.key, e.target.value || undefined)} />
           ) : cell === 'multi' ? (
@@ -746,11 +766,11 @@ function RepeatableGroup({ def, rf, value, onChange, disabled, state }: ControlP
         const resolvedItem = rf.items?.[i];
         const label = strProp(rf.props.item_label);
         return (
-          <div key={i} className="rounded-xl border border-slate-200 bg-white p-3">
+          <div key={i} className="rounded-[var(--ph-card-r)] border-[length:var(--ph-card-bw)] border-[color:var(--ph-card-border)] bg-[color:var(--ph-card-bg)] p-4">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[14px] font-semibold">{label ? label.replace(/\{\{\s*index\s*\}\}/g, String(i + 1)).replace(/\{\{[^}]*\}\}/g, '') || `Item ${i + 1}` : `Item ${i + 1}`}</span>
+              <span className="text-[14px] font-semibold text-[color:var(--ph-text)]">{label ? label.replace(/\{\{\s*index\s*\}\}/g, String(i + 1)).replace(/\{\{[^}]*\}\}/g, '') || `Item ${i + 1}` : `Item ${i + 1}`}</span>
               {!disabled ? (
-                <button type="button" aria-label="Remove item" onClick={() => onChange(items.length > 1 ? items.filter((_, j) => j !== i) : undefined)} className="rounded p-1 text-slate-500 hover:bg-slate-100">
+                <button type="button" aria-label="Remove item" onClick={() => onChange(items.length > 1 ? items.filter((_, j) => j !== i) : undefined)} className="cursor-pointer rounded p-1 text-[color:var(--ph-body)] hover:bg-[color:var(--ph-subtle)]">
                   <Trash2 className="size-4" />
                 </button>
               ) : null}
@@ -785,7 +805,7 @@ function RepeatableGroup({ def, rf, value, onChange, disabled, state }: ControlP
           <Plus className="size-4" /> {strProp(rf.props.add_label) ?? 'Add'}
         </PhoneActionButton>
       ) : null}
-      {min !== null && min > 0 ? <p className="text-[13px] text-slate-500">Add at least {min}.</p> : null}
+      {min !== null && min > 0 ? <p className="text-[12px] text-[color:var(--ph-body)]">Add at least {min}.</p> : null}
     </div>
   );
 }
@@ -887,13 +907,14 @@ export function FieldView({
   const env = usePreviewEnv();
   if (!rf.visible) return null;
   if (DISPLAY_TYPES.has(def.type)) {
-    const cls = cn('scroll-mt-6 rounded-xl', highlighted && 'ring-2 ring-[var(--pp)] ring-offset-2 ring-offset-[#f4f5f7]');
-    if (def.type === 'divider') return <hr data-preview-anchor={def.key} className={cn('my-1 border-slate-200', cls)} />;
+    const cls = cn('scroll-mt-6 rounded-xl', highlighted && 'ring-2 ring-[var(--pp)] ring-offset-2 ring-offset-[var(--ph-page)]');
+    if (def.type === 'divider') return <hr data-preview-anchor={def.key} className={cn('my-1 border-[color:var(--ph-divider)]', cls)} />;
     if (def.type === 'callout') {
+      // A form notice: a tint of its tone with dark text of the same family, no icon (the module's form notice).
       return (
         <div data-preview-anchor={def.key} className={cls}>
-          <Callout tone={toTone(def.tone, 'info')}>
-            <Markdown text={rf.text ?? ''} className="text-[14px]" />
+          <Callout tone={toTone(def.tone, 'info')} icon={false}>
+            <Markdown text={rf.text ?? ''} className="text-[14px] text-inherit" />
           </Callout>
         </div>
       );
@@ -901,10 +922,10 @@ export function FieldView({
     if (def.type === 'image') {
       return (
         <figure data-preview-anchor={def.key} className={cls}>
-          <div className="flex h-32 items-center justify-center rounded-lg bg-slate-200 text-slate-500">
+          <div className="flex h-32 items-center justify-center rounded-[var(--ph-inner-r)] bg-[color:var(--ph-subtle)] text-[color:var(--ph-muted)]">
             <ImageIcon className="size-8" />
           </div>
-          {rf.text ? <figcaption className="mt-1 text-[13px] text-slate-600">{rf.text}</figcaption> : null}
+          {rf.text ? <figcaption className="mt-1 text-[12px] text-[color:var(--ph-body)]">{rf.text}</figcaption> : null}
         </figure>
       );
     }
@@ -927,7 +948,7 @@ export function FieldView({
     );
   }
   if (def.type === 'computed' && rf.props.hidden === true) {
-    return env.focus === def.key ? <PreviewNotice>“{def.key}” is computed and hidden on the phone (value: {formatValue(rf.value)}).</PreviewNotice> : null;
+    return env.focus === def.key ? <PreviewNotice>“{def.key}” is worked out automatically and hidden on the phone (value: {formatValue(rf.value)}).</PreviewNotice> : null;
   }
   return (
     <FieldShell anchor={def.key} label={rf.label} required={rf.required} helpText={def.help_text} errors={errors} risk={risk} highlighted={highlighted}>
@@ -966,24 +987,28 @@ export function FormSections({ state, sectionKeys, showTitles = true }: { state:
   if (!form) return null;
   if (!resolved) {
     return (
-      <div className="p-3">
-        <PreviewNotice>This form can’t be evaluated yet: {state.resolveError ?? 'unknown problem'}.</PreviewNotice>
+      <div className={cn(PAGE_X, 'py-4')}>
+        <PreviewNotice>These questions can’t be shown yet: {state.resolveError ?? 'something in them is broken'}.</PreviewNotice>
       </div>
     );
   }
   const keys = sectionKeys ?? form.sections.map((s) => s.key);
   const general = state.errors[''];
   return (
-    <div className="space-y-5 px-3 py-3">
-      {general ? <Callout tone="danger">{general.join(' ')}</Callout> : null}
+    <div className={cn('space-y-6 py-6', PAGE_X)}>
+      {general ? (
+        <Callout tone="danger" icon={false}>
+          {general.join(' ')}
+        </Callout>
+      ) : null}
       {keys.map((k) => {
         const section = form.sections.find((s) => s.key === k);
-        if (!section) return <PreviewNotice key={k}>Section “{k}” is not in the form.</PreviewNotice>;
+        if (!section) return <PreviewNotice key={k}>Section “{k}” isn’t in these questions.</PreviewNotice>;
         const rs = resolved.sections[k];
         if (rs && !rs.visible) {
           return (
             <PreviewNotice key={k}>
-              Section “{typeof section.title === 'string' ? section.title : k}” is hidden by its rule for this sample.
+              Section “{typeof section.title === 'string' ? section.title : k}” is hidden for this sample job, because of its “show only when” condition.
             </PreviewNotice>
           );
         }
@@ -992,16 +1017,18 @@ export function FormSections({ state, sectionKeys, showTitles = true }: { state:
           <section
             key={k}
             data-preview-anchor={k}
-            className={cn('scroll-mt-4 rounded-xl', env.focus === k && 'ring-2 ring-[var(--pp)] ring-offset-4 ring-offset-[#f4f5f7]')}
+            className={cn('scroll-mt-4 rounded-xl', env.focus === k && 'ring-2 ring-[var(--pp)] ring-offset-4 ring-offset-[var(--ph-page)]')}
           >
             {showTitles ? (
               <header className="mb-3">
-                <h2 className="text-[18px] font-semibold leading-tight text-slate-900">{rs?.title ?? (typeof section.title === 'string' ? section.title : humanise(k))}</h2>
-                {section.description ? <p className="mt-0.5 text-[14px] text-slate-600">{section.description}</p> : null}
+                <h2 className="leading-tight text-[color:var(--ph-text)]" style={typeStyle('title')}>
+                  {rs?.title ?? (typeof section.title === 'string' ? section.title : humanise(k))}
+                </h2>
+                {section.description ? <p className="mt-1 text-[14px] font-semibold leading-snug text-[color:var(--ph-body)]">{section.description}</p> : null}
               </header>
             ) : null}
-            <div className="grid gap-4">
-              {empty ? <PreviewNotice>No fields in this section yet.</PreviewNotice> : null}
+            <div className="grid gap-5">
+              {empty ? <PreviewNotice>No questions in this section yet.</PreviewNotice> : null}
               {section.fields.map((f) => (
                 <FieldSlot key={f.key} def={f} state={state} />
               ))}

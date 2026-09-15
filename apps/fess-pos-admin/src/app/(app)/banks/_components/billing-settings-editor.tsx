@@ -2,6 +2,7 @@
 
 // banks.billing_settings editor (docs/06 §3, D-43): per reason category, a default and per-code overrides.
 // Precedence at billing time: a per-code value, then the category default, then the reason code's own `billable`.
+// On screen a reason category is a "situation" (REASON_CATEGORY_LABEL), such as "Job cancelled".
 import { Plus, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useAllReasonCodes } from '@/components/admin/queries';
@@ -12,12 +13,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { humanize } from '@/lib/format';
+import { labelFrom, REASON_CATEGORY_LABEL } from '@/lib/labels';
 import { useIsAdvanced } from '@/lib/preferences';
-import { type BillingSettings, REASON_CATEGORIES, type ReasonCode } from '@/lib/types';
+import { type BillingSettings, REASON_CATEGORIES, type ReasonCategory, type ReasonCode } from '@/lib/types';
 
 type Entry = { default?: boolean; codes?: Record<string, boolean> };
 const INHERIT = '__inherit__';
+
+/** Plain name of a reason category; an unknown category falls back to a readable form of its key. */
+function situationLabel(category: string): string {
+  return labelFrom(REASON_CATEGORY_LABEL, category as ReasonCategory);
+}
 
 /** Drop empty categories / override maps before saving. */
 export function cleanBillingSettings(value: BillingSettings): BillingSettings {
@@ -76,12 +82,12 @@ export function BillingSettingsEditor({
 
   return (
     <div className="grid gap-3">
-      <ApiErrorAlert error={codesQ.error} title="Could not load reason codes" onRetry={() => void codesQ.refetch()} />
+      <ApiErrorAlert error={codesQ.error} title="Couldn’t load the reasons" onRetry={() => void codesQ.refetch()} />
       <p className="text-sm text-muted-foreground">
-        A setting for one reason wins, then the category’s default, then the reason’s own setting. Categories with billable reasons are
-        listed automatically.
+        A setting for one reason comes first, then the setting for its situation, then the reason’s own setting on the Reasons
+        page. Situations that have billable reasons are listed already.
       </p>
-      {shown.length === 0 ? <p className="text-sm text-muted-foreground">No billing settings for this bank.</p> : null}
+      {shown.length === 0 ? <p className="text-sm text-muted-foreground">Nothing set for this bank. Each reason’s own setting is used.</p> : null}
       {shown.map((category) => (
         <CategoryBilling
           key={category}
@@ -95,13 +101,13 @@ export function BillingSettingsEditor({
       {addable.length > 0 && !disabled ? (
         <div className="flex items-center gap-2">
           <Select value="" onValueChange={(category) => setEntry(category, {})}>
-            <SelectTrigger className="w-80" aria-label="Add a reason category">
-              <SelectValue placeholder="Add settings for another category…" />
+            <SelectTrigger className="w-80" aria-label="Add settings for another situation">
+              <SelectValue placeholder="Add settings for another situation…" />
             </SelectTrigger>
             <SelectContent>
               {addable.map((c) => (
                 <SelectItem key={c} value={c}>
-                  {humanize(c)}
+                  {situationLabel(c)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -130,6 +136,7 @@ function CategoryBilling({
   const byCode = new Map(codes.map((c) => [c.code, c]));
   const available = codes.filter((c) => !(entry?.codes && c.code in entry.codes));
   const defaultValue = entry?.default === undefined ? INHERIT : String(entry.default);
+  const name = situationLabel(category);
 
   function setDefault(v: string) {
     const next: Entry = { ...entry };
@@ -148,21 +155,22 @@ function CategoryBilling({
     <div className="space-y-3 rounded-md border p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <div className="text-base font-semibold">{humanize(category)}</div>
+          <div className="text-base font-semibold">{name}</div>
           <div className="text-sm text-muted-foreground">
-            {codes.length} reason{codes.length === 1 ? '' : 's'} · {codes.filter((c) => c.billable).length} billable by default
+            {codes.length} reason{codes.length === 1 ? '' : 's'} · {codes.filter((c) => c.billable).length} billable as standard
           </div>
+          {advanced ? <div className="font-mono text-xs text-muted-foreground">{category}</div> : null}
         </div>
         {entry && !disabled ? (
           <Button type="button" size="sm" variant="ghost" onClick={() => onChange(null)}>
-            Clear settings
+            Remove these settings
           </Button>
         ) : null}
       </div>
       <div className="grid gap-1.5 sm:max-w-sm">
-        <Label>Default for this category</Label>
+        <Label>For this situation</Label>
         <Select value={defaultValue} onValueChange={setDefault} disabled={disabled}>
-          <SelectTrigger aria-label={`${humanize(category)} default`}>
+          <SelectTrigger aria-label={`Billing for “${name}”`}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -211,7 +219,7 @@ function CategoryBilling({
                     </TableCell>
                     <TableCell>
                       {!disabled ? (
-                        <Button type="button" size="icon-sm" variant="ghost" aria-label={`Remove override for ${code}`} onClick={() => setCode(code, null)}>
+                        <Button type="button" size="icon-sm" variant="ghost" aria-label={`Remove the setting for ${rc?.label ?? code}`} onClick={() => setCode(code, null)}>
                           <Trash2 />
                         </Button>
                       ) : null}
@@ -231,7 +239,7 @@ function CategoryBilling({
             setCode(code, rc ? !rc.billable : true);
           }}
         >
-          <SelectTrigger className="w-80" aria-label={`Add a setting for one reason in ${humanize(category)}`}>
+          <SelectTrigger className="w-80" aria-label={`Set one reason differently in “${name}”`}>
             <span className="flex items-center gap-1.5 text-muted-foreground">
               <Plus className="size-4" /> Set one reason differently…
             </span>

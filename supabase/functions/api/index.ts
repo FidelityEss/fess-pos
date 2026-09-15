@@ -9,6 +9,7 @@ import { log } from '../_shared/log.ts';
 import type { AppEnv } from '../_shared/types.ts';
 import { adminRoutes } from './routes/admin/index.ts';
 import { authRoutes } from './routes/auth.ts';
+import { bankRoutes } from './routes/bank.ts';
 import { deviceRoutes } from './routes/device.ts';
 import { evidenceRoutes } from './routes/evidence.ts';
 import { healthRoutes } from './routes/health.ts';
@@ -46,5 +47,6 @@ app.route('/v1', syncRoutes);
 app.route('/v1', ingestRoutes);
 app.route('/v1', evidenceRoutes);
 app.route('/v1/admin', adminRoutes);
+app.route('/v1/bank', bankRoutes);   // bank systems, by API key (T6-06, D-100)
 
 Deno.serve(app.fetch);

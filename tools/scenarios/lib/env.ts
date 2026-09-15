@@ -34,5 +34,12 @@ export function refuseProduction(tool: string): void {
   }
 }
 
+/** The hosted admin panel of each environment (docs/15 §6). Registration links made by the tools open there. */
+export const ADMIN_ORIGINS: Record<Target, string> = {
+  qa: 'https://fess-pos-admin-qa.vercel.app',
+  production: 'https://fess-pos-admin.vercel.app',
+};
+export const adminOrigin = ADMIN_ORIGINS[target];
+
 export const apiUrl = `${env.supabaseUrl}/functions/v1/api`;
 export const functionsUrl = `${env.supabaseUrl}/functions/v1`;

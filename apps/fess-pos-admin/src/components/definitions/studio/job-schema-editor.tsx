@@ -19,13 +19,13 @@ export function JobSchemaEditor(props: EditorProps) {
       <Card>
         <CardContent className="grid gap-3 p-4">
           <div>
-            <h3 className="text-base font-semibold">Job details</h3>
+            <h3 className="text-base font-semibold">Job information</h3>
             <Hint>
-              Extra details recorded on each job — shown in the job form and CSV import, and available to screens and rules (for example the risk tier can raise
-              the photo minimum).
+              What the office fills in when it creates a job. It shows on the new-job form and in the spreadsheet import, and screens and conditions can use it
+              (for example, a high risk level can ask for more photos).
             </Hint>
           </div>
-          <FieldList arrayPath={['attributes']} doc={doc} update={update} selected={selected} onSelect={onSelect} ctx={ctx} addLabel="Add a job detail" />
+          <FieldList arrayPath={['attributes']} doc={doc} update={update} selected={selected} onSelect={onSelect} ctx={ctx} addLabel="Add a detail" />
         </CardContent>
       </Card>
     </div>

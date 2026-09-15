@@ -24,6 +24,9 @@ abstract final class PosTokens {
   /// `color.brand.goldText`
   static const Color colorBrandGoldText = Color(0xFF8A7443);
 
+  /// `color.brand.goldTextStrong`
+  static const Color colorBrandGoldTextStrong = Color(0xFF74612F);
+
   /// `color.brand.primary`
   static const Color colorBrandPrimary = Color(0xFF006B55);
 
@@ -57,14 +60,23 @@ abstract final class PosTokens {
   /// `color.status.info`
   static const Color colorStatusInfo = Color(0xFF2799FF);
 
+  /// `color.status.infoText`
+  static const Color colorStatusInfoText = Color(0xFF0B5CAD);
+
   /// `color.status.success`
   static const Color colorStatusSuccess = Color(0xFF249689);
 
   /// `color.status.successBright`
   static const Color colorStatusSuccessBright = Color(0xFF25BB48);
 
+  /// `color.status.successText`
+  static const Color colorStatusSuccessText = Color(0xFF006B55);
+
   /// `color.status.warning`
   static const Color colorStatusWarning = Color(0xFFF9CF58);
+
+  /// `color.status.warningText`
+  static const Color colorStatusWarningText = Color(0xFF7A5A00);
 
   /// `color.text.body`
   static const Color colorTextBody = Color(0xFF4C4C4C);
@@ -78,17 +90,62 @@ abstract final class PosTokens {
   /// `color.text.primary`
   static const Color colorTextPrimary = Color(0xFF000000);
 
+  /// `component.avatar.background`
+  static const Color componentAvatarBackground = colorBrandPrimary;
+
+  /// `component.avatar.foreground`
+  static const Color componentAvatarForeground = Color(0xFFFFFFFF);
+
   /// `component.bottomNav.active`
   static const Color componentBottomNavActive = colorNavActive;
 
   /// `component.bottomNav.background`
   static const Color componentBottomNavBackground = colorNavBackground;
 
+  /// `component.bottomNav.border`
+  static const Color componentBottomNavBorder = colorLineDivider;
+
   /// `component.bottomNav.inactive`
   static const Color componentBottomNavInactive = colorNavInactive;
 
+  /// `component.bottomNav.inactiveItem`
+  static const Color componentBottomNavInactiveItem = colorTextBody;
+
+  /// `component.bottomNav.label.size`
+  static const double componentBottomNavLabelSize = 12;
+
+  /// `component.bottomNav.label.weight`
+  static const FontWeight componentBottomNavLabelWeight = FontWeight.w500;
+
+  /// `component.button.danger.background`
+  static const Color componentButtonDangerBackground = Color(0xFFD8020E);
+
+  /// `component.button.danger.text`
+  static const Color componentButtonDangerText = Color(0xFFFFFFFF);
+
+  /// `component.button.disabled.background`
+  static const Color componentButtonDisabledBackground = colorLineDivider;
+
+  /// `component.button.disabled.text`
+  static const Color componentButtonDisabledText = colorTextBody;
+
   /// `component.button.height`
   static const double componentButtonHeight = 45;
+
+  /// `component.button.iconSize`
+  static const double componentButtonIconSize = 15;
+
+  /// `component.button.outline.background`
+  static const Color componentButtonOutlineBackground = Color(0xFFFFFFFF);
+
+  /// `component.button.outline.border`
+  static const Color componentButtonOutlineBorder = colorBrandGold;
+
+  /// `component.button.outline.borderWidth`
+  static const double componentButtonOutlineBorderWidth = 2;
+
+  /// `component.button.outline.text`
+  static const Color componentButtonOutlineText = colorTextPrimary;
 
   /// `component.button.primary.background`
   static const Color componentButtonPrimaryBackground = colorBrandPrimary;
@@ -114,6 +171,15 @@ abstract final class PosTokens {
   /// `component.card.background`
   static const Color componentCardBackground = colorBackgroundCard;
 
+  /// `component.card.border`
+  static const Color componentCardBorder = colorLineBorder;
+
+  /// `component.card.borderWidth`
+  static const double componentCardBorderWidth = 1;
+
+  /// `component.card.elevation`
+  static const double componentCardElevation = 0;
+
   /// `component.card.innerRadius`
   static const double componentCardInnerRadius = 8;
 
@@ -122,6 +188,27 @@ abstract final class PosTokens {
 
   /// `component.card.shadow`
   static const BoxShadow componentCardShadow = shadowCard;
+
+  /// `component.chip.paddingX`
+  static const double componentChipPaddingX = 12;
+
+  /// `component.chip.paddingY`
+  static const double componentChipPaddingY = 4;
+
+  /// `component.chip.radius`
+  static const double componentChipRadius = radiusPill;
+
+  /// `component.chip.text.size`
+  static const double componentChipTextSize = 12;
+
+  /// `component.chip.text.weight`
+  static const FontWeight componentChipTextWeight = FontWeight.w600;
+
+  /// `component.chip.tintOpacity`
+  static const double componentChipTintOpacity = 0.12;
+
+  /// `component.header.back.borderWidth`
+  static const double componentHeaderBackBorderWidth = 1;
 
   /// `component.header.back.color`
   static const Color componentHeaderBackColor = Color(0xFFFFFFFF);
@@ -135,6 +222,9 @@ abstract final class PosTokens {
   /// `component.header.back.size`
   static const double componentHeaderBackSize = 30;
 
+  /// `component.header.back.style`
+  static const String componentHeaderBackStyle = 'outline';
+
   /// `component.header.background`
   static const Color componentHeaderBackground = colorBrandPrimary;
 
@@ -143,6 +233,9 @@ abstract final class PosTokens {
 
   /// `component.header.paddingX`
   static const double componentHeaderPaddingX = 32;
+
+  /// `component.header.title.align`
+  static const String componentHeaderTitleAlign = 'center';
 
   /// `component.header.title.color`
   static const Color componentHeaderTitleColor = Color(0xFFFFFFFF);
@@ -153,11 +246,32 @@ abstract final class PosTokens {
   /// `component.header.title.weight`
   static const FontWeight componentHeaderTitleWeight = FontWeight.w600;
 
+  /// `component.input.background`
+  static const Color componentInputBackground = Color(0xFFFFFFFF);
+
   /// `component.input.border`
   static const Color componentInputBorder = colorLineDivider;
 
+  /// `component.input.borderWidth`
+  static const double componentInputBorderWidth = 2;
+
   /// `component.input.focus`
   static const Color componentInputFocus = colorBrandPrimary;
+
+  /// `component.input.hint`
+  static const Color componentInputHint = colorTextBody;
+
+  /// `component.input.icon`
+  static const Color componentInputIcon = colorTextMuted;
+
+  /// `component.input.iconSize`
+  static const double componentInputIconSize = 16;
+
+  /// `component.input.paddingX`
+  static const double componentInputPaddingX = 16;
+
+  /// `component.input.paddingY`
+  static const double componentInputPaddingY = 16;
 
   /// `component.input.radius`
   static const double componentInputRadius = radiusInput;
@@ -167,6 +281,12 @@ abstract final class PosTokens {
 
   /// `component.listRow.chevron`
   static const Color componentListRowChevron = colorTextMuted;
+
+  /// `component.listRow.chevronSize`
+  static const double componentListRowChevronSize = 24;
+
+  /// `component.listRow.description.color`
+  static const Color componentListRowDescriptionColor = colorTextBody;
 
   /// `component.listRow.description.size`
   static const double componentListRowDescriptionSize = 12;
@@ -180,14 +300,50 @@ abstract final class PosTokens {
   /// `component.listRow.height`
   static const double componentListRowHeight = 80;
 
+  /// `component.listRow.icon`
+  static const Color componentListRowIcon = colorBrandPrimary;
+
   /// `component.listRow.iconColumn`
   static const double componentListRowIconColumn = 70;
+
+  /// `component.listRow.iconSize`
+  static const double componentListRowIconSize = 30;
+
+  /// `component.listRow.paddingY`
+  static const double componentListRowPaddingY = 16;
+
+  /// `component.listRow.title.color`
+  static const Color componentListRowTitleColor = colorTextPrimary;
 
   /// `component.listRow.title.size`
   static const double componentListRowTitleSize = 14;
 
   /// `component.listRow.title.weight`
   static const FontWeight componentListRowTitleWeight = FontWeight.w700;
+
+  /// `component.page.background`
+  static const Color componentPageBackground = colorBackgroundPage;
+
+  /// `component.page.paddingX`
+  static const double componentPagePaddingX = 32;
+
+  /// `component.stat.label.color`
+  static const Color componentStatLabelColor = colorTextBody;
+
+  /// `component.stat.label.size`
+  static const double componentStatLabelSize = 12;
+
+  /// `component.stat.label.weight`
+  static const FontWeight componentStatLabelWeight = FontWeight.w400;
+
+  /// `component.stat.number.color`
+  static const Color componentStatNumberColor = colorTextPrimary;
+
+  /// `component.stat.number.size`
+  static const double componentStatNumberSize = 24;
+
+  /// `component.stat.number.weight`
+  static const FontWeight componentStatNumberWeight = FontWeight.w600;
 
   /// `component.statusBar.background`
   static const Color componentStatusBarBackground = colorBrandPrimary;

@@ -1,6 +1,7 @@
 'use client';
 
-// User fields shared by "New user" and the profile editor, constrained by D-44.
+// Person fields shared by "Add a person" and the profile editor. Who may give which role and banks mirrors the database
+// (pos_rpc.admin_can_manage_user, D-44). `invite`: an administrator or bank viewer being sent a registration link (D-96).
 import { useId } from 'react';
 import { assignableRoles } from '@/components/admin/access';
 import { PERMISSION_HINT, PERMISSION_LABEL, ROLE_HINT, ROLE_LABEL } from '@/components/admin/admin-ui';
@@ -49,14 +50,14 @@ type StaffLike = Pick<StaffContextValue, 'me' | 'isAdmin' | 'isGlobalAdmin' | 'c
 /** Role / bank checks mirroring pos_rpc.admin_user_check_input and admin_can_manage_user (D-20, D-44). */
 export function validateAccess(state: UserFormState, staff: StaffLike): FieldErrors {
   const errors: FieldErrors = {};
-  if (!assignableRoles(staff).includes(state.role)) errors.role = 'You can only manage agents and bank readers (D-44).';
+  if (!assignableRoles(staff).includes(state.role)) errors.role = 'You can only add agents and bank viewers.';
   if (state.allBanks) {
-    if (!staff.isGlobalAdmin) errors.bank_ids = 'Only an all-bank administrator can give access to all banks.';
-    else if (state.role === 'pos_bank_reader') errors.bank_ids = 'A bank reader needs specific banks.';
+    if (!staff.isGlobalAdmin) errors.bank_ids = 'Only an administrator for all banks can give access to all banks.';
+    else if (state.role === 'pos_bank_reader') errors.bank_ids = 'Choose the banks this bank viewer may see.';
   } else if (state.bankIds.length === 0) {
-    errors.bank_ids = state.role === 'pos_bank_reader' ? 'A bank reader needs at least one bank.' : 'Choose at least one bank, or all banks.';
+    errors.bank_ids = state.role === 'pos_bank_reader' ? 'Choose at least one bank for this bank viewer.' : 'Choose at least one bank, or all banks.';
   } else if (!staff.isGlobalAdmin && state.bankIds.some((b) => !staff.canAccessBank(b))) {
-    errors.bank_ids = 'You can only choose banks in your own scope.';
+    errors.bank_ids = 'You can only choose the banks you look after.';
   }
   return errors;
 }
@@ -78,6 +79,7 @@ export function UserFormFields({
   accessLockedReason,
   hasAdminLogin = false,
   disabled = false,
+  invite = false,
 }: {
   state: UserFormState;
   onChange: (patch: Partial<UserFormState>) => void;
@@ -87,6 +89,8 @@ export function UserFormFields({
   accessLockedReason?: string | null;
   hasAdminLogin?: boolean;
   disabled?: boolean;
+  /** Adding an administrator or bank viewer who will be sent a registration link: email required, employee number optional. */
+  invite?: boolean;
 }) {
   const staff = useStaff();
   const uid = useId();
@@ -109,9 +113,15 @@ export function UserFormFields({
           <FormField
             label="Employee number"
             htmlFor={`${uid}-emp`}
-            required={mode === 'create'}
+            required={mode === 'create' && !invite}
             error={errors.employee_number}
-            hint={mode === 'create' ? 'Letters, digits and -, up to 32. It binds the person to their verified host identity.' : 'Can’t be changed — it binds the person to their verified host identity.'}
+            hint={
+              mode === 'edit'
+                ? 'Can’t be changed. It links an agent to their FESS sign-in.'
+                : invite
+                  ? 'Optional for administrators and bank viewers. Leave it empty and one is made up.'
+                  : 'Letters, numbers and dashes, up to 32. It links the agent to their FESS sign-in.'
+            }
           >
             <Input
               id={`${uid}-emp`}
@@ -131,7 +141,13 @@ export function UserFormFields({
           <FormField label="Last name" htmlFor={`${uid}-last`} required error={errors.last_name}>
             <Input id={`${uid}-last`} value={state.last_name} onChange={(e) => onChange({ last_name: e.target.value })} disabled={disabled} maxLength={120} aria-invalid={!!errors.last_name || undefined} />
           </FormField>
-          <FormField label="Email" htmlFor={`${uid}-email`} error={errors.email}>
+          <FormField
+            label="Email"
+            htmlFor={`${uid}-email`}
+            required={invite}
+            error={errors.email}
+            hint={invite ? 'We send the registration link here. It’s also the address they sign in with.' : undefined}
+          >
             <Input id={`${uid}-email`} type="email" value={state.email} onChange={(e) => onChange({ email: e.target.value })} disabled={disabled} maxLength={320} aria-invalid={!!errors.email || undefined} />
           </FormField>
           <FormField label="Phone" htmlFor={`${uid}-phone`} error={errors.phone}>
@@ -140,7 +156,7 @@ export function UserFormFields({
         </FormGrid>
       </FormSection>
 
-      <FormSection title="Access" description="Role, permissions and the banks this person works for.">
+      <FormSection title="Access" description="What they can do, and which banks they work for.">
         {accessLockedReason ? (
           <Alert variant="info">
             <AlertDescription>{accessLockedReason}</AlertDescription>
@@ -156,7 +172,7 @@ export function UserFormFields({
                 {roleOptions.map((r) => (
                   <SelectItem key={r} value={r} disabled={!roles.includes(r) || (r === 'pos_agent' && hasAdminLogin)}>
                     {ROLE_LABEL[r]}
-                    {r === 'pos_agent' && hasAdminLogin ? ' — not possible: this person has a panel login' : ''}
+                    {r === 'pos_agent' && hasAdminLogin ? ' (not possible: they sign in to this panel)' : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -181,7 +197,7 @@ export function UserFormFields({
                 />
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  {state.role === 'pos_admin' ? 'An all-bank administrator manages global reference data (D-44).' : 'Can be allocated jobs for any bank.'}
+                  {state.role === 'pos_admin' ? 'An administrator for all banks can also change the settings every bank shares.' : 'Can be given jobs for any bank.'}
                 </p>
               )}
             </div>
@@ -204,9 +220,11 @@ export function UserFormFields({
         ) : null}
       </FormSection>
 
-      <FormSection title="Attributes" description="Free-form facts about the person (e.g. region, skills), used for audience targeting.">
-        <AttributesEditor state={state.attributes} onChange={(attributes) => onChange({ attributes })} disabled={disabled} error={errors.attributes} />
-      </FormSection>
+      {mode === 'edit' || state.role === 'pos_agent' ? (
+        <FormSection title="Extra details" description="Facts about the person, such as their region. Used to choose who gets a new version of a form first.">
+          <AttributesEditor state={state.attributes} onChange={(attributes) => onChange({ attributes })} disabled={disabled} error={errors.attributes} />
+        </FormSection>
+      ) : null}
     </div>
   );
 }

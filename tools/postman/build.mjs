@@ -239,7 +239,7 @@ const adminOk = function () {
 };
 
 const setup = folder('01 QA setup (test admin)', [
-  'QA only. Signs in as the QA test admin (password, then TOTP to reach MFA level aal2), makes a fresh job for the test',
+  'QA only. Signs in as the QA test admin (password; the TOTP step runs only if the admin has one set up, D-96), makes a fresh job for the test',
   'agent (create, log a contact attempt, confirm the appointment, allocate) and mints the host token a host app would hold',
   'for that agent, using the stand-in issuer `pos_dev`. Production refuses the stand-in issuer, and this collection skips',
   'every non-GET request there. Run it again whenever you want a fresh job.',
@@ -252,17 +252,24 @@ const setup = folder('01 QA setup (test admin)', [
       pm.test('signed in', () => pm.response.to.have.status(200));
       const s = pm.response.json();
       pm.collectionVariables.set('adminAal1Token', s.access_token);
+      // A password session is enough while admin.require_mfa is off (D-96); the next request upgrades it when a TOTP
+      // factor is set up, so the collection works whichever way the setting is.
+      pm.collectionVariables.set('adminToken', s.access_token);
       const f = ((s.user && s.user.factors) || []).find((x) => x.factor_type === 'totp' && x.status === 'verified');
-      pm.test('the test admin has a verified TOTP factor (run tools/postman/provision-qa.ts if not)', () => pm.expect(f).to.be.ok);
       if (f) pm.collectionVariables.set('adminFactorId', f.id);
+      else pm.collectionVariables.unset('adminFactorId');
     },
   }),
-  request('Admin MFA (TOTP → aal2)', {
+  request('Admin second step (TOTP → aal2, only if set up)', {
     url: '{{supabaseUrl}}/auth/v1/factors/{{adminFactorId}}/verify',
     headers: [APIKEY, JSON_CT],
     auth: bearer('{{adminAal1Token}}'),
     body: { challenge_id: '{{challengeId}}', code: '{{totpCode}}' },
     pre: function () {
+      if (!pm.collectionVariables.get('adminFactorId') || !pm.environment.get('adminTotpSecret')) {
+        pm.execution.skipRequest();
+        return;
+      }
       const pos = eval(pm.variables.get('posLib'));
       const secret = pos.need('adminTotpSecret', "the QA test admin's TOTP secret (provision-qa.ts writes it into your environment)");
       pm.sendRequest({

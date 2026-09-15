@@ -25,18 +25,18 @@ import { useMutationWithToast } from '@/lib/mutations';
 import { useIsAdvanced } from '@/lib/preferences';
 import { exportCreateSchema } from '@/lib/schemas';
 import { useStaff } from '@/lib/staff';
-import { EXPORT_STATUS_TONE } from '@/lib/status';
+import { EXPORT_STATUS_LABEL, EXPORT_STATUS_TONE } from '@/lib/status';
 import { fetchRows, pos } from '@/lib/supabase';
 import { EXPORT_TYPES, type ExportRow, type ExportType } from '@/lib/types';
 import { UserName } from './ops-shared';
 
 const TYPE_LABEL: Record<ExportType, string> = {
-  pdf: 'PDF inspection reports',
-  csv: 'CSV data',
-  xlsx: 'Excel workbook',
-  evidence_zip: 'Evidence ZIP',
-  spec_pdf: 'Definition specification PDF',
-  billing_csv: 'Billing CSV',
+  pdf: 'Visit reports (PDF)',
+  csv: 'Answers as a spreadsheet (CSV)',
+  xlsx: 'Answers as an Excel workbook',
+  evidence_zip: 'Photos and files (ZIP)',
+  spec_pdf: 'Set-up description (PDF)',
+  billing_csv: 'Billing list (CSV)',
 };
 
 const NONE = '__none__';
@@ -63,7 +63,7 @@ function RequestExportCard() {
 
   const create = useMutationWithToast({
     mutationFn: adminApi.exports.create,
-    successMessage: 'Export queued — it appears below and updates as the worker runs',
+    successMessage: 'Export requested. It appears in the list below.',
     toastErrors: false,
     invalidate: [['exports']],
     onSuccess: () => {
@@ -76,9 +76,9 @@ function RequestExportCard() {
   function submit() {
     const ids = jobIds.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
     const errs: FieldErrors = {};
-    if (ids.some((x) => !isUuid(x))) errs['scope.job_ids'] = 'Every job id must be a UUID';
-    if (!staff.isGlobalAdmin && !bankId) errs['scope.bank_id'] = 'Choose a bank (required for bank-scoped admins)';
-    if (from && to && to < from) errs['scope.to'] = 'Must be on or after the start date';
+    if (ids.some((x) => !isUuid(x))) errs['scope.job_ids'] = 'One of these isn’t a valid job ID. Check the list and try again.';
+    if (!staff.isGlobalAdmin && !bankId) errs['scope.bank_id'] = 'Choose a bank. You can only export data for your own banks.';
+    if (from && to && to < from) errs['scope.to'] = 'The end date must be on or after the start date.';
     const parsed = exportCreateSchema.safeParse({
       type,
       scope: {
@@ -101,11 +101,13 @@ function RequestExportCard() {
     <Card>
       <CardHeader>
         <CardTitle>Request an export</CardTitle>
-        <CardDescription>Exports run in the background and are retried; each request is audited.</CardDescription>
+        <CardDescription>
+          Choose what you need, for which bank and which dates. Your request is added to the list below, where you can see how far it has got.
+        </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid gap-4 md:grid-cols-3">
-          <FormField label="Type" htmlFor="exp-type" required error={errors.type}>
+          <FormField label="What to export" htmlFor="exp-type" required error={errors.type}>
             <Select value={type} onValueChange={(v) => setType(v as ExportType)}>
               <SelectTrigger id="exp-type">
                 <SelectValue />
@@ -122,21 +124,21 @@ function RequestExportCard() {
           <FormField label="Bank" htmlFor="exp-bank" required={!staff.isGlobalAdmin} error={errors['scope.bank_id']}>
             <BankSelect id="exp-bank" value={bankId} onChange={setBankId} allowAll={staff.isGlobalAdmin} includeInactive />
           </FormField>
-          <FormField label="Recipient email" htmlFor="exp-recipient" error={errors.recipient} hint="Optional — notified when ready">
+          <FormField label="Who it’s for (email)" htmlFor="exp-recipient" error={errors.recipient} hint="Optional. Recorded with the request.">
             <Input id="exp-recipient" type="email" value={recipient} onChange={(e) => setRecipient(e.target.value)} />
           </FormField>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          <FormField label="From date" htmlFor="exp-from" error={errors['scope.from']}>
+          <FormField label="From" htmlFor="exp-from" error={errors['scope.from']}>
             <Input id="exp-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           </FormField>
-          <FormField label="To date" htmlFor="exp-to" error={errors['scope.to']}>
+          <FormField label="To" htmlFor="exp-to" error={errors['scope.to']}>
             <Input id="exp-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </FormField>
         </div>
         {type === 'spec_pdf' ? (
           <div className="grid gap-4 md:grid-cols-2">
-            <FormField label="Definition family" htmlFor="exp-family" error={errors['scope.family_id']} hint="The specification is generated from a published version.">
+            <FormField label="Set-up piece" htmlFor="exp-family" error={errors['scope.family_id']} hint="The document describes a published version.">
               <Select
                 value={familyId ?? NONE}
                 onValueChange={(v) => {
@@ -145,19 +147,19 @@ function RequestExportCard() {
                 }}
               >
                 <SelectTrigger id="exp-family">
-                  <SelectValue placeholder={families.isPending ? 'Loading…' : 'Choose a family'} />
+                  <SelectValue placeholder={families.isPending ? 'Loading…' : 'Choose one'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NONE}>— Not specified —</SelectItem>
+                  <SelectItem value={NONE}>None chosen</SelectItem>
                   {(families.data ?? []).map((f) => (
                     <SelectItem key={f.id} value={f.id}>
-                      {f.kind}/{f.key} — {f.title}
+                      {advanced ? `${f.title} (${f.kind}/${f.key})` : f.title}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </FormField>
-            <FormField label="Version" htmlFor="exp-version" error={errors['scope.version_id']} hint="Blank = latest">
+            <FormField label="Version" htmlFor="exp-version" error={errors['scope.version_id']} hint="Leave on Latest to use the newest published version.">
               <Select value={versionId ?? NONE} onValueChange={(v) => setVersionId(v === NONE ? null : v)} disabled={!familyId}>
                 <SelectTrigger id="exp-version">
                   <SelectValue />
@@ -166,7 +168,7 @@ function RequestExportCard() {
                   <SelectItem value={NONE}>Latest</SelectItem>
                   {(versions.data ?? []).map((v) => (
                     <SelectItem key={v.id} value={v.id}>
-                      v{v.version}
+                      Version {v.version}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -174,14 +176,19 @@ function RequestExportCard() {
             </FormField>
           </div>
         ) : advanced ? (
-          <FormField label="Job ids" htmlFor="exp-jobs" error={errors['scope.job_ids']} hint="Optional — one per line or comma separated. Blank = every job in scope.">
+          <FormField
+            label="Only these jobs (IDs)"
+            htmlFor="exp-jobs"
+            error={errors['scope.job_ids']}
+            hint="Optional. One job ID per line, or separated by commas. Leave empty for every job the other choices cover."
+          >
             <Textarea id="exp-jobs" rows={2} value={jobIds} onChange={(e) => setJobIds(e.target.value)} className="font-mono text-sm" />
           </FormField>
         ) : null}
         <ApiErrorAlert error={create.error} />
         <div>
           <Button type="button" onClick={submit} loading={create.isPending}>
-            {create.isPending ? null : <FileDown />} Request export
+            {create.isPending ? null : <FileDown />} Request the export
           </Button>
         </div>
       </CardContent>
@@ -204,21 +211,25 @@ export function ExportsView() {
   const columns = useMemo<ColumnDef<ExportRow>[]>(
     () => [
       { accessorKey: 'created_at', header: 'Requested', cell: ({ row }) => <DateTime value={row.original.created_at} showRelative /> },
-      { accessorKey: 'type', header: 'Type', cell: ({ row }) => <span className="whitespace-nowrap">{TYPE_LABEL[row.original.type] ?? row.original.type}</span> },
-      { accessorKey: 'status', header: 'Status', cell: ({ row }) => <ToneBadge value={row.original.status} tones={EXPORT_STATUS_TONE} /> },
-      { accessorKey: 'requested_by', header: 'By', cell: ({ row }) => <UserName id={row.original.requested_by} className="whitespace-nowrap" /> },
+      { accessorKey: 'type', header: 'What', cell: ({ row }) => <span className="whitespace-nowrap">{TYPE_LABEL[row.original.type] ?? row.original.type}</span> },
+      {
+        accessorKey: 'status',
+        header: 'Progress',
+        cell: ({ row }) => <ToneBadge value={row.original.status} tones={EXPORT_STATUS_TONE} labels={EXPORT_STATUS_LABEL} />,
+      },
+      { accessorKey: 'requested_by', header: 'Requested by', cell: ({ row }) => <UserName id={row.original.requested_by} className="whitespace-nowrap" /> },
       {
         id: 'scope',
         accessorFn: (r) => JSON.stringify(r.scope),
-        header: 'Scope',
+        header: 'Covers',
         enableSorting: false,
         cell: ({ row }) => {
           const s = row.original.scope ?? {};
           const parts = [
-            s.bank_id ? (bankLookup(s.bank_id)?.code ?? shortId(s.bank_id)) : 'All banks',
-            s.from || s.to ? `${s.from ?? '…'} → ${s.to ?? '…'}` : null,
+            s.bank_id ? (bankLookup(s.bank_id)?.code ?? (advanced ? shortId(s.bank_id) : 'One bank')) : 'All banks',
+            s.from && s.to ? `${s.from} to ${s.to}` : s.from ? `From ${s.from}` : s.to ? `Up to ${s.to}` : null,
             s.job_ids?.length ? `${s.job_ids.length} job${s.job_ids.length === 1 ? '' : 's'}` : null,
-            s.family_id ? (advanced ? `family ${shortId(s.family_id)}` : 'one form') : null,
+            s.family_id ? (advanced ? `set-up ${shortId(s.family_id)}` : 'one set-up piece') : null,
             s.version_id ? (advanced ? `version ${shortId(s.version_id)}` : 'a chosen version') : null,
           ].filter(Boolean);
           return <span className="text-sm">{parts.join(' · ')}</span>;
@@ -230,17 +241,15 @@ export function ExportsView() {
         meta: { className: 'text-right tabular-nums', headerClassName: 'text-right' },
         cell: ({ row }) => formatNumber(row.original.row_count),
       },
-      { accessorKey: 'recipient', header: 'Recipient', cell: ({ row }) => <span className="text-sm">{row.original.recipient ?? '—'}</span> },
+      { accessorKey: 'recipient', header: 'For', cell: ({ row }) => <span className="text-sm">{row.original.recipient ?? '—'}</span> },
       {
         id: 'result',
         accessorFn: (r) => r.error ?? '',
-        header: 'Result',
+        header: 'Problem',
         cell: ({ row }) => {
           const e = row.original;
           if (e.error) return <span className="line-clamp-2 max-w-xs text-sm text-red-800">{e.error}</span>;
-          if (e.status === 'done' && e.storage_path)
-            return <span className="text-sm text-muted-foreground">{advanced ? 'Ready. Download links arrive with the export worker (T6-02/T6-03).' : 'Ready — downloading from here is coming soon.'}</span>;
-          if (e.status === 'done') return <span className="text-sm text-muted-foreground">Done</span>;
+          if (advanced && e.storage_path) return <code className="break-all text-xs text-muted-foreground">{e.storage_path}</code>;
           return <span className="text-sm text-muted-foreground">—</span>;
         },
       },
@@ -252,7 +261,7 @@ export function ExportsView() {
     <>
       <PageHeader
         title="Exports"
-        description="PDF reports, CSV / Excel data, evidence archives, specification documents and billing files."
+        description="Ask for visit data, such as the answers or the photos, for a bank or a period. Each request appears in the list below with its progress."
         actions={
           staff.isAdmin ? (
             <Button variant="outline" size="sm" onClick={() => void query.refetch()} loading={query.isFetching}>
@@ -263,7 +272,7 @@ export function ExportsView() {
       />
       {!staff.isAdmin ? (
         <Alert variant="info">
-          <AlertDescription>Exports are requested and tracked by admins. Ask an admin for the files you need.</AlertDescription>
+          <AlertDescription>Only administrators can request exports. Ask one for the data you need.</AlertDescription>
         </Alert>
       ) : (
         <div className="space-y-6">
@@ -277,7 +286,7 @@ export function ExportsView() {
             getRowId={(r) => r.id}
             searchPlaceholder="Search exports…"
             emptyTitle="No exports yet"
-            emptyDescription="Requested exports appear here with their status."
+            emptyDescription="Request one above. It appears here with its progress."
           />
         </div>
       )}

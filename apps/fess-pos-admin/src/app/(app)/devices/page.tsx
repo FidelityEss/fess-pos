@@ -42,10 +42,7 @@ export default function DevicesPage() {
 
   return (
     <>
-      <PageHeader
-        title="Devices & sessions"
-        description="Devices agents have signed in from, and their POS sessions. Revoking a device revokes its sessions; restoring lets the agent sign in again."
-      />
+      <PageHeader title="Phones and sign-ins" />
       <DevicesTable
         data={rows}
         isLoading={devices.isPending}
@@ -54,32 +51,32 @@ export default function DevicesPage() {
         showUser
         toolbar={
           <>
-            <UserPicker value={userId} onChange={(id) => setUserId(id)} placeholder="Any user" allowClear className="w-64" />
+            <UserPicker value={userId} onChange={(id) => setUserId(id)} placeholder="Anyone" allowClear className="w-64" />
             <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
               <SelectTrigger className="w-36" aria-label="Filter by status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Any status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="revoked">Revoked</SelectItem>
+                <SelectItem value="active">Allowed</SelectItem>
+                <SelectItem value="revoked">Blocked</SelectItem>
               </SelectContent>
             </Select>
             <Select value={moduleVersion} onValueChange={setModuleVersion}>
-              <SelectTrigger className="w-48" aria-label="Filter by module version">
+              <SelectTrigger className="w-48" aria-label="Filter by app version">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL}>Any module version</SelectItem>
+                <SelectItem value={ALL}>Any app version</SelectItem>
                 {versions.map((v) => (
                   <SelectItem key={v} value={v}>
-                    {v === NONE ? 'Unknown version' : v}
+                    {v === NONE ? 'Version not known' : v}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {devices.data && devices.data.length >= LIMIT ? (
-              <span className="text-sm text-amber-700">Showing the {LIMIT} most recently seen — narrow the filters.</span>
+              <span className="text-sm text-amber-700">Showing the {LIMIT} most recently used phones. Narrow the filters to see others.</span>
             ) : null}
           </>
         }

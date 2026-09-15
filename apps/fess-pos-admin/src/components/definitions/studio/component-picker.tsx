@@ -165,7 +165,7 @@ export function ComponentPicker({
           <div className="grid gap-3">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search, e.g. photo, date, yes/no…" className="pl-8" aria-label="Search components" />
+              <Input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search: photo, date, yes/no…" className="pl-8" aria-label="Search question types" />
             </div>
             <div className="max-h-[58vh] space-y-4 overflow-y-auto pr-1">
               {groups.length === 0 ? <p className="text-sm text-muted-foreground">Nothing matches “{search}”.</p> : null}
@@ -204,11 +204,13 @@ export function ComponentPicker({
           <div className="grid gap-3">
             <label className="grid gap-1.5">
               <span className="text-sm font-medium">{isDisplay ? 'Text' : 'Question (label the agent sees)'}</span>
-              <Input autoFocus value={label} onChange={(e) => setLabel(e.target.value)} onKeyDown={(e) => (e.key === 'Enter' ? add() : undefined)} placeholder={isDisplay ? 'e.g. Take photos in daylight' : 'e.g. Is the business open?'} />
+              <Input autoFocus value={label} onChange={(e) => setLabel(e.target.value)} onKeyDown={(e) => (e.key === 'Enter' ? add() : undefined)} placeholder={isDisplay ? 'Take photos in daylight' : 'Is the business open?'} />
             </label>
-            <p className={cn('text-sm text-muted-foreground')}>
-              Saved as <code className="rounded bg-muted px-1 py-0.5 text-sm">{key}</code> — the name used in answers, rules and exports.
-            </p>
+            {advanced ? (
+              <p className={cn('text-sm text-muted-foreground')}>
+                Saved as <code className="rounded border px-1 py-0.5 text-sm">{key}</code>: the technical name used in answers, conditions and exports.
+              </p>
+            ) : null}
           </div>
         )}
         <DialogFooter>

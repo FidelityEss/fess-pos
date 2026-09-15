@@ -62,21 +62,21 @@ export function DevicePicker({
   return (
     <div className="grid gap-2 sm:grid-cols-2">
       <Select value={known ? value : NONE} onValueChange={(v) => onChange(v === NONE ? '' : v)} disabled={devices.isPending}>
-        <SelectTrigger id={id} aria-label="Known devices">
-          <SelectValue placeholder={devices.isPending ? 'Loading devices…' : 'Pick a known device'} />
+        <SelectTrigger id={id} aria-label="Known phones">
+          <SelectValue placeholder={devices.isPending ? 'Loading phones…' : 'Pick a phone'} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={NONE}>— None / typed below —</SelectItem>
+          <SelectItem value={NONE}>None (type the phone ID instead)</SelectItem>
           {(devices.data ?? []).map((d) => (
             <SelectItem key={d.id} value={d.device_id}>
               {userLabel ? `${userLabel(d.user_id)} · ` : ''}
-              {d.model ?? d.platform ?? 'device'} · {shortId(d.device_id)}
-              {d.revoked_at ? ' (revoked)' : ''}
+              {d.model ?? d.platform ?? 'phone'} · {shortId(d.device_id)}
+              {d.revoked_at ? ' (no longer allowed)' : ''}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <Input value={value} onChange={(e) => onChange(e.target.value.trim())} placeholder="Module device id (UUID)" className="font-mono text-xs" aria-label="Device id" />
+      <Input value={value} onChange={(e) => onChange(e.target.value.trim())} placeholder="Phone ID" className="font-mono text-xs" aria-label="Phone ID" />
     </div>
   );
 }
@@ -98,9 +98,9 @@ export function ResolvedConfigPanel() {
   });
 
   function run() {
-    if (effectiveUser && !isUuid(effectiveUser)) return setFormError('User id must be a UUID');
-    if (deviceId && !isUuid(deviceId)) return setFormError('Device id must be a UUID');
-    if (!effectiveUser) return setFormError('Choose an agent or paste a user id');
+    if (effectiveUser && !isUuid(effectiveUser)) return setFormError('That person ID isn’t valid. Pick an agent, or paste their full ID.');
+    if (deviceId && !isUuid(deviceId)) return setFormError('That phone ID isn’t valid. Pick a phone, or paste its full ID.');
+    if (!effectiveUser) return setFormError('Choose an agent, or paste a person’s ID.');
     setFormError(null);
     setParams({ user_id: effectiveUser, ...(deviceId ? { device_id: deviceId } : {}), ...(bankId ? { bank_id: bankId } : {}) });
   }
@@ -108,37 +108,40 @@ export function ResolvedConfigPanel() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">Resolved config for a user</CardTitle>
-        <CardDescription>Defaults → global → bank → agent → device, merged exactly as the server delivers it at sync.</CardDescription>
+        <CardTitle className="text-sm">What one agent’s phone receives</CardTitle>
+        <CardDescription>
+          The default settings, then the settings for everyone, their bank, the agent and their phone, combined exactly as the phone gets them when it
+          syncs.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <FormField label="Agent" htmlFor="res-agent">
             <AgentSelect id="res-agent" value={agentId} onChange={(id) => setAgentId(id)} />
           </FormField>
-          <FormField label="…or any user id" htmlFor="res-user">
-            <Input id="res-user" value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="pos_users id" className="font-mono text-xs" />
+          <FormField label="…or paste a person’s ID" htmlFor="res-user">
+            <Input id="res-user" value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="Person ID" className="font-mono text-xs" />
           </FormField>
         </div>
-        <FormField label="Device (optional)" htmlFor="res-device">
+        <FormField label="Phone (optional)" htmlFor="res-device">
           <DevicePicker id="res-device" value={deviceId} onChange={setDeviceId} userId={isUuid(effectiveUser) ? effectiveUser : null} />
         </FormField>
-        <FormField label="Bank (optional)" htmlFor="res-bank" hint="For agents working for several banks.">
+        <FormField label="Bank (optional)" htmlFor="res-bank" hint="For agents who work for more than one bank.">
           <BankSelect id="res-bank" value={bankId} onChange={setBankId} allowAll allLabel="Not specified" />
         </FormField>
         {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
         <Button type="button" onClick={run} loading={resolved.isFetching}>
-          {resolved.isFetching ? null : <Search />} Resolve
+          {resolved.isFetching ? null : <Search />} Show the settings
         </Button>
         {resolved.error ? <ApiErrorAlert error={resolved.error} /> : null}
         {resolved.data ? (
           <div className="space-y-2">
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              Config version id:{' '}
+              Settings version ID:{' '}
               {resolved.data.config_version_id ? (
                 <>
                   <code>{resolved.data.config_version_id}</code>
-                  <CopyButton value={resolved.data.config_version_id} title="Copy config version id" />
+                  <CopyButton value={resolved.data.config_version_id} title="Copy the settings version ID" />
                 </>
               ) : (
                 '—'
@@ -175,11 +178,11 @@ export function KillSwitchesCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <Power className="size-5" /> Kill switches & features in force for everyone
+          <Power className="size-5" /> What’s switched on for everyone right now
         </CardTitle>
         <CardDescription className="text-sm">
-          Defaults plus the global settings{q.dataUpdatedAt ? ` · checked ${formatDateTime(q.dataUpdatedAt)}` : ''}. A bank, agent or device can override them.
-          None of these ever stops captured work from uploading.
+          The default settings plus the settings for everyone{q.dataUpdatedAt ? `, checked ${formatDateTime(q.dataUpdatedAt)}` : ''}. A bank, an agent or a phone
+          can have a setting of its own. None of these ever stops finished work from uploading.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -203,7 +206,7 @@ export function KillSwitchesCard() {
               ))}
             </ul>
             <div>
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Optional features</p>
+              <p className="mb-1.5 text-sm font-semibold text-muted-foreground">Optional features</p>
               {isPlainObject(features) && Object.keys(features).length > 0 ? (
                 <ul className="flex flex-wrap gap-2">
                   {Object.entries(features).map(([k, v]) => (
@@ -218,7 +221,7 @@ export function KillSwitchesCard() {
               )}
             </div>
             <div>
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">App version rules</p>
+              <p className="mb-1.5 text-sm font-semibold text-muted-foreground">App version rules</p>
               <ul className="space-y-1.5">
                 {MIN_VERSION_KEYS.map((k) => {
                   const v = getPath(values, k.path);

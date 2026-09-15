@@ -79,7 +79,7 @@ export function useDialog(): [boolean, (o: boolean) => void] {
   return useState(false);
 }
 
-/** `{ page }` / `{ flow }` target as one select: "Open page: Job detail" / "Start flow: Site inspection". */
+/** `{ page }` / `{ flow }` target as one select: "Open page: Job detail" / "Start the visit steps: Site inspection". */
 export function TargetField({
   label,
   hint,
@@ -101,14 +101,14 @@ export function TargetField({
   const current = typeof o.page === 'string' ? `page:${o.page}` : typeof o.flow === 'string' ? `flow:${o.flow}` : undefined;
   const options = [
     ...pages.map((p) => ({ value: `page:${p.key}`, label: `Open page: ${p.title}` })),
-    ...flows.map((f) => ({ value: `flow:${f.key}`, label: `Start flow: ${f.title}` })),
+    ...flows.map((f) => ({ value: `flow:${f.key}`, label: `Start the visit steps: ${f.title}` })),
   ];
   return (
     <SelectField
       label={label}
       hint={hint}
       value={current}
-      unsetLabel={allowNone ? 'Nothing (not tappable)' : undefined}
+      unsetLabel={allowNone ? 'Nothing (can’t be tapped)' : undefined}
       options={options}
       onChange={(v) => {
         if (!v) return onChange(undefined);
@@ -128,6 +128,6 @@ export function TargetField({
 export function targetText(value: unknown, pageTitle: (k: string) => string = (k) => k): string {
   const o = asObj(value);
   if (typeof o.page === 'string') return `opens ${pageTitle(asStr(o.page))}`;
-  if (typeof o.flow === 'string') return `starts ${asStr(o.flow)}`;
+  if (typeof o.flow === 'string') return 'starts the visit steps';
   return '';
 }

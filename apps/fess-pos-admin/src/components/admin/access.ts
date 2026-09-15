@@ -27,4 +27,4 @@ export function assignableRoles(staff: Staff): PosRole[] {
   return staff.isGlobalAdmin ? ['pos_agent', 'pos_admin', 'pos_bank_reader'] : ['pos_agent', 'pos_bank_reader'];
 }
 
-export const GLOBAL_ADMIN_ONLY = 'Only an all-bank administrator can change this (D-44).';
+export const GLOBAL_ADMIN_ONLY = 'Only an administrator who covers all banks can change this.';

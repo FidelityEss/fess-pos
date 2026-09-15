@@ -25,24 +25,27 @@ import { adminApi } from '@/lib/api';
 import { humanize, shortId } from '@/lib/format';
 import { useBankLookup } from '@/lib/hooks';
 import { useStaff } from '@/lib/staff';
-import type { ApprovalSubjectType } from '@/lib/types';
-import { audienceLabel, changelogCounts, defKeys, fetchApprovalPayload, fetchPendingApprovals, type PendingApproval } from './definitions-data';
+import type { ApprovalSubjectType, DefinitionKind } from '@/lib/types';
+import { audienceLabel, changelogCounts, defKeys, fetchApprovalPayload, fetchPendingApprovals, KIND_SINGULAR, type PendingApproval } from './definitions-data';
 
 type Decision = 'approved' | 'rejected' | 'withdrawn';
 
 const SUBJECT_LABEL: Record<ApprovalSubjectType, string> = {
-  definition_publish: 'Publish definition',
-  definition_activation: 'Activate version',
-  remote_config: 'Remote config',
-  block_in_progress: 'Block in-progress work',
+  definition_publish: 'Publish a new version',
+  definition_activation: 'Make a version live',
+  remote_config: 'Change app settings',
+  block_in_progress: 'Stop visits already under way',
 };
 
-/** Pending four-eyes requests (D-31). Shared by /definitions and /config (filter with `subjectTypes`). */
+/** Who a settings change applies to (the config layer, in plain words). */
+const LAYER_LABEL: Record<string, string> = { global: 'For everyone', bank: 'For one bank', agent: 'For one agent' };
+
+/** Pending requests for a second approval (D-31). Shared by /definitions and /config (filter with `subjectTypes`). */
 export function usePendingApprovals() {
   return useQuery({ queryKey: defKeys.approvals, queryFn: fetchPendingApprovals, refetchInterval: 60_000 });
 }
 
-/** "form/site_inspection" in Advanced view; "Form: Site inspection" in Basic view. */
+/** "form/site_inspection" in Advanced view; "Questions: Site inspection" in Basic view. */
 function DefinitionName({ kind, keyName, suffix }: { kind: string | null | undefined; keyName: string | null | undefined; suffix?: string }) {
   const advanced = useIsAdvanced();
   if (advanced) {
@@ -55,7 +58,7 @@ function DefinitionName({ kind, keyName, suffix }: { kind: string | null | undef
   }
   return (
     <div className="text-sm font-medium">
-      {humanLabel(kind ?? '')}: {humanLabel(keyName ?? '')}
+      {KIND_SINGULAR[kind as DefinitionKind] ?? humanLabel(kind ?? '')}: {humanLabel(keyName ?? '')}
       {suffix}
     </div>
   );
@@ -70,10 +73,16 @@ function Summary({ a }: { a: PendingApproval }) {
       <div className="space-y-0.5">
         <DefinitionName kind={a.kind} keyName={a.key} />
         <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-          <span className="text-emerald-700">+{c.added}</span>
-          <span className="text-red-700">−{c.removed}</span>
-          <span className="text-amber-700">~{c.changed}</span>
-          {a.breaking ? <Badge tone="warning">Breaking</Badge> : null}
+          {advanced ? (
+            <>
+              <span className="text-emerald-700">+{c.added}</span>
+              <span className="text-red-700">−{c.removed}</span>
+              <span className="text-amber-700">~{c.changed}</span>
+            </>
+          ) : c.added + c.changed + c.removed > 0 ? (
+            <span>{[c.added ? `${c.added} added` : '', c.changed ? `${c.changed} changed` : '', c.removed ? `${c.removed} removed` : ''].filter(Boolean).join(', ')}</span>
+          ) : null}
+          {a.breaking ? <Badge tone="warning">Changes earlier answers</Badge> : null}
         </div>
         {a.changelog?.note || a.note ? <p className="text-xs italic text-muted-foreground">“{a.changelog?.note ?? a.note}”</p> : null}
       </div>
@@ -82,7 +91,7 @@ function Summary({ a }: { a: PendingApproval }) {
   if (a.subject_type === 'definition_activation') {
     return (
       <div className="space-y-0.5">
-        <DefinitionName kind={a.kind} keyName={a.key} suffix={` v${a.version ?? '?'}`} />
+        <DefinitionName kind={a.kind} keyName={a.key} suffix={` · version ${a.version ?? '?'}`} />
         <div className="text-xs text-muted-foreground">{audienceLabel(a.audience)}</div>
         {a.reason ? <p className="text-xs italic text-muted-foreground">“{a.reason}”</p> : null}
       </div>
@@ -90,13 +99,19 @@ function Summary({ a }: { a: PendingApproval }) {
   }
   if (a.subject_type === 'remote_config') {
     const subject =
-      a.layer === 'bank' ? (bankLookup(a.subject_id)?.code ?? shortId(a.subject_id)) : a.layer === 'agent' ? <UserName id={a.subject_id} /> : a.subject_id ? shortId(a.subject_id) : null;
+      a.layer === 'bank'
+        ? (bankLookup(a.subject_id)?.name ?? (advanced ? shortId(a.subject_id) : null))
+        : a.layer === 'agent'
+          ? <UserName id={a.subject_id} />
+          : a.subject_id && advanced
+            ? shortId(a.subject_id)
+            : null;
     return (
       <div className="space-y-0.5">
         <div className="text-xs">
-          <span className="font-medium">{humanize(a.layer)} layer</span>
+          <span className="font-medium">{LAYER_LABEL[a.layer ?? ''] ?? humanize(a.layer)}</span>
           {subject ? <span className="text-muted-foreground"> · {subject}</span> : null}
-          {a.base_version ? <span className="text-muted-foreground"> · replaces v{a.base_version}</span> : null}
+          {a.base_version ? <span className="text-muted-foreground"> · replaces version {a.base_version}</span> : null}
         </div>
         {a.changed_integrity_keys && a.changed_integrity_keys.length > 0 ? (
           <div className="flex flex-wrap gap-1">
@@ -124,6 +139,7 @@ function DecideDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  const advanced = useIsAdvanced();
   const [note, setNote] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -161,11 +177,11 @@ function DecideDialog({
       toast.success(
         decision === 'approved'
           ? executed?.version?.version
-            ? `Approved — version ${executed.version.version} is now recorded`
-            : 'Approved and applied'
+            ? `Approved. Version ${executed.version.version} is published.`
+            : 'Approved. The change is made.'
           : decision === 'rejected'
-            ? 'Request rejected'
-            : 'Request withdrawn',
+            ? 'Request turned down. Nothing was changed.'
+            : 'Request withdrawn. Nothing was changed.',
       );
       setNote('');
       setShowPayload(false);
@@ -177,7 +193,7 @@ function DecideDialog({
     }
   }
 
-  const title = decision === 'approved' ? 'Approve request' : decision === 'rejected' ? 'Reject request' : 'Withdraw request';
+  const title = decision === 'approved' ? 'Approve this change?' : decision === 'rejected' ? 'Turn down this change?' : 'Withdraw your request?';
   return (
     <Dialog open={open} onOpenChange={close}>
       <DialogContent className="sm:max-w-xl">
@@ -185,25 +201,27 @@ function DecideDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             {decision === 'approved'
-              ? 'Approving applies the frozen request exactly as submitted, recorded with you as the approver.'
+              ? 'The change is made exactly as it was sent, with you recorded as the second approver.'
               : decision === 'rejected'
-                ? 'The request is closed without being applied. Tell the requester why.'
-                : 'Your request is closed without being applied.'}
+                ? 'The change isn’t made. Tell the person who asked why.'
+                : 'Your request is cancelled and nothing changes.'}
           </DialogDescription>
         </DialogHeader>
         {approval ? (
-          <div className="space-y-3 rounded-md border bg-slate-50 p-3">
+          <div className="space-y-3 rounded-md border p-3">
             <div className="flex items-center gap-2 text-sm">
               <Badge tone="accent">{SUBJECT_LABEL[approval.subject_type]}</Badge>
               <span className="text-xs text-muted-foreground">
-                by <UserName id={approval.requested_by} /> · <DateTime value={approval.at} mode="relative" />
+                asked by <UserName id={approval.requested_by} /> · <DateTime value={approval.at} mode="relative" />
               </span>
             </div>
             <Summary a={approval} />
-            <Button type="button" size="sm" variant="ghost" onClick={() => setShowPayload((v) => !v)}>
-              <Eye /> {showPayload ? 'Hide full request' : 'View full request'}
-            </Button>
-            {showPayload ? (
+            {advanced ? (
+              <Button type="button" size="sm" variant="ghost" onClick={() => setShowPayload((v) => !v)}>
+                <Eye /> {showPayload ? 'Hide the full request' : 'Show the full request (JSON)'}
+              </Button>
+            ) : null}
+            {showPayload && advanced ? (
               payload.isPending ? (
                 <Skeleton className="h-24 w-full" />
               ) : payload.error ? (
@@ -218,7 +236,13 @@ function DecideDialog({
           <Label htmlFor="approval-note">
             Note {noteRequired ? <span className="text-destructive">*</span> : <span className="text-muted-foreground">(optional)</span>}
           </Label>
-          <Textarea id="approval-note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Recorded with the decision." />
+          <Textarea
+            id="approval-note"
+            rows={3}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={noteRequired ? 'Why you’re turning it down. Saved with your decision.' : 'Saved with your decision.'}
+          />
         </div>
         <ApiErrorAlert error={error} />
         <DialogFooter>
@@ -232,7 +256,7 @@ function DecideDialog({
             loading={pending}
             disabled={noteRequired && !note.trim()}
           >
-            {decision === 'approved' ? 'Approve' : decision === 'rejected' ? 'Reject' : 'Withdraw'}
+            {decision === 'approved' ? 'Approve' : decision === 'rejected' ? 'Turn down' : 'Withdraw'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -240,8 +264,8 @@ function DecideDialog({
   );
 }
 
-/** Pending approvals table with Approve / Reject / Withdraw, respecting four-eyes rules (UX only; the API enforces). */
-export function ApprovalsPanel({ subjectTypes, emptyText = 'No requests are waiting for approval.' }: { subjectTypes?: ApprovalSubjectType[]; emptyText?: string }) {
+/** Changes waiting for a second approval, with Approve / Turn down / Withdraw (UX only; the API enforces the rules). */
+export function ApprovalsPanel({ subjectTypes, emptyText = 'Nothing is waiting for a second approval.' }: { subjectTypes?: ApprovalSubjectType[]; emptyText?: string }) {
   const staff = useStaff();
   const bankLookup = useBankLookup();
   const query = usePendingApprovals();
@@ -250,10 +274,10 @@ export function ApprovalsPanel({ subjectTypes, emptyText = 'No requests are wait
   const rows = (query.data ?? []).filter((a) => !subjectTypes || subjectTypes.includes(a.subject_type));
 
   function whyCannotDecide(a: PendingApproval): string | null {
-    if (!staff.hasPermission('approve_definitions')) return 'You need the approve_definitions permission to decide requests.';
-    if (a.requested_by === staff.me.id) return 'Four-eyes: you cannot decide your own request.';
+    if (!staff.hasPermission('approve_definitions')) return 'You don’t have permission to approve changes.';
+    if (a.requested_by === staff.me.id) return 'You can’t approve your own change. A second person must approve it.';
     if (a.bank_id ? !staff.canAccessBank(a.bank_id) : !staff.isGlobalAdmin) {
-      return a.bank_id ? 'This request is for a bank outside your scope.' : 'Global requests need an all-bank admin.';
+      return a.bank_id ? 'This change is for a bank you can’t see.' : 'Changes for all banks need an admin who can see every bank.';
     }
     return null;
   }
@@ -270,11 +294,11 @@ export function ApprovalsPanel({ subjectTypes, emptyText = 'No requests are wait
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Request</TableHead>
-                <TableHead>What</TableHead>
-                <TableHead>Scope</TableHead>
-                <TableHead>Requested</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>What’s asked</TableHead>
+                <TableHead>Details</TableHead>
+                <TableHead>Bank</TableHead>
+                <TableHead>Asked by</TableHead>
+                <TableHead className="text-right" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -290,7 +314,7 @@ export function ApprovalsPanel({ subjectTypes, emptyText = 'No requests are wait
                       <Summary a={a} />
                     </TableCell>
                     <TableCell className="align-top text-xs">
-                      {a.bank_id ? (bankLookup(a.bank_id)?.code ?? shortId(a.bank_id)) : <span className="text-muted-foreground">Global</span>}
+                      {a.bank_id ? (bankLookup(a.bank_id)?.name ?? shortId(a.bank_id)) : <span className="text-muted-foreground">All banks</span>}
                     </TableCell>
                     <TableCell className="align-top text-xs">
                       <UserName id={a.requested_by} />
@@ -312,7 +336,7 @@ export function ApprovalsPanel({ subjectTypes, emptyText = 'No requests are wait
                                 <Check /> Approve
                               </Button>
                               <Button type="button" size="sm" variant="outline" disabled>
-                                <X /> Reject
+                                <X /> Turn down
                               </Button>
                             </span>
                           </SimpleTooltip>
@@ -322,7 +346,7 @@ export function ApprovalsPanel({ subjectTypes, emptyText = 'No requests are wait
                               <Check /> Approve
                             </Button>
                             <Button type="button" size="sm" variant="outline" onClick={() => setTarget({ approval: a, decision: 'rejected' })}>
-                              <X /> Reject
+                              <X /> Turn down
                             </Button>
                           </>
                         )}

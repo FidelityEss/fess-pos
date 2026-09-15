@@ -38,20 +38,20 @@ function friendly(issue: LooseIssue, path: string): string {
     case 'too_small':
       if (issue.type === 'string') return 'Enter a value';
       if (issue.type === 'object' || issue.type === 'array') return issue.message;
-      return `Must be at least ${formatNumber(Number(issue.minimum), unit)}`;
+      return `Too low. Enter ${formatNumber(Number(issue.minimum), unit)} or more.`;
     case 'too_big':
-      if (issue.type === 'string') return 'Too long';
-      return `Must be at most ${formatNumber(Number(issue.maximum), unit)}`;
+      if (issue.type === 'string') return 'This is too long';
+      return `Too high. Enter ${formatNumber(Number(issue.maximum), unit)} or less.`;
     case 'invalid_type':
-      if (issue.expected === 'integer') return 'Must be a whole number';
-      if (issue.received === 'undefined') return 'Missing';
+      if (issue.expected === 'integer') return 'Enter a whole number';
+      if (issue.received === 'undefined') return 'This needs a value';
       if (issue.expected === 'number') return 'Enter a number';
-      if (issue.expected === 'boolean') return 'Must be on or off';
-      if (issue.expected === 'string') return 'Enter text';
-      return `Expected ${issue.expected ?? 'another type'}`;
+      if (issue.expected === 'boolean') return 'Switch this on or off';
+      if (issue.expected === 'string') return 'Enter some text';
+      return 'This value isn’t the right kind';
     case 'invalid_string':
-      if (/^(geofence\.profiles|features)\.[^.]+$/.test(path)) return 'Use lowercase letters, numbers and _ , starting with a letter';
-      return key?.formatHint ?? 'Not in the expected format';
+      if (/^(geofence\.profiles|features)\.[^.]+$/.test(path)) return 'Use only lowercase letters, numbers and underscores, starting with a letter';
+      return key?.formatHint ?? 'This isn’t in the right format';
     case 'invalid_enum_value':
       return 'Choose one of the options';
     case 'custom':
@@ -71,7 +71,7 @@ export function validateLayer(doc: JsonObject, effective: JsonObject): FieldIssu
     for (const raw of res.error.issues as unknown as LooseIssue[]) {
       const base = raw.path.map(String).join('.');
       if (raw.code === 'unrecognized_keys') {
-        for (const k of raw.keys ?? []) out.push({ path: base ? `${base}.${k}` : k, message: 'Not a setting the app knows about' });
+        for (const k of raw.keys ?? []) out.push({ path: base ? `${base}.${k}` : k, message: 'The app doesn’t recognise this setting' });
         continue;
       }
       out.push({ path: base, message: friendly(raw, base) });

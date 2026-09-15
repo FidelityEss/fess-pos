@@ -43,8 +43,8 @@ function evidenceLabels(evidence: Evidence[], fieldLabels?: Record<string, strin
 // `label` is the PDF-report wording (Advanced); `plain` is the Basic-view wording.
 const CHAIN_STEPS: { event: string; label: string; plain: string }[] = [
   { event: 'uploaded', label: 'uploaded', plain: 'received' },
-  { event: 'verified', label: 'verified', plain: 'passed the tamper check' },
-  { event: 'quarantined', label: 'quarantined', plain: 'failed the tamper check' },
+  { event: 'verified', label: 'verified', plain: 'passed the security check' },
+  { event: 'quarantined', label: 'quarantined', plain: 'failed the security check' },
   { event: 'replicated', label: 'replicated', plain: 'backed up' },
   { event: 'reviewed', label: 'reviewed', plain: 'reviewed' },
   { event: 'exported', label: 'exported', plain: 'exported' },
@@ -92,9 +92,9 @@ export function CustodyTimeline({
 
   const envelopeRoles = useMemo(() => {
     const m = new Map<string, string>();
-    if (insp?.started_envelope_id) m.set(insp.started_envelope_id, 'inspection start');
-    if (insp?.submission_envelope_id) m.set(insp.submission_envelope_id, 'submission');
-    for (const e of inspEvidence) if (e.envelope_id) m.set(e.envelope_id, `${labels.get(e.id) ?? 'evidence'} metadata`);
+    if (insp?.started_envelope_id) m.set(insp.started_envelope_id, 'visit started');
+    if (insp?.submission_envelope_id) m.set(insp.submission_envelope_id, 'visit sent in');
+    for (const e of inspEvidence) if (e.envelope_id) m.set(e.envelope_id, `details of ${labels.get(e.id) ?? 'a photo'}`);
     return m;
   }, [insp, inspEvidence, labels]);
 
@@ -109,7 +109,7 @@ export function CustodyTimeline({
   const subjectLabel = (ev: CustodyEvent): string => {
     switch (ev.subject_type) {
       case 'inspection':
-        return `Inspection · attempt ${sorted.find((i) => i.id === ev.subject_id)?.attempt ?? '?'}`;
+        return `Visit ${sorted.find((i) => i.id === ev.subject_id)?.attempt ?? '?'}`;
       case 'evidence':
         return labels.get(ev.subject_id) ?? `Evidence ${shortId(ev.subject_id)}`;
       case 'envelope':
@@ -126,13 +126,13 @@ export function CustodyTimeline({
       <div className="flex flex-wrap items-center gap-2">
         {sorted.length > 1 ? (
           <Select value={insp?.id ?? ''} onValueChange={setSelected}>
-            <SelectTrigger className="w-48" aria-label="Attempt">
+            <SelectTrigger className="w-48" aria-label="Visit">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {sorted.map((i) => (
                 <SelectItem key={i.id} value={i.id}>
-                  Attempt {i.attempt}
+                  Visit {i.attempt}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -156,7 +156,7 @@ export function CustodyTimeline({
             <span className="text-sm text-muted-foreground">Device events carry the device clock; server events the server clock (SAST).</span>
           </>
         ) : (
-          <span className="text-sm text-muted-foreground">When each photo and file was taken, received and checked. Switch to Advanced view for the full event log.</span>
+          <span className="text-sm text-muted-foreground">When each photo and file was taken, received and checked. Advanced view also shows the full record of every step.</span>
         )}
       </div>
 
@@ -173,12 +173,12 @@ export function CustodyTimeline({
       <ApiErrorAlert error={custody.error} onRetry={() => void custody.refetch()} />
       {!advanced ? (
         inspEvidence.length === 0 ? (
-          <EmptyState title="No photos or files yet" description={insp ? 'They appear here as the agent’s phone uploads them.' : 'No inspection has started yet.'} />
+          <EmptyState title="No photos or files yet" description={insp ? 'They show here as the agent’s phone sends them.' : 'No visit has started yet.'} />
         ) : null
       ) : custody.isPending && subjects.length ? (
         <Skeleton className="h-48 w-full" />
       ) : filtered.length === 0 ? (
-        <EmptyState title="No custody events" description={insp ? 'Events appear as the device and server handle this attempt.' : 'No inspection has started yet.'} />
+        <EmptyState title="Nothing recorded yet" description={insp ? 'Steps show here as the phone and our systems handle this visit.' : 'No visit has started yet.'} />
       ) : (
         <div className="overflow-hidden rounded-lg border bg-card">
           <Table>

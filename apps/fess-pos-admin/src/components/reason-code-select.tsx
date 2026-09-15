@@ -40,7 +40,7 @@ export function ReasonCodeSelect({
         disabled={disabled || isLoading}
       >
         <SelectTrigger id={id} aria-invalid={invalid || undefined}>
-          <SelectValue placeholder={isLoading ? 'Loading reasons…' : error ? 'Could not load reasons' : placeholder} />
+          <SelectValue placeholder={isLoading ? 'Loading reasons…' : error ? 'Couldn’t load the reasons' : placeholder} />
         </SelectTrigger>
         <SelectContent>
           {(data ?? []).map((r) => (
@@ -48,7 +48,7 @@ export function ReasonCodeSelect({
               {r.label}
             </SelectItem>
           ))}
-          {data && data.length === 0 ? <div className="px-2 py-1.5 text-sm text-muted-foreground">No reason codes configured</div> : null}
+          {data && data.length === 0 ? <div className="px-2 py-1.5 text-sm text-muted-foreground">No reasons are set up for this yet. Add them under Reasons.</div> : null}
         </SelectContent>
       </Select>
       {showHint && selected ? (

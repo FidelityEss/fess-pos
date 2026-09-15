@@ -9,10 +9,10 @@ export default function NotFound() {
       <EmptyState
         icon={FileQuestion}
         title="Page not found"
-        description="The page you asked for doesn't exist."
+        description="This page doesn’t exist. The link may be old or mistyped."
         action={
           <Button asChild variant="outline" size="sm">
-            <Link href="/">Go to the dashboard</Link>
+            <Link href="/">Go to Home</Link>
           </Button>
         }
       />

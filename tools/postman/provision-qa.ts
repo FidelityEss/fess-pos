@@ -7,11 +7,12 @@
 //
 // Test users (created once through the admin API, remembered in ~/.fess-pos/postman-state-qa.json):
 //   bank   APIT       "API Test Bank (QA)"
-//   admin  API-ADM01  api.tester@fess-pos.test — scoped to APIT, permission schedule_jobs (sign-in: password + TOTP)
+//   admin  API-ADM01  api.tester@fess-pos.test — scoped to APIT, permission schedule_jobs (joins by registration link,
+//                     signs in with a password; D-96)
 //   agents API-AG01, API-AG02
 // Needs the seed admin from one scenario-seeder run: it creates the users. Re-runs only refresh the environment file.
 import { env, refuseProduction, target } from '../scenarios/lib/env.ts';
-import { Staff, type StaffCreds } from '../scenarios/lib/staff.ts';
+import { inviteAndRegister, Staff, type StaffCreds } from '../scenarios/lib/staff.ts';
 
 refuseProduction('Postman test-user provisioning');
 
@@ -39,7 +40,7 @@ try {
 } catch {
   // reported just below
 }
-if (!seedCreds?.totp_secret) throw new Error(`No seed admin in ${dir}/seed-state-${target}.json: run the scenario seeder against ${target} first.`);
+if (!seedCreds?.password) throw new Error(`No seed admin in ${dir}/seed-state-${target}.json: run the scenario seeder against ${target} first.`);
 const seedAdmin = new Staff('seed admin', seedCreds);
 await seedAdmin.login();
 console.log(`── provisioning Postman test users on ${target} (${env.supabaseUrl})`);
@@ -63,20 +64,21 @@ for (const [emp, first, last] of [['API-AG01', 'Api', 'Agent One'], ['API-AG02',
 }
 
 if (!state.admin) {
-  const email = 'api.tester@fess-pos.test';
-  const u = await seedAdmin.api('POST', '/users', {
-    employee_number: 'API-ADM01', first_name: 'Api', last_name: 'Tester', email, role: 'pos_admin',
-    permissions: ['schedule_jobs'], bank_ids: [state.bank_id],
+  const creds = await inviteAndRegister(seedAdmin, {
+    email: 'api.tester@fess-pos.test',
+    person: {
+      employee_number: 'API-ADM01', first_name: 'Api', last_name: 'Tester', role: 'pos_admin', permissions: ['schedule_jobs'],
+      bank_ids: [state.bank_id],
+    },
   });
-  const login = await seedAdmin.api('POST', `/users/${u.id}/admin-login`, { email });
-  state.admin = { user_id: u.id, email, password: login.temporary_password, employee_number: 'API-ADM01' };
+  state.admin = { ...creds, employee_number: 'API-ADM01' };
   save();
 }
 const tester = new Staff('API tester', state.admin);
-await tester.login(); // enrols TOTP at the first sign-in and records its secret
+await tester.login(); // password; a second step only while admin.require_mfa is on
 save();
 const me = await tester.api('GET', '/me');
-console.log(`  admin API-ADM01 ${state.admin.email} (signed in at MFA level aal2 as ${me.role})`);
+console.log(`  admin API-ADM01 ${state.admin.email} (signed in with ${tester.aal === 'aal2' ? 'password + second step' : 'a password'} as ${me.role})`);
 
 const values: Array<[string, string, 'default' | 'secret']> = [
   ['env', target, 'default'],
@@ -102,4 +104,4 @@ const environment = {
 Deno.mkdirSync(`${dir}/postman`, { recursive: true });
 const envPath = `${dir}/postman/fess-pos-qa.local.postman_environment.json`;
 Deno.writeTextFileSync(envPath, `${JSON.stringify(environment, null, 2)}\n`, { mode: 0o600 });
-console.log(`\nReady-to-import QA environment (holds the test admin's password and TOTP secret; keep it private):\n  ${envPath}`);
+console.log(`\nReady-to-import QA environment (holds the test admin's password, and TOTP secret if one was set up; keep it private):\n  ${envPath}`);
