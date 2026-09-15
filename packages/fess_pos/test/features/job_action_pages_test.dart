@@ -110,6 +110,7 @@ const List<ReasonCode> _codes = [
 ];
 
 const Map<String, Object?> _appDefinition = {
+  'home': 'job_detail',
   'pages': {
     'job_detail': {
       'type': 'view_page',
@@ -126,18 +127,28 @@ const Map<String, Object?> _appDefinition = {
       'title': 'Decline this job',
       'form': 'assignment_reject',
       'action': 'job.reject',
+      'outcomes': 'default',
     },
     'outcome_success': {
       'type': 'outcome_page',
+      'outcome': 'success',
       'title': 'All done',
       'message': 'The office has it.',
       'buttons': [
         {'label': 'Home', 'action': 'home'},
       ],
     },
+    // A checked app names every outcome (T3-17); these two show the
+    // bundled copy.
+    'outcome_saved': {'type': 'outcome_page', 'outcome': 'saved'},
+    'outcome_failure': {'type': 'outcome_page', 'outcome': 'failure'},
   },
   'outcome_sets': {
-    'default': {'success': 'outcome_success'},
+    'default': {
+      'success': 'outcome_success',
+      'saved': 'outcome_saved',
+      'failure': 'outcome_failure',
+    },
   },
 };
 
@@ -171,7 +182,7 @@ Widget _host(
     jobActionsProvider.overrideWith((ref) async => actions),
   ],
   child: const MaterialApp(
-    home: JobDetailPage(jobId: 'j1', onBack: _noop),
+    home: ViewPage(view: 'job_detail', jobId: 'j1', onBack: _noop),
   ),
 );
 

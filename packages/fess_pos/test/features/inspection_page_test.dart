@@ -417,7 +417,7 @@ void main() {
       ProviderScope(
         overrides: _overrides(inspections, _job('accepted')),
         child: const MaterialApp(
-          home: JobDetailPage(jobId: 'j1', onBack: _noop),
+          home: ViewPage(view: 'job_detail', jobId: 'j1', onBack: _noop),
         ),
       ),
     );
@@ -435,7 +435,7 @@ void main() {
       ProviderScope(
         overrides: _overrides(_FakeInspections(null), _job('assigned')),
         child: const MaterialApp(
-          home: JobDetailPage(jobId: 'j1', onBack: _noop),
+          home: ViewPage(view: 'job_detail', jobId: 'j1', onBack: _noop),
         ),
       ),
     );

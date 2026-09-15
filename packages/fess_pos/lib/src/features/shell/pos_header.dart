@@ -5,10 +5,21 @@ import 'package:flutter/material.dart';
 /// The FESS page header (docs/14 §1): a 60 px bar in the brand colour with
 /// a 30 px round white back button and a white semibold title.
 class PosHeader extends StatelessWidget implements PreferredSizeWidget {
-  const PosHeader({required this.title, this.onBack, super.key});
+  const PosHeader({
+    required this.title,
+    this.onBack,
+    this.onMenu,
+    this.menuTooltip,
+    super.key,
+  });
 
   final String title;
   final VoidCallback? onBack;
+
+  /// Opens the navigation drawer (`navigation.style: drawer`), from a
+  /// menu button at the end of the bar.
+  final VoidCallback? onMenu;
+  final String? menuTooltip;
 
   @override
   Size get preferredSize =>
@@ -34,6 +45,15 @@ class PosHeader extends StatelessWidget implements PreferredSizeWidget {
               child: _RoundBackButton(onPressed: back),
             ),
       title: Text(title),
+      actions: [
+        if (onMenu case final VoidCallback open)
+          IconButton(
+            key: const ValueKey('pos-menu'),
+            onPressed: open,
+            tooltip: menuTooltip,
+            icon: const Icon(Icons.menu),
+          ),
+      ],
     );
   }
 

@@ -155,7 +155,7 @@ class _GeofenceOverridePageState extends ConsumerState<GeofenceOverridePage> {
 
   @override
   Widget build(BuildContext context) {
-    final copy = ref.watch(copyProvider);
+    final copy = ref.watch(bankCopyProvider(widget.job.bankId));
     final definition = ref.watch(
       activeDefinitionVersionProvider((
         kind: 'form',

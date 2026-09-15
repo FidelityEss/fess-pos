@@ -37,7 +37,7 @@ final Stopwatch _monotonic = Stopwatch()..start();
 
 /// The flow an inspection follows (docs/04 §3.2); its `form_family` names
 /// the form.
-const String _flowKey = 'site_inspection_flow';
+const String _flowKey = inspectionFlowKey;
 
 /// An inspection's breadcrumbs waiting to go, how many batches went, and
 /// the time of the last fix sent (T4-08).

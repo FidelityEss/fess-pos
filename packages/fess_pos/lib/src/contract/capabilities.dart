@@ -46,10 +46,12 @@ const Set<String> inspectionOnlyComponents = {
   'location_pin',
 };
 
-/// View components (`11` §7.2). Still to come: `action_button` and `image`
-/// (T3-05), `evidence_status` (T4-13). An item this build can't draw is
-/// left out; the rest of the view still shows.
+/// View components (`11` §7.2). Still to come: `image`, which needs the
+/// module's cache of definition assets (T4-29). An item this build can't
+/// draw is left out; the rest of the view still shows.
 const Map<String, int> supportedViewComponents = {
+  'action_button': 1,
+  'evidence_status': 1,
   'agent_card': 1,
   'agent_card_summary': 1,
   'job_card': 1,
@@ -84,10 +86,11 @@ const Map<String, int> supportedFlowSteps = {
   'receipt': 1,
 };
 
-/// Page types (`11` §7.1). `list_page` comes with the app definition
-/// driving navigation (T3-17).
+/// Page types (`11` §7.1), the app definition's pages (T3-17). A
+/// `list_page` lists the agent's jobs; its other sources come later.
 const Map<String, int> supportedPageTypes = {
   'view_page': 1,
+  'list_page': 1,
   'form_page': 1,
   'flow': 1,
   'outcome_page': 1,

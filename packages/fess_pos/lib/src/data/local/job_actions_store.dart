@@ -103,7 +103,7 @@ class DriftJobActions implements JobActions {
               'answers_hash': answersHash(reason.answers),
             },
             'evidence_ids': const <String>[],
-            'config_version_id': ?await _configVersion(row.bankId),
+            'config_version_id': ?await pulledConfigVersion(_db, row.bankId),
           },
         );
       },
@@ -128,39 +128,45 @@ class DriftJobActions implements JobActions {
 
   @override
   Stream<DeliveryState> watchDelivery(String envelopeId) =>
-      (_db.select(
-        _db.outbox,
-      )..where((o) => o.id.equals(envelopeId))).watchSingleOrNull().map(
-        (row) => switch (row?.state) {
-          // Gone only after it was committed and kept long enough.
-          null ||
-          OutboxState.durable ||
-          OutboxState.committed => DeliveryState.delivered,
-          OutboxState.needsAttention => DeliveryState.needsAttention,
-          _ => DeliveryState.waiting,
-        },
-      );
+      watchEnvelopeDelivery(_db, envelopeId);
 
   Future<JobRow?> _row(String id) =>
       (_db.select(_db.jobs)..where((j) => j.id.equals(id))).getSingleOrNull();
+}
 
-  /// The config version in force for the job's bank (its own, else the
-  /// default), as pulled.
-  Future<String?> _configVersion(String? bankId) async {
-    for (final key in [
-      if (bankId != null) '${DocKeys.configBankPrefix}$bankId',
-      DocKeys.configDefault,
-    ]) {
-      final doc = await (_db.select(
-        _db.cachedDocuments,
-      )..where((d) => d.key.equals(key))).getSingleOrNull();
-      final hash = doc?.hash;
-      if (hash != null && _uuid.hasMatch(hash) && hash.length == 36) {
-        return hash;
-      }
+/// Where envelope [envelopeId] is, for an outcome page, live.
+Stream<DeliveryState> watchEnvelopeDelivery(
+  PosDatabase db,
+  String envelopeId,
+) => (db.select(db.outbox)..where((o) => o.id.equals(envelopeId)))
+    .watchSingleOrNull()
+    .map(
+      (row) => switch (row?.state) {
+        // Gone only after it was committed and kept long enough.
+        null ||
+        OutboxState.durable ||
+        OutboxState.committed => DeliveryState.delivered,
+        OutboxState.needsAttention => DeliveryState.needsAttention,
+        _ => DeliveryState.waiting,
+      },
+    );
+
+/// The config version in force for [bankId] (its own, else the default),
+/// as pulled.
+Future<String?> pulledConfigVersion(PosDatabase db, String? bankId) async {
+  for (final key in [
+    if (bankId != null) '${DocKeys.configBankPrefix}$bankId',
+    DocKeys.configDefault,
+  ]) {
+    final doc = await (db.select(
+      db.cachedDocuments,
+    )..where((d) => d.key.equals(key))).getSingleOrNull();
+    final hash = doc?.hash;
+    if (hash != null && _uuid.hasMatch(hash) && hash.length == 36) {
+      return hash;
     }
-    return null;
   }
+  return null;
 }
 
 Map<String, Object?> _object(String json) {

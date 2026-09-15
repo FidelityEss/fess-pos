@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 final RegExp _id = RegExp(r'^[0-9A-Za-z-]{1,64}$');
+final RegExp _token = RegExp(r'^[0-9A-Za-z_-]{16,256}$');
 
 /// A place in the module a deep link opens (docs/03 §3): the host forwards
 /// links under `/pos/…` on either of its schemes, e.g.
@@ -24,6 +25,9 @@ sealed class PosLink {
     return switch (rest) {
       ['job', final id] when _id.hasMatch(id) => JobLink(id),
       ['card'] => const CardLink(),
+      ['preview', final token] when _token.hasMatch(token) => PreviewLink(
+        token,
+      ),
       _ => const HomeLink(),
     };
   }
@@ -74,4 +78,22 @@ final class CardLink extends PosLink {
 
   @override
   int get hashCode => (CardLink).hashCode;
+}
+
+/// A draft to preview (docs/04 §10): "Preview on phone" gives a link with
+/// a short-lived token.
+final class PreviewLink extends PosLink {
+  const PreviewLink(this.token);
+
+  final String token;
+
+  @override
+  String get page => 'preview';
+
+  @override
+  bool operator ==(Object other) =>
+      other is PreviewLink && other.token == token;
+
+  @override
+  int get hashCode => token.hashCode;
 }

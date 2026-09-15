@@ -1,6 +1,8 @@
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/theme/tokens.g.dart';
 import 'package:fess_pos/src/renderer/cards.dart';
+import 'package:fess_pos/src/renderer/icons.dart';
+import 'package:fess_pos/src/renderer/markdown.dart';
 import 'package:fess_pos/src/renderer/render_context.dart';
 import 'package:fess_pos/src/renderer/template.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart';
@@ -90,7 +92,7 @@ class _ItemFactory {
       'schedule_window' => _schedule(item),
       'status_chip' => _statusChip(item),
       'badge' => _badge(item),
-      'markdown' => _paragraph(text(item)),
+      'markdown' => _markdown(text(item)),
       'divider' => const Divider(height: 24),
       'contact' => _contact(item),
       'greeting' => _heading(text(item), large: true),
@@ -99,7 +101,9 @@ class _ItemFactory {
       'stat_tile' => _StatTile(item: item, ctx: ctx),
       'job_list' => JobList(item: item, ctx: ctx),
       'sync_status' => _syncStatus(),
-      'announcement' => _badge(item),
+      'announcement' => _announcement(item),
+      'action_button' => _actionButton(item),
+      'evidence_status' => _evidenceStatus(item),
       'map_preview' => ctx.mapPreview?.call(item, bound(item)),
       'agent_card' => AuthorisationCard(item: item, ctx: ctx),
       'job_card' => AuthorisationCard(item: item, ctx: ctx, forJob: true),
@@ -180,11 +184,11 @@ class _ItemFactory {
     );
   }
 
-  Widget? _paragraph(String? value) {
+  Widget? _markdown(String? value) {
     if (value == null || value.trim().isEmpty) return null;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Text(value),
+      child: PosMarkdown(value),
     );
   }
 
@@ -209,14 +213,143 @@ class _ItemFactory {
   Widget? _contact(Map<String, Object?> item) {
     final contact = bound(item);
     if (contact is! Map<String, Object?>) return null;
+    final phone = displayValue(contact['phone']);
+    final email = displayValue(contact['email']);
     final lines = [
       displayValue(contact['name']),
       displayValue(contact['role']),
-      displayValue(contact['phone']),
-      displayValue(contact['email']),
+      phone,
+      email,
     ].whereType<String>().toList();
     if (lines.isEmpty) return null;
-    return _Labelled(label: label(item), child: Text(lines.join('\n')));
+    return _Labelled(
+      label: label(item),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(lines.join('\n')),
+          ..._contactButtons(item['actions'], phone: phone, email: email),
+        ],
+      ),
+    );
+  }
+
+  /// Call, text or email the contact in the phone's own apps (`actions`,
+  /// all of them by default), where the screen can open them.
+  List<Widget> _contactButtons(
+    Object? actions, {
+    required String? phone,
+    required String? email,
+  }) {
+    final open = ctx.openContact;
+    if (open == null) return const [];
+    bool offered(String channel) =>
+        actions is! List<Object?> || actions.contains(channel);
+    final buttons = [
+      for (final (channel, address, icon) in [
+        ('call', phone, Icons.phone_outlined),
+        ('sms', phone, Icons.sms_outlined),
+        ('email', email, Icons.email_outlined),
+      ])
+        if (address != null && offered(channel))
+          OutlinedButton.icon(
+            key: ValueKey('contact-$channel'),
+            onPressed: () => open(channel, address),
+            icon: Icon(icon, size: 18),
+            label: Text(ctx.copy('contact.$channel')),
+          ),
+    ];
+    if (buttons.isEmpty) return const [];
+    return [
+      Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Wrap(spacing: 8, runSpacing: 4, children: buttons),
+      ),
+    ];
+  }
+
+  /// A button that opens a page or a flow (`on_tap`), e.g. a form page.
+  Widget? _actionButton(Map<String, Object?> item) {
+    final shown = label(item) ?? text(item);
+    final target = item['on_tap'];
+    if (shown == null || shown.trim().isEmpty) return null;
+    if (target is! Map<String, Object?>) return null;
+    final open = ctx.onNavigate;
+    final onPressed = open == null ? null : () => open(target, ctx.data);
+    final key = ValueKey('action-button-${item['key'] ?? shown}');
+    final icon = posIcon(item['icon']);
+    final secondary = item['style'] == 'secondary';
+    final child = Text(shown);
+    final Widget button;
+    if (icon == null) {
+      button = secondary
+          ? OutlinedButton(key: key, onPressed: onPressed, child: child)
+          : FilledButton(key: key, onPressed: onPressed, child: child);
+    } else {
+      button = secondary
+          ? OutlinedButton.icon(
+              key: key,
+              onPressed: onPressed,
+              icon: Icon(icon),
+              label: child,
+            )
+          : FilledButton.icon(
+              key: key,
+              onPressed: onPressed,
+              icon: Icon(icon),
+              label: child,
+            );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: button,
+    );
+  }
+
+  /// An administrator's banner (`announcement`): a tone, an optional
+  /// title and Markdown text.
+  Widget? _announcement(Map<String, Object?> item) {
+    final body = text(item);
+    if (body == null || body.trim().isEmpty) return null;
+    final title = item['title'];
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: _Banner(
+        tone: _tone(item['tone'] ?? 'info'),
+        title: title is String ? fillTemplate(title, ctx.data) : null,
+        text: body,
+      ),
+    );
+  }
+
+  /// How an inspection's evidence is getting on (`evidence_status`, the
+  /// receipt's upload state), bound to its counts: `total`, `sent`,
+  /// `waiting` and `held`.
+  Widget? _evidenceStatus(Map<String, Object?> item) {
+    final counts = bound(item);
+    if (counts is! Map<String, Object?>) return null;
+    int count(String key) => switch (counts[key]) {
+      final int n => n,
+      _ => 0,
+    };
+    final total = count('total');
+    if (total == 0) return null;
+    final (key, tone) = count('held') > 0
+        ? ('evidence.status.held', _Tone.danger)
+        : count('sent') >= total
+        ? ('evidence.status.sent', _Tone.success)
+        : ('evidence.status.waiting', _Tone.warning);
+    return _Labelled(
+      label: label(item),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: _Chip(
+          key: const ValueKey('evidence-status'),
+          text: fillTemplate(ctx.copy(key), counts),
+          tone: tone,
+        ),
+      ),
+    );
   }
 
   Widget? _statRow(Map<String, Object?> item) {
@@ -280,8 +413,79 @@ _Tone _statusTone(String status) => switch (status) {
   _ => _Tone.neutral,
 };
 
+(Color, Color) _toneColors(ColorScheme scheme, _Tone tone) => switch (tone) {
+  _Tone.success => (scheme.primaryContainer, scheme.onPrimaryContainer),
+  _Tone.info => (scheme.secondaryContainer, scheme.onSecondaryContainer),
+  _Tone.warning => (scheme.tertiaryContainer, scheme.onTertiaryContainer),
+  _Tone.danger => (scheme.errorContainer, scheme.onErrorContainer),
+  _Tone.neutral => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
+};
+
+IconData _toneIcon(_Tone tone) => switch (tone) {
+  _Tone.success => Icons.check_circle_outline,
+  _Tone.info => Icons.info_outline,
+  _Tone.warning => Icons.warning_amber_outlined,
+  _Tone.danger => Icons.error_outline,
+  _Tone.neutral => Icons.campaign_outlined,
+};
+
+class _Banner extends StatelessWidget {
+  const _Banner({required this.tone, required this.text, this.title});
+
+  final _Tone tone;
+  final String? title;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final (background, foreground) = _toneColors(theme.colorScheme, tone);
+    final heading = title;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(PosTokens.radiusCard),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(_toneIcon(tone), color: foreground, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (heading != null && heading.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        heading,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: foreground,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  PosMarkdown(
+                    text,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: foreground,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _Chip extends StatelessWidget {
-  const _Chip({required this.text, required this.tone});
+  const _Chip({required this.text, required this.tone, super.key});
 
   final String text;
   final _Tone tone;
@@ -289,16 +493,7 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final (background, foreground) = switch (tone) {
-      _Tone.success => (scheme.primaryContainer, scheme.onPrimaryContainer),
-      _Tone.info => (scheme.secondaryContainer, scheme.onSecondaryContainer),
-      _Tone.warning => (scheme.tertiaryContainer, scheme.onTertiaryContainer),
-      _Tone.danger => (scheme.errorContainer, scheme.onErrorContainer),
-      _Tone.neutral => (
-        scheme.surfaceContainerHighest,
-        scheme.onSurfaceVariant,
-      ),
-    };
+    final (background, foreground) = _toneColors(scheme, tone);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: background,
@@ -438,6 +633,22 @@ class JobList extends StatelessWidget {
     final itemView = ctx.itemViews[item['item_view']] ?? const [];
     final onTap = item['on_tap'];
     final navigate = ctx.onNavigate;
+    final groupBy = item['group_by'];
+    Widget card(Map<String, Object?> job) => Card(
+      key: ValueKey('job-${job['id']}'),
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(PosTokens.radiusCard),
+        onTap: onTap is Map<String, Object?> && navigate != null
+            ? () => navigate(onTap, {...ctx.data, 'job': job})
+            : null,
+        child: ViewRenderer(
+          items: itemView,
+          context: ctx.withData({...ctx.data, 'job': job}),
+          padding: const EdgeInsets.all(12),
+        ),
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -454,24 +665,44 @@ class JobList extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Text(ctx.copy(empty), textAlign: TextAlign.center),
           ),
-        for (final job in jobs)
-          Card(
-            key: ValueKey('job-${job['id']}'),
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(PosTokens.radiusCard),
-              onTap: onTap is Map<String, Object?> && navigate != null
-                  ? () => navigate(onTap, {...ctx.data, 'job': job})
-                  : null,
-              child: ViewRenderer(
-                items: itemView,
-                context: ctx.withData({...ctx.data, 'job': job}),
-                padding: const EdgeInsets.all(12),
+        if (groupBy is String)
+          for (final (value, members) in _groups(jobs, groupBy)) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 2),
+              child: Text(
+                _groupLabel(groupBy, value),
+                style: Theme.of(context).textTheme.labelLarge,
               ),
             ),
-          ),
+            for (final job in members) card(job),
+          ]
+        else
+          for (final job in jobs) card(job),
       ],
     );
+  }
+
+  /// [jobs] grouped by the value at [path], in the order each value first
+  /// comes (the list's sort order).
+  static List<(Object?, List<Map<String, Object?>>)> _groups(
+    List<Map<String, Object?>> jobs,
+    String path,
+  ) {
+    final groups = <Object?, List<Map<String, Object?>>>{};
+    for (final job in jobs) {
+      (groups[readPath({'job': job}, path)] ??= []).add(job);
+    }
+    return [for (final e in groups.entries) (e.key, e.value)];
+  }
+
+  /// A group's heading: the copy for `<path>.<value>` where there is one
+  /// (e.g. `job.status.assigned`), else the value itself.
+  String _groupLabel(String path, Object? value) {
+    final shown = displayValue(value);
+    if (shown == null) return ctx.copy('list.group.none');
+    final key = '$path.$shown';
+    final copied = ctx.copy(key);
+    return copied == key ? shown : copied;
   }
 }
 

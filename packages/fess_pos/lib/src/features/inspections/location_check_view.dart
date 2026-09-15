@@ -371,7 +371,7 @@ class _LocationCheckViewState extends ConsumerState<LocationCheckView> {
 
   @override
   Widget build(BuildContext context) {
-    final copy = ref.watch(copyProvider);
+    final copy = ref.watch(bankCopyProvider(widget.job.bankId));
     final theme = Theme.of(context);
     final plan = _plan;
     final rule = plan?.outsideFix;

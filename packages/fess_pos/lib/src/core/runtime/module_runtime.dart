@@ -12,6 +12,7 @@ import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/observability/pos_observability.dart';
 import 'package:fess_pos/src/core/version.dart';
+import 'package:fess_pos/src/data/local/form_submissions_store.dart';
 import 'package:fess_pos/src/data/local/inspection_store.dart';
 import 'package:fess_pos/src/data/local/job_actions_store.dart';
 import 'package:fess_pos/src/data/local/local_store.dart';
@@ -31,10 +32,12 @@ import 'package:fess_pos/src/data/sync/evidence_uploads.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
 import 'package:fess_pos/src/data/sync/sections.dart';
 import 'package:fess_pos/src/data/sync/sync_engine.dart';
+import 'package:fess_pos/src/domain/forms/form_submissions.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/domain/navigation/pos_link.dart';
+import 'package:fess_pos/src/domain/preview/preview_request.dart';
 import 'package:fess_pos/src/domain/session/session_gateway.dart';
 import 'package:fess_pos/src/platform/connectivity.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
@@ -203,6 +206,7 @@ final class ModuleRuntime {
   OutboxStore? _outbox;
   JobActions? _jobActions;
   Inspections? _inspections;
+  FormSubmissions? _formSubmissions;
   ActionRecorder? _recorder;
   EvidenceUploader? _uploader;
   CachedTileSource? _tiles;
@@ -306,6 +310,28 @@ final class ModuleRuntime {
       recorder: _recorderFor(db),
       origin: () => _activeOrigin(client),
       send: runSync,
+    );
+  }
+
+  /// Drafts for "Preview on phone" links (docs/04 §10). None until the
+  /// server serves them by token (T3-33): a preview link then says the
+  /// preview isn't available.
+  Future<PreviewDrafts?> previewDrafts() async => null;
+
+  /// Generic form submissions (`record.submit`, T3-19), recorded under the
+  /// signed-in user's session; null in builds without the POS API client.
+  Future<FormSubmissions?> formSubmissions() async {
+    final built = _formSubmissions;
+    if (built != null) return built;
+    final client = dependencies.apiClient;
+    if (client == null) return null;
+    final db = await localStore();
+    return _formSubmissions ??= DriftFormSubmissions(
+      db: db,
+      recorder: _recorderFor(db),
+      origin: () => _activeOrigin(client),
+      send: runSync,
+      clock: dependencies.clock,
     );
   }
 

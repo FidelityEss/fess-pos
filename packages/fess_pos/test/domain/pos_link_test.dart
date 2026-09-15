@@ -21,6 +21,20 @@ void main() {
     expect(PosLink.parse(Uri.parse('fess://pos')), const HomeLink());
   });
 
+  test('a preview link carries its token (T3-08)', () {
+    const token = 'pv_0123456789abcdefABCDEF';
+    expect(
+      PosLink.parse(Uri.parse('fess://pos/preview/$token')),
+      const PreviewLink(token),
+    );
+    expect(const PreviewLink(token).page, 'preview');
+    expect(
+      PosLink.parse(Uri.parse('fess://pos/preview/short')),
+      const HomeLink(),
+      reason: 'not a token',
+    );
+  });
+
   test("a POS page this build doesn't know opens home", () {
     expect(PosLink.parse(Uri.parse('fess://pos/receipt/1')), const HomeLink());
     expect(

@@ -5,18 +5,24 @@
 library;
 
 import 'package:fess_pos/src/bootstrap/bootstrap_snapshot.dart';
+import 'package:fess_pos/src/contract/capabilities.dart';
+import 'package:fess_pos/src/core/content/bundled_app.dart';
 import 'package:fess_pos/src/core/content/bundled_copy.dart';
+import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/runtime/module_runtime.dart';
 import 'package:fess_pos/src/core/theme/pos_theme_data.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/local/repositories.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart';
+import 'package:fess_pos/src/domain/app/app_spec.dart';
 import 'package:fess_pos/src/domain/cards/cards.dart';
+import 'package:fess_pos/src/domain/forms/form_submissions.dart';
 import 'package:fess_pos/src/domain/forms/reason_codes.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/domain/maps/map_tiles.dart';
+import 'package:fess_pos/src/domain/preview/preview_request.dart';
 import 'package:fess_pos/src/domain/sync/attention.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:flutter/material.dart';
@@ -156,6 +162,20 @@ final jobActionsProvider = FutureProvider<JobActions?>(
   name: 'jobActions',
 );
 
+/// Recording generic form submissions (`record.submit`, T3-19); null in
+/// builds without the POS API client.
+final formSubmissionsProvider = FutureProvider<FormSubmissions?>(
+  (ref) => ref.watch(moduleRuntimeProvider).formSubmissions(),
+  name: 'formSubmissions',
+);
+
+/// Drafts for "Preview on phone" links (T3-08); null until the server
+/// serves them (T3-33).
+final previewDraftsProvider = FutureProvider<PreviewDrafts?>(
+  (ref) => ref.watch(moduleRuntimeProvider).previewDrafts(),
+  name: 'previewDrafts',
+);
+
 /// Inspections (T4-27); null in builds without the POS API client.
 final inspectionsProvider = FutureProvider<Inspections?>(
   (ref) => ref.watch(moduleRuntimeProvider).inspections(),
@@ -269,17 +289,74 @@ final agentTotalsProvider = StreamProvider<Map<String, Object?>?>((
 
 /// Copy by key: the server's `core` content strings over the bundled
 /// defaults (docs/04 §3.5).
-final copyProvider = Provider<String Function(String key)>((ref) {
-  final content = switch (ref.watch(
-    activeDefinitionProvider((kind: 'content', key: 'core', bankId: null)),
+final copyProvider = Provider<String Function(String key)>(
+  (ref) => ref.watch(bankCopyProvider(null)),
+  name: 'copy',
+);
+
+/// Copy by key on a job's pages (B4.18): the job's bank's own `core`
+/// strings, then the default `core`, then the bundled defaults. A bank's
+/// content needs only the keys it changes.
+// ignore: specify_nonobvious_property_types
+final bankCopyProvider = Provider.family<String Function(String key), String?>(
+  (ref, bankId) {
+    Map<String, Object?>? strings(String? bank) {
+      final content = switch (ref.watch(
+        activeDefinitionProvider((kind: 'content', key: 'core', bankId: bank)),
+      )) {
+        AsyncData(:final value) => value,
+        _ => null,
+      };
+      final s = content?['strings'];
+      return s is Map<String, Object?> ? s : null;
+    }
+
+    final base = strings(null);
+    final bank = bankId == null ? null : strings(bankId);
+    return (key) {
+      final s = bank?[key] ?? base?[key];
+      return s is String ? s : BundledCopy.text(key);
+    };
+  },
+  name: 'bankCopy',
+);
+
+/// An inspection's evidence as the phone holds it, live, without the
+/// bytes: the evidence fields show captions and who signed from it, and
+/// the job's receipt how its uploads are getting on.
+// ignore: specify_nonobvious_property_types
+final inspectionEvidenceProvider = StreamProvider.autoDispose
+    .family<List<EvidenceItem>, String>((ref, inspectionId) async* {
+      final inspections = await ref.watch(inspectionsProvider.future);
+      if (inspections != null) yield* inspections.watchEvidence(inspectionId);
+    }, name: 'inspectionEvidence');
+
+const PosLogger _appLog = PosLogger('app');
+
+/// The app in force for a bank's pages (docs/04 §3.6, T3-17): the bank's
+/// own `agent_app`, else the default, checked. The bundled app stands in
+/// until one arrives, and when the one in force can't be used, which is
+/// logged.
+// ignore: specify_nonobvious_property_types
+final appSpecProvider = Provider.family<AppSpec, String?>((ref, bankId) {
+  final active = switch (ref.watch(
+    activeDefinitionProvider((kind: 'app', key: 'agent_app', bankId: bankId)),
   )) {
     AsyncData(:final value) => value,
     _ => null,
   };
-  final strings = content?['strings'];
-  final server = strings is Map<String, Object?> ? strings : null;
-  return (key) {
-    final s = server?[key];
-    return s is String ? s : BundledCopy.text(key);
-  };
-}, name: 'copy');
+  if (active != null) {
+    try {
+      return AppSpec.parse(
+        active,
+        pageTypes: supportedPageTypes.keys.toSet(),
+      );
+    } on AppSpecError catch (e) {
+      _appLog.warning(
+        "the app definition in force can't be used "
+        '(${e.problems.join('; ')}); the bundled one stands in',
+      );
+    }
+  }
+  return BundledApp.spec;
+}, name: 'appSpec');

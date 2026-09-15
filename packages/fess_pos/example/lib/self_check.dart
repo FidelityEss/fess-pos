@@ -30,9 +30,15 @@ Future<void> main() async {
 
   await check('store', () async {
     final db = await openLocalStore(platform);
-    final cipher = await db.customSelect('PRAGMA cipher_version').getSingle();
+    // The web store has no cipher (D-51): sqlite3.wasm and drift_worker.js
+    // are served beside index.html (T3-24).
+    final cipher = await db.customSelect('PRAGMA cipher_version').get();
+    final version = await db
+        .customSelect('SELECT sqlite_version()')
+        .getSingle();
     await db.close();
-    return 'cipher=${cipher.data.values.first}';
+    final name = cipher.isEmpty ? 'none' : cipher.first.data.values.first;
+    return 'cipher=$name sqlite=${version.data.values.first}';
   });
   await check('camera', () async {
     final cameras = await const PluginCameraService().cameras();
