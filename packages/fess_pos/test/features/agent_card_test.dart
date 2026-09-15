@@ -44,11 +44,15 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text(_copy('card.status_active')), findsOneWidget);
+    // Home: the short chip, which fits one line (card_chip_fit_test.dart).
+    expect(find.text(_copy('card.status_active_short')), findsOneWidget);
+    expect(find.text(_copy('card.status_active')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('agent-card-summary')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('page-agent_card')), findsOneWidget);
     expect(find.text(_copy('card.title')), findsOneWidget);
+    // The card page keeps the full wording.
+    expect(find.text(_copy('card.status_active')), findsOneWidget);
     expect(
       tester.widget<QrCodeView>(find.byType(QrCodeView)).data,
       'https://pos.test/v1/public/verify/$_token',

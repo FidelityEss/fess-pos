@@ -73,6 +73,9 @@ abstract final class BundledCopy {
     'card.employee_number': 'Employee no. {{number}}',
     'card.role.pos_agent': 'POS agent',
     'card.status_active': 'Authorised Fidelity POS agent — active',
+    // The home card's chip: one line on a 360-point phone (about 128 points
+    // of room; "Authorised agent · Active" needs 157).
+    'card.status_active_short': 'Authorised agent',
     'card.status_expired': 'Card expired',
     'card.status_pending': 'Card not issued yet',
     'card.valid_until': 'Valid until {{time}}',
