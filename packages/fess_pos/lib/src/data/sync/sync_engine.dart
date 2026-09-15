@@ -50,9 +50,11 @@ class SyncEngine {
     void Function(PullReport report)? onPulled,
     Future<int> Function()? uploadEvidence,
     Future<void> Function(RemoteConfig config)? housekeeping,
+    void Function({required bool running})? onRunning,
     DateTime Function()? clock,
     this.nudgeDelay = const Duration(seconds: 2),
-  }) : _deviceOrigin = deviceOrigin,
+  }) : _onRunning = onRunning,
+       _deviceOrigin = deviceOrigin,
        _canPull = canPull,
        _reverify = reverify,
        _onPulled = onPulled,
@@ -76,6 +78,9 @@ class SyncEngine {
   /// Clears what the server holds and the phone no longer needs (docs/08
   /// §4), after each run.
   final Future<void> Function(RemoteConfig config)? _housekeeping;
+
+  /// Told when a run starts and ends, for the sync status (docs/08 §8).
+  final void Function({required bool running})? _onRunning;
   final DateTime Function() _clock;
 
   RemoteConfig _config = RemoteConfig.bundled;
@@ -98,10 +103,16 @@ class SyncEngine {
   }) => pendingWork ? config.foregroundSyncInterval : config.idleSyncInterval;
 
   /// Runs now, or joins the run in progress.
-  Future<SyncRunReport> syncNow() => _running ??= _run().whenComplete(() {
-    _running = null;
-    unawaited(_schedule());
-  });
+  Future<SyncRunReport> syncNow() {
+    final running = _running;
+    if (running != null) return running;
+    _onRunning?.call(running: true);
+    return _running = _run().whenComplete(() {
+      _running = null;
+      _onRunning?.call(running: false);
+      unawaited(_schedule());
+    });
+  }
 
   /// Starts the timer.
   void start() {

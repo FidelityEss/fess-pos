@@ -37,6 +37,8 @@ abstract final class BundledCopy {
     'sync.synced': 'Synced',
     'sync.pending': '{{count}} items waiting to upload',
     'sync.needs_attention': 'Needs attention',
+    'sync.uploading_photos': 'Uploading photos: {{count}} to go',
+    'sync.now': 'Sync now',
     'contact.call': 'Call',
     'contact.sms': 'SMS',
     'contact.email': 'Email',
@@ -97,8 +99,8 @@ abstract final class BundledCopy {
     'outcome.success.message': 'Thank you — the server has confirmed it.',
     'outcome.saved.title': 'Saved on this phone',
     'outcome.saved.message':
-        "It will send automatically when you're back online. You don't need "
-        'to do anything else.',
+        '{{pending}} items are waiting to upload. They send automatically '
+        "when you're back online; you don't need to do anything else.",
     'outcome.failure.title': "This couldn't be completed",
     'outcome.failure.message':
         'Nothing you captured has been lost. Check the message below and try '

@@ -22,13 +22,15 @@ typedef PageNavigate =
     void Function(Map<String, Object?> target, Map<String, Object?> data);
 
 /// What views read as `job.*`: the job as pulled, plus `scheduled`
-/// (`{start, end}`), which `schedule_window` binds to.
-Map<String, Object?> jobViewData(JobRecord job) => {
+/// (`{start, end}`), which `schedule_window` binds to, and `offline_ready`
+/// where the page knows it (docs/08 §8).
+Map<String, Object?> jobViewData(JobRecord job, {bool? offlineReady}) => {
   ...job.data,
   'scheduled': {
     'start': job.data['scheduled_start'],
     'end': job.data['scheduled_end'],
   },
+  'offline_ready': ?offlineReady,
 };
 
 String todayIso() {
@@ -226,6 +228,9 @@ class ViewPage extends ConsumerWidget {
     final agent = _data(ref.watch(agentProvider));
     final totals = _data(ref.watch(agentTotalsProvider));
     final sync = _data(ref.watch(syncStatusProvider));
+    final syncing = _data(ref.watch(syncingProvider)) ?? false;
+    final ready =
+        _data(ref.watch(offlineReadyJobsProvider)) ?? const <String>{};
     final latest = id == null
         ? null
         : _data(ref.watch(latestInspectionProvider(id)));
@@ -246,9 +251,11 @@ class ViewPage extends ConsumerWidget {
         'sync': {
           'pending': sync.pending,
           'needs_attention': sync.needsAttention,
+          'photos': sync.evidenceWaiting,
+          'syncing': syncing,
         },
       if (record != null) ...{
-        'job': jobViewData(record),
+        'job': jobViewData(record, offlineReady: ready.contains(record.id)),
         'job_card': card(
           _data<CardToken?>(ref.watch(jobCardProvider(record.id))),
         ),
@@ -266,7 +273,8 @@ class ViewPage extends ConsumerWidget {
     final ctx = RenderContext(
       data: data,
       jobs: [
-        for (final j in _data(jobs) ?? const <JobRecord>[]) jobViewData(j),
+        for (final j in _data(jobs) ?? const <JobRecord>[])
+          jobViewData(j, offlineReady: ready.contains(j.id)),
       ],
       itemViews: {
         for (final key in _itemViewKeys(items))
@@ -275,6 +283,7 @@ class ViewPage extends ConsumerWidget {
       copy: copy,
       today: todayIso(),
       onNavigate: onNavigate,
+      onSyncNow: () => unawaited(ref.read(moduleRuntimeProvider).runSync()),
       openContact: (channel, address) =>
           unawaited(_openContact(context, ref, copy, channel, address)),
       mapPreview: record == null
@@ -378,6 +387,8 @@ class ListPage extends ConsumerWidget {
     final title = page['title'];
     final itemView = page['item_view'];
     final jobs = ref.watch(myJobsProvider);
+    final ready =
+        _data(ref.watch(offlineReadyJobsProvider)) ?? const <String>{};
     final Widget body;
     if (page['source'] != 'jobs' || itemView is! String) {
       body = _Message(copy('page.unavailable'));
@@ -401,7 +412,10 @@ class ListPage extends ConsumerWidget {
                 ],
                 context: RenderContext(
                   data: data,
-                  jobs: [for (final j in value) jobViewData(j)],
+                  jobs: [
+                    for (final j in value)
+                      jobViewData(j, offlineReady: ready.contains(j.id)),
+                  ],
                   itemViews: {itemView: viewItems(ref, itemView)},
                   copy: copy,
                   today: todayIso(),

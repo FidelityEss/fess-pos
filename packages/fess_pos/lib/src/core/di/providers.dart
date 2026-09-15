@@ -4,6 +4,8 @@
 /// host needs no `ProviderScope` and never sees the module's providers.
 library;
 
+import 'dart:async';
+
 import 'package:fess_pos/src/bootstrap/bootstrap_snapshot.dart';
 import 'package:fess_pos/src/contract/capabilities.dart';
 import 'package:fess_pos/src/core/content/bundled_app.dart';
@@ -11,6 +13,7 @@ import 'package:fess_pos/src/core/content/bundled_copy.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/runtime/module_runtime.dart';
 import 'package:fess_pos/src/core/theme/pos_theme_data.dart';
+import 'package:fess_pos/src/data/local/offline_readiness.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/local/repositories.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart';
@@ -176,6 +179,28 @@ final previewDraftsProvider = FutureProvider<PreviewDrafts?>(
   (ref) => ref.watch(moduleRuntimeProvider).previewDrafts(),
   name: 'previewDrafts',
 );
+
+/// Whether a sync run is going on now, for the sync status (docs/08 §8).
+final syncingProvider = StreamProvider<bool>((ref) {
+  final syncing = ref.watch(moduleRuntimeProvider).syncing;
+  final controller = StreamController<bool>();
+  void emit() => controller.add(syncing.value);
+  syncing.addListener(emit);
+  emit();
+  ref.onDispose(() {
+    syncing.removeListener(emit);
+    unawaited(controller.close());
+  });
+  return controller.stream;
+}, name: 'syncing');
+
+/// Which of the agent's jobs are ready to work offline (docs/08 §8), live.
+final offlineReadyJobsProvider = StreamProvider<Set<String>>((ref) async* {
+  yield* OfflineReadiness(
+    await ref.watch(localDatabaseProvider.future),
+    clock: ref.watch(moduleRuntimeProvider).dependencies.clock,
+  ).watch();
+}, name: 'offlineReadyJobs');
 
 /// How the phone's storage stands, measured when asked (docs/08 §5).
 // ignore: specify_nonobvious_property_types

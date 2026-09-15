@@ -218,6 +218,9 @@ final class ModuleRuntime {
 
   /// A forwarded deep link waiting for the POS screen to open it (T2-19).
   final ValueNotifier<PosLink?> pendingLink = ValueNotifier(null);
+
+  /// Whether a sync run is going on now, for the sync status (docs/08 §8).
+  final ValueNotifier<bool> syncing = ValueNotifier(false);
   StreamSubscription<NetworkState>? _network;
 
   static const String _clientType = kIsWeb ? 'web' : 'native';
@@ -320,6 +323,18 @@ final class ModuleRuntime {
   /// server serves them by token (T3-12): a preview link then says the
   /// preview isn't available.
   Future<PreviewDrafts?> previewDrafts() async => null;
+
+  /// What the server doesn't hold yet: envelopes waiting to go and photos
+  /// waiting to upload. The host warns with it before signing out (docs/08
+  /// §8); nothing is lost either way, as uploads carry on after sign-out.
+  Future<int> pendingWork() async {
+    try {
+      return (await _outboxFor(await localStore()).status()).waiting;
+    } on Object catch (e) {
+      _log.warning('pending work could not be counted (${e.runtimeType})');
+      return 0;
+    }
+  }
 
   /// How the phone's storage stands for new work (docs/08 §5): what the
   /// module's folder takes and what the phone has free. What can't be read
@@ -501,6 +516,7 @@ final class ModuleRuntime {
         _prefetchTiles();
         unawaited(_reconcilePush());
       },
+      onRunning: ({required running}) => syncing.value = running,
       housekeeping: (config) async {
         await LocalHousekeeping(
           db,
@@ -564,7 +580,8 @@ final class ModuleRuntime {
     if (purge) {
       throw const PosException(
         PosErrorCodes.notSupported,
-        'purging local data needs the sync layer (T5-09); nothing was deleted',
+        'purging local data waits on D-21 (sign-out data behaviour); nothing '
+        'was deleted',
         kind: PosErrorKind.unsupported,
         retryable: false,
       );

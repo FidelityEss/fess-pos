@@ -3,7 +3,9 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:fess_pos/src/core/version.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
@@ -385,6 +387,37 @@ void main() {
       s.oldestPendingAt,
       first.add(const Duration(minutes: 5)).toLocal(),
     );
+  });
+
+  test('status counts photos whose bytes wait to go up (T5-09)', () async {
+    Future<void> photo(String id, String state, {bool bytes = true}) => db
+        .into(db.evidence)
+        .insert(
+          EvidenceCompanion.insert(
+            id: id,
+            inspectionId: 'i1',
+            jobId: 'j1',
+            userId: 'u-1',
+            fieldKey: 'p',
+            category: 'photo',
+            type: 'photo',
+            mime: 'image/jpeg',
+            sha256: 'a' * 64,
+            size: 1,
+            capturedAtDevice: '2026-09-15T08:00:00Z',
+            capturedMonotonicMs: 1,
+            state: state,
+            createdAtMs: 1,
+            updatedAt: '2026-09-15T08:00:00Z',
+            bytes: Value(bytes ? Uint8List.fromList([1]) : null),
+          ),
+        );
+    await photo('e1', 'local_only');
+    await photo('e2', 'uploaded');
+    await photo('e3', 'verified', bytes: false);
+    final s = await store.status();
+    expect(s.evidenceWaiting, 1);
+    expect(s.waiting, s.pending + 1);
   });
 
   test('quarantined stores are reported once', () async {

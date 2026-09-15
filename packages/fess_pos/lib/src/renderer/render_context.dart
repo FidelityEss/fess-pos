@@ -14,6 +14,7 @@ class RenderContext {
     this.today,
     this.mapPreview,
     this.openContact,
+    this.onSyncNow,
   });
 
   /// What items bind to and rules read: `job`, `agent`, `stats`, `sync`.
@@ -47,6 +48,10 @@ class RenderContext {
   /// one, contacts show without their buttons.
   final void Function(String channel, String address)? openContact;
 
+  /// Runs a sync now, from the sync status (docs/08 §8); the screen
+  /// supplies it.
+  final VoidCallback? onSyncNow;
+
   /// The same context with other data, e.g. one job of a list.
   RenderContext withData(Map<String, Object?> data) => RenderContext(
     data: data,
@@ -57,5 +62,6 @@ class RenderContext {
     today: today,
     mapPreview: mapPreview,
     openContact: openContact,
+    onSyncNow: onSyncNow,
   );
 }

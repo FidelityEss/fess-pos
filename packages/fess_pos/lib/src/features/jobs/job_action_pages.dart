@@ -753,7 +753,7 @@ class _ActionOutcomePageState extends ConsumerState<ActionOutcomePage> {
     final sync = _data(ref.watch(syncStatusProvider));
     final data = <String, Object?>{
       ...widget.data,
-      'pending': sync?.pending ?? 0,
+      'pending': sync?.waiting ?? 0,
     };
     return StreamBuilder<DeliveryState>(
       stream: _delivery,

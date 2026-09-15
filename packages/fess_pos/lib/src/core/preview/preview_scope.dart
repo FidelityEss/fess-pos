@@ -89,6 +89,8 @@ List<Override> previewOverrides(
         ),
       ),
     ),
+    syncingProvider.overrideWith((ref) => Stream.value(false)),
+    offlineReadyJobsProvider.overrideWith((ref) => Stream.value({job.id})),
     needsAttentionProvider.overrideWith(
       (ref) => Stream.value(const <AttentionItem>[]),
     ),

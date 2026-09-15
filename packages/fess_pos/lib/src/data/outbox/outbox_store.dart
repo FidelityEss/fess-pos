@@ -73,6 +73,7 @@ class OutboxStatus {
     required this.needsAttention,
     required this.committed,
     this.oldestPendingAt,
+    this.evidenceWaiting = 0,
   });
 
   final int queued;
@@ -85,6 +86,12 @@ class OutboxStatus {
   final DateTime? oldestPendingAt;
 
   int get pending => queued + inFlight;
+
+  /// Photos and signatures whose bytes haven't gone up yet (docs/08 §8).
+  final int evidenceWaiting;
+
+  /// Everything the server doesn't hold yet: envelopes and evidence.
+  int get waiting => pending + evidenceWaiting;
 }
 
 /// The transactional outbox (docs/12 §3, docs/08 §3): every device write
@@ -408,7 +415,18 @@ class OutboxStore {
               ..where(_db.outbox.state.isIn(OutboxState.pending)))
             .map((r) => r.read(oldest))
             .getSingleOrNull();
+    final photos = _db.evidence.id.count();
+    final photosWaiting =
+        await (_db.selectOnly(_db.evidence)
+              ..addColumns([photos])
+              ..where(
+                _db.evidence.bytes.isNotNull() &
+                    _db.evidence.state.isIn(const ['local_only', 'uploading']),
+              ))
+            .map((r) => r.read(photos))
+            .getSingle();
     return OutboxStatus(
+      evidenceWaiting: photosWaiting ?? 0,
       queued: counts[OutboxState.queued] ?? 0,
       inFlight: counts[OutboxState.inFlight] ?? 0,
       durable: counts[OutboxState.durable] ?? 0,
@@ -430,7 +448,7 @@ class OutboxStore {
   Stream<OutboxStatus> watchStatus() async* {
     yield await status();
     yield* _db
-        .tableUpdates(TableUpdateQuery.onTable(_db.outbox))
+        .tableUpdates(TableUpdateQuery.onAllTables([_db.outbox, _db.evidence]))
         .asyncMap((_) => status());
   }
 

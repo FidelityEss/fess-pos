@@ -75,6 +75,33 @@ void main() {
     ]);
   });
 
+  testWidgets('the sync status counts photos, says when they are going up, '
+      'and offers Sync now while work waits (T5-09)', (tester) async {
+    var synced = 0;
+    RenderContext ctx(Map<String, Object?> sync) => RenderContext(
+      data: {'sync': sync},
+      onSyncNow: () => synced++,
+    );
+    await _render(tester, const [
+      {'type': 'sync_status'},
+    ], ctx(const {'pending': 1, 'photos': 3, 'needs_attention': 0}));
+    expect(find.text('4 items waiting to upload'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('sync-now')));
+    expect(synced, 1);
+
+    await _render(tester, const [
+      {'type': 'sync_status'},
+    ], ctx(const {'pending': 0, 'photos': 3, 'syncing': true}));
+    expect(find.text('Uploading photos: 3 to go'), findsOneWidget);
+    expect(find.byKey(const ValueKey('sync-now')), findsNothing);
+
+    await _render(tester, const [
+      {'type': 'sync_status'},
+    ], ctx(const {'pending': 0, 'photos': 0}));
+    expect(find.text(BundledCopy.text('sync.synced')), findsOneWidget);
+    expect(find.byKey(const ValueKey('sync-now')), findsNothing);
+  });
+
   testWidgets('a job card shows what its view binds', (tester) async {
     await _render(
       tester,

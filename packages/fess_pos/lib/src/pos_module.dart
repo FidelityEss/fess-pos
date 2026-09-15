@@ -35,10 +35,17 @@ abstract final class PosModule {
       ModuleRuntime.require.signIn(identity);
 
   /// Ends UI access; queued work keeps uploading. Call from every host
-  /// logout path. `purge: true` isn't available yet and deletes nothing.
+  /// logout path. `purge: true` isn't available yet (D-21) and deletes
+  /// nothing.
   static Future<void> signOut({bool purge = false}) async {
     await ModuleRuntime.current?.signOut(purge: purge);
   }
+
+  /// How many items haven't reached the server yet: envelopes and photos.
+  /// A host can warn with it before its sign-out. Uploads carry on after
+  /// sign-out, so nothing is lost either way. 0 before [initialize].
+  static Future<int> pendingWork() async =>
+      await ModuleRuntime.current?.pendingWork() ?? 0;
 
   /// Whether the host should show its POS entry point.
   static Future<PosAccess> access() async =>
