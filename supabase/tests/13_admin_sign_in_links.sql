@@ -122,12 +122,14 @@ update pos.settings set value = '24'::jsonb where key = 'admin.invite_ttl_hours'
 -- ── The record is kept as it was ──────────────────────────────────────────────────────────────
 select throws_ok($$update pos.admin_sign_in_links set email_sent = true, email_error = null$$, 'P0001', null, 'a sign-in link record cannot be changed');
 select throws_ok($$delete from pos.admin_sign_in_links$$, 'P0001', null, 'nor deleted');
-select is((select count(*) from pos.admin_sign_in_links where not email_sent), 1::bigint, 'the record is still there, unchanged');
+-- (Counts are limited to this file's people: the project may hold real rows, e.g. from the registration check.)
+select is((select count(*) from pos.admin_sign_in_links where not email_sent and user_id::text like 'ec100000-%'), 1::bigint,
+          'the record is still there, unchanged');
 
 -- ── Who reads the records ─────────────────────────────────────────────────────────────────────
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"ec000000-0000-0000-0000-000000000001","aal":"aal1","role":"authenticated"}', true);
-select is((select count(*) from pos.admin_sign_in_links), 2::bigint, 'an admin reads the sign-in links sent');
+select is((select count(*) from pos.admin_sign_in_links where user_id::text like 'ec100000-%'), 2::bigint, 'an admin reads the sign-in links sent');
 select set_config('request.jwt.claims', '{"sub":"ec000000-0000-0000-0000-000000000025","aal":"aal1","role":"authenticated"}', true);
 select is((select count(*) from pos.admin_sign_in_links), 0::bigint, 'a bank viewer reads none, not even their own');
 select set_config('request.jwt.claims', '{"token_use":"pos_access","pos_user_id":"ec100000-0000-0000-0000-000000000031","pos_role":"pos_agent","scope":"full","role":"authenticated"}', true);
