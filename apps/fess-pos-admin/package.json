@@ -39,6 +39,7 @@
     "lucide-react": "^0.544.0",
     "maplibre-gl": "^5.7.1",
     "next": "^15.5.3",
+    "qrcode.react": "4.2.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "sonner": "^2.0.7",

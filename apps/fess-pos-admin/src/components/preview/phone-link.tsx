@@ -2,8 +2,10 @@
 
 // "Preview on a phone" (T3-12, D-101, docs/04 §10): a short-lived link that opens this draft in the FESS app on a phone,
 // signed in as an agent or tester, in the app's preview mode, where nothing is kept. The server makes the link
-// (POST /v1/admin/preview-links); the phone fetches the draft with it (GET /v1/preview/:token).
+// (POST /v1/admin/preview-links); the phone fetches the draft with it (GET /v1/preview/:token). Each link is also shown
+// as a QR code (qrcode.react, drawn as SVG in the browser: the link never leaves the page), to scan with the phone.
 import { Smartphone } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useState } from 'react';
 import { ApiErrorAlert } from '@/components/api-error-alert';
 import { CopyButton } from '@/components/copy-button';
@@ -87,17 +89,29 @@ export function PhoneLinkButton({
           {link ? (
             <div className="space-y-3 text-sm">
               <p>
-                The link works until <b>{until}</b>. Send it to the phone, for example by email or in a chat. Changed the draft since? Make a new
-                link.
+                The link works until <b>{until}</b>. Scan its code with the phone’s camera, or send the link to the phone, for example by email
+                or in a chat. Changed the draft since? Make a new link.
               </p>
               <ul className="space-y-2">
                 {Object.entries(link.links).map(([platform, url]) => (
-                  <li key={platform} className="rounded-md border p-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{PLATFORM[platform] ?? platform}</span>
-                      <CopyButton value={url} label="Copy link" variant="outline" />
+                  <li key={platform} className="flex items-start gap-3 rounded-md border p-2">
+                    <QRCodeSVG
+                      value={url}
+                      size={112}
+                      level="M"
+                      marginSize={2}
+                      bgColor="#ffffff"
+                      fgColor="#000000"
+                      title={`Code for ${PLATFORM[platform] ?? platform}: scan it with the phone’s camera`}
+                      className="shrink-0 rounded-sm border"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">{PLATFORM[platform] ?? platform}</span>
+                        <CopyButton value={url} label="Copy link" variant="outline" />
+                      </div>
+                      <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{url}</p>
                     </div>
-                    <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{url}</p>
                   </li>
                 ))}
               </ul>
