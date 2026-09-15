@@ -127,6 +127,10 @@ abstract final class MetaKeys {
   /// How many of [quarantinedStores] have gone out in a `client_error`.
   static const String quarantinedStoresReported = 'quarantined_stores_reported';
 
+  /// How many of [quarantinedStores] the agent has acknowledged (T5-13).
+  static const String quarantinedStoresAcknowledged =
+      'quarantined_stores_acknowledged';
+
   /// Set while an inspection is paused because the agent left the fence
   /// (T4-07); its value is when.
   static String geofencePaused(String inspectionId) =>
@@ -147,8 +151,12 @@ abstract final class MetaKeys {
 
 extension QuarantineLog on PosDatabase {
   /// Records stores moved aside because they could never be opened again
-  /// (D-52), for the sync layer to report (T1-22).
-  Future<void> recordQuarantine(List<String> names) async {
+  /// (D-52), for the sync layer to report (T1-22), with what was kept
+  /// beside each ([details]: its `reason` and `custody` note, T5-13).
+  Future<void> recordQuarantine(
+    List<String> names, {
+    Map<String, Map<String, Object?>> details = const {},
+  }) async {
     final now = isoWithOffset(DateTime.now());
     final existing =
         await (select(
@@ -157,7 +165,7 @@ extension QuarantineLog on PosDatabase {
             .getSingleOrNull();
     final log = <Object?>[
       if (existing != null) ...(jsonDecode(existing.value) as List<Object?>),
-      ...names.map((n) => {'name': n, 'at': now}),
+      ...names.map((n) => {'name': n, 'at': now, ...?details[n]}),
     ];
     await into(moduleMeta).insertOnConflictUpdate(
       ModuleMetaCompanion.insert(

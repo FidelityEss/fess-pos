@@ -250,7 +250,7 @@ class ViewPage extends ConsumerWidget {
       if (sync != null)
         'sync': {
           'pending': sync.pending,
-          'needs_attention': sync.needsAttention,
+          'needs_attention': sync.needsAttention + sync.lostStores,
           'photos': sync.evidenceWaiting,
           'syncing': syncing,
         },

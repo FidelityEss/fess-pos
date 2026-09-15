@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -102,6 +103,18 @@ Future<String> quarantineLocalDatabase(
       source.renameSync(p.join(target.path, '$name.db$suffix'));
     }
   }
+  // Beside it: the note of unsent work as it stood, and why it was moved,
+  // so it can be reported honestly (T5-13, D-93).
+  final note = File(p.join(dir, 'custody.json'));
+  if (note.existsSync()) {
+    note.renameSync(p.join(target.path, '$name.custody.json'));
+  }
+  File(p.join(target.path, '$name.json')).writeAsStringSync(
+    jsonEncode({
+      'reason': reason,
+      'at': DateTime.now().toUtc().toIso8601String(),
+    }),
+  );
   _log.warning('local store moved aside as $name ($reason); a new one starts');
   return name;
 }

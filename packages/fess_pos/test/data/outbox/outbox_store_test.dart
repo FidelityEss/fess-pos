@@ -433,6 +433,47 @@ void main() {
     final error = (payload['errors']! as List).single as Map;
     expect(error['code'], 'LOCAL_STORE_QUARANTINED');
     expect(error['kind'], 'recovery_anomaly');
+    expect((error['detail']! as Map)['outcome'], 'unknown');
+  });
+
+  test('a lost store is reported with what was on it, and shown until the '
+      'agent acknowledges it (T5-13)', () async {
+    await db.recordQuarantine(
+      ['fess_pos-a', 'fess_pos-b'],
+      details: {
+        'fess_pos-a': {
+          'reason': 'LOCAL_STORE_KEY_MISSING',
+          'custody': {'waiting': 2, 'updated_at': '2026-09-15T08:00:00Z'},
+        },
+        'fess_pos-b': {
+          'reason': 'LOCAL_STORE_KEY_REJECTED',
+          'custody': {'waiting': 0},
+        },
+      },
+    );
+    await store.reportQuarantinedStores(_device);
+    final payload =
+        (jsonDecode((await db.select(db.outbox).get()).single.envelope)
+                as Map<String, Object?>)['payload']!
+            as Map<String, Object?>;
+    final errors = (payload['errors']! as List).cast<Map<String, Object?>>();
+    final a = errors.first;
+    expect(a['message'], contains('2 items the server did not hold'));
+    expect(a['detail'], containsPair('outcome', 'unsentUnrecoverable'));
+    expect(a['detail'], containsPair('bytes_retained', true));
+    expect(a['detail'], containsPair('recovered', false));
+    expect(a['detail'], containsPair('reason', 'LOCAL_STORE_KEY_MISSING'));
+    expect(errors.last['detail'], containsPair('outcome', 'nothingUnsent'));
+
+    expect(
+      (await store.watchLostStores().first).map((s) => s.name),
+      ['fess_pos-a'],
+      reason: 'only a store with work on it needs a notice',
+    );
+    expect((await store.status()).lostStores, 1);
+    await store.acknowledgeLostStores();
+    expect(await store.watchLostStores().first, isEmpty);
+    expect((await store.status()).lostStores, 0);
   });
 
   test('an item in flight when the app stopped is queued again', () async {

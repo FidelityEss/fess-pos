@@ -28,6 +28,7 @@ import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/domain/preview/preview_request.dart';
 import 'package:fess_pos/src/domain/storage/storage_budget.dart';
 import 'package:fess_pos/src/domain/sync/attention.dart';
+import 'package:fess_pos/src/domain/sync/lost_store.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -178,6 +179,24 @@ final formSubmissionsProvider = FutureProvider<FormSubmissions?>(
 final previewDraftsProvider = FutureProvider<PreviewDrafts?>(
   (ref) => ref.watch(moduleRuntimeProvider).previewDrafts(),
   name: 'previewDrafts',
+);
+
+/// Stores moved aside with work on them whose notice the agent hasn't
+/// acknowledged, live (T5-13).
+final lostStoresProvider = StreamProvider<List<LostStore>>((ref) async* {
+  yield* OutboxStore(
+    await ref.watch(localDatabaseProvider.future),
+  ).watchLostStores();
+}, name: 'lostStores');
+
+/// Acknowledges every lost-store notice so far (T5-13).
+final acknowledgeLostStoresProvider = Provider<Future<void> Function()>(
+  (ref) => () async {
+    await OutboxStore(
+      await ref.read(localDatabaseProvider.future),
+    ).acknowledgeLostStores();
+  },
+  name: 'acknowledgeLostStores',
 );
 
 /// Whether a sync run is going on now, for the sync status (docs/08 §8).

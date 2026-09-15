@@ -1,4 +1,5 @@
 import 'package:fess_pos/src/contract/errors.dart';
+import 'package:fess_pos/src/data/local/custody_note.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/platform/database/database.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
@@ -46,7 +47,17 @@ Future<PosDatabase> _open(
     Error.throwWithStackTrace(localStoreFailure(e), st);
   }
   final quarantined = [...alreadyQuarantined, ...opened.quarantined];
-  if (quarantined.isNotEmpty) await db.recordQuarantine(quarantined);
+  if (quarantined.isNotEmpty) {
+    // With why each was moved and the note of unsent work kept beside it,
+    // so it's reported honestly (T5-13).
+    final dir = await platform.storage.moduleDirectory();
+    await db.recordQuarantine(
+      quarantined,
+      details: dir == null
+          ? const {}
+          : await readQuarantineDetails(dir, quarantined),
+    );
+  }
   return db;
 }
 

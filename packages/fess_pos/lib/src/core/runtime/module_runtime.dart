@@ -12,6 +12,7 @@ import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/observability/pos_observability.dart';
 import 'package:fess_pos/src/core/version.dart';
+import 'package:fess_pos/src/data/local/custody_note.dart';
 import 'package:fess_pos/src/data/local/form_submissions_store.dart';
 import 'package:fess_pos/src/data/local/housekeeping.dart';
 import 'package:fess_pos/src/data/local/inspection_store.dart';
@@ -221,6 +222,36 @@ final class ModuleRuntime {
 
   /// Whether a sync run is going on now, for the sync status (docs/08 §8).
   final ValueNotifier<bool> syncing = ValueNotifier(false);
+
+  StreamSubscription<void>? _custodyNote;
+
+  /// Keeps the note of unsent work beside the store current (T5-13,
+  /// D-93): if the store can never be opened again, the report says what
+  /// was on it. Written as the store opens, before anyone else uses it,
+  /// then after each change to what is waiting. A note that can't be
+  /// written is logged; it never stops the store opening.
+  Future<void> _noteCustody(PosDatabase db) async {
+    if (_custodyNote != null) return;
+    final outbox = _outboxFor(db);
+    _custodyNote = outbox
+        .watchWaitingChanges()
+        .asyncMap(_writeCustodyNote)
+        .listen(null, onError: _custodyNoteFailed);
+    try {
+      await _writeCustodyNote(await outbox.status());
+    } on Object catch (e) {
+      _custodyNoteFailed(e);
+    }
+  }
+
+  Future<void> _writeCustodyNote(OutboxStatus status) async {
+    final dir = await dependencies.platform.storage.moduleDirectory();
+    if (dir != null) await writeCustodyNote(dir, status, dependencies.clock());
+  }
+
+  void _custodyNoteFailed(Object e) =>
+      _log.warning('custody note not written (${e.runtimeType})');
+
   StreamSubscription<NetworkState>? _network;
 
   static const String _clientType = kIsWeb ? 'web' : 'native';
@@ -540,7 +571,9 @@ final class ModuleRuntime {
     );
     _localStore = opening;
     try {
-      return await opening;
+      final db = await opening;
+      await _noteCustody(db);
+      return db;
     } on Object catch (e, st) {
       if (identical(_localStore, opening)) _localStore = null;
       final code = e is PosException ? e.code : e.runtimeType.toString();
@@ -635,6 +668,8 @@ final class ModuleRuntime {
     _sync?.stop();
     await _network?.cancel();
     _network = null;
+    await _custodyNote?.cancel();
+    _custodyNote = null;
     container.dispose();
     pendingLink.dispose();
     dependencies.apiClient?.close();

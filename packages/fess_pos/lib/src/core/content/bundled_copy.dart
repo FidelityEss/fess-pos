@@ -242,6 +242,15 @@ abstract final class BundledCopy {
         "The server couldn't accept these. Your data is safe on this phone, "
         'and an administrator has been told.',
     'attention.none': 'Nothing needs attention.',
+    'attention.lost.title': "Work on this phone couldn't be opened",
+    'attention.lost.unsent':
+        "{{count}} items saved since {{at}} hadn't reached the server and "
+        "can't be recovered on this phone. They're kept, and reported to "
+        'your administrator.',
+    'attention.lost.unknown':
+        "Work saved on this phone before {{at}} couldn't be opened. It's "
+        'kept, and reported to your administrator.',
+    'attention.lost.ok': 'I understand',
     'attention.saved_at': 'Saved {{at}}',
     'attention.reason': 'Reason: {{code}}',
     'attention.type.submission': 'Inspection submission',
