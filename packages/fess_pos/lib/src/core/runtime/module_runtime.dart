@@ -11,8 +11,11 @@ import 'package:fess_pos/src/contract/identity.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/observability/pos_observability.dart';
+import 'package:fess_pos/src/core/runtime/background_sync.dart';
 import 'package:fess_pos/src/core/version.dart';
+import 'package:fess_pos/src/data/local/custody_note.dart';
 import 'package:fess_pos/src/data/local/form_submissions_store.dart';
+import 'package:fess_pos/src/data/local/housekeeping.dart';
 import 'package:fess_pos/src/data/local/inspection_store.dart';
 import 'package:fess_pos/src/data/local/job_actions_store.dart';
 import 'package:fess_pos/src/data/local/local_store.dart';
@@ -32,6 +35,7 @@ import 'package:fess_pos/src/data/sync/evidence_uploads.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
 import 'package:fess_pos/src/data/sync/sections.dart';
 import 'package:fess_pos/src/data/sync/sync_engine.dart';
+import 'package:fess_pos/src/data/sync/sync_report.dart';
 import 'package:fess_pos/src/domain/forms/form_submissions.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
@@ -39,10 +43,13 @@ import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/domain/navigation/pos_link.dart';
 import 'package:fess_pos/src/domain/preview/preview_request.dart';
 import 'package:fess_pos/src/domain/session/session_gateway.dart';
+import 'package:fess_pos/src/domain/storage/storage_budget.dart';
 import 'package:fess_pos/src/platform/connectivity.dart';
+import 'package:fess_pos/src/platform/io/files.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:fess_pos/src/platform/secure_store.dart';
 import 'package:flutter/foundation.dart' show ValueNotifier, kIsWeb;
+import 'package:flutter/widgets.dart' show AppLifecycleListener;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meta/meta.dart';
 import 'package:sentry/sentry.dart' show Transport;
@@ -215,6 +222,74 @@ final class ModuleRuntime {
 
   /// A forwarded deep link waiting for the POS screen to open it (T2-19).
   final ValueNotifier<PosLink?> pendingLink = ValueNotifier(null);
+
+  /// Whether a sync run is going on now, for the sync status (docs/08 §8).
+  final ValueNotifier<bool> syncing = ValueNotifier(false);
+
+  StreamSubscription<void>? _custodyNote;
+
+  /// Keeps the note of unsent work beside the store current (T5-13,
+  /// D-93): if the store can never be opened again, the report says what
+  /// was on it. Written as the store opens, before anyone else uses it,
+  /// then after each change to what is waiting. A note that can't be
+  /// written is logged; it never stops the store opening.
+  Future<void> _noteCustody(PosDatabase db) async {
+    if (_custodyNote != null) return;
+    final outbox = _outboxFor(db);
+    _custodyNote = outbox
+        .watchWaitingChanges()
+        .asyncMap(_writeCustodyNote)
+        .listen(null, onError: _custodyNoteFailed);
+    try {
+      await _writeCustodyNote(await outbox.status());
+    } on Object catch (e) {
+      _custodyNoteFailed(e);
+    }
+  }
+
+  Future<void> _writeCustodyNote(OutboxStatus status) async {
+    final dir = await dependencies.platform.storage.moduleDirectory();
+    if (dir != null) await writeCustodyNote(dir, status, dependencies.clock());
+  }
+
+  void _custodyNoteFailed(Object e) =>
+      _log.warning('custody note not written (${e.runtimeType})');
+
+  AppLifecycleListener? _lifecycle;
+
+  /// Registers background sync with the platform (T5-01, D-36, D-94):
+  /// saves what a background run starts from, registers the periodic sync,
+  /// and from then on asks for one more sync whenever the app is left with
+  /// work the server doesn't hold yet.
+  Future<void> registerBackgroundWork() async {
+    final scheduler = dependencies.platform.backgroundWork;
+    if (!scheduler.supported) {
+      _log.info('background work is not available on this platform');
+      return;
+    }
+    await saveBackgroundBootstrap(
+      dependencies.platform.secureStore,
+      config.bootstrap,
+    );
+    await scheduler.register(posBackgroundDispatcher);
+    _lifecycle ??= AppLifecycleListener(
+      onHide: () => unawaited(_syncSoonIfWaiting()),
+    );
+  }
+
+  /// On leaving the app: one more sync in the background, if the store
+  /// is open and holds work the server doesn't have yet.
+  Future<void> _syncSoonIfWaiting() async {
+    if (_localStore == null) return;
+    try {
+      if (await pendingWork() > 0) {
+        await dependencies.platform.backgroundWork.syncSoon();
+      }
+    } on Object catch (e) {
+      _log.warning('background sync not scheduled (${e.runtimeType})');
+    }
+  }
+
   StreamSubscription<NetworkState>? _network;
 
   static const String _clientType = kIsWeb ? 'web' : 'native';
@@ -314,9 +389,37 @@ final class ModuleRuntime {
   }
 
   /// Drafts for "Preview on phone" links (docs/04 §10). None until the
-  /// server serves them by token (T3-33): a preview link then says the
+  /// server serves them by token (T3-12): a preview link then says the
   /// preview isn't available.
   Future<PreviewDrafts?> previewDrafts() async => null;
+
+  /// What the server doesn't hold yet: envelopes waiting to go and photos
+  /// waiting to upload. The host warns with it before signing out (docs/08
+  /// §8); nothing is lost either way, as uploads carry on after sign-out.
+  Future<int> pendingWork() async {
+    try {
+      return (await _outboxFor(await localStore()).status()).waiting;
+    } on Object catch (e) {
+      _log.warning('pending work could not be counted (${e.runtimeType})');
+      return 0;
+    }
+  }
+
+  /// How the phone's storage stands for new work (docs/08 §5): what the
+  /// module's folder takes and what the phone has free. What can't be read
+  /// counts as room: a storage figure never stops work by failing.
+  Future<StorageUse> storageUse() async {
+    try {
+      final dir = await dependencies.platform.storage.moduleDirectory();
+      return StorageUse(
+        usedBytes: dir == null ? 0 : await directorySize(dir),
+        freeBytes: await dependencies.platform.deviceInfo.freeDiskBytes(),
+      );
+    } on Object catch (e) {
+      _log.warning('storage could not be measured (${e.runtimeType})');
+      return StorageUse.unknown;
+    }
+  }
 
   /// Generic form submissions (`record.submit`, T3-19), recorded under the
   /// signed-in user's session; null in builds without the POS API client.
@@ -353,6 +456,7 @@ final class ModuleRuntime {
       integrity: platform.integrity,
       diagnostics: _diagnostics,
       clock: dependencies.clock,
+      storageUse: storageUse,
     );
   }
 
@@ -435,6 +539,18 @@ final class ModuleRuntime {
   SyncEngine _newSyncEngine(PosApiClient client, PosDatabase db) {
     final outbox = _outboxFor(db);
     const clientType = _clientType;
+    // The device's report on its sync (T5-02). The web build has no device
+    // to report: no free storage, no battery settings.
+    final reporter = kIsWeb
+        ? null
+        : SyncReporter(
+            outbox: outbox,
+            power: dependencies.platform.power.status,
+            freeDiskBytes: dependencies.platform.deviceInfo.freeDiskBytes,
+            configVersionId: () => _bootstrap.configVersionId,
+            capabilities: capabilityReport(clientType, null),
+            clock: dependencies.clock,
+          );
     return SyncEngine(
       sender: OutboxSender(store: outbox, client: client),
       puller: PullEngine(
@@ -481,6 +597,17 @@ final class ModuleRuntime {
         _prefetchTiles();
         unawaited(_reconcilePush());
       },
+      onRunning: ({required running}) => syncing.value = running,
+      housekeeping: (config) async {
+        await LocalHousekeeping(
+          db,
+          clock: dependencies.clock,
+        ).run(config.retainCommittedPayload);
+      },
+      report: reporter == null
+          ? null
+          : (config, origin) =>
+                reporter.reportIfDue(origin, every: config.syncReportInterval),
       clock: dependencies.clock,
     );
   }
@@ -498,7 +625,9 @@ final class ModuleRuntime {
     );
     _localStore = opening;
     try {
-      return await opening;
+      final db = await opening;
+      await _noteCustody(db);
+      return db;
     } on Object catch (e, st) {
       if (identical(_localStore, opening)) _localStore = null;
       final code = e is PosException ? e.code : e.runtimeType.toString();
@@ -538,7 +667,8 @@ final class ModuleRuntime {
     if (purge) {
       throw const PosException(
         PosErrorCodes.notSupported,
-        'purging local data needs the sync layer (T5-09); nothing was deleted',
+        'purging local data waits on D-21 (sign-out data behaviour); nothing '
+        'was deleted',
         kind: PosErrorKind.unsupported,
         retryable: false,
       );
@@ -592,6 +722,10 @@ final class ModuleRuntime {
     _sync?.stop();
     await _network?.cancel();
     _network = null;
+    await _custodyNote?.cancel();
+    _custodyNote = null;
+    _lifecycle?.dispose();
+    _lifecycle = null;
     container.dispose();
     pendingLink.dispose();
     dependencies.apiClient?.close();

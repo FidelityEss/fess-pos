@@ -21,7 +21,7 @@ const String previewRender = 'fess_pos.preview.render';
 const String previewRendered = 'fess_pos.preview.rendered';
 
 /// What the preview can't draw as the request stands: an app definition's
-/// problems (the module would stand the bundled app in), or a flow (T3-32).
+/// problems (the module would stand the bundled app in), or a flow (T3-12).
 List<String> previewProblems(PreviewRequest request) {
   switch (request.kind) {
     case 'app':

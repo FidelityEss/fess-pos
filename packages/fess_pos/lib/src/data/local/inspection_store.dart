@@ -16,6 +16,7 @@ import 'package:fess_pos/src/domain/geofence/geofence.dart';
 import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
+import 'package:fess_pos/src/domain/storage/storage_budget.dart';
 import 'package:fess_pos/src/platform/camera.dart';
 import 'package:fess_pos/src/platform/integrity.dart';
 import 'package:fess_pos/src/platform/location.dart';
@@ -75,8 +76,10 @@ class DriftInspections implements Inspections {
     required Future<Map<String, Object?>> Function() diagnostics,
     DateTime Function()? clock,
     String Function()? newId,
+    Future<StorageUse> Function()? storageUse,
     this.fixTimeout = const Duration(seconds: 10),
-  }) : _outbox = outbox,
+  }) : _storageUse = storageUse ?? (() async => StorageUse.unknown),
+       _outbox = outbox,
        _recorder = recorder,
        _origin = origin,
        _send = send,
@@ -95,6 +98,10 @@ class DriftInspections implements Inspections {
   final Future<Map<String, Object?>> Function() _diagnostics;
   final DateTime Function() _clock;
   final String Function() _newId;
+
+  /// How the phone's storage stands, checked before a new inspection
+  /// (docs/08 §5).
+  final Future<StorageUse> Function() _storageUse;
 
   /// The longest the phone waits for a location fix.
   final Duration fixTimeout;
@@ -122,6 +129,17 @@ class DriftInspections implements Inspections {
     }
     final jobSchema = await _active('job_schema', 'job_attributes', job.bankId);
     final config = await _config(job.bankId);
+    // No new inspection the phone may not have room to finish: sync first
+    // (docs/08 §5). One already open carries on above.
+    final rules = RemoteConfig(config.values);
+    final budget = StorageBudget.ofMb(
+      rules.integer('storage.cap_mb'),
+      rules.integer('storage.block_new_work_at_pct'),
+    );
+    if (!budget.allowsNewWork(await _storageUse())) {
+      _log.info('no new inspection: the phone is short of room (sync first)');
+      return const BeginResult(BeginStatus.storageFull);
+    }
     final fix = await _fix(fixTimeout);
     final signals = await _integrity.snapshot();
     final token = _decode(

@@ -11,6 +11,7 @@ import 'package:fess_pos/src/data/outbox/outbox_store.dart';
 import 'package:fess_pos/src/data/remote/pos_api_client.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
 import 'package:fess_pos/src/data/sync/sync_engine.dart';
+import 'package:fess_pos/src/data/sync/sync_report.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart' show payloadHash;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -140,6 +141,33 @@ void main() {
     expect(report.pulled, isNull);
     expect(paths(), isNot(contains('/sync/pull')));
     expect(report.drained!.outcomes, {OutboxState.committed: 1});
+  });
+
+  test('the device reports on its sync beside the other device reports, '
+      'and a clean run is its last success (T5-02)', () async {
+    final reported = <EnvelopeOrigin>[];
+    final reporting = SyncEngine(
+      sender: OutboxSender(store: outbox, client: client),
+      puller: PullEngine(
+        db: db,
+        client: client,
+        outbox: outbox,
+        bootstrapCache: MemoryBootstrapCache(),
+        capabilities: const {},
+        clock: clock.call,
+      ),
+      outbox: outbox,
+      deviceOrigin: () async => _device,
+      canPull: () => canPull,
+      report: (config, origin) async => reported.add(origin),
+      clock: clock.call,
+    );
+    expect((await reporting.syncNow()).ok, isTrue);
+    expect(reported, [_device]);
+    final state = {
+      for (final r in await db.select(db.syncState).get()) r.key: r.value,
+    };
+    expect(state[ReportKeys.lastSuccessAt], isNotNull);
   });
 
   test('a restore sends everything kept again, in the same run', () async {

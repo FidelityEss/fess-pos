@@ -363,16 +363,29 @@ class _ItemFactory {
     );
   }
 
+  /// Synced, what waits to go up (envelopes and photos), photos going up
+  /// now, or what needs attention (docs/08 §8). With work waiting and no
+  /// run going, a Sync now button runs one.
   Widget? _syncStatus() {
     final sync = ctx.data['sync'];
     if (sync is! Map<String, Object?>) return null;
-    final attention = sync['needs_attention'];
-    final pending = sync['pending'];
+    int count(String key) => switch (sync[key]) {
+      final int n => n,
+      _ => 0,
+    };
+    final attention = count('needs_attention');
+    final photos = count('photos');
+    final waiting = count('pending') + photos;
+    final syncing = sync['syncing'] == true;
     final String shown;
-    if (attention is int && attention > 0) {
+    if (attention > 0) {
       shown = ctx.copy('sync.needs_attention');
-    } else if (pending is int && pending > 0) {
-      shown = fillTemplate(ctx.copy('sync.pending'), {'count': pending});
+    } else if (syncing && photos > 0) {
+      shown = fillTemplate(ctx.copy('sync.uploading_photos'), {
+        'count': photos,
+      });
+    } else if (waiting > 0) {
+      shown = fillTemplate(ctx.copy('sync.pending'), {'count': waiting});
     } else {
       shown = ctx.copy('sync.synced');
     }
@@ -382,15 +395,28 @@ class _ItemFactory {
       textAlign: TextAlign.center,
     );
     final open = ctx.onNavigate;
+    final syncNow = ctx.onSyncNow;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      // What needs attention opens its list (T4-13).
-      child: attention is int && attention > 0 && open != null
-          ? InkWell(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // What needs attention opens its list (T4-13).
+          if (attention > 0 && open != null)
+            InkWell(
               onTap: () => open(const {'page': 'needs_attention'}, const {}),
               child: text,
             )
-          : text,
+          else
+            text,
+          if (waiting > 0 && !syncing && syncNow != null)
+            TextButton(
+              key: const ValueKey('sync-now'),
+              onPressed: syncNow,
+              child: Text(ctx.copy('sync.now')),
+            ),
+        ],
+      ),
     );
   }
 }

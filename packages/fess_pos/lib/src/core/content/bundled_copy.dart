@@ -18,6 +18,12 @@ abstract final class BundledCopy {
     'page.agent_card.title': 'My authorisation card',
     'page.active_jobs.title': 'Active leads',
     'page.receipt.title': 'Receipt',
+    'storage.sync_required':
+        "There isn't room on this phone for a new inspection. Connect to "
+        'sync so finished work can leave the phone, or free up space.',
+    'storage.capture_full':
+        "The phone's storage is full. Free up space to take photos; your "
+        'answers are kept.',
     'preview.label': 'Preview',
     'preview.waiting': 'Waiting for something to preview…',
     'preview.unavailable':
@@ -31,6 +37,8 @@ abstract final class BundledCopy {
     'sync.synced': 'Synced',
     'sync.pending': '{{count}} items waiting to upload',
     'sync.needs_attention': 'Needs attention',
+    'sync.uploading_photos': 'Uploading photos: {{count}} to go',
+    'sync.now': 'Sync now',
     'contact.call': 'Call',
     'contact.sms': 'SMS',
     'contact.email': 'Email',
@@ -91,8 +99,8 @@ abstract final class BundledCopy {
     'outcome.success.message': 'Thank you — the server has confirmed it.',
     'outcome.saved.title': 'Saved on this phone',
     'outcome.saved.message':
-        "It will send automatically when you're back online. You don't need "
-        'to do anything else.',
+        '{{pending}} items are waiting to upload. They send automatically '
+        "when you're back online; you don't need to do anything else.",
     'outcome.failure.title': "This couldn't be completed",
     'outcome.failure.message':
         'Nothing you captured has been lost. Check the message below and try '
@@ -234,6 +242,21 @@ abstract final class BundledCopy {
         "The server couldn't accept these. Your data is safe on this phone, "
         'and an administrator has been told.',
     'attention.none': 'Nothing needs attention.',
+    'attention.lost.title': "Work on this phone couldn't be opened",
+    'attention.lost.unsent':
+        "{{count}} items saved since {{at}} hadn't reached the server and "
+        "can't be recovered on this phone. They're kept, and reported to "
+        'your administrator.',
+    'attention.lost.unknown':
+        "Work saved on this phone before {{at}} couldn't be opened. It's "
+        'kept, and reported to your administrator.',
+    'attention.lost.ok': 'I understand',
+    'attention.battery.title': 'Your phone may hold back sending',
+    'attention.battery.body':
+        "This phone's battery settings can stop POS sending your work while "
+        "it's in the background. Let the app run without battery "
+        'restrictions, then come back here.',
+    'attention.battery.open': 'Open battery settings',
     'attention.saved_at': 'Saved {{at}}',
     'attention.reason': 'Reason: {{code}}',
     'attention.type.submission': 'Inspection submission',

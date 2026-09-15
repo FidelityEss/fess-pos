@@ -1,6 +1,7 @@
 import 'package:fess_pos/src/core/content/bundled_copy.dart';
 import 'package:fess_pos/src/core/di/providers.dart';
 import 'package:fess_pos/src/domain/sync/attention.dart';
+import 'package:fess_pos/src/domain/sync/lost_store.dart';
 import 'package:fess_pos/src/features/shell/needs_attention_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,6 +42,41 @@ void main() {
     expect(find.text(_copy('attention.type.submission')), findsOneWidget);
     expect(find.text(_copy('attention.type.other')), findsOneWidget);
     expect(find.textContaining('Reason: VALIDATION_FAILED'), findsOneWidget);
+  });
+
+  testWidgets('a store that could never be opened again, with work on it, '
+      'is shown until the agent acknowledges it (T5-13)', (tester) async {
+    var acknowledged = 0;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          activeDefinitionProvider.overrideWith(
+            (ref, key) => Stream.value(null),
+          ),
+          needsAttentionProvider.overrideWith((ref) => Stream.value(const [])),
+          lostStoresProvider.overrideWith(
+            (ref) => Stream.value(const [
+              LostStore(
+                name: 'fess_pos-a',
+                at: '2026-09-15T10:00:00Z',
+                waiting: 2,
+                oldestPendingAt: '2026-09-15T08:00:00Z',
+              ),
+            ]),
+          ),
+          acknowledgeLostStoresProvider.overrideWithValue(
+            () async => acknowledged++,
+          ),
+        ],
+        child: const MaterialApp(home: NeedsAttentionPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(_copy('attention.lost.title')), findsOneWidget);
+    expect(find.textContaining('2 items saved since'), findsOneWidget);
+    expect(find.byKey(const ValueKey('attention-none')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('lost-acknowledge')));
+    expect(acknowledged, 1);
   });
 
   testWidgets('nothing waiting: it says so', (tester) async {

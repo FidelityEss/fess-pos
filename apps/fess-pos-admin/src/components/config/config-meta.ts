@@ -153,6 +153,7 @@ const WORDING: Record<string, KeyWording> = {
   'sync.foreground_interval_s': { label: 'Sync while work is waiting, every', help: 'How often the phone tries to upload while there is captured work waiting.' },
   'sync.idle_interval_s': { label: 'Sync when nothing is waiting, every', help: 'How often the phone checks in when there is nothing to upload.', technical: true },
   'sync.retain_committed_payload_days': { label: 'Keep uploaded work on the phone for', help: 'Kept so it can be re-sent if the server is ever restored from a backup.', technical: true },
+  'sync.report_interval_s': { label: 'Phone sync report, every', help: 'How often each phone reports what it still holds, its free storage and its battery settings. It also reports straight away when its battery settings change.', technical: true },
   'storage.cap_mb': { label: 'Storage the app may use', help: 'Total space the POS app may use on the phone.' },
   'storage.block_new_work_at_pct': { label: 'Pause new inspections when storage is this full', help: 'Agents cannot start new inspections until uploads free up space. Started work carries on.' },
   'storage.tile_cache_mb': { label: 'Space for offline maps', help: 'Part of the storage above kept for map tiles.', technical: true },

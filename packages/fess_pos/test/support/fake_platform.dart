@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fess_pos/fess_pos.dart';
+import 'package:fess_pos/src/domain/sync/power_status.dart';
 import 'package:fess_pos/src/platform/background_work.dart';
 import 'package:fess_pos/src/platform/camera.dart';
 import 'package:fess_pos/src/platform/connectivity.dart';
@@ -10,6 +11,7 @@ import 'package:fess_pos/src/platform/integrity.dart';
 import 'package:fess_pos/src/platform/location.dart';
 import 'package:fess_pos/src/platform/module_storage.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
+import 'package:fess_pos/src/platform/power.dart';
 import 'package:fess_pos/src/platform/secure_store.dart';
 
 class FakeConnectivity implements ConnectivityMonitor {
@@ -76,6 +78,12 @@ class FakeCamera implements CameraService {
 }
 
 class FakeDeviceInfo implements DeviceInfoProvider {
+  /// What [freeDiskBytes] answers.
+  int? freeBytes;
+
+  @override
+  Future<int?> freeDiskBytes() async => freeBytes;
+
   @override
   Future<DeviceDescription> describe() async => const DeviceDescription(
     clientType: 'native',
@@ -122,11 +130,46 @@ class FakeExternalApps implements ExternalApps {
   }
 }
 
+/// Records what the module asks the platform to schedule.
+class FakeBackgroundWork implements BackgroundWorkScheduler {
+  int registered = 0;
+  int syncSoonCalls = 0;
+
+  @override
+  bool get supported => true;
+
+  @override
+  Future<void> register(void Function() dispatcher) async => registered++;
+
+  @override
+  Future<void> syncSoon() async => syncSoonCalls++;
+}
+
+/// Android's battery answers, as a test sets them.
+class FakePowerRestrictions implements PowerRestrictions {
+  FakePowerRestrictions([this.current = PowerStatus.unknown]);
+
+  PowerStatus current;
+  int settingsOpened = 0;
+
+  @override
+  Future<PowerStatus> status() async => current;
+
+  @override
+  Future<bool> openSettings() async {
+    settingsOpened++;
+    return true;
+  }
+}
+
 PlatformServices fakePlatform({
   SecureStore? secureStore,
   ModuleStorage? storage,
   ExternalApps? externalApps,
+  BackgroundWorkScheduler? backgroundWork,
+  PowerRestrictions? power,
 }) => PlatformServices(
+  power: power ?? const UnavailablePowerRestrictions(),
   secureStore: secureStore ?? MemorySecureStore(),
   connectivity: FakeConnectivity(),
   location: FakeLocation(),
@@ -134,6 +177,6 @@ PlatformServices fakePlatform({
   deviceInfo: FakeDeviceInfo(),
   storage: storage ?? FakeModuleStorage(),
   integrity: const UnavailableIntegritySignals(),
-  backgroundWork: const UnavailableBackgroundWork(),
+  backgroundWork: backgroundWork ?? const UnavailableBackgroundWork(),
   externalApps: externalApps ?? FakeExternalApps(),
 );

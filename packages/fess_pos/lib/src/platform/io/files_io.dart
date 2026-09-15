@@ -32,3 +32,20 @@ Future<void> deleteFileIfExists(String path) async {
 Future<void> ensureDirectory(String path) async {
   await Directory(path).create(recursive: true);
 }
+
+/// What the files under [path] take, counted through every folder; 0 when
+/// it's missing.
+Future<int> directorySize(String path) async {
+  final dir = Directory(path);
+  if (!dir.existsSync()) return 0;
+  var total = 0;
+  await for (final entity in dir.list(recursive: true, followLinks: false)) {
+    if (entity is! File) continue;
+    try {
+      total += await entity.length();
+    } on FileSystemException {
+      // Gone since the listing.
+    }
+  }
+  return total;
+}

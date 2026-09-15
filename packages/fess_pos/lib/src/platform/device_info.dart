@@ -44,10 +44,12 @@ class DeviceDescription {
   };
 }
 
-// An interface, not a typedef: platform adapters are swapped as objects.
-// ignore: one_member_abstracts
 abstract interface class DeviceInfoProvider {
   Future<DeviceDescription> describe();
+
+  /// The phone's free storage, in bytes, now; null where the platform
+  /// can't say (the web) or the answer didn't come (docs/08 §5).
+  Future<int?> freeDiskBytes();
 }
 
 /// device_info_plus and package_info_plus, on every platform.
@@ -56,6 +58,22 @@ class PluginDeviceInfoProvider implements DeviceInfoProvider {
     : _plugin = plugin ?? DeviceInfoPlugin();
 
   final DeviceInfoPlugin _plugin;
+
+  @override
+  Future<int?> freeDiskBytes() async {
+    if (kIsWeb) return null;
+    // A plugin keeps its first answer; free space needs a fresh one.
+    final fresh = DeviceInfoPlugin();
+    try {
+      return switch (defaultTargetPlatform) {
+        TargetPlatform.android => (await fresh.androidInfo).freeDiskSize,
+        TargetPlatform.iOS => (await fresh.iosInfo).freeDiskSize,
+        _ => null,
+      };
+    } on Object {
+      return null;
+    }
+  }
 
   @override
   Future<DeviceDescription> describe() async {

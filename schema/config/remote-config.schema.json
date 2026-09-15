@@ -385,6 +385,16 @@
           "x-integrity-relevant": true,
           "x-host-overridable": false,
           "x-client-safe": true
+        },
+        "report_interval_s": {
+          "description": "How often a device sends its sync report (sync_report, docs/12 §9); sooner when its battery restriction changes.",
+          "type": "integer",
+          "minimum": 900,
+          "maximum": 86400,
+          "default": 21600,
+          "x-integrity-relevant": false,
+          "x-host-overridable": false,
+          "x-client-safe": true
         }
       },
       "additionalProperties": false

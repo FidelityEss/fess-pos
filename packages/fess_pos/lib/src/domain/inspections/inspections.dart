@@ -218,6 +218,9 @@ enum BeginStatus {
 
   /// The form or flow in force hasn't reached the phone.
   definitionsMissing,
+
+  /// The phone is short of room for new work: sync required (docs/08 §5).
+  storageFull,
 }
 
 @immutable

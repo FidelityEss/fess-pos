@@ -123,7 +123,7 @@ class _PreviewSandboxState extends State<PreviewSandbox> {
   );
 }
 
-/// Flows don't run in the sandbox yet (T3-32).
+/// Flows don't run in the sandbox yet (T3-12).
 class _FlowNotice extends StatelessWidget {
   const _FlowNotice({this.onBack});
 

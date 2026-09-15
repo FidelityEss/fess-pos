@@ -6,6 +6,7 @@ import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/data/outbox/outbox_sender.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart';
 import 'package:fess_pos/src/data/sync/pull_engine.dart';
+import 'package:fess_pos/src/data/sync/sync_report.dart';
 import 'package:meta/meta.dart';
 
 const PosLogger _log = PosLogger('sync');
@@ -49,13 +50,19 @@ class SyncEngine {
     Future<void> Function(RemoteConfig config)? reverify,
     void Function(PullReport report)? onPulled,
     Future<int> Function()? uploadEvidence,
+    Future<void> Function(RemoteConfig config)? housekeeping,
+    Future<void> Function(RemoteConfig config, EnvelopeOrigin origin)? report,
+    void Function({required bool running})? onRunning,
     DateTime Function()? clock,
     this.nudgeDelay = const Duration(seconds: 2),
-  }) : _deviceOrigin = deviceOrigin,
+  }) : _onRunning = onRunning,
+       _deviceOrigin = deviceOrigin,
        _canPull = canPull,
        _reverify = reverify,
        _onPulled = onPulled,
        _uploadEvidence = uploadEvidence,
+       _housekeeping = housekeeping,
+       _report = report,
        _clock = clock ?? DateTime.now;
 
   final OutboxSender sender;
@@ -70,6 +77,18 @@ class SyncEngine {
   /// The evidence upload lane (docs/12 §6); returns how many uploads it
   /// recorded, which then go out as `evidence_uploaded`.
   final Future<int> Function()? _uploadEvidence;
+
+  /// Clears what the server holds and the phone no longer needs (docs/08
+  /// §4), after each run.
+  final Future<void> Function(RemoteConfig config)? _housekeeping;
+
+  /// Queues the device's sync report when one is due (T5-02), beside the
+  /// other device reports, so it goes out in the same run.
+  final Future<void> Function(RemoteConfig config, EnvelopeOrigin origin)?
+  _report;
+
+  /// Told when a run starts and ends, for the sync status (docs/08 §8).
+  final void Function({required bool running})? _onRunning;
   final DateTime Function() _clock;
 
   RemoteConfig _config = RemoteConfig.bundled;
@@ -92,10 +111,16 @@ class SyncEngine {
   }) => pendingWork ? config.foregroundSyncInterval : config.idleSyncInterval;
 
   /// Runs now, or joins the run in progress.
-  Future<SyncRunReport> syncNow() => _running ??= _run().whenComplete(() {
-    _running = null;
-    unawaited(_schedule());
-  });
+  Future<SyncRunReport> syncNow() {
+    final running = _running;
+    if (running != null) return running;
+    _onRunning?.call(running: true);
+    return _running = _run().whenComplete(() {
+      _running = null;
+      _onRunning?.call(running: false);
+      unawaited(_schedule());
+    });
+  }
 
   /// Starts the timer.
   void start() {
@@ -128,6 +153,17 @@ class SyncEngine {
     }
   }
 
+  /// The sync report; a failure there never stops the run.
+  Future<void> _reportLane(EnvelopeOrigin origin) async {
+    final report = _report;
+    if (report == null) return;
+    try {
+      await report(_config, origin);
+    } on Object catch (e, st) {
+      _log.warning('sync report not queued', error: e, stackTrace: st);
+    }
+  }
+
   Future<SyncRunReport> _run() async {
     final at = _clock();
     DrainReport? drained;
@@ -147,6 +183,7 @@ class SyncEngine {
       if (origin != null) {
         await outbox.reportQuarantinedStores(origin);
         await outbox.reportEvidenceAnomalies(origin);
+        await _reportLane(origin);
       }
 
       drained = await sender.drain();
@@ -169,6 +206,11 @@ class SyncEngine {
         drained = await sender.drain();
       }
       await outbox.purgeCommitted(_config.retainCommittedPayload);
+      try {
+        await _housekeeping?.call(_config);
+      } on Object catch (e) {
+        _log.warning('local clean-up not done (${e.runtimeType}); next run');
+      }
       error ??= drained?.stoppedBy;
     } on Object catch (e, st) {
       error = e is PosException ? e.code : 'SYNC_FAILED';
@@ -177,6 +219,13 @@ class SyncEngine {
         error: e,
         stackTrace: st,
       );
+    }
+    if (error == null) {
+      try {
+        await recordSyncSuccess(outbox.database, _clock());
+      } on Object catch (e) {
+        _log.warning('last success not recorded (${e.runtimeType})');
+      }
     }
     return _last = SyncRunReport(
       at: at,

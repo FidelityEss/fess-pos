@@ -6,6 +6,7 @@ import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/time/device_time.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/outbox/envelope.dart';
+import 'package:fess_pos/src/domain/sync/lost_store.dart';
 import 'package:fess_pos_engine/fess_pos_engine.dart' show payloadHash;
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
@@ -73,6 +74,8 @@ class OutboxStatus {
     required this.needsAttention,
     required this.committed,
     this.oldestPendingAt,
+    this.evidenceWaiting = 0,
+    this.lostStores = 0,
   });
 
   final int queued;
@@ -85,6 +88,16 @@ class OutboxStatus {
   final DateTime? oldestPendingAt;
 
   int get pending => queued + inFlight;
+
+  /// Photos and signatures whose bytes haven't gone up yet (docs/08 §8).
+  final int evidenceWaiting;
+
+  /// Everything the server doesn't hold yet: envelopes and evidence.
+  int get waiting => pending + evidenceWaiting;
+
+  /// Stores moved aside with work on them whose notice the agent hasn't
+  /// acknowledged (T5-13); they count with what needs attention.
+  final int lostStores;
 }
 
 /// The transactional outbox (docs/12 §3, docs/08 §3): every device write
@@ -408,7 +421,24 @@ class OutboxStore {
               ..where(_db.outbox.state.isIn(OutboxState.pending)))
             .map((r) => r.read(oldest))
             .getSingleOrNull();
+    final photos = _db.evidence.id.count();
+    final photosWaiting =
+        await (_db.selectOnly(_db.evidence)
+              ..addColumns([photos])
+              ..where(
+                _db.evidence.bytes.isNotNull() &
+                    _db.evidence.state.isIn(const ['local_only', 'uploading']),
+              ))
+            .map((r) => r.read(photos))
+            .getSingle();
+    final lost = _lostStoresToShow(
+      await (_db.select(
+        _db.moduleMeta,
+      )..where((m) => m.key.isIn(_lostKeys))).get(),
+    );
     return OutboxStatus(
+      evidenceWaiting: photosWaiting ?? 0,
+      lostStores: lost.length,
       queued: counts[OutboxState.queued] ?? 0,
       inFlight: counts[OutboxState.inFlight] ?? 0,
       durable: counts[OutboxState.durable] ?? 0,
@@ -430,14 +460,114 @@ class OutboxStore {
   Stream<OutboxStatus> watchStatus() async* {
     yield await status();
     yield* _db
-        .tableUpdates(TableUpdateQuery.onTable(_db.outbox))
+        .tableUpdates(
+          TableUpdateQuery.onAllTables([
+            _db.outbox,
+            _db.evidence,
+            _db.moduleMeta,
+          ]),
+        )
         .asyncMap((_) => status());
   }
+
+  /// [status] after each change to what is waiting, without the current one
+  /// first: for the custody note (T5-13), which starts from [status].
+  Stream<OutboxStatus> watchWaitingChanges() => _db
+      .tableUpdates(TableUpdateQuery.onAllTables([_db.outbox, _db.evidence]))
+      .asyncMap((_) => status());
 
   SimpleSelectStatement<$OutboxTable, OutboxRow> _needsAttentionQuery() =>
       _db.select(_db.outbox)
         ..where((o) => o.state.equals(OutboxState.needsAttention))
         ..orderBy([(o) => OrderingTerm.desc(o.createdAtMs)]);
+
+  static const List<String> _lostKeys = [
+    MetaKeys.quarantinedStores,
+    MetaKeys.quarantinedStoresAcknowledged,
+  ];
+
+  /// Stores moved aside with work on them whose notice the agent hasn't
+  /// acknowledged yet, live (T5-13, D-93).
+  Stream<List<LostStore>> watchLostStores() => (_db.select(
+    _db.moduleMeta,
+  )..where((m) => m.key.isIn(_lostKeys))).watch().map(_lostStoresToShow);
+
+  /// The agent has read the notice for every store moved aside so far.
+  Future<void> acknowledgeLostStores() async {
+    final log =
+        await (_db.select(
+              _db.moduleMeta,
+            )..where((m) => m.key.equals(MetaKeys.quarantinedStores)))
+            .getSingleOrNull();
+    await _db
+        .into(_db.moduleMeta)
+        .insertOnConflictUpdate(
+          ModuleMetaCompanion.insert(
+            key: MetaKeys.quarantinedStoresAcknowledged,
+            value: '${_lostLog(log?.value).length}',
+            updatedAt: isoWithOffset(_clock()),
+          ),
+        );
+  }
+
+  static List<LostStore> _lostStoresToShow(List<ModuleMetaRow> rows) {
+    final meta = {for (final r in rows) r.key: r.value};
+    final acknowledged =
+        int.tryParse(meta[MetaKeys.quarantinedStoresAcknowledged] ?? '') ?? 0;
+    return [
+      for (final store in _lostLog(
+        meta[MetaKeys.quarantinedStores],
+      ).skip(acknowledged))
+        if (store.outcome != LostStoreOutcome.nothingUnsent) store,
+    ];
+  }
+
+  static List<LostStore> _lostLog(String? json) {
+    if (json == null) return const [];
+    try {
+      final log = jsonDecode(json);
+      return log is List<Object?>
+          ? [
+              for (final e in log.whereType<Map<String, Object?>>())
+                LostStore.fromJson(e),
+            ]
+          : const [];
+    } on FormatException {
+      return const [];
+    }
+  }
+
+  /// The `client_error` for a store moved aside: what the note kept beside
+  /// it says was lost, that its bytes are kept, and that nothing was
+  /// recovered (C10.12).
+  static Map<String, Object?> _lostStoreError(
+    Map<String, Object?> store,
+    DateTime now,
+  ) {
+    final lost = LostStore.fromJson(store);
+    const moved =
+        'a local store that could not be opened was moved aside '
+        'intact and a new one started';
+    return {
+      'code': 'LOCAL_STORE_QUARANTINED',
+      'kind': 'recovery_anomaly',
+      'about_envelope_id': null,
+      'message': switch (lost.outcome) {
+        LostStoreOutcome.nothingUnsent => '$moved; the server held all of it',
+        LostStoreOutcome.unsentUnrecoverable =>
+          '$moved; ${lost.waiting} items the server did not hold were on it '
+              'and cannot be recovered on this phone',
+        LostStoreOutcome.unknown => '$moved; what was on it is unknown',
+      },
+      'detail': {
+        ...store,
+        'outcome': lost.outcome.name,
+        'bytes_retained': true,
+        'recovered': false,
+      },
+      'at': isoWithOffset(now),
+    };
+  }
 
   /// Reports stores moved into quarantine (D-52) that haven't been
   /// reported yet, as one `client_error`.
@@ -465,16 +595,7 @@ class OutboxStore {
           payload: {
             'errors': [
               for (final store in all.skip(done).take(50))
-                {
-                  'code': 'LOCAL_STORE_QUARANTINED',
-                  'kind': 'recovery_anomaly',
-                  'about_envelope_id': null,
-                  'message':
-                      'a local store that could not be opened was moved '
-                      'aside intact and a new one started',
-                  'detail': store,
-                  'at': isoWithOffset(now),
-                },
+                _lostStoreError(store, now),
             ],
           },
         );

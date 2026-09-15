@@ -8,6 +8,7 @@ import 'package:fess_pos/src/domain/inspections/inspections.dart';
 import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/domain/maps/map_tiles.dart';
+import 'package:fess_pos/src/domain/storage/storage_budget.dart';
 import 'package:fess_pos/src/features/inspections/capture_page.dart';
 import 'package:fess_pos/src/features/inspections/location_check_view.dart';
 import 'package:fess_pos/src/features/inspections/signature_pad_page.dart';
@@ -715,6 +716,23 @@ class _InspectionPageState extends ConsumerState<InspectionPage>
     String evidenceType = 'photo',
   }) => FormFieldServices(
     takePhoto: (context, field, shot) async {
+      // A phone that can't store another photo says so before the camera
+      // opens; the answers so far stay (docs/08 §5).
+      bool room;
+      try {
+        room = canCapture(await ref.read(storageUseProvider.future));
+      } on Object {
+        room = true;
+      }
+      if (!room) {
+        if (context.mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(content: Text(copy('storage.capture_full'))),
+          );
+        }
+        return null;
+      }
+      if (!context.mounted) return null;
       final of = shot.of;
       final photo = await Navigator.of(context).push<CapturedPhoto>(
         MaterialPageRoute(

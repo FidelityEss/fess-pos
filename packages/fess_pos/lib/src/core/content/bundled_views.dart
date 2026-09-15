@@ -77,6 +77,18 @@ abstract final class BundledViews {
   static const List<Object?> jobCard = [
     {'type': 'title', 'bind': 'job.merchant_name'},
     {'type': 'status_chip', 'bind': 'job.status'},
+    // Everything the job needs is on the phone (docs/08 §8).
+    {
+      'type': 'badge',
+      'text': 'Ready offline',
+      'tone': 'success',
+      'visible': {
+        '==': [
+          {'var': 'job.offline_ready'},
+          true,
+        ],
+      },
+    },
     {'type': 'field_value', 'label': 'Ref', 'bind': 'job.reference'},
     {'type': 'schedule_window', 'bind': 'job.scheduled'},
   ];

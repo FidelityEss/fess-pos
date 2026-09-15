@@ -214,6 +214,7 @@ Future<void> openInspection(
   }
   final message = switch (result.status) {
     BeginStatus.definitionsMissing => copy('inspection.definitions_missing'),
+    BeginStatus.storageFull => copy('storage.sync_required'),
     BeginStatus.unavailable => copy('job.action.unavailable'),
     _ => copy('job.action.not_allowed'),
   };
@@ -752,7 +753,7 @@ class _ActionOutcomePageState extends ConsumerState<ActionOutcomePage> {
     final sync = _data(ref.watch(syncStatusProvider));
     final data = <String, Object?>{
       ...widget.data,
-      'pending': sync?.pending ?? 0,
+      'pending': sync?.waiting ?? 0,
     };
     return StreamBuilder<DeliveryState>(
       stream: _delivery,

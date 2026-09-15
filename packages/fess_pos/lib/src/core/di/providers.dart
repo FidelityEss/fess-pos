@@ -4,6 +4,8 @@
 /// host needs no `ProviderScope` and never sees the module's providers.
 library;
 
+import 'dart:async';
+
 import 'package:fess_pos/src/bootstrap/bootstrap_snapshot.dart';
 import 'package:fess_pos/src/contract/capabilities.dart';
 import 'package:fess_pos/src/core/content/bundled_app.dart';
@@ -11,6 +13,7 @@ import 'package:fess_pos/src/core/content/bundled_copy.dart';
 import 'package:fess_pos/src/core/logging/pos_logger.dart';
 import 'package:fess_pos/src/core/runtime/module_runtime.dart';
 import 'package:fess_pos/src/core/theme/pos_theme_data.dart';
+import 'package:fess_pos/src/data/local/offline_readiness.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
 import 'package:fess_pos/src/data/local/repositories.dart';
 import 'package:fess_pos/src/data/outbox/outbox_store.dart';
@@ -23,7 +26,10 @@ import 'package:fess_pos/src/domain/jobs/job_actions.dart';
 import 'package:fess_pos/src/domain/jobs/job_record.dart';
 import 'package:fess_pos/src/domain/maps/map_tiles.dart';
 import 'package:fess_pos/src/domain/preview/preview_request.dart';
+import 'package:fess_pos/src/domain/storage/storage_budget.dart';
 import 'package:fess_pos/src/domain/sync/attention.dart';
+import 'package:fess_pos/src/domain/sync/lost_store.dart';
+import 'package:fess_pos/src/domain/sync/power_status.dart';
 import 'package:fess_pos/src/platform/platform_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,6 +43,14 @@ final moduleRuntimeProvider = Provider<ModuleRuntime>(
 final platformServicesProvider = Provider<PlatformServices>(
   (ref) => ref.watch(moduleRuntimeProvider).dependencies.platform,
   name: 'platformServices',
+);
+
+/// What the phone does to hold background sync back (T5-02), asked afresh
+/// each time it is read, e.g. after the agent returns from the settings.
+// ignore: specify_nonobvious_property_types
+final powerStatusProvider = FutureProvider.autoDispose<PowerStatus>(
+  (ref) => ref.watch(platformServicesProvider).power.status(),
+  name: 'powerStatus',
 );
 
 /// The local store, opened on first use (T1-20).
@@ -170,10 +184,57 @@ final formSubmissionsProvider = FutureProvider<FormSubmissions?>(
 );
 
 /// Drafts for "Preview on phone" links (T3-08); null until the server
-/// serves them (T3-33).
+/// serves them (T3-12).
 final previewDraftsProvider = FutureProvider<PreviewDrafts?>(
   (ref) => ref.watch(moduleRuntimeProvider).previewDrafts(),
   name: 'previewDrafts',
+);
+
+/// Stores moved aside with work on them whose notice the agent hasn't
+/// acknowledged, live (T5-13).
+final lostStoresProvider = StreamProvider<List<LostStore>>((ref) async* {
+  yield* OutboxStore(
+    await ref.watch(localDatabaseProvider.future),
+  ).watchLostStores();
+}, name: 'lostStores');
+
+/// Acknowledges every lost-store notice so far (T5-13).
+final acknowledgeLostStoresProvider = Provider<Future<void> Function()>(
+  (ref) => () async {
+    await OutboxStore(
+      await ref.read(localDatabaseProvider.future),
+    ).acknowledgeLostStores();
+  },
+  name: 'acknowledgeLostStores',
+);
+
+/// Whether a sync run is going on now, for the sync status (docs/08 §8).
+final syncingProvider = StreamProvider<bool>((ref) {
+  final syncing = ref.watch(moduleRuntimeProvider).syncing;
+  final controller = StreamController<bool>();
+  void emit() => controller.add(syncing.value);
+  syncing.addListener(emit);
+  emit();
+  ref.onDispose(() {
+    syncing.removeListener(emit);
+    unawaited(controller.close());
+  });
+  return controller.stream;
+}, name: 'syncing');
+
+/// Which of the agent's jobs are ready to work offline (docs/08 §8), live.
+final offlineReadyJobsProvider = StreamProvider<Set<String>>((ref) async* {
+  yield* OfflineReadiness(
+    await ref.watch(localDatabaseProvider.future),
+    clock: ref.watch(moduleRuntimeProvider).dependencies.clock,
+  ).watch();
+}, name: 'offlineReadyJobs');
+
+/// How the phone's storage stands, measured when asked (docs/08 §5).
+// ignore: specify_nonobvious_property_types
+final storageUseProvider = FutureProvider.autoDispose<StorageUse>(
+  (ref) => ref.watch(moduleRuntimeProvider).storageUse(),
+  name: 'storageUse',
 );
 
 /// Inspections (T4-27); null in builds without the POS API client.

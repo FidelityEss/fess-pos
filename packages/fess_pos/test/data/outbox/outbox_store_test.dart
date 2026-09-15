@@ -3,7 +3,9 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:fess_pos/src/core/version.dart';
 import 'package:fess_pos/src/data/local/pos_database.dart';
@@ -387,6 +389,37 @@ void main() {
     );
   });
 
+  test('status counts photos whose bytes wait to go up (T5-09)', () async {
+    Future<void> photo(String id, String state, {bool bytes = true}) => db
+        .into(db.evidence)
+        .insert(
+          EvidenceCompanion.insert(
+            id: id,
+            inspectionId: 'i1',
+            jobId: 'j1',
+            userId: 'u-1',
+            fieldKey: 'p',
+            category: 'photo',
+            type: 'photo',
+            mime: 'image/jpeg',
+            sha256: 'a' * 64,
+            size: 1,
+            capturedAtDevice: '2026-09-15T08:00:00Z',
+            capturedMonotonicMs: 1,
+            state: state,
+            createdAtMs: 1,
+            updatedAt: '2026-09-15T08:00:00Z',
+            bytes: Value(bytes ? Uint8List.fromList([1]) : null),
+          ),
+        );
+    await photo('e1', 'local_only');
+    await photo('e2', 'uploaded');
+    await photo('e3', 'verified', bytes: false);
+    final s = await store.status();
+    expect(s.evidenceWaiting, 1);
+    expect(s.waiting, s.pending + 1);
+  });
+
   test('quarantined stores are reported once', () async {
     await db.recordQuarantine(['fess_pos-20260914T080000Z.db']);
     await store.reportQuarantinedStores(_device);
@@ -400,6 +433,47 @@ void main() {
     final error = (payload['errors']! as List).single as Map;
     expect(error['code'], 'LOCAL_STORE_QUARANTINED');
     expect(error['kind'], 'recovery_anomaly');
+    expect((error['detail']! as Map)['outcome'], 'unknown');
+  });
+
+  test('a lost store is reported with what was on it, and shown until the '
+      'agent acknowledges it (T5-13)', () async {
+    await db.recordQuarantine(
+      ['fess_pos-a', 'fess_pos-b'],
+      details: {
+        'fess_pos-a': {
+          'reason': 'LOCAL_STORE_KEY_MISSING',
+          'custody': {'waiting': 2, 'updated_at': '2026-09-15T08:00:00Z'},
+        },
+        'fess_pos-b': {
+          'reason': 'LOCAL_STORE_KEY_REJECTED',
+          'custody': {'waiting': 0},
+        },
+      },
+    );
+    await store.reportQuarantinedStores(_device);
+    final payload =
+        (jsonDecode((await db.select(db.outbox).get()).single.envelope)
+                as Map<String, Object?>)['payload']!
+            as Map<String, Object?>;
+    final errors = (payload['errors']! as List).cast<Map<String, Object?>>();
+    final a = errors.first;
+    expect(a['message'], contains('2 items the server did not hold'));
+    expect(a['detail'], containsPair('outcome', 'unsentUnrecoverable'));
+    expect(a['detail'], containsPair('bytes_retained', true));
+    expect(a['detail'], containsPair('recovered', false));
+    expect(a['detail'], containsPair('reason', 'LOCAL_STORE_KEY_MISSING'));
+    expect(errors.last['detail'], containsPair('outcome', 'nothingUnsent'));
+
+    expect(
+      (await store.watchLostStores().first).map((s) => s.name),
+      ['fess_pos-a'],
+      reason: 'only a store with work on it needs a notice',
+    );
+    expect((await store.status()).lostStores, 1);
+    await store.acknowledgeLostStores();
+    expect(await store.watchLostStores().first, isEmpty);
+    expect((await store.status()).lostStores, 0);
   });
 
   test('an item in flight when the app stopped is queued again', () async {

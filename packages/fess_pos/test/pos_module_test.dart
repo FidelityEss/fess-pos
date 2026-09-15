@@ -25,6 +25,10 @@ void main() {
     test('signOut is a harmless no-op', () async {
       await PosModule.signOut();
     });
+
+    test('nothing is pending (T5-09)', () async {
+      expect(await PosModule.pendingWork(), 0);
+    });
   });
 
   group('initialize', () {
