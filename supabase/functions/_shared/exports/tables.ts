@@ -98,6 +98,12 @@ export function localTime(iso: string | null | undefined, timeZone: string): str
   }
 }
 
+/** A time as a cell: text in a CSV ("2026-09-15 14:03:07 +02:00"), a date in Excel. */
+export function timeCell(iso: string | null | undefined, timeZone: string): Cell {
+  const text = localTime(iso, timeZone);
+  return text === null ? null : { time: text };
+}
+
 /** Words for a status or decision code: under_review → Under review. */
 export function words(code: string | null | undefined): string | null {
   if (!code) return null;
@@ -163,8 +169,8 @@ const LEAD: Array<[string, (i: ExportInspection, v: FormVersion | null, tz: stri
   ['Try', (i) => i.attempt],
   ['Visit status', (i) => words(i.status)],
   ['Decision', (i) => words(i.decision?.decision)],
-  ['Decided', (i, _v, tz) => localTime(i.decision?.decided_at, tz)],
-  ['Submitted', (i, _v, tz) => localTime(i.submitted_at, tz)],
+  ['Decided', (i, _v, tz) => timeCell(i.decision?.decided_at, tz)],
+  ['Submitted', (i, _v, tz) => timeCell(i.submitted_at, tz)],
   ['Form', (_i, v) => v?.title ?? null],
   ['Form version', (_i, v) => v?.version ?? null],
 ];
@@ -272,7 +278,7 @@ export function sourceTable(visits: ExportInspection[], versions: Record<string,
   for (const i of ordered(visits)) {
     const v = i.form_version_id ? versions[i.form_version_id] ?? null : null;
     rows.push([
-      i.id, i.job_reference, i.bank_code, words(i.status), localTime(i.submitted_at, tz), v?.title ?? null, v?.version ?? null,
+      i.id, i.job_reference, i.bank_code, words(i.status), timeCell(i.submitted_at, tz), v?.title ?? null, v?.version ?? null,
       i.definition_hash, i.answers_hash, i.submission_hash, i.evidence_expected, i.evidence_received, i.evidence_verified,
     ]);
   }
@@ -324,7 +330,7 @@ export function manifestTable(files: ManifestFile[], tz: string): Cell[][] {
   ]];
   for (const f of files) {
     rows.push([
-      f.path, f.inspection_id, f.job_reference, f.question ?? f.field_key, f.evidence_id, f.type, localTime(f.captured_at, tz), f.bytes,
+      f.path, f.inspection_id, f.job_reference, f.question ?? f.field_key, f.evidence_id, f.type, timeCell(f.captured_at, tz), f.bytes,
       f.sha256_recorded, f.sha256_file, f.matches === null ? null : f.matches ? 'Yes' : 'NO', words(f.upload_state), words(f.replica_state),
       f.custody.map((c) => `${c.event} ${localTime(c.at, tz)}`).join('; ') || null, f.included ? 'Yes' : 'No', f.not_included_because,
     ]);

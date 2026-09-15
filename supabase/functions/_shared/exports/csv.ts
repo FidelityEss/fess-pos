@@ -4,12 +4,17 @@
 // Spreadsheet formula guard: a text cell starting with = + - @ tab or CR is written with a leading apostrophe, so opening
 // the file in a spreadsheet never runs it as a formula (OWASP "CSV injection"). Numbers are never touched. The stored
 // answer is unchanged; the bank API and the Excel export (which types every text cell as text) give it exactly.
-export type Cell = string | number | null;
+/** A point in time as people read it, "2026-09-15 12:00:05 +02:00": text in a CSV, a real date cell in Excel. */
+export interface TimeCell {
+  time: string;
+}
+export type Cell = string | number | null | TimeCell;
 
 const RISKY_START = /^[=+\-@\t\r]/;
 
 export function csvCell(value: Cell): string {
   if (value === null) return '';
+  if (typeof value === 'object') return csvCell(value.time);
   if (typeof value === 'number') return Number.isFinite(value) ? String(value) : '';
   const text = RISKY_START.test(value) ? `'${value}` : value;
   return /[",\r\n]/.test(text) || text !== text.trim() ? `"${text.replaceAll('"', '""')}"` : text;

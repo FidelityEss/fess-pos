@@ -130,7 +130,7 @@ Deno.test('column names and sheet names follow Excel’s rules', () => {
 
 Deno.test('an Excel workbook has its parts, inline text and numbers, and opens in openpyxl where installed', async () => {
   const chunks = await xlsxChunks([
-    { name: 'All answers', rows: [['Name', 'Count'], ['=cmd|x', 3], ['<b>', null]] },
+    { name: 'All answers', rows: [['Name', 'Count', 'When'], ['=cmd|x', 3, { time: '2026-09-15 12:30:00 +02:00' }], ['<b>', null, null]] },
     { name: 'About this file', rows: [['About', ''], ['Export ID', 'abc']] },
   ], { title: 'Test & title', created: new Date('2026-09-15T10:00:00Z') });
   const bytes = concatBytes(chunks);
@@ -155,6 +155,8 @@ ws = wb['All answers']
 assert wb.sheetnames == ['All answers', 'About this file'], wb.sheetnames
 assert ws['A2'].value == '=cmd|x' and ws['A2'].data_type == 's', (ws['A2'].value, ws['A2'].data_type)
 assert ws['B2'].value == 3
+import datetime
+assert ws['C2'].is_date and ws['C2'].value == datetime.datetime(2026, 9, 15, 12, 30), ws['C2'].value
 assert ws['A1'].font.b
 print('ok')`, path]);
   if (py) assert(py.ok && /ok|skip/.test(py.out), `openpyxl: ${py.out}`);
@@ -229,7 +231,8 @@ Deno.test('the answer tables: one per version, and all answers as the union with
   assertEquals(first.slice(12, 17), ['Shopping complex', null, 'ev-1', 5, 'Yes']);
   assertEquals(first[17], 'Staff: 4 → 5 (Counted again)', 'a correction replaces the value and is listed with the old one');
   assertEquals(first[18], '1'.repeat(64));
-  assertEquals(first[9], '2026-09-11 10:00:00 +02:00');
+  assertEquals(first[9], { time: '2026-09-11 10:00:00 +02:00' }, 'times are time cells');
+  assertEquals(csvCell(first[9]), '2026-09-11 10:00:00 +02:00', 'which a CSV writes as text with the offset');
   assertEquals(second.slice(12, 15), ['Shop', '08:00–17:00', 'ev-2']);
   const v1 = perVersion[1].rows[0];
   assertEquals(v1.slice(12), ['Type of premises', 'Staff', 'Shop front', 'legacy_flag', 'Corrections after submission', 'Answers fingerprint (SHA-256)'],
